@@ -64,6 +64,26 @@ test('equal-range targets use lexicographically smallest ID', () => {
     assert.equal(selectHealingAction(actor, [allyZ, allyA]).target, allyA);
 });
 
+test('ranged combat prefers the nearest enemy over input order and ID', () => {
+    const actor = creep('actor', 0, 0, [['ranged_attack', 10]]);
+    const farther = creep('a', 3, 0, [], { my: false });
+    const nearer = creep('z', 2, 0, [], { my: false });
+
+    assert.deepEqual(selectCombatActions(actor, [farther, nearer], null), [
+        { method: 'rangedAttack', target: nearer },
+    ]);
+});
+
+test('ally healing prefers the nearest damaged ally over input order and ID', () => {
+    const actor = creep('actor', 0, 0, [['heal', 10]]);
+    const farther = creep('a', 3, 0, [], { hits: 50 });
+    const nearer = creep('z', 1, 0, [], { hits: 50 });
+
+    assert.deepEqual(selectHealingAction(actor, [farther, nearer]), {
+        method: 'heal', target: nearer,
+    });
+});
+
 test('self-healing wins priority; adjacent allies use heal and range 3 uses rangedHeal', () => {
     const actor = creep('actor', 0, 0, [['heal', 10]], { hits: 50 });
     const adjacent = creep('adjacent', 1, 0, [], { hits: 50 });
