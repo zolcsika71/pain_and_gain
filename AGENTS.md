@@ -84,3 +84,13 @@ Do not invent project facts or overwrite existing project instructions.
 - Add config, state, squad, tactical, and debug modules only when they have
   behavior to own. Update `README.md` and the affected architecture documents
   when the source layout or development commands change.
+
+## Replay-log reviews
+
+- Before examining a utility-managed capture in `replay_logs/`, follow the
+  `README.md` replay importer commands and claim that replay/fingerprint with a
+  task identifier unique to the reviewing Codex task.
+- Record `examined` after reading the capture. Record `complete` only when that
+  task's review is explicitly finished; leave an ongoing task's claim active.
+- Use the utility for cleanup. Preserve unmanaged reference captures and the
+  manifest's review and deduplication history.

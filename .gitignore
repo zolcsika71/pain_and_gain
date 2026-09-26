@@ -90,6 +90,12 @@ coverage/
 .cache/
 *.log
 
+# Local Arena replay captures and review state
+replay_logs/*.jsonl
+replay_logs/manifest.json
+replay_logs/.manifest.lock
+replay_logs/.*.tmp
+
 # Screeps Arena regenerates these inside the selected code directory
 src/jsconfig.json
 src/typings/

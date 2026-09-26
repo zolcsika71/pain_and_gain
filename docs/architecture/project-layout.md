@@ -17,3 +17,9 @@ The log is an observation before this tick's actions, not a report of their resu
 The bot does not maintain match state, pair units, form squads, retreat, or draw overlays. Those modules belong under the requested `src/` folders only when the corresponding behavior is introduced.
 
 Local Node.js tests import the pure selection and execution modules. Arena-specific imports stay in `observe.js`; `package.json` and Node.js test APIs are for local tooling only. Relative imports remain inside `src/`, because Arena uses the directory containing `main.mjs` as the code root.
+
+## Local replay imports
+
+`tools/replay-logs.js` is a separate Node.js CLI outside the Arena code directory. It reads cached replay-log responses at startup and polls for changes while the user controls replay playback. Request metadata establishes replay identity; supported version-5 cache framing and gzip payloads yield the original console JSON strings. Distinct response contents receive separate captures under `replay_logs/`, with hash suffixes when the replay's canonical filename is occupied. A response's observed tick range does not establish full replay coverage.
+
+`replay_logs/manifest.json` retains response fingerprints, source paths, output ownership, coverage, other console entries, and per-task review records. Pending imports are recorded before atomic file publication so a retry can finish an interrupted import. Manifest updates and cleanup share a process lock. Claims retain captures until every claiming task explicitly records examination and completion; eligible cleanup checks the managed path and content hash before deletion. Deleted records remain in the manifest to prevent reimport. Existing reference files are never adopted for cleanup. The CLI commands and format limitations are documented in `README.md`.
