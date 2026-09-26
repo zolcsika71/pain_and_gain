@@ -4,6 +4,9 @@ import { ScoreFlag } from 'arena/season_4/pain_and_gain/basic';
 
 export function observeArena() {
     const flags = getObjectsByPrototype(ScoreFlag);
-    const myCreeps = getObjectsByPrototype(Creep).filter(object => object.my);
-    return { flags, myCreeps };
+    const creeps = getObjectsByPrototype(Creep);
+    const myCreeps = creeps.filter(creep => creep.my);
+    const enemies = creeps.filter(creep => !creep.my && creep.hits > 0);
+    const damagedFriends = myCreeps.filter(creep => creep.hits > 0 && creep.hits < creep.hitsMax);
+    return { flags, myCreeps, enemies, damagedFriends };
 }

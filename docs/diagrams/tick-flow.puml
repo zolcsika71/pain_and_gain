@@ -6,13 +6,22 @@ component "src/loop.js" as Loop
 component "src/arena/observe.js" as Observe
 component "src/strategy/objectives.js" as Objectives
 component "src/arena/execute.js" as Execute
+component "src/tactics/healing.js" as Healing
+component "src/tactics/combat.js" as Combat
+component "src/tactics/body.js\nsrc/tactics/targets.js" as Eligibility
 cloud "Screeps Arena API" as API
 
 Main --> Loop : runTick()
-Loop --> Observe : collect flags and owned creeps
+Loop --> Observe : collect flags, owned creeps,\nenemies, damaged allies
 Observe --> API : getObjectsByPrototype()
 Loop --> Objectives : select first flag
 Loop --> Execute : move owned creeps
 Execute --> API : creep.moveTo(flag)
+Loop --> Execute : execute tactics after movement
+Execute --> Healing : choose available healing
+Execute --> Combat : choose compatible attacks
+Healing --> Eligibility : functioning HEAL, range, target
+Combat --> Eligibility : functioning ATTACK / RANGED_ATTACK,\nrange, target
+Execute --> API : heal / rangedHeal / attack / rangedAttack
 
 @enduml
