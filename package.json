@@ -1,0 +1,8 @@
+{
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check": "node --check src/main.mjs && node --check src/loop.js && node --check src/arena/observe.js && node --check src/arena/execute.js && node --check src/strategy/objectives.js",
+    "test": "node --test tests/unit/*.test.js"
+  }
+}

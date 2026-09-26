@@ -61,3 +61,26 @@ Do not invent project facts or overwrite existing project instructions.
   Markdown in `docs/decisions/`, and PlantUML diagrams (`.puml`) in
   `docs/diagrams/`.
 - Keep affected documentation consistent with implementation changes.
+
+## Game rules and code examples
+
+- Before planning or implementing game-related changes, read
+  `docs/pain_and_gain_rules.md`.
+- When developing or modifying game code, consult relevant files in
+  `docs/examples/`.
+- If a code example conflicts with the game rules, treat
+  `docs/pain_and_gain_rules.md` as authoritative.
+- Before planning or implementing changes that use the game API, read the
+  relevant sections of `docs/architecture/screeps-arena-api.md`.
+- Before planning, creating, or modifying squads or pairing behavior, read
+  `docs/architecture/screeps-squads-and-pairing.md`.
+
+## Source conventions
+
+- Keep Arena runtime code under `src/`, with `src/main.mjs` exporting `loop()`.
+  Use plain JavaScript ES modules and `.js` for implementation files.
+- Import local runtime modules with relative paths that stay within `src/`.
+  Keep Node.js tooling and test imports out of Arena runtime code.
+- Add config, state, squad, tactical, and debug modules only when they have
+  behavior to own. Update `README.md` and the affected architecture documents
+  when the source layout or development commands change.

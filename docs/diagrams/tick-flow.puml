@@ -1,0 +1,18 @@
+@startuml
+title Current Pain and Gain tick flow
+
+component "src/main.mjs" as Main
+component "src/loop.js" as Loop
+component "src/arena/observe.js" as Observe
+component "src/strategy/objectives.js" as Objectives
+component "src/arena/execute.js" as Execute
+cloud "Screeps Arena API" as API
+
+Main --> Loop : runTick()
+Loop --> Observe : collect flags and owned creeps
+Observe --> API : getObjectsByPrototype()
+Loop --> Objectives : select first flag
+Loop --> Execute : move owned creeps
+Execute --> API : creep.moveTo(flag)
+
+@enduml

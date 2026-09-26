@@ -90,6 +90,10 @@ coverage/
 .cache/
 *.log
 
+# Screeps Arena regenerates these inside the selected code directory
+src/jsconfig.json
+src/typings/
+
 # Local credentials and secrets
 .env
 .env.*
