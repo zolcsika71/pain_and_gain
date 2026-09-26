@@ -5,6 +5,7 @@ component "src/main.mjs" as Main
 component "src/loop.js" as Loop
 component "src/arena/observe.js" as Observe
 component "src/strategy/objectives.js" as Objectives
+component "src/debug/game-state.js" as Debug
 component "src/arena/execute.js" as Execute
 component "src/tactics/healing.js" as Healing
 component "src/tactics/combat.js" as Combat
@@ -13,8 +14,10 @@ cloud "Screeps Arena API" as API
 
 Main --> Loop : runTick()
 Loop --> Observe : collect flags, owned creeps,\nenemies, damaged allies
-Observe --> API : getObjectsByPrototype()
+Observe --> API : getObjectsByPrototype() / getTicks()
 Loop --> Objectives : select first flag
+Loop --> Debug : log observed state before actions
+Debug --> API : console.log(JSON snapshot)
 Loop --> Execute : move owned creeps
 Execute --> API : creep.moveTo(flag)
 Loop --> Execute : execute tactics after movement
