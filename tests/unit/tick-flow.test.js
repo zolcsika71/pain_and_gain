@@ -6,6 +6,8 @@ import { registerHooks } from 'node:module';
 const arenaModules = new Map([
     ['game/utils', 'export const getObjectsByPrototype = prototype => globalThis.__painAndGainArenaObjects.get(prototype); export const getObjects = () => [...globalThis.__painAndGainArenaObjects.values()].flat(); export const getTerrainAt = () => 0; export const getTicks = () => globalThis.__painAndGainTick;'],
     ['game', 'export const arenaInfo = { name: "Pain and Gain", season: "4", level: 1, ticksLimit: 2000 };'],
+    ['game/path-finder', 'export const searchPath = () => ({ path: [], incomplete: false });'],
+    ['game/constants', 'export const EFF_ATTACK_MODIFIER = "eff_attack_modifier";'],
     ['game/prototypes', 'export class Creep {}'],
     ['arena/season_4/pain_and_gain/basic', 'export class ScoreFlag {}'],
 ]);

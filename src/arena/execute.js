@@ -2,11 +2,12 @@ import { selectHealingAction } from '../tactics/healing.js';
 import { selectCombatActions } from '../tactics/combat.js';
 import { selectMovementDecision } from '../tactics/movement.js';
 
-export function moveCreeps(myCreeps, enemies, flag, engagements = new Map()) {
+export function moveCreeps(myCreeps, enemies, flag, engagements = new Map(), fallbackById = new Map()) {
     const ownedIds = new Set(myCreeps.map(creep => creep.id));
     for (const id of engagements.keys()) if (!ownedIds.has(id)) engagements.delete(id);
     for (const creep of myCreeps) {
-        const decision = selectMovementDecision(creep, enemies, flag, engagements.get(creep.id), myCreeps);
+        const fallback = fallbackById.has(creep.id) ? fallbackById.get(creep.id) : flag;
+        const decision = selectMovementDecision(creep, enemies, fallback, engagements.get(creep.id), myCreeps);
         if (decision.engagement) engagements.set(creep.id, decision.engagement);
         else engagements.delete(creep.id);
         const target = decision.target;

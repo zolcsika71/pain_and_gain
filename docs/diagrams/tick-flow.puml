@@ -5,6 +5,7 @@ component "src/main.mjs" as Main
 component "src/loop.js" as Loop
 component "src/arena/observe.js" as Observe
 component "src/strategy/objectives.js" as Objectives
+component "src/config.js\nsrc/strategy/flag-allocation.js" as Allocation
 component "src/debug/game-state.js" as Debug
 component "src/arena/execute.js" as Execute
 component "src/tactics/movement.js" as Movement
@@ -17,11 +18,13 @@ Main --> Loop : runTick()
 Loop --> Observe : collect flags, owned creeps,\nenemies, damaged allies
 Observe --> API : getObjectsByPrototype() / getTicks()
 Loop --> Objectives : select first flag
+Loop --> Allocation : optional one-scout fallback\n(default off; one attempt)
+Allocation --> API : searchPath() terrain-route estimates\nwhen enabled
 Loop --> Observe : sample starting map once
 Observe --> API : getObjects() / getTerrainAt()
 Loop --> Debug : log map once, then tick state\nbefore actions
 Debug --> API : console.log(JSON snapshot)
-Loop --> Execute : choose and issue movement
+Loop --> Execute : choose and issue movement\nwith optional scout fallback
 Execute --> Movement : combat objective or pure-healer support,\nthen first flag fallback
 Movement --> Eligibility : functioning weapons / HEAL and range
 Execute --> API : at most one creep.moveTo(target)
