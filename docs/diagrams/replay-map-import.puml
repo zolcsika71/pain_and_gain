@@ -4,12 +4,12 @@ title Replay map registration and log import
 start
 :Read cached replay-log response;
 if (Valid map-state in response?) then (yes)
-  :Compute canonical map checksum;
+  :Compute canonical payload checksum\n(exclude top-level checksum field);
   if (Identical registered map?) then (yes)
-    :Validate saved schema and checksum;
+    :Validate saved payload schema\nRequire embedded = registered = recalculated checksum;
   else (no)
-    :Save map JSON;
-    :Validate saved schema and checksum;
+    :Save map JSON with embedded checksum;
+    :Validate saved payload schema\nRequire embedded = expected = recalculated checksum;
     :Register map ID and checksum;
   endif
   :Associate validated map with this replay as active;

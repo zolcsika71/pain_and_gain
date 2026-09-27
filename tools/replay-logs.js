@@ -18,7 +18,14 @@ const canonical = value => JSON.stringify(value, (_, item) =>
         ? Object.fromEntries(Object.keys(item).sort().map(key => [key, item[key]]))
         : item);
 const mapContent = map => `${canonical(map)}\n`;
-const mapChecksum = map => sha256(mapContent(map));
+// Only the saved map's top-level checksum is metadata; nested fields remain payload.
+const mapPayload = map => {
+    if (!map || typeof map !== 'object' || Array.isArray(map)) return map;
+    const { checksum, ...payload } = map;
+    return payload;
+};
+const mapChecksum = map => sha256(mapContent(mapPayload(map)));
+const savedMapContent = map => mapContent({ ...mapPayload(map), checksum: mapChecksum(map) });
 
 function validMap(map) {
     const terrain = map?.terrain;
@@ -221,19 +228,43 @@ function saveManifest(root, manifest) {
     atomicReplace(path.join(outputDirectory(root), 'manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`);
 }
 
-function validateRegisteredMap(root, registration) {
+function validateSavedMap(map, checksum, file, allowMissingChecksum = false) {
+    if (!validMap(mapPayload(map)) || mapChecksum(map) !== checksum ||
+        (map.checksum !== checksum && !(allowMissingChecksum && !Object.hasOwn(map, 'checksum')))) {
+        throw new Error(`Map schema or checksum mismatch: ${file}`);
+    }
+}
+
+function validateRegisteredMap(root, registration, allowMissingChecksum = false) {
     if (registration?.status !== 'validated' || registration.id !== registration.checksum ||
         !/^[a-f0-9]{64}$/.test(registration.checksum)) throw new Error('Invalid map registration');
     const existing = readMapFile(root, registration.file);
-    if (!validMap(existing) || mapChecksum(existing) !== registration.checksum) {
-        throw new Error(`Map schema or checksum mismatch: ${registration.file}`);
-    }
+    validateSavedMap(existing, registration.checksum, registration.file, allowMissingChecksum);
     return existing;
+}
+
+// Explicit, retry-safe migration. Never rewrite registrations or bless changed payloads.
+export async function upgradeMapChecksums(root) {
+    return withManifestLock(root, () => {
+        const manifest = readManifest(root);
+        return manifest.maps.map(registration => {
+            try {
+                const map = validateRegisteredMap(root, registration, true);
+                const updated = !Object.hasOwn(map, 'checksum');
+                if (updated) atomicReplace(mapPath(root, registration.file), savedMapContent(map));
+                validateRegisteredMap(root, registration);
+                return { file: registration.file, checksum: registration.checksum,
+                    status: updated ? 'updated' : 'verified' };
+            } catch (error) {
+                return { file: registration?.file, status: 'error', message: error.message };
+            }
+        });
+    });
 }
 
 function ensureMap(root, manifest, map) {
     if (!validMap(map)) throw new Error('Invalid captured map');
-    const content = mapContent(map);
+    const content = savedMapContent(map);
     const checksum = mapChecksum(map);
     const registered = manifest.maps.find(item => item.checksum === checksum);
     if (registered) {
@@ -245,7 +276,16 @@ function ensureMap(root, manifest, map) {
     for (const name of fs.readdirSync(directory)) {
         if (!/^pain_and_gain_map_\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-\d{3}Z(?:-[a-f0-9]{12,64})?\.json$/.test(name)) continue;
         const existing = readMapFile(root, name);
-        if (validMap(existing) && mapChecksum(existing) === checksum) { file = name; break; }
+        if (validMap(mapPayload(existing)) && mapChecksum(existing) === checksum) {
+            const registration = manifest.maps.find(item => item.file === name);
+            if (registration) validateRegisteredMap(root, registration);
+            // Recover an orphaned publication, including an older checksum-free map.
+            // The verified incoming payload supplies its expected content identity.
+            validateSavedMap(existing, checksum, name, true);
+            if (!Object.hasOwn(existing, 'checksum')) atomicReplace(mapPath(root, name), content);
+            file = name;
+            break;
+        }
     }
     if (!file) {
         const date = new Date().toISOString().replace(/:/g, '-').replace('.', '-');
@@ -343,6 +383,25 @@ async function withManifestLock(root, action) {
     }
 }
 
+function migrateWaitingRecords(root, manifest) {
+    let migrated = 0;
+    for (const record of manifest.records) {
+        if (record.status === 'waiting') {
+            record.status = 'claim';
+            migrated++;
+        }
+    }
+    if (migrated) saveManifest(root, manifest);
+    return migrated;
+}
+
+export async function migrateReviewStatuses(root) {
+    return withManifestLock(root, () => {
+        const manifest = readManifest(root);
+        return migrateWaitingRecords(root, manifest);
+    });
+}
+
 function chooseOutputName(root, manifest, replayId, fingerprint) {
     const reserved = new Set(manifest.records.map(record => record.outputPath).filter(Boolean));
     const candidates = [`${replayId}.jsonl`, `${replayId}-${fingerprint.slice(0, 12)}.jsonl`, `${replayId}-${fingerprint}.jsonl`];
@@ -378,6 +437,7 @@ export async function importCacheFile(root, sourceFile) {
     if (parsed.kind !== 'log') return parsed;
     return withManifestLock(root, () => {
         const manifest = readManifest(root);
+        migrateWaitingRecords(root, manifest);
         let active = activeReplayMap(root, manifest, parsed.replayId);
         if (parsed.map && active && mapChecksum(parsed.map) !== active.registration.checksum) {
             throw new Error(`Conflicting maps for replay ${parsed.replayId}`);
@@ -402,11 +462,11 @@ export async function importCacheFile(root, sourceFile) {
             if (record.mapId !== active.registration.id || record.mapFile !== active.registration.file) {
                 throw new Error(`Log/map association mismatch for replay ${parsed.replayId}`);
             }
-            if (record.status === 'pending' || (record.outputPath && record.status === 'waiting' && !pathOccupied(managedPath(root, record.outputPath)))) {
+            if (record.status === 'pending' || (record.outputPath && record.status === 'claim' && !pathOccupied(managedPath(root, record.outputPath)))) {
                 ensureOutput(root, record, parsed.gameState);
-                record.status = 'waiting';
+                record.status = 'claim';
                 saveManifest(root, manifest);
-            } else if (record.outputPath && record.status === 'waiting') {
+            } else if (record.outputPath && record.status === 'claim') {
                 ensureOutput(root, record, parsed.gameState);
             }
             return { kind: 'deduplicated', record };
@@ -428,9 +488,80 @@ export async function importCacheFile(root, sourceFile) {
         manifest.records.push(record);
         saveManifest(root, manifest);
         ensureOutput(root, record, parsed.gameState);
-        record.status = 'waiting';
+        record.status = 'claim';
         saveManifest(root, manifest);
         return { kind: 'imported', record };
+    });
+}
+
+// Adopt an explicitly identified local capture only for a replay already linked to a validated map.
+// JSONL has no replay ID of its own, so the caller must verify its provenance independently.
+export async function registerLocalFile(root, replayId, name) {
+    if (!/^[a-f0-9]{24}$/.test(replayId)) throw new Error('Expected a verified replay ID');
+    const file = managedPath(root, name);
+    if (name !== `${replayId}.jsonl` && !name.startsWith(`${replayId}-`)) {
+        throw new Error('Local log filename does not match the supplied replay ID');
+    }
+    return withManifestLock(root, () => {
+        const manifest = readManifest(root);
+        migrateWaitingRecords(root, manifest);
+        const active = activeReplayMap(root, manifest, replayId);
+        if (!active) throw new Error(`No validated active map for replay ${replayId}`);
+        const stat = fs.lstatSync(file);
+        if (!stat.isFile() || stat.isSymbolicLink()) throw new Error(`Unsafe local log file: ${file}`);
+        const bytes = fs.readFileSync(file);
+        const content = new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+        if (!content.endsWith('\n')) throw new Error('Local JSONL must end with a newline');
+        const lines = content.slice(0, -1).split('\n');
+        const expectedFlags = mapPayload(validateRegisteredMap(root, active.registration)).objects
+            .filter(object => object.type === 'ScoreFlag')
+            .map(({ id, x, y, effectType, scorePerTick }) => ({ id, x, y, effectType, scorePerTick }))
+            .sort((a, b) => a.id.localeCompare(b.id));
+        if (!expectedFlags.length) throw new Error('Associated map has no ScoreFlags');
+        const ticks = [];
+        for (const [index, line] of lines.entries()) {
+            let entry;
+            try { entry = JSON.parse(line); }
+            catch { throw new Error(`Invalid JSONL line ${index + 1}`); }
+            if (entry?.type !== 'game-state' || entry.phase !== 'before-actions' ||
+                !Number.isSafeInteger(entry.tick) || !Array.isArray(entry.creeps) || !Array.isArray(entry.flags)) {
+                throw new Error(`Invalid game-state line ${index + 1}`);
+            }
+            const flags = entry.flags.map(({ id, x, y, effectType, scorePerTick }) =>
+                ({ id, x, y, effectType, scorePerTick })).sort((a, b) => a.id.localeCompare(b.id));
+            if (canonical(flags) !== canonical(expectedFlags)) {
+                throw new Error(`Log flags do not match the associated map at line ${index + 1}`);
+            }
+            ticks.push(entry.tick);
+        }
+        const fingerprint = sha256(`manual-jsonl:${replayId}\n${content}`);
+        if (active.association.retiredFingerprints.includes(fingerprint)) {
+            return { kind: 'deduplicated', replayId, fingerprint };
+        }
+        const existing = manifest.records.find(record => record.replayId === replayId && record.fingerprint === fingerprint);
+        if (existing) return { kind: 'deduplicated', record: existing };
+        if (manifest.records.some(record => record.outputPath === name)) {
+            throw new Error('Local log filename is already managed for different content');
+        }
+        const counts = new Map();
+        for (const tick of ticks) counts.set(tick, (counts.get(tick) ?? 0) + 1);
+        const firstTick = Math.min(...ticks);
+        const lastTick = Math.max(...ticks);
+        const gaps = [];
+        for (let tick = firstTick; tick <= lastTick; tick++) if (!counts.has(tick)) gaps.push(tick);
+        const record = {
+            replayId, requestedTick: null, sourceEntry: `replay_logs/${name}`,
+            sourceKey: 'manual-jsonl', fingerprint, outputPath: name,
+            outputFingerprint: sha256(bytes), mapId: active.registration.id,
+            mapChecksum: active.registration.checksum, mapFile: active.registration.file,
+            importedAt: new Date().toISOString(), status: 'claim',
+            coverage: { count: ticks.length, firstTick, lastTick,
+                duplicates: [...counts].filter(([, n]) => n > 1).map(([tick]) => tick), gaps },
+            otherEntries: [], reviews: {},
+        };
+        manifest.records.push(record);
+        saveManifest(root, manifest);
+        return { kind: 'registered', record };
     });
 }
 
@@ -512,6 +643,7 @@ export async function updateReview(root, action, replayId, fingerprint, taskId) 
     if (!/^[a-f0-9]{64}$/.test(fingerprint)) throw new Error('Expected a full SHA-256 fingerprint');
     return withManifestLock(root, () => {
         const manifest = readManifest(root);
+        migrateWaitingRecords(root, manifest);
         const record = manifest.records.find(item => item.replayId === replayId && item.fingerprint === fingerprint);
         if (!record) {
             const retired = manifest.replays.find(item => item.replayId === replayId)?.retiredFingerprints?.includes(fingerprint);
@@ -523,6 +655,7 @@ export async function updateReview(root, action, replayId, fingerprint, taskId) 
             cleanup(root, manifest, record);
             return record;
         }
+        if (record.status !== 'claim') throw new Error(`Log is not ready for analysis: ${record.status}`);
         const now = new Date().toISOString();
         if (action === 'claim') {
             if (!Object.hasOwn(record.reviews, taskId)) {
@@ -548,6 +681,7 @@ export async function updateReview(root, action, replayId, fingerprint, taskId) 
 export async function reconcileCleanup(root) {
     return withManifestLock(root, () => {
         const manifest = readManifest(root);
+        migrateWaitingRecords(root, manifest);
         for (const record of [...manifest.records]) cleanup(root, manifest, record);
         return manifest;
     });
@@ -575,6 +709,18 @@ async function main() {
     } else if (command === 'list') {
         const manifest = await reconcileCleanup(root);
         for (const record of manifest.records) console.log(JSON.stringify({ replayId: record.replayId, fingerprint: record.fingerprint, outputPath: record.outputPath, mapId: record.mapId, mapFile: record.mapFile, status: record.status, coverage: record.coverage, reviews: record.reviews, otherEntries: record.otherEntries.length }));
+    } else if (command === 'migrate-status') {
+        console.log(JSON.stringify({ migrated: await migrateReviewStatuses(root) }));
+    } else if (command === 'register-local') {
+        if (args.length !== 2) throw new Error('Usage: register-local <replay-id> <jsonl-filename>');
+        const result = await registerLocalFile(root, args[0], args[1]);
+        console.log(JSON.stringify({ event: result.kind, replayId: result.record?.replayId ?? result.replayId,
+            fingerprint: result.record?.fingerprint ?? result.fingerprint,
+            outputPath: result.record?.outputPath, status: result.record?.status }));
+    } else if (command === 'upgrade-map-checksums') {
+        const results = await upgradeMapChecksums(root);
+        for (const result of results) console.log(JSON.stringify(result));
+        if (results.some(result => result.status === 'error')) process.exitCode = 1;
     } else if (command === 'maps') {
         const manifest = readManifest(root);
         for (const registration of manifest.maps) {
@@ -591,7 +737,7 @@ async function main() {
         const record = await updateReview(root, command, args[0], args[1], args[2]);
         console.log(JSON.stringify({ replayId: record.replayId, fingerprint: record.fingerprint, status: record.status, outputPath: record.outputPath, reviews: record.reviews }));
     } else {
-        throw new Error('Usage: node tools/replay-logs.js <scan [cache-dir]|watch [cache-dir]|list|maps|other replay-id fingerprint|claim replay-id fingerprint task-id|examined replay-id fingerprint task-id|done replay-id fingerprint task-id>');
+        throw new Error('Usage: node tools/replay-logs.js <scan [cache-dir]|watch [cache-dir]|list|maps|migrate-status|register-local replay-id jsonl-filename|upgrade-map-checksums|other replay-id fingerprint|claim replay-id fingerprint task-id|examined replay-id fingerprint task-id|done replay-id fingerprint task-id>');
     }
 }
 

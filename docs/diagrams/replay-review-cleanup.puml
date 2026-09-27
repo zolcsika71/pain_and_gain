@@ -2,13 +2,14 @@
 title Replay log review and cleanup
 
 start
-:Imported log is waiting;
-:Codex analysis task claims replay and fingerprint;
+:Imported or locally registered log has status claim;
+:Review task claims replay and fingerprint\n(ownership is separate from status);
 :Read the managed JSONL and linked validated map;
-:Record examined after actual examination;
-:Record done after analysis completes;
+:Record examined checkpoint after actual examination;
+:Save analysis and proposals in Markdown;
+:Record done for this review task;
 if (Other active reviewers?) then (yes)
-  :Keep waiting log and manifest record;
+  :Keep status claim, JSONL, and manifest record;
 else (no)
   :Mark log done;
   :Verify managed path and output checksum;

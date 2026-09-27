@@ -5,7 +5,8 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
-import { importCacheFile, parseCacheEntry, reconcileCleanup, scanCache, updateReview } from '../../tools/replay-logs.js';
+import { importCacheFile, migrateReviewStatuses, parseCacheEntry, reconcileCleanup,
+    registerLocalFile, scanCache, updateReview, upgradeMapChecksums } from '../../tools/replay-logs.js';
 
 const replayId = '6ab84434e0351372bc91e8fe';
 const entry = tick => JSON.stringify({
@@ -22,6 +23,9 @@ const mapEntry = (terrain = 0) => JSON.stringify({
     },
 });
 const mappedFirst = () => `${mapEntry()}\n${entry(1)}`;
+const payloadDigest = ({ checksum, ...payload }) => createHash('sha256').update(`${JSON.stringify(payload,
+    (_, value) => value && typeof value === 'object' && !Array.isArray(value)
+        ? Object.fromEntries(Object.entries(value).sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0)) : value)}\n`).digest('hex');
 
 function cacheFrame(values, { id = replayId, tick = 72, encoding = 'gzip', malformed = false } = {}) {
     const key = Buffer.from(`1/0/https://arena.screeps.com/api/game/${id}/log/${tick}`);
@@ -75,10 +79,15 @@ test('validates and registers unique maps, then links only explicitly associated
     assert.equal((await importCacheFile(root, late)).kind, 'deferred');
     assert.equal(fs.existsSync(path.join(root, 'replay_logs', `${replayId}.jsonl`)), false);
     const firstRecord = (await importCacheFile(root, first)).record;
-    assert.equal(firstRecord.status, 'waiting');
+    assert.equal(firstRecord.status, 'claim');
     assert.match(firstRecord.mapFile, /^pain_and_gain_map_\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-\d{3}Z(?:-[a-f0-9]+)?\.json$/);
     const mapPath = path.join(root, 'replay_logs', firstRecord.mapFile);
-    assert.deepEqual(JSON.parse(fs.readFileSync(mapPath, 'utf8')), JSON.parse(mapEntry()).map);
+    const { checksum, ...savedPayload } = JSON.parse(fs.readFileSync(mapPath, 'utf8'));
+    assert.equal(checksum, firstRecord.mapChecksum);
+    // Identity from the original checksum-free fixture, before this schema change.
+    assert.equal(checksum, '1fdd5cce52cb8c24a5fcc12ea5fc9dc3824800e2354f895ee4885578d5428bd9');
+    assert.equal(checksum, payloadDigest(savedPayload));
+    assert.deepEqual(savedPayload, JSON.parse(mapEntry()).map);
     const lateRecord = (await importCacheFile(root, late)).record;
     assert.equal(fs.readFileSync(path.join(root, 'replay_logs', firstRecord.outputPath), 'utf8'), `${entry(1)}\n`);
     const manifest = JSON.parse(fs.readFileSync(path.join(root, 'replay_logs', 'manifest.json'), 'utf8'));
@@ -109,6 +118,125 @@ test('validates and registers unique maps, then links only explicitly associated
     assert.equal(JSON.parse(fs.readFileSync(path.join(root, 'replay_logs', changedRecord.mapFile), 'utf8')).terrain.rows[0][0], 1);
 });
 
+test('upgrades verified legacy maps without changing identity, manifest state, or deduplication', async t => {
+    const { root, cache } = workspace(t);
+    const source = path.join(cache, 'first_0');
+    fs.writeFileSync(source, cacheFrame({ 1: mappedFirst() }));
+    const record = (await importCacheFile(root, source)).record;
+    await updateReview(root, 'claim', replayId, record.fingerprint, 'codex/unfinished');
+    await updateReview(root, 'examined', replayId, record.fingerprint, 'codex/unfinished');
+    const dir = path.join(root, 'replay_logs');
+    const manifestPath = path.join(dir, 'manifest.json');
+    const manifest = JSON.parse(fs.readFileSync(manifestPath));
+    manifest.replays[0].retiredFingerprints.push('f'.repeat(64));
+    fs.writeFileSync(manifestPath, JSON.stringify(manifest));
+    const manifestBefore = fs.readFileSync(manifestPath);
+    const outputBefore = fs.readFileSync(path.join(dir, record.outputPath));
+    const file = path.join(dir, record.mapFile);
+    const { checksum, ...payload } = JSON.parse(fs.readFileSync(file));
+    // Legacy formatting/key order is deliberately noncanonical.
+    fs.writeFileSync(file, JSON.stringify({ terrain: payload.terrain, objects: payload.objects, arena: payload.arena }, null, 2));
+    await assert.rejects(importCacheFile(root, source), /checksum mismatch/);
+    assert.deepEqual(await upgradeMapChecksums(root), [{ file: record.mapFile, checksum, status: 'updated' }]);
+    const upgraded = fs.readFileSync(file);
+    assert.deepEqual(JSON.parse(upgraded), { ...payload, checksum });
+    assert.equal(payloadDigest(JSON.parse(upgraded)), checksum);
+    assert.deepEqual(await upgradeMapChecksums(root), [{ file: record.mapFile, checksum, status: 'verified' }]);
+    assert.deepEqual(fs.readFileSync(file), upgraded);
+    assert.deepEqual(fs.readFileSync(manifestPath), manifestBefore);
+    assert.deepEqual(fs.readFileSync(path.join(dir, record.outputPath)), outputBefore);
+    assert.equal((await importCacheFile(root, source)).kind, 'deduplicated');
+    assert.equal(fs.readdirSync(dir).filter(name => name.startsWith('pain_and_gain_map_')).length, 1);
+});
+
+test('rejects tampered payloads and missing or mismatched saved checksums without blessing them', async t => {
+    const { root, cache } = workspace(t);
+    const source = path.join(cache, 'map_0');
+    fs.writeFileSync(source, cacheFrame({ 1: mapEntry() }));
+    await importCacheFile(root, source);
+    const dir = path.join(root, 'replay_logs');
+    const manifestPath = path.join(dir, 'manifest.json');
+    const originalManifest = fs.readFileSync(manifestPath);
+    const registration = JSON.parse(originalManifest).maps[0];
+    const file = path.join(dir, registration.file);
+    const original = JSON.parse(fs.readFileSync(file));
+    const later = path.join(cache, 'later_0');
+    fs.writeFileSync(later, cacheFrame({ 2: entry(2) }));
+    for (const mutate of [
+        map => { map.terrain.rows[0][0] = 1; },
+        map => { map.checksum = 'f'.repeat(64); },
+        map => { map.checksum = null; },
+        map => { map.terrain.rows[0][0] = 1; map.checksum = payloadDigest(map); },
+        map => { delete map.checksum; map.terrain.rows[0][0] = 1; },
+        map => { map.objects.push({ type: 'Creep' }); },
+    ]) {
+        const map = structuredClone(original);
+        mutate(map);
+        const bytes = JSON.stringify(map);
+        fs.writeFileSync(file, bytes);
+        await assert.rejects(importCacheFile(root, later), /checksum mismatch/);
+        const [result] = await upgradeMapChecksums(root);
+        assert.equal(result.status, 'error');
+        assert.match(result.message, /checksum mismatch/);
+        assert.equal(fs.readFileSync(file, 'utf8'), bytes);
+        assert.deepEqual(fs.readFileSync(manifestPath), originalManifest);
+        assert.equal(fs.readdirSync(dir).filter(name => name.endsWith('.jsonl')).length, 0);
+    }
+});
+
+test('map upgrades report individual failures and refuse symlink and traversal targets', async t => {
+    const { root, cache } = workspace(t);
+    const source = path.join(cache, 'map_0');
+    fs.writeFileSync(source, cacheFrame({ 1: mapEntry() }));
+    await importCacheFile(root, source);
+    fs.writeFileSync(source, cacheFrame({ 1: mapEntry(1) }, { id: 'aaaaaaaaaaaaaaaaaaaaaaaa' }));
+    await importCacheFile(root, source);
+    const dir = path.join(root, 'replay_logs');
+    const manifestPath = path.join(dir, 'manifest.json');
+    const manifest = JSON.parse(fs.readFileSync(manifestPath));
+    const first = path.join(dir, manifest.maps[0].file);
+    const second = path.join(dir, manifest.maps[1].file);
+    const { checksum, ...payload } = JSON.parse(fs.readFileSync(second));
+    fs.writeFileSync(second, JSON.stringify(payload));
+    const outside = path.join(root, 'outside.json');
+    fs.copyFileSync(first, outside);
+    const originalOutside = fs.readFileSync(outside);
+    fs.unlinkSync(first);
+    fs.symlinkSync(outside, first);
+    const results = await upgradeMapChecksums(root);
+    assert.equal(results[0].status, 'error');
+    assert.match(results[0].message, /Unsafe existing map file/);
+    assert.equal(results[1].status, 'updated');
+    assert.equal(JSON.parse(fs.readFileSync(second)).checksum, checksum);
+    assert.deepEqual(fs.readFileSync(outside), originalOutside);
+    manifest.maps[0].file = '../outside.json';
+    fs.writeFileSync(manifestPath, JSON.stringify(manifest));
+    assert.match((await upgradeMapChecksums(root))[0].message, /Unsafe map filename/);
+    assert.deepEqual(fs.readFileSync(outside), originalOutside);
+});
+
+test('reuses an orphaned legacy map and includes nested checksum fields in its identity', async t => {
+    const { root, cache } = workspace(t);
+    const dir = path.join(root, 'replay_logs');
+    fs.mkdirSync(dir);
+    const snapshot = JSON.parse(mapEntry());
+    snapshot.map.objects[0].checksum = 'nested-payload';
+    const expectedChecksum = payloadDigest(snapshot.map);
+    const filename = 'pain_and_gain_map_2026-01-01T00-00-00-000Z.json';
+    fs.writeFileSync(path.join(dir, filename), JSON.stringify(snapshot.map));
+    const source = path.join(cache, 'map_0');
+    fs.writeFileSync(source, cacheFrame({ 1: JSON.stringify(snapshot) }));
+    const result = await importCacheFile(root, source);
+    assert.equal(result.mapFile, filename);
+    assert.equal(result.mapId, expectedChecksum);
+    assert.equal(JSON.parse(fs.readFileSync(path.join(dir, filename))).checksum, expectedChecksum);
+    assert.equal(fs.readdirSync(dir).filter(name => name.startsWith('pain_and_gain_map_')).length, 1);
+    // A nested checksum is real map content, not excluded metadata.
+    snapshot.map.objects[0].checksum = 'changed-nested-payload';
+    fs.writeFileSync(source, cacheFrame({ 1: JSON.stringify(snapshot) }, { id: 'aaaaaaaaaaaaaaaaaaaaaaaa' }));
+    assert.notEqual((await importCacheFile(root, source)).mapId, expectedChecksum);
+});
+
 test('a scan defers a response before its map and imports it after the map arrives', async t => {
     const { root, cache } = workspace(t);
     fs.writeFileSync(path.join(cache, 'a_late_0'), cacheFrame({ 101: entry(101) }, { tick: 101 }));
@@ -117,7 +245,7 @@ test('a scan defers a response before its map and imports it after the map arriv
     assert.equal(events.filter(event => event.kind === 'imported').length, 2);
     const manifest = JSON.parse(fs.readFileSync(path.join(root, 'replay_logs', 'manifest.json'), 'utf8'));
     assert.equal(manifest.records.length, 2);
-    assert.ok(manifest.records.every(record => record.status === 'waiting' && record.mapId === manifest.replays[0].mapId));
+    assert.ok(manifest.records.every(record => record.status === 'claim' && record.mapId === manifest.replays[0].mapId));
     assert.ok(manifest.records.every(record => fs.existsSync(path.join(root, 'replay_logs', record.outputPath))));
 });
 
@@ -135,8 +263,9 @@ test('map-only response activates its replay; schema, checksum, and association 
     const registration = manifest.maps[0];
     const file = path.join(dir, registration.file);
     const original = fs.readFileSync(file);
-    assert.equal(createHash('sha256').update(original).digest('hex'), registration.checksum);
-    assert.equal((await importCacheFile(root, later)).record.status, 'waiting');
+    assert.equal(payloadDigest(JSON.parse(original)), registration.checksum);
+    assert.equal(JSON.parse(original).checksum, registration.checksum);
+    assert.equal((await importCacheFile(root, later)).record.status, 'claim');
 
     fs.writeFileSync(file, '{}\n');
     const more = path.join(cache, 'more_0');
@@ -213,7 +342,92 @@ test('scans existing, new, and rewritten cache files without overwriting differe
     assert.equal(events[0].record.replayId, 'aaaaaaaaaaaaaaaaaaaaaaaa');
 });
 
-test('waiting reviews survive restarts; all claimants must examine and complete before done cleanup', async t => {
+test('migrates legacy waiting status without changing ownership, map links, or fingerprints', async t => {
+    const { root, cache } = workspace(t);
+    const source = path.join(cache, 'response_0');
+    fs.writeFileSync(source, cacheFrame({ 1: mappedFirst() }));
+    const record = (await importCacheFile(root, source)).record;
+    await updateReview(root, 'claim', replayId, record.fingerprint, 'codex/original');
+    await updateReview(root, 'examined', replayId, record.fingerprint, 'codex/original');
+    const manifestPath = path.join(root, 'replay_logs', 'manifest.json');
+    const before = JSON.parse(fs.readFileSync(manifestPath));
+    before.records[0].status = 'waiting';
+    fs.writeFileSync(manifestPath, JSON.stringify(before));
+
+    assert.equal(await migrateReviewStatuses(root), 1);
+    const migrated = JSON.parse(fs.readFileSync(manifestPath));
+    assert.deepEqual(migrated, { ...before, records: [{ ...before.records[0], status: 'claim' }] });
+    assert.equal(await migrateReviewStatuses(root), 0);
+    assert.deepEqual(JSON.parse(fs.readFileSync(manifestPath)), migrated);
+    assert.equal(fs.existsSync(path.join(root, 'replay_logs', record.outputPath)), true);
+});
+
+test('registers a supplied JSONL only against its validated active replay map, then cleans up after review', async t => {
+    const { root, cache } = workspace(t);
+    const source = path.join(cache, 'map_0');
+    fs.writeFileSync(source, cacheFrame({ 1: mapEntry() }));
+    assert.equal((await importCacheFile(root, source)).kind, 'mapped');
+    const directory = path.join(root, 'replay_logs');
+    const name = `${replayId}-aaaaaaaaaaaa.jsonl`;
+    const file = path.join(directory, name);
+    const content = `${entry(1)}\n${entry(2)}\n`;
+    fs.writeFileSync(file, content);
+    const result = await registerLocalFile(root, replayId, name);
+    assert.equal(result.kind, 'registered');
+    assert.equal(result.record.status, 'claim');
+    assert.deepEqual(result.record.coverage, {
+        count: 2, firstTick: 1, lastTick: 2, duplicates: [], gaps: [],
+    });
+    const manifestPath = path.join(directory, 'manifest.json');
+    const registered = JSON.parse(fs.readFileSync(manifestPath));
+    assert.equal(registered.records[0].mapId, registered.replays[0].mapId);
+    assert.equal(registered.records[0].mapFile, registered.maps[0].file);
+    assert.equal(registered.records[0].sourceKey, 'manual-jsonl');
+    assert.equal((await registerLocalFile(root, replayId, name)).kind, 'deduplicated');
+    await updateReview(root, 'claim', replayId, result.record.fingerprint, 'codex/manual-review');
+    await assert.rejects(updateReview(root, 'done', replayId, result.record.fingerprint, 'codex/manual-review'), /Record examination/);
+    await updateReview(root, 'examined', replayId, result.record.fingerprint, 'codex/manual-review');
+    const done = await updateReview(root, 'done', replayId, result.record.fingerprint, 'codex/manual-review');
+    assert.equal(done.status, 'done');
+    assert.equal(fs.existsSync(file), false);
+    const cleaned = JSON.parse(fs.readFileSync(manifestPath));
+    assert.equal(cleaned.records.length, 0);
+    assert.equal(cleaned.maps.length, 1);
+    assert.equal(cleaned.replays[0].retiredFingerprints.includes(result.record.fingerprint), true);
+    fs.writeFileSync(file, content);
+    assert.equal((await registerLocalFile(root, replayId, name)).kind, 'deduplicated');
+    assert.equal(JSON.parse(fs.readFileSync(manifestPath)).records.length, 0);
+});
+
+test('local registration blocks unsupported identity, map, content, and path evidence', async t => {
+    const { root, cache } = workspace(t);
+    const directory = path.join(root, 'replay_logs');
+    fs.mkdirSync(directory);
+    const name = `${replayId}.jsonl`;
+    const file = path.join(directory, name);
+    fs.writeFileSync(file, `${entry(1)}\n`);
+    await assert.rejects(registerLocalFile(root, replayId, name), /No validated active map/);
+    const source = path.join(cache, 'map_0');
+    fs.writeFileSync(source, cacheFrame({ 1: mapEntry() }));
+    await importCacheFile(root, source);
+    await assert.rejects(registerLocalFile(root, 'aaaaaaaaaaaaaaaaaaaaaaaa', name), /filename does not match/);
+    fs.writeFileSync(file, `${JSON.stringify({ ...JSON.parse(entry(1)), flags: [] })}\n`);
+    await assert.rejects(registerLocalFile(root, replayId, name), /flags do not match/);
+    fs.writeFileSync(file, '{broken\n');
+    await assert.rejects(registerLocalFile(root, replayId, name), /Invalid JSONL line/);
+    fs.writeFileSync(file, entry(1));
+    await assert.rejects(registerLocalFile(root, replayId, name), /end with a newline/);
+    const outside = path.join(root, 'outside.jsonl');
+    fs.writeFileSync(outside, `${entry(1)}\n`);
+    fs.unlinkSync(file);
+    fs.symlinkSync(outside, file);
+    await assert.rejects(registerLocalFile(root, replayId, name), /Unsafe local log file/);
+    await assert.rejects(registerLocalFile(root, replayId, '../outside.jsonl'), /Unsafe managed output filename/);
+    assert.equal(JSON.parse(fs.readFileSync(path.join(directory, 'manifest.json'))).records.length, 0);
+    assert.equal(fs.readFileSync(outside, 'utf8'), `${entry(1)}\n`);
+});
+
+test('pending reviews survive restarts; all claimants must examine and complete before done cleanup', async t => {
     const { root, cache } = workspace(t);
     const source = path.join(cache, 'response_0');
     fs.writeFileSync(source, cacheFrame({ 1: mappedFirst() }));
@@ -227,7 +441,7 @@ test('waiting reviews survive restarts; all claimants must examine and complete 
     await updateReview(root, 'complete', replayId, fingerprint, 'codex/task-a');
     assert.equal(fs.existsSync(output), true);
     const persisted = JSON.parse(fs.readFileSync(path.join(root, 'replay_logs', 'manifest.json'), 'utf8'));
-    assert.equal(persisted.records[0].status, 'waiting');
+    assert.equal(persisted.records[0].status, 'claim');
     assert.equal(persisted.records[0].reviews['codex/task-a'].completedAt !== null, true);
     assert.equal(persisted.records[0].reviews['codex/task-b'].completedAt, null);
     await updateReview(root, 'examined', replayId, fingerprint, 'codex/task-b');
@@ -329,7 +543,7 @@ test('an interrupted pending import resumes from the cached response', async t =
     fs.unlinkSync(output);
     assert.equal((await importCacheFile(root, source)).kind, 'deduplicated');
     assert.equal(fs.readFileSync(output, 'utf8'), `${entry(1)}\n`);
-    assert.equal(JSON.parse(fs.readFileSync(manifestPath, 'utf8')).records[0].status, 'waiting');
+    assert.equal(JSON.parse(fs.readFileSync(manifestPath, 'utf8')).records[0].status, 'claim');
 });
 
 test('path traversal and changed managed content block deletion', async t => {
