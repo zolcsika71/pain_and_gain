@@ -23,7 +23,7 @@ const { runTick } = await import('../../src/loop.js');
 const { Creep } = await import('game/prototypes');
 const { ScoreFlag } = await import('arena/season_4/pain_and_gain/basic');
 
-test('runTick logs each tick before unchanged movement and compatible tactics', t => {
+test('runTick chooses combat movement or first-flag fallback before compatible tactics', t => {
     const calls = [];
     const snapshots = [];
     const actionCountsAtLog = [];
@@ -50,10 +50,11 @@ test('runTick logs each tick before unchanged movement and compatible tactics', 
 
     const healer = creep('healer', 0, 0, true, 100, ['heal', 'ranged_attack']);
     const damagedAlly = creep('ally', 1, 0, true, 50, ['attack']);
-    const enemy = creep('enemy', 1, 1, false, 100, ['attack']);
+    const scout = creep('scout', 0, 2, true, 100, ['move']);
+    const enemy = creep('enemy', 3, 0, false, 100, ['attack']);
     globalThis.__painAndGainArenaObjects = new Map([
         [ScoreFlag, [firstFlag, secondFlag]],
-        [Creep, [healer, damagedAlly, enemy]],
+        [Creep, [healer, damagedAlly, scout, enemy]],
     ]);
     globalThis.__painAndGainTick = 49;
 
@@ -62,36 +63,43 @@ test('runTick logs each tick before unchanged movement and compatible tactics', 
         globalThis.__painAndGainTick = 50;
         damagedAlly.hits = 60;
         enemy.hits = 80;
+        enemy.x = 2;
         runTick();
     } finally {
         delete globalThis.__painAndGainArenaObjects;
         delete globalThis.__painAndGainTick;
     }
 
-    const expectedActions = [
-        ['healer', 'moveTo', firstFlag],
-        ['ally', 'moveTo', firstFlag],
+    assert.deepEqual(calls, [
+        ['ally', 'moveTo', enemy],
+        ['scout', 'moveTo', firstFlag],
+        ['healer', 'heal', damagedAlly],
+        ['healer', 'rangedAttack', enemy],
+        ['scout', 'moveTo', firstFlag],
         ['healer', 'heal', damagedAlly],
         ['healer', 'rangedAttack', enemy],
         ['ally', 'attack', enemy],
-    ];
-    assert.deepEqual(calls, [...expectedActions, ...expectedActions]);
+    ]);
     assert.equal(logger.mock.callCount(), 3);
     assert.ok(logger.mock.calls.every(call => call.arguments.length === 1));
-    assert.deepEqual(actionCountsAtLog, [0, 0, 5]);
-    assert.equal(snapshots[0].type, 'map-state');
-    assert.equal(snapshots[0].map.terrain.rows.length, 100);
-    assert.equal(snapshots[0].map.terrain.rows[0].length, 100);
-    assert.equal(snapshots[0].map.objects.length, 2);
-    assert.ok(snapshots[0].map.objects.every(object => object.type !== 'Creep'));
-    snapshots.shift();
+    assert.deepEqual(actionCountsAtLog, [0, 0, 4]);
+    assert.deepEqual(snapshots.map(state => state.type), ['map-state', 'game-state', 'game-state']);
+    const map = snapshots.find(state => state.type === 'map-state');
+    assert.equal(map.map.terrain.rows.length, 100);
+    assert.equal(map.map.terrain.rows[0].length, 100);
+    assert.equal(map.map.objects.length, 2);
+    assert.deepEqual(map.map.objects.map(object => [object.type, object.id, object.effectType, object.scorePerTick]), [
+        ['ScoreFlag', 'first', 'heal', 4], ['ScoreFlag', 'second', 'attack', 3],
+    ]);
+    assert.ok(map.map.objects.every(object => !['healer', 'ally', 'scout', 'enemy'].includes(object.id)));
+    snapshots.splice(snapshots.indexOf(map), 1);
     assert.deepEqual(snapshots.map(state => state.tick), [49, 50]);
     assert.ok(snapshots.every(state => state.phase === 'before-actions'));
     assert.ok(snapshots.every(state => state.selectedFlagId === firstFlag.id));
     assert.deepEqual(snapshots[0].creeps.map(unit => [unit.id, unit.hits]), [
-        ['healer', 100], ['ally', 50], ['enemy', 100],
+        ['healer', 100], ['ally', 50], ['scout', 100], ['enemy', 100],
     ]);
     assert.deepEqual(snapshots[1].creeps.map(unit => [unit.id, unit.hits]), [
-        ['healer', 100], ['ally', 60], ['enemy', 80],
+        ['healer', 100], ['ally', 60], ['scout', 100], ['enemy', 80],
     ]);
 });

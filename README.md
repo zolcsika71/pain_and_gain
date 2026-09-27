@@ -1,6 +1,6 @@
 # Pain and Gain
 
-Screeps Arena code for the Pain and Gain arena. Every owned creep moves toward the first ScoreFlag returned by the game API and uses available attacks or healing against in-range targets.
+Screeps Arena code for the Pain and Gain arena. Armed creeps approach nearby enemies to reach weapon range; other movement falls back to the first ScoreFlag returned by the game API. Creeps use available attacks or healing against targets in range at the start of the tick.
 
 ## Layout
 
@@ -9,7 +9,7 @@ Screeps Arena code for the Pain and Gain arena. Every owned creep moves toward t
 - `src/arena/observe.js` reads flags, owned creeps, enemies, and damaged allies from the game API.
 - `src/strategy/objectives.js` selects the first flag.
 - `src/arena/execute.js` issues movement and tactical actions for each owned creep.
-- `src/tactics/` checks functioning body parts, chooses deterministic in-range targets, and selects compatible healing and combat actions.
+- `src/tactics/` checks functioning body parts, chooses deterministic targets, selects movement, and selects compatible healing and combat actions.
 - `src/debug/game-state.js` writes one JSON game-state snapshot per tick and one map snapshot per match before actions.
 - `tests/unit/` contains local decision and action regression tests.
 - `docs/architecture/`, `docs/decisions/`, and `docs/diagrams/` hold architecture notes, ADRs, and PlantUML diagrams.
@@ -24,6 +24,8 @@ In the Screeps Arena client, set this arena's code directory to the project's `s
 
 Game rules are in `docs/pain_and_gain_rules.md`. The API and squad references are in `docs/architecture/`; code examples are in `docs/examples/`.
 
+An armed creep considers the nearest living enemy within five tiles, breaking equal-distance ties by ID. It approaches until that enemy is within range 1 for ATTACK or range 3 for RANGED_ATTACK, then holds position. A creep with both functioning weapon types closes to range 1. Without a nearby enemy or functioning weapon, it moves toward the first ScoreFlag. Each creep receives at most one movement command per tick. Attack and healing eligibility still uses the observed positions before movement.
+
 ## Per-tick console output
 
 Every tick emits one compact JSON line with `type: "game-state"` and the Arena tick number. It includes the selected flag ID, all observed creeps (ID, ownership, position, health, fatigue, and functioning body-part counts), and flags (ID, position, ownership, effect, and score per tick). Flag ownership is `me`, `enemy`, or `neutral`. Flag scoring rates are not accumulated match scores.
@@ -33,6 +35,12 @@ Snapshots are logged before movement and combat commands. Compare consecutive ti
 On the first successful tick, the logger also emits one `map-state` JSON entry with its capture tick before the game-state entry. It samples the documented 100×100 terrain grid and all objects returned by `getObjects()` except creeps, including their available serializable data and public flag fields. This is a starting-map snapshot, not a later ownership history; per-tick flag ownership remains in `game-state`. A terminal tick is not a reliable capture point because matches can end early. A failed map read is reported to the console and retried on at most two subsequent ticks without stopping game actions.
 
 ## Verification checkpoint
+
+The local combat-positioning candidate is reviewed in [combat-positioning validation](docs/architecture/combat-positioning-validation.md), including same-snapshot comparisons on two explicitly map-linked replays. Their movement is consistent with the candidate, but exact code provenance and a new live-match check remain outstanding. Snapshot comparisons do not establish improved match outcomes.
+
+Replay `6ab963a6fa7e227bfcc9abf8` adds four map-linked chunks covering observed ticks 1–400. Across all four, the controlled army stays at least 35 tiles from an enemy, so the candidate selects the same first-flag objective as the committed baseline for every owned creep snapshot. This confirms no combat-positioning decision in the available range; the live movement gate and complete-match coverage remain unverified. The [validation note](docs/architecture/combat-positioning-validation.md#additional-replay-check-6ab963a6fa7e227bfcc9abf8) records the four filenames, linked map, limits, and completed managed cleanup.
+
+The two remaining imported replays, `6ab96679fa7e228fc9c9acd4` (observed ticks 1–58) and `6ab9624dfa7e224005c9ab9e` (1–137), do show combat-range approaches and holds. In the latter, owned ranged creeps move away from the first flag toward enemies at range 4–5 and then stay within weapon range. This is strong candidate-like behavior, but the snapshots do not establish which source revision Arena loaded or cover the entire console; the movement commit gate remains inconclusive. The [validation note](docs/architecture/combat-positioning-validation.md#remaining-imported-combat-replays) preserves the map links, positions, distances, and limits.
 
 Four map-linked chunks from replays `6ab867aee03513115f91edc0` and `6ab9398a22f1123ef118f173` were analyzed in the [replay review](docs/architecture/replay-review-2026-09-27.md), with proposed improvements recorded in [ADR 0003](docs/decisions/0003-replay-informed-strategy-proposals.md). Both review tasks completed, so their managed JSONL and manifest records were cleaned up; the maps and retired fingerprints remain. This review completion does not satisfy the separate live movement gate.
 

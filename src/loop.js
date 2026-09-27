@@ -1,5 +1,5 @@
 import { observeArena, observeMap } from './arena/observe.js';
-import { moveCreepsToFlag, executeTactics } from './arena/execute.js';
+import { moveCreeps, executeTactics } from './arena/execute.js';
 import { selectFlag } from './strategy/objectives.js';
 import { logGameState, logMapOnce } from './debug/game-state.js';
 
@@ -9,6 +9,6 @@ export function runTick() {
     const flag = selectFlag(flags);
     logMapOnce(state.tick, observeMap);
     logGameState(state, flag);
-    moveCreepsToFlag(myCreeps, flag);
+    moveCreeps(myCreeps, enemies, flag);
     executeTactics(myCreeps, enemies, damagedFriends);
 }

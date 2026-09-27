@@ -2,7 +2,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "check": "node --check src/main.mjs && node --check src/loop.js && node --check src/arena/observe.js && node --check src/arena/execute.js && node --check src/strategy/objectives.js && node --check src/tactics/body.js && node --check src/tactics/targets.js && node --check src/tactics/healing.js && node --check src/tactics/combat.js && node --check src/debug/game-state.js && node --check tools/replay-logs.js",
+    "check": "node --check src/main.mjs && node --check src/loop.js && node --check src/arena/observe.js && node --check src/arena/execute.js && node --check src/strategy/objectives.js && node --check src/tactics/body.js && node --check src/tactics/targets.js && node --check src/tactics/healing.js && node --check src/tactics/combat.js && node --check src/tactics/movement.js && node --check src/debug/game-state.js && node --check tools/replay-logs.js",
     "test": "node --test tests/unit/*.test.js"
   }
 }

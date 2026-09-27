@@ -7,6 +7,7 @@ component "src/arena/observe.js" as Observe
 component "src/strategy/objectives.js" as Objectives
 component "src/debug/game-state.js" as Debug
 component "src/arena/execute.js" as Execute
+component "src/tactics/movement.js" as Movement
 component "src/tactics/healing.js" as Healing
 component "src/tactics/combat.js" as Combat
 component "src/tactics/body.js\nsrc/tactics/targets.js" as Eligibility
@@ -20,8 +21,10 @@ Loop --> Observe : sample starting map once
 Observe --> API : getObjects() / getTerrainAt()
 Loop --> Debug : log map once, then tick state\nbefore actions
 Debug --> API : console.log(JSON snapshot)
-Loop --> Execute : move owned creeps
-Execute --> API : creep.moveTo(flag)
+Loop --> Execute : choose and issue movement
+Execute --> Movement : nearest local enemy or first flag
+Movement --> Eligibility : functioning weapons and range
+Execute --> API : at most one creep.moveTo(target)
 Loop --> Execute : execute tactics after movement
 Execute --> Healing : choose available healing
 Execute --> Combat : choose compatible attacks

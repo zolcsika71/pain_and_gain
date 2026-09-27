@@ -1,9 +1,11 @@
 import { selectHealingAction } from '../tactics/healing.js';
 import { selectCombatActions } from '../tactics/combat.js';
+import { selectMovementTarget } from '../tactics/movement.js';
 
-export function moveCreepsToFlag(myCreeps, flag) {
+export function moveCreeps(myCreeps, enemies, flag) {
     for (const creep of myCreeps) {
-        creep.moveTo(flag);
+        const target = selectMovementTarget(creep, enemies, flag);
+        if (target) creep.moveTo(target);
     }
 }
 
