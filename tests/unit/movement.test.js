@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { moveCreeps } from '../../src/arena/execute.js';
-import { selectMovementTarget } from '../../src/tactics/movement.js';
+import { selectMovementDecision, selectMovementTarget } from '../../src/tactics/movement.js';
 
 function creep(id, x, parts = [], options = {}) {
     const moves = [];
@@ -87,4 +87,129 @@ test('each creep receives at most one movement command', () => {
     assert.deepEqual(approaching.moves, [enemy]);
     assert.deepEqual(holding.moves, []);
     assert.deepEqual(fallback.moves, [flag]);
+});
+
+test('an acquired target survives one range-six tick, then releases to the first flag', () => {
+    const flag = { id: 'first' };
+    const actor = creep('actor', 0, [['ranged_attack', 10]]);
+    const enemy = creep('enemy', 5, [], { my: false });
+    let decision = selectMovementDecision(actor, [enemy], flag);
+    assert.equal(decision.target, enemy);
+    assert.deepEqual(decision.engagement, { id: 'enemy', outsideTicks: 0 });
+
+    enemy.x = 6;
+    decision = selectMovementDecision(actor, [enemy], flag, decision.engagement);
+    assert.equal(selectMovementTarget(actor, [enemy], flag), flag); // stateless baseline
+    assert.equal(decision.target, enemy);
+    assert.deepEqual(decision.engagement, { id: 'enemy', outsideTicks: 1 });
+
+    decision = selectMovementDecision(actor, [enemy], flag, decision.engagement);
+    assert.equal(decision.target, flag);
+    assert.equal(decision.engagement, null);
+    enemy.x = 5;
+    decision = selectMovementDecision(actor, [enemy], flag, decision.engagement);
+    assert.equal(decision.target, enemy);
+    assert.deepEqual(decision.engagement, { id: 'enemy', outsideTicks: 0 });
+});
+
+test('retention holds weapon range and resets its grace after reentry', () => {
+    const actor = creep('actor', 0, [['ranged_attack', 10]]);
+    const enemy = creep('enemy', 5, [], { my: false });
+    let decision = selectMovementDecision(actor, [enemy], null);
+    enemy.x = 6;
+    decision = selectMovementDecision(actor, [enemy], null, decision.engagement);
+    enemy.x = 3;
+    decision = selectMovementDecision(actor, [enemy], null, decision.engagement);
+    assert.equal(decision.target, null);
+    assert.deepEqual(decision.engagement, { id: 'enemy', outsideTicks: 0 });
+    enemy.x = 6;
+    decision = selectMovementDecision(actor, [enemy], null, decision.engagement);
+    assert.equal(decision.target, enemy);
+    assert.equal(decision.engagement.outsideTicks, 1);
+});
+
+test('nearest local target wins; invalid targets release and reacquire deterministically', () => {
+    const flag = { id: 'first' };
+    const actor = creep('actor', 0, [['ranged_attack', 10]]);
+    const old = creep('old', 5, [], { my: false });
+    const fartherId = creep('z', 4, [], { my: false });
+    const nearerId = creep('a', 4, [], { my: false });
+    let decision = selectMovementDecision(actor, [old], flag);
+    decision = selectMovementDecision(actor, [fartherId, old, nearerId], flag, decision.engagement);
+    assert.equal(decision.target, nearerId); // normal local targeting remains unchanged
+    old.x = 7;
+    decision = selectMovementDecision(actor, [fartherId, old, nearerId], flag, decision.engagement);
+    assert.equal(decision.target, nearerId);
+    nearerId.hits = 0;
+    decision = selectMovementDecision(actor, [fartherId, nearerId], flag, decision.engagement);
+    assert.equal(decision.target, fartherId);
+    decision = selectMovementDecision(actor, [], flag, decision.engagement);
+    assert.equal(decision.target, flag);
+    assert.equal(decision.engagement, null);
+    actor.body[0].hits = 0;
+    decision = selectMovementDecision(actor, [fartherId], flag, { id: 'z', outsideTicks: 0 });
+    assert.equal(decision.target, flag);
+    assert.equal(decision.engagement, null);
+});
+
+test('a different local enemy supersedes the one-tick boundary grace', () => {
+    const actor = creep('actor', 0, [['ranged_attack', 10]]);
+    const old = creep('old', 5, [], { my: false });
+    const nearer = creep('nearer', 4, [], { my: false });
+    let decision = selectMovementDecision(actor, [old], null);
+    old.x = 6;
+    decision = selectMovementDecision(actor, [old, nearer], null, decision.engagement);
+    assert.equal(decision.target, nearer);
+    assert.deepEqual(decision.engagement, { id: 'nearer', outsideTicks: 0 });
+});
+
+test('per-creep retention does not issue competing flag and combat moves', () => {
+    const flag = { id: 'first' };
+    const enemy = creep('enemy', 5, [], { my: false });
+    const ranged = creep('ranged', 0, [['ranged_attack', 10]]);
+    const scout = creep('scout', 0);
+    const engagements = new Map();
+    moveCreeps([ranged, scout], [enemy], flag, engagements);
+    enemy.x = 6;
+    moveCreeps([ranged, scout], [enemy], flag, engagements);
+    moveCreeps([ranged, scout], [enemy], flag, engagements);
+    assert.deepEqual(ranged.moves, [enemy, enemy, flag]);
+    assert.deepEqual(scout.moves, [flag, flag, flag]);
+    assert.equal(engagements.has('ranged'), false);
+});
+
+test('a retained target at range seven releases to the first flag', () => {
+    const flag = { id: 'first' };
+    const enemy = creep('enemy', 5, [], { my: false });
+    const ranged = creep('ranged', 0, [['ranged_attack', 10]]);
+    const engagements = new Map();
+
+    moveCreeps([ranged], [enemy], flag, engagements);
+    assert.deepEqual(engagements.get('ranged'), { id: 'enemy', outsideTicks: 0 });
+    enemy.x = 6;
+    moveCreeps([ranged], [enemy], flag, engagements);
+    assert.deepEqual(engagements.get('ranged'), { id: 'enemy', outsideTicks: 1 });
+    enemy.x = 7;
+    moveCreeps([ranged], [enemy], flag, engagements);
+
+    assert.deepEqual(ranged.moves, [enemy, enemy, flag]);
+    assert.equal(engagements.has('ranged'), false);
+});
+
+test('a dead retained target releases to the first flag', () => {
+    const flag = { id: 'first' };
+    const enemy = creep('enemy', 5, [], { my: false });
+    const ranged = creep('ranged', 0, [['ranged_attack', 10]]);
+    const engagements = new Map();
+
+    moveCreeps([ranged], [enemy], flag, engagements);
+    assert.deepEqual(engagements.get('ranged'), { id: 'enemy', outsideTicks: 0 });
+    enemy.x = 6;
+    moveCreeps([ranged], [enemy], flag, engagements);
+    assert.deepEqual(engagements.get('ranged'), { id: 'enemy', outsideTicks: 1 });
+    enemy.hits = 0;
+    moveCreeps([ranged], [enemy], flag, engagements);
+
+    assert.deepEqual(ranged.moves, [enemy, enemy, flag]);
+    assert.equal(engagements.has('ranged'), false);
 });

@@ -1,10 +1,15 @@
 import { selectHealingAction } from '../tactics/healing.js';
 import { selectCombatActions } from '../tactics/combat.js';
-import { selectMovementTarget } from '../tactics/movement.js';
+import { selectMovementDecision } from '../tactics/movement.js';
 
-export function moveCreeps(myCreeps, enemies, flag) {
+export function moveCreeps(myCreeps, enemies, flag, engagements = new Map()) {
+    const ownedIds = new Set(myCreeps.map(creep => creep.id));
+    for (const id of engagements.keys()) if (!ownedIds.has(id)) engagements.delete(id);
     for (const creep of myCreeps) {
-        const target = selectMovementTarget(creep, enemies, flag);
+        const decision = selectMovementDecision(creep, enemies, flag, engagements.get(creep.id));
+        if (decision.engagement) engagements.set(creep.id, decision.engagement);
+        else engagements.delete(creep.id);
+        const target = decision.target;
         if (target) creep.moveTo(target);
     }
 }

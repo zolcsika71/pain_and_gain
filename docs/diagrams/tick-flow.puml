@@ -22,7 +22,7 @@ Observe --> API : getObjects() / getTerrainAt()
 Loop --> Debug : log map once, then tick state\nbefore actions
 Debug --> API : console.log(JSON snapshot)
 Loop --> Execute : choose and issue movement
-Execute --> Movement : nearest local enemy or first flag
+Execute --> Movement : nearest local enemy, one-tick boundary grace,\nthen first flag fallback
 Movement --> Eligibility : functioning weapons and range
 Execute --> API : at most one creep.moveTo(target)
 Loop --> Execute : execute tactics after movement

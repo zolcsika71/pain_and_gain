@@ -103,3 +103,34 @@ test('runTick chooses combat movement or first-flag fallback before compatible t
         ['healer', 100], ['ally', 60], ['scout', 100], ['enemy', 80],
     ]);
 });
+
+test('runTick retains a local combat objective for one outside tick and resets it on a new match', t => {
+    t.mock.method(console, 'log', () => {});
+    const moves = [];
+    const flag = Object.assign(new ScoreFlag(), { id: 'first', x: 0, y: 5, effectType: 'heal', scorePerTick: 4 });
+    const actor = Object.assign(new Creep(), {
+        id: 'ranged', x: 0, y: 0, my: true, hits: 100, hitsMax: 100, fatigue: 0,
+        body: [{ type: 'ranged_attack', hits: 10 }],
+        getRangeTo(target) { return Math.max(Math.abs(this.x - target.x), Math.abs(this.y - target.y)); },
+        moveTo(target) { moves.push(target); },
+        rangedAttack() {},
+    });
+    const enemy = Object.assign(new Creep(), {
+        id: 'enemy', x: 5, y: 0, my: false, hits: 100, hitsMax: 100, fatigue: 0,
+        body: [],
+    });
+    globalThis.__painAndGainArenaObjects = new Map([[ScoreFlag, [flag]], [Creep, [actor, enemy]]]);
+    try {
+        globalThis.__painAndGainTick = 1;
+        runTick();
+        enemy.x = 6;
+        globalThis.__painAndGainTick = 2;
+        runTick();
+        globalThis.__painAndGainTick = 1; // A new match must not retain the old target.
+        runTick();
+    } finally {
+        delete globalThis.__painAndGainArenaObjects;
+        delete globalThis.__painAndGainTick;
+    }
+    assert.deepEqual(moves, [enemy, enemy, flag]);
+});
