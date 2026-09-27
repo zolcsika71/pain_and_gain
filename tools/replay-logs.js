@@ -26,6 +26,18 @@ const mapPayload = map => {
 };
 const mapChecksum = map => sha256(mapContent(mapPayload(map)));
 const savedMapContent = map => mapContent({ ...mapPayload(map), checksum: mapChecksum(map) });
+const validBuildId = value => typeof value === 'string' && /^[a-f0-9]{64}$/.test(value);
+
+function entryBuildId(entry, source) {
+    if (!Object.hasOwn(entry, 'buildId')) return null;
+    if (!validBuildId(entry.buildId)) throw new Error(`Invalid build ID in ${source}`);
+    return entry.buildId;
+}
+
+function consistentBuildId(current, next, source) {
+    if (current !== undefined && current !== next) throw new Error(`Conflicting or missing build IDs in ${source}`);
+    return next;
+}
 
 function validMap(map) {
     const terrain = map?.terrain;
@@ -98,6 +110,7 @@ export function parseCacheEntry(bytes) {
     const gameState = [];
     const otherEntries = [];
     let map = null;
+    let buildId;
     for (const [entryKey, raw] of Object.entries(response)) {
         if (typeof raw !== 'string') return issue('malformed', `Non-string console entry ${entryKey} for ${key}`);
         // Arena joins multiple console.log calls from one tick into one newline-delimited value.
@@ -123,6 +136,8 @@ export function parseCacheEntry(bytes) {
                 if (map && canonical(map) !== canonical(candidate)) {
                     return issue('malformed', `Conflicting map-state entries for ${key}`);
                 }
+                try { buildId = consistentBuildId(buildId, entryBuildId(parsed, sourceKey), key); }
+                catch (error) { return issue('malformed', error.message); }
                 map = candidate;
                 continue;
             }
@@ -134,6 +149,8 @@ export function parseCacheEntry(bytes) {
                 !Array.isArray(parsed.creeps) || !Array.isArray(parsed.flags)) {
                 return issue('malformed', `Invalid game-state entry ${sourceKey} for ${key}`);
             }
+            try { buildId = consistentBuildId(buildId, entryBuildId(parsed, sourceKey), key); }
+            catch (error) { return issue('malformed', error.message); }
             gameState.push(line);
         }
     }
@@ -148,7 +165,7 @@ export function parseCacheEntry(bytes) {
     }
     return {
         kind: 'log', replayId: match[1], requestedTick: Number(match[2]), key,
-        fingerprint: sha256(body), gameState, otherEntries, map,
+        fingerprint: sha256(body), gameState, otherEntries, map, buildId: buildId ?? null,
         coverage: { count: ticks.length, firstTick, lastTick, duplicates: [...counts].filter(([, n]) => n > 1).map(([tick]) => tick), gaps },
     };
 }
@@ -331,6 +348,16 @@ function associateReplay(manifest, replayId, registration) {
     return association;
 }
 
+function associateBuildId(association, buildId) {
+    if (buildId === null) return false; // Legacy response: provenance remains unknown.
+    if (association.buildId && association.buildId !== buildId) {
+        throw new Error(`Conflicting build IDs for replay ${association.replayId}: ${association.buildId} versus ${buildId}`);
+    }
+    if (association.buildId) return false;
+    association.buildId = buildId;
+    return true;
+}
+
 async function withManifestLock(root, action) {
     const lock = path.join(outputDirectory(root), '.manifest.lock');
     const token = randomUUID();
@@ -454,6 +481,7 @@ export async function importCacheFile(root, sourceFile) {
         if (!active) return { kind: 'deferred', replayId: parsed.replayId,
             fingerprint: parsed.fingerprint, coverage: parsed.coverage,
             message: 'No validated active map for replay; no JSONL created' };
+        if (associateBuildId(active.association, parsed.buildId)) saveManifest(root, manifest);
         if (active.association.retiredFingerprints.includes(parsed.fingerprint)) {
             return { kind: 'deduplicated', replayId: parsed.replayId, fingerprint: parsed.fingerprint };
         }
@@ -482,6 +510,7 @@ export async function importCacheFile(root, sourceFile) {
             sourceKey: parsed.key, fingerprint: parsed.fingerprint, outputPath,
             outputFingerprint: sha256(content), mapId: active.registration.id,
             mapChecksum: active.registration.checksum, mapFile: active.registration.file,
+            buildId: parsed.buildId,
             importedAt: new Date().toISOString(), status: 'pending',
             coverage: parsed.coverage, otherEntries: parsed.otherEntries, reviews: {},
         };
@@ -519,6 +548,7 @@ export async function registerLocalFile(root, replayId, name) {
             .sort((a, b) => a.id.localeCompare(b.id));
         if (!expectedFlags.length) throw new Error('Associated map has no ScoreFlags');
         const ticks = [];
+        let buildId;
         for (const [index, line] of lines.entries()) {
             let entry;
             try { entry = JSON.parse(line); }
@@ -527,6 +557,7 @@ export async function registerLocalFile(root, replayId, name) {
                 !Number.isSafeInteger(entry.tick) || !Array.isArray(entry.creeps) || !Array.isArray(entry.flags)) {
                 throw new Error(`Invalid game-state line ${index + 1}`);
             }
+            buildId = consistentBuildId(buildId, entryBuildId(entry, `line ${index + 1}`), 'local JSONL');
             const flags = entry.flags.map(({ id, x, y, effectType, scorePerTick }) =>
                 ({ id, x, y, effectType, scorePerTick })).sort((a, b) => a.id.localeCompare(b.id));
             if (canonical(flags) !== canonical(expectedFlags)) {
@@ -535,6 +566,7 @@ export async function registerLocalFile(root, replayId, name) {
             ticks.push(entry.tick);
         }
         const fingerprint = sha256(`manual-jsonl:${replayId}\n${content}`);
+        if (associateBuildId(active.association, buildId ?? null)) saveManifest(root, manifest);
         if (active.association.retiredFingerprints.includes(fingerprint)) {
             return { kind: 'deduplicated', replayId, fingerprint };
         }
@@ -554,6 +586,7 @@ export async function registerLocalFile(root, replayId, name) {
             sourceKey: 'manual-jsonl', fingerprint, outputPath: name,
             outputFingerprint: sha256(bytes), mapId: active.registration.id,
             mapChecksum: active.registration.checksum, mapFile: active.registration.file,
+            buildId: buildId ?? null,
             importedAt: new Date().toISOString(), status: 'claim',
             coverage: { count: ticks.length, firstTick, lastTick,
                 duplicates: [...counts].filter(([, n]) => n > 1).map(([tick]) => tick), gaps },
@@ -696,7 +729,7 @@ async function main() {
         const seen = new Map();
         const poll = async () => {
             for (const result of await scanCache(root, cacheDir, seen)) {
-                if (result.record) console.log(JSON.stringify({ event: result.kind, replayId: result.record.replayId, fingerprint: result.record.fingerprint, outputPath: result.record.outputPath, mapId: result.record.mapId, mapFile: result.record.mapFile, status: result.record.status, coverage: result.record.coverage, otherEntries: result.record.otherEntries.length }));
+                if (result.record) console.log(JSON.stringify({ event: result.kind, replayId: result.record.replayId, fingerprint: result.record.fingerprint, outputPath: result.record.outputPath, mapId: result.record.mapId, mapFile: result.record.mapFile, buildId: result.record.buildId ?? null, status: result.record.status, coverage: result.record.coverage, otherEntries: result.record.otherEntries.length }));
                 else if (['mapped', 'deferred'].includes(result.kind)) console.log(JSON.stringify({ event: result.kind, replayId: result.replayId, mapId: result.mapId, mapFile: result.mapFile, coverage: result.coverage, message: result.message }));
                 else console.error(JSON.stringify({ event: result.kind, source: result.source, message: result.message }));
             }
@@ -708,7 +741,7 @@ async function main() {
         }
     } else if (command === 'list') {
         const manifest = await reconcileCleanup(root);
-        for (const record of manifest.records) console.log(JSON.stringify({ replayId: record.replayId, fingerprint: record.fingerprint, outputPath: record.outputPath, mapId: record.mapId, mapFile: record.mapFile, status: record.status, coverage: record.coverage, reviews: record.reviews, otherEntries: record.otherEntries.length }));
+        for (const record of manifest.records) console.log(JSON.stringify({ replayId: record.replayId, fingerprint: record.fingerprint, outputPath: record.outputPath, mapId: record.mapId, mapFile: record.mapFile, buildId: record.buildId ?? null, status: record.status, coverage: record.coverage, reviews: record.reviews, otherEntries: record.otherEntries.length }));
     } else if (command === 'migrate-status') {
         console.log(JSON.stringify({ migrated: await migrateReviewStatuses(root) }));
     } else if (command === 'register-local') {

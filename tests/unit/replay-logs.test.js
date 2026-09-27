@@ -23,6 +23,7 @@ const mapEntry = (terrain = 0) => JSON.stringify({
     },
 });
 const mappedFirst = () => `${mapEntry()}\n${entry(1)}`;
+const tagged = (raw, buildId) => JSON.stringify({ ...JSON.parse(raw), buildId });
 const payloadDigest = ({ checksum, ...payload }) => createHash('sha256').update(`${JSON.stringify(payload,
     (_, value) => value && typeof value === 'object' && !Array.isArray(value)
         ? Object.fromEntries(Object.entries(value).sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0)) : value)}\n`).digest('hex');
@@ -68,6 +69,59 @@ test('splits Arena console calls joined under the same tick without changing eit
     assert.deepEqual(result.coverage, { count: 2, firstTick: 1, lastTick: 2, duplicates: [], gaps: [] });
     const bad = parseCacheEntry(cacheFrame({ 1: `${mapEntry()}\n{"type":"game-state",broken` }));
     assert.equal(bad.kind, 'malformed');
+});
+
+test('preserves replay build identity across chunks and rejects conflicting or mixed IDs', async t => {
+    const { root, cache } = workspace(t);
+    const firstId = 'a'.repeat(64);
+    const otherId = 'b'.repeat(64);
+    const first = path.join(cache, 'first');
+    fs.writeFileSync(first, cacheFrame({ 1: tagged(mapEntry(), firstId) + '\n' + tagged(entry(1), firstId) }, { tick: 1 }));
+    const firstRecord = (await importCacheFile(root, first)).record;
+    assert.equal(firstRecord.buildId, firstId);
+    assert.equal(fs.readFileSync(path.join(root, 'replay_logs', firstRecord.outputPath), 'utf8'),
+        tagged(entry(1), firstId) + '\n');
+    const later = path.join(cache, 'later');
+    fs.writeFileSync(later, cacheFrame({ 2: tagged(entry(2), firstId) }, { tick: 2 }));
+    assert.equal((await importCacheFile(root, later)).record.buildId, firstId);
+    const conflict = path.join(cache, 'conflict');
+    fs.writeFileSync(conflict, cacheFrame({ 3: tagged(entry(3), otherId) }, { tick: 3 }));
+    await assert.rejects(importCacheFile(root, conflict), /Conflicting build IDs/);
+    const manifest = JSON.parse(fs.readFileSync(path.join(root, 'replay_logs', 'manifest.json')));
+    assert.equal(manifest.replays[0].buildId, firstId);
+    assert.equal(manifest.records.length, 2);
+    assert.equal(parseCacheEntry(cacheFrame({ 1: tagged(mapEntry(), firstId) + '\n' + entry(1) })).kind, 'malformed');
+    assert.equal(parseCacheEntry(cacheFrame({ 1: tagged(entry(1), 'invalid') })).kind, 'malformed');
+    assert.equal(parseCacheEntry(cacheFrame({ 1: tagged(entry(1), firstId), 2: tagged(entry(2), otherId) })).kind, 'malformed');
+});
+
+test('legacy chunks retain unknown provenance when a later tagged chunk identifies the replay', async t => {
+    const { root, cache } = workspace(t);
+    const first = path.join(cache, 'first');
+    fs.writeFileSync(first, cacheFrame({ 1: mappedFirst() }, { tick: 1 }));
+    const oldRecord = (await importCacheFile(root, first)).record;
+    assert.equal(oldRecord.buildId, null);
+    const later = path.join(cache, 'later');
+    const buildId = 'c'.repeat(64);
+    fs.writeFileSync(later, cacheFrame({ 2: tagged(entry(2), buildId) }, { tick: 2 }));
+    assert.equal((await importCacheFile(root, later)).record.buildId, buildId);
+    const manifest = JSON.parse(fs.readFileSync(path.join(root, 'replay_logs', 'manifest.json')));
+    assert.equal(manifest.replays[0].buildId, buildId);
+    assert.equal(manifest.records.find(record => record.fingerprint === oldRecord.fingerprint).buildId, null);
+});
+
+test('a tagged map-only response establishes the build ID for later chunks', async t => {
+    const { root, cache } = workspace(t);
+    const buildId = 'f'.repeat(64);
+    const mapSource = path.join(cache, 'map');
+    fs.writeFileSync(mapSource, cacheFrame({ 1: tagged(mapEntry(), buildId) }, { tick: 1 }));
+    assert.equal((await importCacheFile(root, mapSource)).kind, 'mapped');
+    const gameSource = path.join(cache, 'game');
+    fs.writeFileSync(gameSource, cacheFrame({ 2: tagged(entry(2), buildId) }, { tick: 2 }));
+    assert.equal((await importCacheFile(root, gameSource)).record.buildId, buildId);
+    const manifest = JSON.parse(fs.readFileSync(path.join(root, 'replay_logs', 'manifest.json')));
+    assert.equal(manifest.replays[0].buildId, buildId);
+    assert.equal(manifest.records.length, 1);
 });
 
 test('validates and registers unique maps, then links only explicitly associated replay logs', async t => {
@@ -397,6 +451,26 @@ test('registers a supplied JSONL only against its validated active replay map, t
     fs.writeFileSync(file, content);
     assert.equal((await registerLocalFile(root, replayId, name)).kind, 'deduplicated');
     assert.equal(JSON.parse(fs.readFileSync(manifestPath)).records.length, 0);
+});
+
+test('local registration records a tagged build and refuses mixed or conflicting identities', async t => {
+    const { root, cache } = workspace(t);
+    const source = path.join(cache, 'map_0');
+    fs.writeFileSync(source, cacheFrame({ 1: mapEntry() }));
+    await importCacheFile(root, source);
+    const dir = path.join(root, 'replay_logs');
+    const file = path.join(dir, replayId + '.jsonl');
+    const firstId = 'd'.repeat(64);
+    fs.writeFileSync(file, tagged(entry(1), firstId) + '\n' + entry(2) + '\n');
+    await assert.rejects(registerLocalFile(root, replayId, replayId + '.jsonl'), /Conflicting or missing build IDs/);
+    fs.writeFileSync(file, tagged(entry(1), firstId) + '\n');
+    assert.equal((await registerLocalFile(root, replayId, replayId + '.jsonl')).record.buildId, firstId);
+    const manifest = JSON.parse(fs.readFileSync(path.join(dir, 'manifest.json')));
+    assert.equal(manifest.replays[0].buildId, firstId);
+    const second = replayId + '-aaaaaaaaaaaa.jsonl';
+    fs.writeFileSync(path.join(dir, second), tagged(entry(2), 'e'.repeat(64)) + '\n');
+    await assert.rejects(registerLocalFile(root, replayId, second), /Conflicting build IDs/);
+    assert.equal(JSON.parse(fs.readFileSync(path.join(dir, 'manifest.json'))).records.length, 1);
 });
 
 test('local registration blocks unsupported identity, map, content, and path evidence', async t => {

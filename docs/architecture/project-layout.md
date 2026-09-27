@@ -16,11 +16,13 @@ The log is an observation before this tick's actions, not a report of their resu
 
 The bot does not maintain match state, pair units, form squads, retreat, or draw overlays. Those modules belong under the requested `src/` folders only when the corresponding behavior is introduced.
 
-Movement ranks targets by linear distance, not terrain route cost. `moveTo` performs navigation and can fail to make progress because of fatigue, missing MOVE parts, obstacles, or congestion. Mixed-weapon closing, healer separation, and approach/fallback switching at the five-tile boundary are tradeoffs of this policy. The [combat-positioning validation](combat-positioning-validation.md) records map-linked evidence and the outstanding live verification gate.
+Movement ranks targets by linear distance, not terrain route cost. `moveTo` performs navigation and can fail to make progress because of fatigue, missing MOVE parts, obstacles, or congestion. Mixed-weapon closing, healer separation, and approach/fallback switching at the five-tile boundary are tradeoffs of this policy. The [combat-positioning validation](combat-positioning-validation.md) records map-linked evidence, the live runtime check, and its remaining limits.
 
 Local Node.js tests import the pure selection and execution modules. Arena-specific imports stay in `observe.js`; `package.json` and Node.js test APIs are for local tooling only. Relative imports remain inside `src/`, because Arena uses the directory containing `main.mjs` as the code root.
 
 ## Local replay imports
+
+The local `tools/build-id.js` command generates and verifies `src/debug/build-id.js`. It hashes sorted project-relative paths and exact bytes of runtime `.js`/`.mjs` files under `src/` with NUL separators, excluding the generated file itself and `src/typings/`. The runtime logger emits this ID with pre-action map and game-state entries. The importer records tagged response IDs and a replay association independently of map identity; conflicting tags are rejected, while legacy untagged response provenance stays unknown. See the README for the pre-launch commands and precise hash rule.
 
 `tools/replay-logs.js` is a separate Node.js CLI outside the Arena code directory. It reads cached replay-log responses at startup and polls for changes while the user controls replay playback. Request metadata establishes replay identity; supported version-5 cache framing and gzip payloads yield the original console JSON strings. Arena may join multiple console calls from one tick with a newline; the importer separates and validates each before preserving game-state strings in JSONL. Distinct response contents receive separate captures under `replay_logs/`, with hash suffixes when the replay's canonical filename is occupied. A response's observed tick range does not establish full replay coverage.
 

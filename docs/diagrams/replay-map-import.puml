@@ -3,6 +3,7 @@ title Replay map registration and log import
 
 start
 :Read cached replay-log response;
+:Validate optional build IDs in map/game entries;
 if (Valid map-state in response?) then (yes)
   :Compute canonical payload checksum\n(exclude top-level checksum field);
   if (Identical registered map?) then (yes)
@@ -15,9 +16,11 @@ if (Valid map-state in response?) then (yes)
   :Associate validated map with this replay as active;
 endif
 if (Active, validated map for this replay?) then (yes)
+  :Reject a build ID conflicting with this replay;
+  :Associate tagged build ID separately from map ID;
   if (Game-state entries?) then (yes)
     :Create JSONL with original lines;
-    :Record map ID, checksum, file and waiting status;
+    :Record map ID, checksum, file,\nresponse build ID and claim status;
   else (no)
     :Keep map registration and association only;
   endif

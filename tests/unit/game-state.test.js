@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { logGameState, logMapOnce } from '../../src/debug/game-state.js';
+import { buildId } from '../../src/debug/build-id.js';
 
 test('game state is one JSON line with health, active parts and all flag ownership states', t => {
     const logger = t.mock.method(console, 'log', () => {});
@@ -24,6 +25,7 @@ test('game state is one JSON line with health, active parts and all flag ownersh
     assert.equal(args[0].includes('\n'), false);
     const state = JSON.parse(args[0]);
     assert.equal(state.type, 'game-state');
+    assert.equal(state.buildId, buildId);
     assert.equal(state.tick, 12);
     assert.equal(state.phase, 'before-actions');
     assert.equal(state.selectedFlagId, 'flag-0');
@@ -41,7 +43,7 @@ test('an empty observation still emits a tick snapshot', t => {
     logGameState({ tick: 1, creeps: [], flags: [] }, undefined);
     assert.equal(logger.mock.callCount(), 1);
     assert.deepEqual(JSON.parse(logger.mock.calls[0].arguments[0]), {
-        type: 'game-state', tick: 1, phase: 'before-actions',
+        type: 'game-state', tick: 1, phase: 'before-actions', buildId,
         selectedFlagId: null, creeps: [], flags: [],
     });
 });
@@ -59,7 +61,7 @@ test('map snapshot is logged once per match before actions and retries a failed 
     assert.equal(errors.mock.callCount(), 1);
     assert.equal(logger.mock.callCount(), 2);
     assert.deepEqual(JSON.parse(logger.mock.calls[0].arguments[0]), {
-        type: 'map-state', formatVersion: 1, tick: 99, phase: 'before-actions',
+        type: 'map-state', formatVersion: 1, tick: 99, phase: 'before-actions', buildId,
         map: { terrain: { width: 100, height: 100, rows: [] }, objects: [], read: 1 },
     });
 });

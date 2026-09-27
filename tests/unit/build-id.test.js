@@ -1,0 +1,32 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import test from 'node:test';
+import { generateBuildId, runtimeBuildId, verifyBuildId } from '../../tools/build-id.js';
+
+test('build identity is deterministic, excludes its artifact, and detects stale source', t => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'pain-gain-build-id-'));
+    t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+    fs.mkdirSync(path.join(root, 'src', 'debug'), { recursive: true });
+    fs.writeFileSync(path.join(root, 'src', 'main.mjs'), 'export const loop = () => {};\n');
+    fs.writeFileSync(path.join(root, 'src', 'debug', 'logger.js'), 'export const value = 1;\n');
+    assert.throws(() => verifyBuildId(root), /Missing/);
+    const first = generateBuildId(root);
+    assert.match(first, /^[a-f0-9]{64}$/);
+    assert.equal(runtimeBuildId(root), first);
+    assert.equal(verifyBuildId(root), first);
+    assert.equal(generateBuildId(root), first);
+    const artifact = path.join(root, 'src', 'debug', 'build-id.js');
+    fs.writeFileSync(artifact, fs.readFileSync(artifact, 'utf8').replace('Do not edit', 'Please edit'));
+    assert.equal(runtimeBuildId(root), first);
+    assert.throws(() => verifyBuildId(root), /Stale or modified/);
+    generateBuildId(root);
+    fs.writeFileSync(path.join(root, 'src', 'debug', 'logger.js'), 'export const value = 2;\n');
+    assert.notEqual(runtimeBuildId(root), first);
+    assert.throws(() => verifyBuildId(root), /Stale or modified/);
+    const second = generateBuildId(root);
+    assert.equal(verifyBuildId(root), second);
+    fs.writeFileSync(path.join(root, 'src', 'new.js'), 'export default 1;\n');
+    assert.notEqual(runtimeBuildId(root), second);
+});

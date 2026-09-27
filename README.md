@@ -18,7 +18,7 @@ Additional strategy, squad, state, and config modules can be added when they hav
 
 ## Development
 
-With Node.js available, run `npm run check` to parse the game modules and `npm test` to run the local tests. There are no package dependencies or build step. The `package.json` ES module setting applies to local Node.js tooling; Arena loads the source files directly.
+With Node.js available, run `npm run check` to verify the runtime build ID and parse the game modules, and `npm test` to run the local tests. There are no package dependencies or compilation step. The `package.json` ES module setting applies to local Node.js tooling; Arena loads the source files directly.
 
 In the Screeps Arena client, set this arena's code directory to the project's `src/` directory, which contains `main.mjs`. Keep all local imports within `src/`. The current project checks do not execute an Arena match, so confirm module loading and movement in the client after selecting the directory.
 
@@ -31,6 +31,8 @@ An armed creep considers the nearest living enemy within five tiles, breaking eq
 Every tick emits one compact JSON line with `type: "game-state"` and the Arena tick number. It includes the selected flag ID, all observed creeps (ID, ownership, position, health, fatigue, and functioning body-part counts), and flags (ID, position, ownership, effect, and score per tick). Flag ownership is `me`, `enemy`, or `neutral`. Flag scoring rates are not accumulated match scores.
 
 Snapshots are logged before movement and combat commands. Compare consecutive ticks by creep ID to inspect health changes; those changes alone do not establish which attack or heal caused them. Logging is enabled every tick without sampling. In the Arena console, use the current-tick filter to inspect one snapshot or disable it to see the tick history. Live log observations are recorded in the verification checkpoint below.
+
+New snapshots also include the generated `buildId` at the top level; a matching emitted ID and pre-launch check identify the logged runtime source bytes. Observing the selected code directory separately provides supplementary launch evidence.
 
 On the first successful tick, the logger also emits one `map-state` JSON entry with its capture tick before the game-state entry. It samples the documented 100×100 terrain grid and all objects returned by `getObjects()` except creeps, including their available serializable data and public flag fields. This is a starting-map snapshot, not a later ownership history; per-tick flag ownership remains in `game-state`. A terminal tick is not a reliable capture point because matches can end early. A failed map read is reported to the console and retried on at most two subsequent ticks without stopping game actions.
 
@@ -53,6 +55,12 @@ In replay `6ab8419fe03513801491e8c6` against あぶらむし v3, the replay repo
 In replay `6ab84434e0351372bc91e8fe` against AlbaVika v1, the replay UI reported defeat at tick 72. With “Show current tick only” off, the console showed pre-action `game-state` entries for ticks 1–71 and no separate runtime-error entries. Owned `pg_player1_melee_1` rose from 990/1600 hits at tick 52 to 1134/1600 at tick 53. Owned `pg_player1_ranged_2` rose from 177/1200 at tick 64 to 249/1200 at tick 65 and 321/1200 at tick 66. At tick 66, owned `pg_player1_healer_3` was at (48,48), one tile from `ranged_2` at (47,48), with four functioning HEAL parts; the healer itself was damaged (936/1200), so self-healing was also possible. These health increases are observed recovery and consistent with healing, but the snapshots do not record issued heal actions, and the console view did not expose the complete tick 64–65 healer records. A specific heal action and its target therefore remain unconfirmed. The selected code-directory path was not independently visible in the replay view.
 
 ## Local replay-log importer
+
+Before manually launching a match, run `npm run build-id:generate` after the last runtime-source edit, then `npm run build-id:check` immediately before launch. The latter only verifies: it fails if the generated module is missing, edited, or stale and never regenerates it. Confirm Arena selects this project's `src/` directory and leave its runtime files unchanged during the match. These commands do **not** control or attest to a manual Arena launch. The generated `src/debug/build-id.js` is imported by the logger, so both the first successful `map-state` and each `game-state` record emit the running build ID.
+
+The build ID is lowercase SHA-256 over all regular `.js` and `.mjs` files recursively under `src/`, sorted by project-relative POSIX path. For each file, hash its UTF-8 path, one NUL byte, its exact file bytes, and one NUL byte. `src/debug/build-id.js` itself is excluded to avoid circular hashing; `src/typings/` and non-JavaScript files are excluded, and source symlinks are rejected. The ID describes these source bytes, not Arena configuration or a match result. It is distinct from the map checksum and does not alter map deduplication.
+
+The importer preserves each original tagged JSONL line, stores its verified `buildId` on the response record, and associates it with the replay in `manifest.json`. Later tagged responses must agree; conflicting or internally mixed IDs are rejected and reported. Untagged legacy records remain usable with unknown provenance (`buildId` absent or null), even if a later tagged chunk identifies the replay. Never assign the current local ID to an older log. The manifest ID identifies only the tagged responses, not untagged historical chunks.
 
 Run `node tools/replay-logs.js watch` from the project root, then manually open or start a replay in Arena. The standalone Node.js process scans the existing Arena cache at startup and polls it every two seconds for new or rewritten entries; stop it with Ctrl-C. `node tools/replay-logs.js scan` makes one pass. Both commands accept an optional cache-directory argument; the default is `~/Library/Application Support/screeps_arena/Cache/Cache_Data`. The tool does not control replay playback, run in Arena, or modify the cache.
 

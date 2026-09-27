@@ -1,3 +1,5 @@
+import { buildId } from './build-id.js';
+
 function describeCreep(creep) {
     const activeBodyParts = {};
     for (const part of creep.body) {
@@ -20,6 +22,7 @@ function describeCreep(creep) {
 export function logGameState({ tick, creeps, flags }, selectedFlag) {
     console.log(JSON.stringify({
         type: 'game-state',
+        buildId,
         tick,
         phase: 'before-actions',
         selectedFlagId: selectedFlag?.id ?? null,
@@ -49,7 +52,8 @@ export function logMapOnce(tick, readMap) {
     mapAttempts++;
     try {
         const map = readMap();
-        console.log(JSON.stringify({ type: 'map-state', formatVersion: 1, tick, phase: 'before-actions', map }));
+        console.log(JSON.stringify({ type: 'map-state', formatVersion: 1, buildId,
+            tick, phase: 'before-actions', map }));
         mapLogged = true;
     } catch (error) {
         console.error(`Map capture failed at tick ${tick}: ${error.message}`);
