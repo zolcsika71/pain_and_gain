@@ -4,7 +4,8 @@ import { registerHooks } from 'node:module';
 
 // Replace only Arena-provided imports; all project modules remain real.
 const arenaModules = new Map([
-    ['game/utils', 'export const getObjectsByPrototype = prototype => globalThis.__painAndGainArenaObjects.get(prototype); export const getTicks = () => globalThis.__painAndGainTick;'],
+    ['game/utils', 'export const getObjectsByPrototype = prototype => globalThis.__painAndGainArenaObjects.get(prototype); export const getObjects = () => [...globalThis.__painAndGainArenaObjects.values()].flat(); export const getTerrainAt = () => 0; export const getTicks = () => globalThis.__painAndGainTick;'],
+    ['game', 'export const arenaInfo = { name: "Pain and Gain", season: "4", level: 1, ticksLimit: 2000 };'],
     ['game/prototypes', 'export class Creep {}'],
     ['arena/season_4/pain_and_gain/basic', 'export class ScoreFlag {}'],
 ]);
@@ -30,17 +31,17 @@ test('runTick logs each tick before unchanged movement and compatible tactics', 
         snapshots.push(JSON.parse(message));
         actionCountsAtLog.push(calls.length);
     });
-    const firstFlag = { id: 'first' };
-    const secondFlag = { id: 'second' };
+    const firstFlag = Object.assign(new ScoreFlag(), { id: 'first', x: 5, y: 5, effectType: 'heal', scorePerTick: 4 });
+    const secondFlag = Object.assign(new ScoreFlag(), { id: 'second', x: 6, y: 5, effectType: 'attack', scorePerTick: 3 });
 
     function creep(id, x, y, my, hits, parts) {
-        const unit = {
+        const unit = Object.assign(new Creep(), {
             id, x, y, my, hits, hitsMax: 100, fatigue: 0,
             body: parts.map(type => ({ type, hits: 10 })),
             getRangeTo(target) {
                 return Math.max(Math.abs(x - target.x), Math.abs(y - target.y));
             },
-        };
+        });
         for (const method of ['moveTo', 'attack', 'rangedAttack', 'heal', 'rangedHeal']) {
             unit[method] = target => calls.push([id, method, target]);
         }
@@ -75,9 +76,15 @@ test('runTick logs each tick before unchanged movement and compatible tactics', 
         ['ally', 'attack', enemy],
     ];
     assert.deepEqual(calls, [...expectedActions, ...expectedActions]);
-    assert.equal(logger.mock.callCount(), 2);
+    assert.equal(logger.mock.callCount(), 3);
     assert.ok(logger.mock.calls.every(call => call.arguments.length === 1));
-    assert.deepEqual(actionCountsAtLog, [0, 5]);
+    assert.deepEqual(actionCountsAtLog, [0, 0, 5]);
+    assert.equal(snapshots[0].type, 'map-state');
+    assert.equal(snapshots[0].map.terrain.rows.length, 100);
+    assert.equal(snapshots[0].map.terrain.rows[0].length, 100);
+    assert.equal(snapshots[0].map.objects.length, 2);
+    assert.ok(snapshots[0].map.objects.every(object => object.type !== 'Creep'));
+    snapshots.shift();
     assert.deepEqual(snapshots.map(state => state.tick), [49, 50]);
     assert.ok(snapshots.every(state => state.phase === 'before-actions'));
     assert.ok(snapshots.every(state => state.selectedFlagId === firstFlag.id));

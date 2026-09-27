@@ -13,6 +13,28 @@ const cacheMagic = Buffer.from('305c72a71b6dfbfc', 'hex');
 const logKey = /^1\/0\/https:\/\/arena\.screeps\.com\/api\/game\/([a-f0-9]{24})\/log\/(\d+)$/;
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 const sha256 = value => createHash('sha256').update(value).digest('hex');
+const canonical = value => JSON.stringify(value, (_, item) =>
+    item && typeof item === 'object' && !Array.isArray(item)
+        ? Object.fromEntries(Object.keys(item).sort().map(key => [key, item[key]]))
+        : item);
+const mapContent = map => `${canonical(map)}\n`;
+const mapChecksum = map => sha256(mapContent(map));
+
+function validMap(map) {
+    const terrain = map?.terrain;
+    return map && typeof map === 'object' && !Array.isArray(map) &&
+        Object.keys(map).sort().join(',') === 'arena,objects,terrain' &&
+        map?.arena?.name === 'Pain and Gain' &&
+        typeof map.arena.season === 'string' && Number.isSafeInteger(map.arena.level) &&
+        Number.isSafeInteger(map.arena.ticksLimit) &&
+        terrain?.width === 100 && terrain?.height === 100 &&
+        Array.isArray(terrain.rows) && terrain.rows.length === 100 &&
+        terrain.rows.every(row => Array.isArray(row) && row.length === 100 &&
+            row.every(cell => Number.isSafeInteger(cell))) &&
+        Array.isArray(map.objects) && map.objects.every(object =>
+            object && typeof object === 'object' && !Array.isArray(object) &&
+            typeof object.type === 'string' && !/creep/i.test(object.type));
+}
 
 function issue(kind, message) {
     return { kind, message };
@@ -68,27 +90,45 @@ export function parseCacheEntry(bytes) {
     }
     const gameState = [];
     const otherEntries = [];
+    let map = null;
     for (const [entryKey, raw] of Object.entries(response)) {
         if (typeof raw !== 'string') return issue('malformed', `Non-string console entry ${entryKey} for ${key}`);
-        let parsed;
-        try {
-            parsed = JSON.parse(raw);
-        } catch {
-            if (/"type"\s*:\s*"game-state"/.test(raw)) {
-                return issue('malformed', `Malformed game-state entry ${entryKey} for ${key}`);
+        // Arena joins multiple console.log calls from one tick into one newline-delimited value.
+        const lines = raw.split('\n');
+        for (const [part, line] of lines.entries()) {
+            const sourceKey = lines.length === 1 ? entryKey : `${entryKey}:${part + 1}`;
+            let parsed;
+            try {
+                parsed = JSON.parse(line);
+            } catch {
+                if (/"type"\s*:\s*"(?:game-state|map-state)"/.test(line)) {
+                    return issue('malformed', `Malformed state entry ${sourceKey} for ${key}`);
+                }
+                otherEntries.push({ key: sourceKey, raw: line });
+                continue;
             }
-            otherEntries.push({ key: entryKey, raw });
-            continue;
+            if (parsed?.type === 'map-state') {
+                const candidate = parsed.map;
+                if (parsed.formatVersion !== 1 || !Number.isSafeInteger(parsed.tick) ||
+                    parsed.phase !== 'before-actions' || !validMap(candidate)) {
+                    return issue('malformed', `Invalid map-state entry ${sourceKey} for ${key}`);
+                }
+                if (map && canonical(map) !== canonical(candidate)) {
+                    return issue('malformed', `Conflicting map-state entries for ${key}`);
+                }
+                map = candidate;
+                continue;
+            }
+            if (parsed?.type !== 'game-state') {
+                otherEntries.push({ key: sourceKey, raw: line });
+                continue;
+            }
+            if (!Number.isSafeInteger(parsed.tick) || parsed.phase !== 'before-actions' ||
+                !Array.isArray(parsed.creeps) || !Array.isArray(parsed.flags)) {
+                return issue('malformed', `Invalid game-state entry ${sourceKey} for ${key}`);
+            }
+            gameState.push(line);
         }
-        if (parsed?.type !== 'game-state') {
-            otherEntries.push({ key: entryKey, raw });
-            continue;
-        }
-        if (!Number.isSafeInteger(parsed.tick) || parsed.phase !== 'before-actions' ||
-            !Array.isArray(parsed.creeps) || !Array.isArray(parsed.flags) || raw.includes('\n')) {
-            return issue('malformed', `Invalid game-state entry ${entryKey} for ${key}`);
-        }
-        gameState.push(raw);
     }
     const ticks = gameState.map(raw => JSON.parse(raw).tick);
     const counts = new Map();
@@ -101,7 +141,7 @@ export function parseCacheEntry(bytes) {
     }
     return {
         kind: 'log', replayId: match[1], requestedTick: Number(match[2]), key,
-        fingerprint: sha256(body), gameState, otherEntries,
+        fingerprint: sha256(body), gameState, otherEntries, map,
         coverage: { count: ticks.length, firstTick, lastTick, duplicates: [...counts].filter(([, n]) => n > 1).map(([tick]) => tick), gaps },
     };
 }
@@ -123,6 +163,21 @@ function managedPath(root, name) {
     return path.join(outputDirectory(root), name);
 }
 
+function mapPath(root, name) {
+    if (typeof name !== 'string' ||
+        !/^pain_and_gain_map_\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-\d{3}Z(?:-[a-f0-9]{12,64})?\.json$/.test(name)) {
+        throw new Error('Unsafe map filename');
+    }
+    return path.join(outputDirectory(root), name);
+}
+
+function readMapFile(root, name) {
+    const file = mapPath(root, name);
+    const stat = fs.lstatSync(file);
+    if (!stat.isFile() || stat.isSymbolicLink()) throw new Error(`Unsafe existing map file: ${file}`);
+    return JSON.parse(fs.readFileSync(file, 'utf8'));
+}
+
 function pathOccupied(file) {
     try { return fs.lstatSync(file); }
     catch (error) {
@@ -133,9 +188,15 @@ function pathOccupied(file) {
 
 function readManifest(root) {
     const file = path.join(outputDirectory(root), 'manifest.json');
-    if (!fs.existsSync(file)) return { version: 1, records: [] };
+    if (!fs.existsSync(file)) return { version: 2, maps: [], replays: [], records: [] };
     const manifest = JSON.parse(fs.readFileSync(file, 'utf8'));
-    if (manifest.version !== 1 || !Array.isArray(manifest.records)) throw new Error('Unsupported replay-log manifest');
+    if (manifest.version === 1 && Array.isArray(manifest.records) && manifest.records.length === 0) {
+        return { version: 2, maps: [], replays: [], records: [] };
+    }
+    if (manifest.version !== 2 || !Array.isArray(manifest.maps) ||
+        !Array.isArray(manifest.replays) || !Array.isArray(manifest.records)) {
+        throw new Error('Unsupported replay-log manifest; migrate nonempty version-1 data before importing');
+    }
     return manifest;
 }
 
@@ -158,6 +219,76 @@ function atomicReplace(file, content) {
 
 function saveManifest(root, manifest) {
     atomicReplace(path.join(outputDirectory(root), 'manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`);
+}
+
+function validateRegisteredMap(root, registration) {
+    if (registration?.status !== 'validated' || registration.id !== registration.checksum ||
+        !/^[a-f0-9]{64}$/.test(registration.checksum)) throw new Error('Invalid map registration');
+    const existing = readMapFile(root, registration.file);
+    if (!validMap(existing) || mapChecksum(existing) !== registration.checksum) {
+        throw new Error(`Map schema or checksum mismatch: ${registration.file}`);
+    }
+    return existing;
+}
+
+function ensureMap(root, manifest, map) {
+    if (!validMap(map)) throw new Error('Invalid captured map');
+    const content = mapContent(map);
+    const checksum = mapChecksum(map);
+    const registered = manifest.maps.find(item => item.checksum === checksum);
+    if (registered) {
+        validateRegisteredMap(root, registered);
+        return registered;
+    }
+    const directory = outputDirectory(root);
+    let file = null;
+    for (const name of fs.readdirSync(directory)) {
+        if (!/^pain_and_gain_map_\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-\d{3}Z(?:-[a-f0-9]{12,64})?\.json$/.test(name)) continue;
+        const existing = readMapFile(root, name);
+        if (validMap(existing) && mapChecksum(existing) === checksum) { file = name; break; }
+    }
+    if (!file) {
+        const date = new Date().toISOString().replace(/:/g, '-').replace('.', '-');
+        const base = `pain_and_gain_map_${date}`;
+        const candidates = [`${base}.json`, `${base}-${checksum.slice(0, 12)}.json`, `${base}-${checksum}.json`];
+        file = candidates.find(candidate => !pathOccupied(mapPath(root, candidate)));
+        if (!file) throw new Error('No safe map filename available');
+        const temporary = path.join(directory, `.${file}.${randomUUID()}.tmp`);
+        const descriptor = fs.openSync(temporary, 'wx', 0o600);
+        try {
+            fs.writeFileSync(descriptor, content);
+            fs.fsyncSync(descriptor);
+        } finally {
+            fs.closeSync(descriptor);
+        }
+        try { fs.linkSync(temporary, mapPath(root, file)); } finally { fs.unlinkSync(temporary); }
+    }
+    const registration = { id: checksum, checksum, file, status: 'validated', registeredAt: new Date().toISOString() };
+    validateRegisteredMap(root, registration);
+    manifest.maps.push(registration);
+    return registration;
+}
+
+function activeReplayMap(root, manifest, replayId) {
+    const association = manifest.replays.find(item => item.replayId === replayId && item.status === 'active');
+    if (!association) return null;
+    const registration = manifest.maps.find(item => item.id === association.mapId);
+    if (!registration) throw new Error(`Missing registered map for replay ${replayId}`);
+    validateRegisteredMap(root, registration);
+    return { association, registration };
+}
+
+function associateReplay(manifest, replayId, registration) {
+    const existing = manifest.replays.find(item => item.replayId === replayId);
+    if (existing) {
+        if (existing.mapId !== registration.id) throw new Error(`Conflicting maps for replay ${replayId}`);
+        if (existing.status !== 'active') throw new Error(`Map is not active for replay ${replayId}`);
+        return existing;
+    }
+    const association = { replayId, mapId: registration.id, status: 'active',
+        associatedAt: new Date().toISOString(), retiredFingerprints: [] };
+    manifest.replays.push(association);
+    return association;
 }
 
 async function withManifestLock(root, action) {
@@ -247,40 +378,66 @@ export async function importCacheFile(root, sourceFile) {
     if (parsed.kind !== 'log') return parsed;
     return withManifestLock(root, () => {
         const manifest = readManifest(root);
+        let active = activeReplayMap(root, manifest, parsed.replayId);
+        if (parsed.map && active && mapChecksum(parsed.map) !== active.registration.checksum) {
+            throw new Error(`Conflicting maps for replay ${parsed.replayId}`);
+        }
+        if (parsed.map && !active) {
+            if (manifest.replays.some(item => item.replayId === parsed.replayId && item.status !== 'active')) {
+                throw new Error(`Map is not active for replay ${parsed.replayId}`);
+            }
+            const registration = ensureMap(root, manifest, parsed.map);
+            associateReplay(manifest, parsed.replayId, registration);
+            saveManifest(root, manifest);
+            active = activeReplayMap(root, manifest, parsed.replayId);
+        }
+        if (!active) return { kind: 'deferred', replayId: parsed.replayId,
+            fingerprint: parsed.fingerprint, coverage: parsed.coverage,
+            message: 'No validated active map for replay; no JSONL created' };
+        if (active.association.retiredFingerprints.includes(parsed.fingerprint)) {
+            return { kind: 'deduplicated', replayId: parsed.replayId, fingerprint: parsed.fingerprint };
+        }
         let record = manifest.records.find(item => item.replayId === parsed.replayId && item.fingerprint === parsed.fingerprint);
         if (record) {
-            if (record.status === 'pending' || (record.outputPath && record.status !== 'deleted' && !pathOccupied(managedPath(root, record.outputPath)))) {
+            if (record.mapId !== active.registration.id || record.mapFile !== active.registration.file) {
+                throw new Error(`Log/map association mismatch for replay ${parsed.replayId}`);
+            }
+            if (record.status === 'pending' || (record.outputPath && record.status === 'waiting' && !pathOccupied(managedPath(root, record.outputPath)))) {
                 ensureOutput(root, record, parsed.gameState);
-                record.status = record.reviews && Object.values(record.reviews).some(review => !review.completedAt) ? 'reviewing' : 'available';
+                record.status = 'waiting';
                 saveManifest(root, manifest);
-            } else if (record.outputPath && record.status !== 'deleted') {
+            } else if (record.outputPath && record.status === 'waiting') {
                 ensureOutput(root, record, parsed.gameState);
             }
             return { kind: 'deduplicated', record };
         }
+        if (!parsed.gameState.length) return { kind: 'mapped', replayId: parsed.replayId,
+            mapId: active.registration.id, mapFile: active.registration.file,
+            otherEntries: parsed.otherEntries };
         const outputPath = parsed.gameState.length ? chooseOutputName(root, manifest, parsed.replayId, parsed.fingerprint) : null;
         if (parsed.gameState.length && !outputPath) throw new Error(`No safe output filename for ${parsed.replayId}`);
-        const content = parsed.gameState.length ? `${parsed.gameState.join('\n')}\n` : '';
+        const content = `${parsed.gameState.join('\n')}\n`;
         record = {
             replayId: parsed.replayId, requestedTick: parsed.requestedTick, sourceEntry: sourceFile,
             sourceKey: parsed.key, fingerprint: parsed.fingerprint, outputPath,
-            outputFingerprint: outputPath ? sha256(content) : null,
-            importedAt: new Date().toISOString(), status: outputPath ? 'pending' : 'empty',
+            outputFingerprint: sha256(content), mapId: active.registration.id,
+            mapChecksum: active.registration.checksum, mapFile: active.registration.file,
+            importedAt: new Date().toISOString(), status: 'pending',
             coverage: parsed.coverage, otherEntries: parsed.otherEntries, reviews: {},
         };
         manifest.records.push(record);
         saveManifest(root, manifest);
-        if (outputPath) {
-            ensureOutput(root, record, parsed.gameState);
-            record.status = 'available';
-            saveManifest(root, manifest);
-        }
+        ensureOutput(root, record, parsed.gameState);
+        record.status = 'waiting';
+        saveManifest(root, manifest);
         return { kind: 'imported', record };
     });
 }
 
 export async function scanCache(root, cacheDir, seen = null) {
     const results = [];
+    const deferred = [];
+    let mapMayHaveArrived = false;
     for (const name of fs.readdirSync(cacheDir).sort()) {
         const file = path.join(cacheDir, name);
         let stat;
@@ -292,14 +449,29 @@ export async function scanCache(root, cacheDir, seen = null) {
         if (!stat.isFile()) continue;
         const signature = `${stat.size}:${stat.mtimeMs}:${stat.ctimeMs}`;
         const previous = seen?.get(file);
-        if (previous?.signature === signature && (previous.finished || previous.attempts >= 5)) continue;
+        if (previous?.signature === signature && (previous.finished ||
+            (['incomplete', 'error'].includes(previous.kind) && previous.attempts >= 5))) continue;
         let result;
         try { result = await importCacheFile(root, file); } catch (error) { result = issue('error', `${file}: ${error.message}`); }
         if (seen) seen.set(file, {
             signature, attempts: previous?.signature === signature ? previous.attempts + 1 : 1,
-            finished: !['incomplete', 'error'].includes(result.kind),
+            kind: result.kind, finished: !['incomplete', 'error', 'deferred'].includes(result.kind),
         });
-        if (result.kind !== 'unrelated' && result.kind !== 'deduplicated') results.push({ source: file, ...result });
+        if (result.kind === 'deferred') deferred.push({ file, signature, result });
+        else if (result.kind !== 'unrelated' && result.kind !== 'deduplicated') {
+            results.push({ source: file, ...result });
+            if (['mapped', 'imported'].includes(result.kind)) mapMayHaveArrived = true;
+        }
+    }
+    for (const item of deferred) {
+        let result = item.result;
+        if (mapMayHaveArrived) {
+            try { result = await importCacheFile(root, item.file); }
+            catch (error) { result = issue('error', `${item.file}: ${error.message}`); }
+            if (seen) seen.set(item.file, { signature: item.signature, attempts: 1,
+                kind: result.kind, finished: !['incomplete', 'error', 'deferred'].includes(result.kind) });
+        }
+        if (result.kind !== 'deduplicated') results.push({ source: item.file, ...result });
     }
     return results;
 }
@@ -311,8 +483,13 @@ function validateTaskId(taskId) {
 }
 
 function cleanup(root, manifest, record) {
-    const reviews = Object.values(record.reviews);
-    if (!record.outputPath || !reviews.length || reviews.some(review => !review.examinedAt || !review.completedAt)) return;
+    if (record.status !== 'done') return;
+    const reviews = Object.values(record.reviews ?? {});
+    if (!reviews.length || reviews.some(review => !review.examinedAt || !review.completedAt)) {
+        throw new Error(`Done log lacks completed analysis for ${record.replayId}`);
+    }
+    const association = manifest.replays.find(item => item.replayId === record.replayId && item.mapId === record.mapId);
+    if (!association) throw new Error(`Missing replay/map association for ${record.replayId}`);
     const file = managedPath(root, record.outputPath);
     const existing = pathOccupied(file);
     if (existing) {
@@ -322,38 +499,45 @@ function cleanup(root, manifest, record) {
         }
         fs.unlinkSync(file);
     }
-    record.status = 'deleted';
-    record.deletedAt = new Date().toISOString();
+    association.retiredFingerprints ??= [];
+    if (!association.retiredFingerprints.includes(record.fingerprint)) association.retiredFingerprints.push(record.fingerprint);
+    manifest.records.splice(manifest.records.indexOf(record), 1);
     saveManifest(root, manifest);
 }
 
 export async function updateReview(root, action, replayId, fingerprint, taskId) {
-    if (!['claim', 'examined', 'complete'].includes(action)) throw new Error(`Unknown review action: ${action}`);
+    if (!['claim', 'examined', 'complete', 'done'].includes(action)) throw new Error(`Unknown review action: ${action}`);
     validateTaskId(taskId);
     if (!/^[a-f0-9]{24}$/.test(replayId)) throw new Error('Expected a verified replay ID');
     if (!/^[a-f0-9]{64}$/.test(fingerprint)) throw new Error('Expected a full SHA-256 fingerprint');
     return withManifestLock(root, () => {
         const manifest = readManifest(root);
         const record = manifest.records.find(item => item.replayId === replayId && item.fingerprint === fingerprint);
-        if (!record || !record.outputPath) throw new Error('Imported game-state log not found');
-        if (record.status === 'deleted') {
-            if (action !== 'claim' && Object.hasOwn(record.reviews, taskId) && record.reviews[taskId].completedAt) return record;
-            throw new Error('Log was already reviewed and deleted');
+        if (!record) {
+            const retired = manifest.replays.find(item => item.replayId === replayId)?.retiredFingerprints?.includes(fingerprint);
+            if (retired && ['complete', 'done'].includes(action)) return { replayId, fingerprint, status: 'done' };
+            throw new Error(retired ? 'Log was already analyzed and removed' : 'Imported game-state log not found');
+        }
+        if (record.status === 'done') {
+            if (!['complete', 'done'].includes(action)) throw new Error('Log analysis is already done');
+            cleanup(root, manifest, record);
+            return record;
         }
         const now = new Date().toISOString();
         if (action === 'claim') {
             if (!Object.hasOwn(record.reviews, taskId)) {
                 record.reviews[taskId] = { claimedAt: now, examinedAt: null, completedAt: null };
             }
-            record.status = 'reviewing';
         } else {
             if (!Object.hasOwn(record.reviews, taskId)) throw new Error(`Task ${taskId} has not claimed this log`);
             const review = record.reviews[taskId];
             if (action === 'examined') review.examinedAt ??= now;
-            else if (action === 'complete') {
+            else if (['complete', 'done'].includes(action)) {
                 if (!review.examinedAt) throw new Error('Record examination before completion');
                 review.completedAt ??= now;
-            } else throw new Error(`Unknown review action: ${action}`);
+                const reviews = Object.values(record.reviews);
+                if (reviews.every(item => item.examinedAt && item.completedAt)) record.status = 'done';
+            }
         }
         saveManifest(root, manifest);
         cleanup(root, manifest, record);
@@ -364,7 +548,7 @@ export async function updateReview(root, action, replayId, fingerprint, taskId) 
 export async function reconcileCleanup(root) {
     return withManifestLock(root, () => {
         const manifest = readManifest(root);
-        for (const record of manifest.records) if (record.status !== 'deleted') cleanup(root, manifest, record);
+        for (const record of [...manifest.records]) cleanup(root, manifest, record);
         return manifest;
     });
 }
@@ -378,7 +562,8 @@ async function main() {
         const seen = new Map();
         const poll = async () => {
             for (const result of await scanCache(root, cacheDir, seen)) {
-                if (result.record) console.log(JSON.stringify({ event: result.kind, replayId: result.record.replayId, fingerprint: result.record.fingerprint, outputPath: result.record.outputPath, status: result.record.status, coverage: result.record.coverage, otherEntries: result.record.otherEntries.length }));
+                if (result.record) console.log(JSON.stringify({ event: result.kind, replayId: result.record.replayId, fingerprint: result.record.fingerprint, outputPath: result.record.outputPath, mapId: result.record.mapId, mapFile: result.record.mapFile, status: result.record.status, coverage: result.record.coverage, otherEntries: result.record.otherEntries.length }));
+                else if (['mapped', 'deferred'].includes(result.kind)) console.log(JSON.stringify({ event: result.kind, replayId: result.replayId, mapId: result.mapId, mapFile: result.mapFile, coverage: result.coverage, message: result.message }));
                 else console.error(JSON.stringify({ event: result.kind, source: result.source, message: result.message }));
             }
         };
@@ -389,18 +574,24 @@ async function main() {
         }
     } else if (command === 'list') {
         const manifest = await reconcileCleanup(root);
-        for (const record of manifest.records) console.log(JSON.stringify({ replayId: record.replayId, fingerprint: record.fingerprint, outputPath: record.outputPath, status: record.status, coverage: record.coverage, reviews: record.reviews, otherEntries: record.otherEntries.length }));
+        for (const record of manifest.records) console.log(JSON.stringify({ replayId: record.replayId, fingerprint: record.fingerprint, outputPath: record.outputPath, mapId: record.mapId, mapFile: record.mapFile, status: record.status, coverage: record.coverage, reviews: record.reviews, otherEntries: record.otherEntries.length }));
+    } else if (command === 'maps') {
+        const manifest = readManifest(root);
+        for (const registration of manifest.maps) {
+            validateRegisteredMap(root, registration);
+            console.log(JSON.stringify({ ...registration, activeReplays: manifest.replays.filter(item => item.mapId === registration.id && item.status === 'active').map(item => item.replayId) }));
+        }
     } else if (command === 'other') {
         if (args.length !== 2 || !/^[a-f0-9]{24}$/.test(args[0]) || !/^[a-f0-9]{64}$/.test(args[1])) throw new Error('Usage: other <replay-id> <fingerprint>');
         const record = readManifest(root).records.find(item => item.replayId === args[0] && item.fingerprint === args[1]);
         if (!record) throw new Error('Replay-log response not found');
         for (const entry of record.otherEntries) console.log(JSON.stringify(entry));
-    } else if (['claim', 'examined', 'complete'].includes(command)) {
+    } else if (['claim', 'examined', 'complete', 'done'].includes(command)) {
         if (args.length !== 3) throw new Error(`Usage: ${command} <replay-id> <fingerprint> <task-id>`);
         const record = await updateReview(root, command, args[0], args[1], args[2]);
         console.log(JSON.stringify({ replayId: record.replayId, fingerprint: record.fingerprint, status: record.status, outputPath: record.outputPath, reviews: record.reviews }));
     } else {
-        throw new Error('Usage: node tools/replay-logs.js <scan [cache-dir]|watch [cache-dir]|list|other replay-id fingerprint|claim replay-id fingerprint task-id|examined replay-id fingerprint task-id|complete replay-id fingerprint task-id>');
+        throw new Error('Usage: node tools/replay-logs.js <scan [cache-dir]|watch [cache-dir]|list|maps|other replay-id fingerprint|claim replay-id fingerprint task-id|examined replay-id fingerprint task-id|done replay-id fingerprint task-id>');
     }
 }
 

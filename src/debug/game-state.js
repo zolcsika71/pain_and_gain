@@ -34,3 +34,24 @@ export function logGameState({ tick, creeps, flags }, selectedFlag) {
         })),
     }));
 }
+
+let mapLogged = false;
+let lastMapTick = 0;
+let mapAttempts = 0;
+
+export function logMapOnce(tick, readMap) {
+    if (tick < lastMapTick) {
+        mapLogged = false;
+        mapAttempts = 0;
+    }
+    lastMapTick = tick;
+    if (mapLogged || mapAttempts >= 3) return;
+    mapAttempts++;
+    try {
+        const map = readMap();
+        console.log(JSON.stringify({ type: 'map-state', formatVersion: 1, tick, phase: 'before-actions', map }));
+        mapLogged = true;
+    } catch (error) {
+        console.error(`Map capture failed at tick ${tick}: ${error.message}`);
+    }
+}

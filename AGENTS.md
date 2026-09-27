@@ -90,7 +90,8 @@ Do not invent project facts or overwrite existing project instructions.
 - Before examining a utility-managed capture in `replay_logs/`, follow the
   `README.md` replay importer commands and claim that replay/fingerprint with a
   task identifier unique to the reviewing Codex task.
-- Record `examined` after reading the capture. Record `complete` only when that
-  task's review is explicitly finished; leave an ongoing task's claim active.
-- Use the utility for cleanup. Preserve unmanaged reference captures and the
-  manifest's review and deduplication history.
+- Record `examined` after reading the capture. Record `done` only after that
+  task's analysis is explicitly finished; leave an ongoing task's claim active.
+- Use the utility for cleanup. Completed managed log files and their manifest
+  records are removed only after all reviewers finish; map files and registrations,
+  replay associations, and retired fingerprints remain. Preserve unmanaged captures.

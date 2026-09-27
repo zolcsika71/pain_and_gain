@@ -92,6 +92,7 @@ coverage/
 
 # Local Arena replay captures and review state
 replay_logs/*.jsonl
+replay_logs/pain_and_gain_map_*.json
 replay_logs/manifest.json
 replay_logs/.manifest.lock
 replay_logs/.*.tmp

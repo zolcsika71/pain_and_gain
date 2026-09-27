@@ -1,0 +1,30 @@
+@startuml
+title Replay map registration and log import
+
+start
+:Read cached replay-log response;
+if (Valid map-state in response?) then (yes)
+  :Compute canonical map checksum;
+  if (Identical registered map?) then (yes)
+    :Validate saved schema and checksum;
+  else (no)
+    :Save map JSON;
+    :Validate saved schema and checksum;
+    :Register map ID and checksum;
+  endif
+  :Associate validated map with this replay as active;
+endif
+if (Active, validated map for this replay?) then (yes)
+  if (Game-state entries?) then (yes)
+    :Create JSONL with original lines;
+    :Record map ID, checksum, file and waiting status;
+  else (no)
+    :Keep map registration and association only;
+  endif
+else (no)
+  :Defer response without JSONL;
+  :Retry after its replay map arrives;
+endif
+stop
+
+@enduml

@@ -1,0 +1,21 @@
+@startuml
+title Replay log review and cleanup
+
+start
+:Imported log is waiting;
+:Codex analysis task claims replay and fingerprint;
+:Read the managed JSONL and linked validated map;
+:Record examined after actual examination;
+:Record done after analysis completes;
+if (Other active reviewers?) then (yes)
+  :Keep waiting log and manifest record;
+else (no)
+  :Mark log done;
+  :Verify managed path and output checksum;
+  :Delete JSONL and its manifest record;
+  :Retain map file, registration and replay association;
+  :Retain retired fingerprint to prevent reimport;
+endif
+stop
+
+@enduml

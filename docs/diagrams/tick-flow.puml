@@ -16,7 +16,9 @@ Main --> Loop : runTick()
 Loop --> Observe : collect flags, owned creeps,\nenemies, damaged allies
 Observe --> API : getObjectsByPrototype() / getTicks()
 Loop --> Objectives : select first flag
-Loop --> Debug : log observed state before actions
+Loop --> Observe : sample starting map once
+Observe --> API : getObjects() / getTerrainAt()
+Loop --> Debug : log map once, then tick state\nbefore actions
 Debug --> API : console.log(JSON snapshot)
 Loop --> Execute : move owned creeps
 Execute --> API : creep.moveTo(flag)
