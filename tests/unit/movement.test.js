@@ -1,12 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { moveCreeps } from '../../src/arena/execute.js';
+import { moveCreeps, executeTactics } from '../../src/arena/execute.js';
 import { selectMovementDecision, selectMovementTarget } from '../../src/tactics/movement.js';
 
 function creep(id, x, parts = [], options = {}) {
     const moves = [];
     return {
         id, x, y: 0, my: options.my ?? true, hits: options.hits ?? 100,
+        hitsMax: options.hitsMax ?? 100,
         body: parts.map(([type, hits]) => ({ type, hits })), moves,
         getRangeTo(target) {
             return Math.max(Math.abs(this.x - target.x), Math.abs(this.y - target.y));
@@ -212,4 +213,79 @@ test('a dead retained target releases to the first flag', () => {
 
     assert.deepEqual(ranged.moves, [enemy, enemy, flag]);
     assert.equal(engagements.has('ranged'), false);
+});
+
+test('pure healer approaches the nearest out-of-range damaged ally, not the most injured', () => {
+    const flag = { id: 'first' };
+    const healer = creep('healer', 0, [['heal', 10]], { hits: 50 });
+    const farther = creep('a', 5, [], { hits: 10 });
+    const nearer = creep('z', 4, [], { hits: 90 });
+    const covered = creep('covered', 2, [], { hits: 10 });
+
+    moveCreeps([healer, farther, nearer, covered], [], flag);
+    assert.deepEqual(healer.moves, [nearer]);
+
+    farther.x = -4;
+    moveCreeps([healer, farther, nearer, covered], [], flag);
+    assert.deepEqual(healer.moves, [nearer, farther]); // distance tie uses ID
+});
+
+test('pure healer holds inside heal range and falls back without local eligible allies', () => {
+    const flag = { id: 'first' };
+    const healer = creep('healer', 0, [['heal', 10]]);
+    const ally = creep('ally', 4, [], { hits: 50 });
+
+    moveCreeps([healer, ally], [], flag);
+    assert.deepEqual(healer.moves, [ally]);
+    ally.x = 5;
+    moveCreeps([healer, ally], [], flag);
+    assert.deepEqual(healer.moves, [ally, ally]);
+    ally.x = 3;
+    moveCreeps([healer, ally], [], flag);
+    assert.deepEqual(healer.moves, [ally, ally]); // ranged-heal distance is the hold range
+    ally.x = 6;
+    moveCreeps([healer, ally], [], flag);
+    ally.x = 2;
+    ally.hits = 100;
+    moveCreeps([healer, ally], [], flag);
+    ally.hits = 0;
+    moveCreeps([healer, ally], [], flag);
+    healer.hits = 50;
+    moveCreeps([healer, ally], [], flag); // self-healing does not make self a movement target
+    healer.body[0].hits = 0;
+    ally.hits = 50;
+    moveCreeps([healer, ally], [], flag);
+    assert.deepEqual(healer.moves, [ally, ally, flag, flag, flag, flag, flag]);
+});
+
+test('mixed-role healer retains combat movement instead of following an injured ally', () => {
+    const flag = { id: 'first' };
+    const mixed = creep('mixed', 0, [['heal', 10], ['ranged_attack', 10]]);
+    const ally = creep('ally', 2, [], { hits: 50 });
+    const enemy = creep('enemy', 5, [], { my: false });
+    const engagements = new Map();
+
+    moveCreeps([mixed, ally], [enemy], flag, engagements);
+    assert.deepEqual(engagements.get('mixed'), { id: 'enemy', outsideTicks: 0 });
+    enemy.x = 6;
+    moveCreeps([mixed, ally], [enemy], flag, engagements);
+    assert.deepEqual(engagements.get('mixed'), { id: 'enemy', outsideTicks: 1 });
+    moveCreeps([mixed, ally], [enemy], flag, engagements);
+    assert.deepEqual(mixed.moves, [enemy, enemy, flag]);
+    assert.equal(engagements.has('mixed'), false);
+});
+
+test('support movement leaves the current-position healing choice unchanged', () => {
+    const flag = { id: 'first' };
+    const healer = creep('healer', 0, [['heal', 10]]);
+    const near = creep('near', 1, [], { hits: 50 });
+    const far = creep('far', 4, [], { hits: 10 });
+    const calls = [];
+    healer.moveTo = target => calls.push(['moveTo', target.id]);
+    healer.heal = target => calls.push(['heal', target.id]);
+
+    moveCreeps([healer, near, far], [], flag);
+    executeTactics([healer, near, far], [], [near, far]);
+
+    assert.deepEqual(calls, [['moveTo', 'far'], ['heal', 'near']]);
 });

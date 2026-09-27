@@ -22,8 +22,8 @@ Observe --> API : getObjects() / getTerrainAt()
 Loop --> Debug : log map once, then tick state\nbefore actions
 Debug --> API : console.log(JSON snapshot)
 Loop --> Execute : choose and issue movement
-Execute --> Movement : nearest local enemy, one-tick boundary grace,\nthen first flag fallback
-Movement --> Eligibility : functioning weapons and range
+Execute --> Movement : combat objective or pure-healer support,\nthen first flag fallback
+Movement --> Eligibility : functioning weapons / HEAL and range
 Execute --> API : at most one creep.moveTo(target)
 Loop --> Execute : execute tactics after movement
 Execute --> Healing : choose available healing
