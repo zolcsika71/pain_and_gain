@@ -1,14 +1,16 @@
 import { observeArena, observeMap } from './arena/observe.js';
 import { moveCreeps, executeTactics } from './arena/execute.js';
 import { selectFlag } from './strategy/objectives.js';
-import { logFlagAllocationDiagnostic, logGameState, logMapOnce } from './debug/game-state.js';
+import { logFlagAllocationDiagnostic, logGameState, logHealerEscortDiagnostic, logMapOnce } from './debug/game-state.js';
 import { searchPath } from 'game/path-finder';
 import { EFF_ATTACK_MODIFIER } from 'game/constants';
-import { oneScoutFlagExperiment } from './config.js';
+import { oneHealerEscortExperiment, oneScoutFlagExperiment } from './config.js';
 import { planScoutFlagAllocation } from './strategy/flag-allocation.js';
+import { planHealerEscort } from './tactics/healer-escort.js';
 
 const engagements = new Map();
 let flagAllocation = null;
+let healerEscort = null;
 let lastTick = 0;
 let lastIdleDiagnostic = null;
 
@@ -34,6 +36,7 @@ export function runTick() {
     if (state.tick <= lastTick) {
         engagements.clear();
         flagAllocation = null;
+        healerEscort = null;
         lastIdleDiagnostic = null;
     }
     lastTick = state.tick;
@@ -43,8 +46,16 @@ export function runTick() {
         ? planScoutFlagAllocation(state, flagAllocation, routeSteps, EFF_ATTACK_MODIFIER,
             reportFlagAllocation) : null;
     if (fallbackById) flagAllocation = fallbackById.state;
+    const escortPlan = oneHealerEscortExperiment
+        ? planHealerEscort(state, flag, healerEscort) : null;
+    if (escortPlan) healerEscort = escortPlan.state;
     logMapOnce(state.tick, observeMap);
     logGameState(state, flag);
-    moveCreeps(myCreeps, enemies, flag, engagements, fallbackById?.fallbackById);
+    if (escortPlan?.transition) logHealerEscortDiagnostic({ tick: state.tick,
+        phase: 'before-actions', ...escortPlan.transition, range: escortPlan.escort?.distance ?? null,
+        targetId: null, returnCode: null });
+    moveCreeps(myCreeps, enemies, flag, engagements, fallbackById?.fallbackById,
+        escortPlan?.escort, escortPlan?.escort ? diagnostic => logHealerEscortDiagnostic({ tick: state.tick,
+            phase: 'movement', reason: null, ...diagnostic }) : null);
     executeTactics(myCreeps, enemies, damagedFriends);
 }

@@ -1,14 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { registerHooks } from 'node:module';
-import { oneScoutFlagExperiment } from '../../src/config.js';
+import { oneHealerEscortExperiment, oneScoutFlagExperiment } from '../../src/config.js';
 import { buildId } from '../../src/debug/build-id.js';
 
 // Replace only Arena-provided imports; all project modules remain real.
 const arenaModules = new Map([
     ['game/utils', 'export const getObjectsByPrototype = prototype => globalThis.__painAndGainArenaObjects.get(prototype); export const getObjects = () => [...globalThis.__painAndGainArenaObjects.values()].flat(); export const getTerrainAt = () => 0; export const getTicks = () => globalThis.__painAndGainTick;'],
     ['game', 'export const arenaInfo = { name: "Pain and Gain", season: "4", level: 1, ticksLimit: 2000 };'],
-    ['game/path-finder', 'export const searchPath = () => ({ path: [], incomplete: false });'],
+    ['game/path-finder', 'export const searchPath = () => { globalThis.__painAndGainPathCalls = (globalThis.__painAndGainPathCalls ?? 0) + 1; return { path: [], incomplete: false }; };'],
     ['game/constants', 'export const EFF_ATTACK_MODIFIER = "eff_attack_modifier";'],
     ['game/prototypes', 'export class Creep {}'],
     ['arena/season_4/pain_and_gain/basic', 'export class ScoreFlag {}'],
@@ -120,6 +120,67 @@ test('runTick chooses combat movement or first-flag fallback before compatible t
     assert.deepEqual(gameStates[1].creeps.map(unit => [unit.id, unit.hits]), [
         ['healer', 100], ['ally', 60], ['scout', 100], ['enemy', 80],
     ]);
+});
+
+test('runTick keeps escort opt-in, records actual movement results, and resets after a new match', t => {
+    const entries = [];
+    const calls = [];
+    t.mock.method(console, 'log', message => entries.push({ value: JSON.parse(message), calls: calls.length }));
+    const first = Object.assign(new ScoreFlag(), {
+        id: 'first', x: 10, y: 10, my: true, effectType: 'heal', scorePerTick: 4,
+    });
+    function unit(id, x, parts, my = true) {
+        return Object.assign(new Creep(), {
+            id, x, y: 0, my, hits: 100, hitsMax: 100, fatigue: 0,
+            body: parts.map(type => ({ type, hits: 100 })),
+            getRangeTo(target) { return Math.max(Math.abs(this.x - target.x), Math.abs(this.y - target.y)); },
+            moveTo(target) { calls.push([id, 'moveTo', target.id]); return -11; },
+            attack() {}, heal() {}, rangedHeal() {}, rangedAttack() {},
+        });
+    }
+    const healer = unit('healer', 4, ['heal', 'move']);
+    const melee = unit('melee', 0, ['attack', 'move']);
+    const foe = unit('foe', -4, ['attack', 'move'], false);
+    globalThis.__painAndGainArenaObjects = new Map([[ScoreFlag, [first]], [Creep, [healer, melee, foe]]]);
+    globalThis.__painAndGainPathCalls = 0;
+    let pathCalls;
+    try {
+        globalThis.__painAndGainTick = 1000;
+        runTick();
+        globalThis.__painAndGainTick = 1001;
+        melee.hits = 80;
+        runTick();
+        globalThis.__painAndGainTick = 1;
+        melee.hits = 100;
+        runTick();
+    } finally {
+        pathCalls = globalThis.__painAndGainPathCalls;
+        delete globalThis.__painAndGainArenaObjects;
+        delete globalThis.__painAndGainPathCalls;
+        delete globalThis.__painAndGainTick;
+    }
+    assert.deepEqual(calls.filter(([id]) => id === 'healer').map(([, , target]) => target),
+        oneHealerEscortExperiment ? ['melee', 'melee', 'melee'] : ['first', 'melee', 'first']);
+    assert.equal(calls.filter(([id]) => id === 'healer').length, 3);
+    assert.equal(pathCalls, 0);
+    assert.deepEqual(entries.filter(({ value }) => value.type === 'game-state').map(({ value }) => value.tick),
+        [1000, 1001, 1]);
+    const diagnostics = entries.filter(({ value }) => value.type === 'healer-escort');
+    if (!oneHealerEscortExperiment) {
+        assert.deepEqual(diagnostics, []);
+    } else {
+        assert.deepEqual(diagnostics.map(({ value }) => [value.tick, value.event]), [
+            [1000, 'assign'], [1000, 'move-attempt'], [1001, 'release'],
+            [1, 'assign'], [1, 'move-attempt'],
+        ]);
+        assert.ok(diagnostics.every(({ value }) => value.buildId === buildId));
+        assert.deepEqual(diagnostics.filter(({ value }) => value.event === 'move-attempt')
+            .map(({ value }) => [value.targetId, value.returnCode, value.range]),
+        [['melee', -11, 4], ['melee', -11, 4]]);
+        assert.equal(diagnostics.find(({ value }) => value.event === 'release').value.reason, 'friendly-injured');
+        assert.deepEqual(diagnostics.filter(({ value }) => value.phase === 'before-actions')
+            .map(({ calls: count }) => count), [0, 2, 4]);
+    }
 });
 
 test('runTick retains a local combat objective for one outside tick and resets it on a new match', t => {

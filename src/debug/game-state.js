@@ -44,6 +44,10 @@ export function logFlagAllocationDiagnostic(diagnostic) {
         phase: 'before-actions', ...diagnostic }));
 }
 
+export function logHealerEscortDiagnostic(diagnostic) {
+    console.log(JSON.stringify({ type: 'healer-escort', buildId, ...diagnostic }));
+}
+
 let mapLogged = false;
 let lastMapTick = 0;
 let mapAttempts = 0;

@@ -28,6 +28,8 @@ An armed creep considers the nearest living enemy within five tiles, breaking eq
 
 The optional one-scout flag-allocation experiment is **off by default** (`oneScoutFlagExperiment = false` in `src/config.js`). To test it, set that constant to `true`, run `npm run build-id:generate` and `npm run build-id:check`, then verify Arena selects this project's `src/` before starting a match. The changed build ID distinguishes this configuration from the baseline. Only one full-health MOVE-only scout can make one bounded attempt at a neutral attack-reduction flag after the first flag is owned; combat and healer movement keep priority. The [experiment policy](docs/architecture/combat-positioning-validation.md#one-scout-flag-allocation-experiment--2026-09-28) defines safety gates and measurement. Return the switch to `false` and regenerate/check the build ID for baseline runs. Captured flags continue to score and impose their army-wide penalty after the scout leaves; a second capture is not automatically beneficial.
 
+The separate one-healer escort experiment is also **off by default** (`oneHealerEscortExperiment = false` in `src/config.js`). When enabled, one healthy pure healer can stay near one healthy pure melee creep already engaging an enemy, until injury or another release condition returns it to normal movement. It does not change healing actions or mixed-role combat movement. Generate and check a new build ID after changing the switch, and restore both switches to `false` for baseline play. Its [policy and evidence limits](docs/architecture/combat-positioning-validation.md#one-healer-pre-injury-escort-experiment--2026-09-28) do not establish a live benefit.
+
 ## Per-tick console output
 
 Every tick emits one compact JSON line with `type: "game-state"` and the Arena tick number. It includes the selected flag ID, all observed creeps (ID, ownership, position, health, fatigue, and functioning body-part counts), and flags (ID, position, ownership, effect, and score per tick). Flag ownership is `me`, `enemy`, or `neutral`. Flag scoring rates are not accumulated match scores.
@@ -100,6 +102,15 @@ Older captures without this entry have unknown allocator decisions and route
 results. Consecutive identical route-free rejections are collapsed; game-state
 snapshots still cover those ticks. Missing diagnostics in disabled-mode captures
 are expected.
+
+When the healer escort experiment is enabled, `healer-escort` JSON console
+entries record the build-tagged assignment or release and an assigned-healer
+`hold`, `fatigue-pause`, or `move-attempt`. A move attempt includes the actual
+`moveTo` target and return code; `OK` does not prove displacement. The importer
+keeps these as typed manifest `otherEntries`, accessible with `other` after a
+review claim, while JSONL remains game-state only. Older captures cannot
+establish unlogged escort decisions. Live escort behavior has not yet been
+verified.
 
 Before examining a managed log, use `claim` with a task identifier unique to that review. Its public record status remains `claim`; `examinedAt` is an internal checkpoint, not another public status. Save evidence and recommendations in Markdown, then use `examined` after reading and `done` only when that task's analysis is complete (`complete` remains an alias). All ownership claims must have both checkpoints before the record becomes `done`. Cleanup then verifies the managed path and content hash, deletes the JSONL and its manifest record, and retains the map, replay association, and retired fingerprint. The separate live gate for a proposed game-code change does not delay completion of an otherwise finished log review. No time limit or process exit implies completion. The importer refuses to delete changed content, a symlink, an unmanaged capture, or a path outside `replay_logs/`. Interrupted completed reviews are reconciled on the next `scan`, `watch`, or `list`. Pending imports require the source response to remain in the cache for recovery.
 

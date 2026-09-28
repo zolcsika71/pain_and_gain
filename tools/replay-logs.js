@@ -121,7 +121,7 @@ export function parseCacheEntry(bytes) {
             try {
                 parsed = JSON.parse(line);
             } catch {
-                if (/"type"\s*:\s*"(?:game-state|map-state|flag-allocation)"/.test(line)) {
+                if (/"type"\s*:\s*"(?:game-state|map-state|flag-allocation|healer-escort)"/.test(line)) {
                     return issue('malformed', `Malformed state entry ${sourceKey} for ${key}`);
                 }
                 otherEntries.push({ key: sourceKey, raw: line });
@@ -152,6 +152,27 @@ export function parseCacheEntry(bytes) {
                 try { buildId = consistentBuildId(buildId, entryBuildId(parsed, sourceKey), key); }
                 catch (error) { return issue('malformed', error.message); }
                 otherEntries.push({ key: sourceKey, raw: line, type: 'flag-allocation' });
+                continue;
+            }
+            if (parsed?.type === 'healer-escort') {
+                const transition = ['assign', 'release'].includes(parsed.event);
+                const execution = ['move-attempt', 'hold', 'fatigue-pause'].includes(parsed.event);
+                if (!Number.isSafeInteger(parsed.tick) ||
+                    parsed.phase !== (transition ? 'before-actions' : 'movement') ||
+                    (!transition && !execution) || typeof parsed.healerId !== 'string' ||
+                    typeof parsed.allyId !== 'string' ||
+                    (parsed.reason !== null && typeof parsed.reason !== 'string') ||
+                    (parsed.range !== null && (!Number.isSafeInteger(parsed.range) || parsed.range < 0)) ||
+                    (parsed.targetId !== null && typeof parsed.targetId !== 'string') ||
+                    (parsed.returnCode !== null && !Number.isSafeInteger(parsed.returnCode)) ||
+                    (parsed.event === 'move-attempt' && parsed.targetId !== parsed.allyId) ||
+                    (parsed.event !== 'move-attempt' &&
+                        (parsed.targetId !== null || parsed.returnCode !== null))) {
+                    return issue('malformed', `Invalid healer-escort entry ${sourceKey} for ${key}`);
+                }
+                try { buildId = consistentBuildId(buildId, entryBuildId(parsed, sourceKey), key); }
+                catch (error) { return issue('malformed', error.message); }
+                otherEntries.push({ key: sourceKey, raw: line, type: 'healer-escort' });
                 continue;
             }
             if (parsed?.type !== 'game-state') {

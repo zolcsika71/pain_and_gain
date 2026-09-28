@@ -94,6 +94,35 @@ test('imports build-tagged allocation diagnostics separately from JSONL and reta
         2: '{"type":"flag-allocation",broken' })).kind, 'malformed');
 });
 
+test('imports escort diagnostics as typed non-error entries without changing game-state JSONL', async t => {
+    const { root, cache } = workspace(t);
+    const buildId = 'a'.repeat(64);
+    const assign = JSON.stringify({ type: 'healer-escort', buildId, tick: 1,
+        phase: 'before-actions', event: 'assign', reason: 'local-engagement',
+        healerId: 'healer', allyId: 'melee', range: 4, targetId: null, returnCode: null });
+    const attempt = JSON.stringify({ type: 'healer-escort', buildId, tick: 1,
+        phase: 'movement', event: 'move-attempt', reason: null,
+        healerId: 'healer', allyId: 'melee', range: 4, targetId: 'melee', returnCode: -11 });
+    const source = path.join(cache, 'escort');
+    fs.writeFileSync(source, cacheFrame({ 1: [tagged(mapEntry(), buildId), tagged(entry(1), buildId),
+        assign, attempt].join('\n') }, { tick: 1 }));
+    const imported = await importCacheFile(root, source);
+    assert.equal(imported.record.buildId, buildId);
+    assert.deepEqual(imported.record.otherEntries, [
+        { key: '1:3', raw: assign, type: 'healer-escort' },
+        { key: '1:4', raw: attempt, type: 'healer-escort' },
+    ]);
+    assert.equal(fs.readFileSync(path.join(root, 'replay_logs', imported.record.outputPath), 'utf8'),
+        `${tagged(entry(1), buildId)}\n`);
+    assert.equal(parseCacheEntry(cacheFrame({ 1: tagged(entry(1), buildId),
+        2: tagged(attempt, 'b'.repeat(64)) })).kind, 'malformed');
+    assert.equal(parseCacheEntry(cacheFrame({ 1: tagged(entry(1), buildId),
+        2: '{"type":"healer-escort",broken' })).kind, 'malformed');
+    assert.equal(parseCacheEntry(cacheFrame({ 1: tagged(entry(1), buildId),
+        2: JSON.stringify({ ...JSON.parse(attempt), targetId: 'wrong' }) })).kind, 'malformed');
+    assert.equal(parseCacheEntry(cacheFrame({ 1: mappedFirst() })).kind, 'log');
+});
+
 test('preserves replay build identity across chunks and rejects conflicting or mixed IDs', async t => {
     const { root, cache } = workspace(t);
     const firstId = 'a'.repeat(64);

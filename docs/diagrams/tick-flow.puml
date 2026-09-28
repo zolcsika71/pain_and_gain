@@ -6,6 +6,7 @@ component "src/loop.js" as Loop
 component "src/arena/observe.js" as Observe
 component "src/strategy/objectives.js" as Objectives
 component "src/config.js\nsrc/strategy/flag-allocation.js" as Allocation
+component "src/config.js\nsrc/tactics/healer-escort.js" as Escort
 component "src/debug/game-state.js" as Debug
 component "src/arena/execute.js" as Execute
 component "src/tactics/movement.js" as Movement
@@ -20,14 +21,17 @@ Observe --> API : getObjectsByPrototype() / getTicks()
 Loop --> Objectives : select first flag
 Loop --> Allocation : optional one-scout fallback\n(default off; one attempt)
 Allocation --> API : searchPath() terrain-route estimates\nwhen enabled
+Loop --> Escort : optional one-healer pair\n(default off; one assignment)
 Loop --> Observe : sample starting map once
 Observe --> API : getObjects() / getTerrainAt()
 Loop --> Debug : log map once, then tick state\nbefore actions
+Escort --> Debug : assignment/release diagnostic\nbefore actions
 Debug --> API : console.log(JSON snapshot)
-Loop --> Execute : choose and issue movement\nwith optional scout fallback
+Loop --> Execute : choose and issue movement\nwith optional scout fallback / healer escort
 Execute --> Movement : combat objective or pure-healer support,\nthen first flag fallback
 Movement --> Eligibility : functioning weapons / HEAL and range
 Execute --> API : at most one creep.moveTo(target)
+Execute --> Debug : escort hold, fatigue pause, or move attempt\nwith actual return code
 Loop --> Execute : execute tactics after movement
 Execute --> Healing : choose available healing
 Execute --> Combat : choose compatible attacks
