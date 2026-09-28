@@ -1,6 +1,6 @@
 # ADR 0004: Improve replay evidence and deterministic analysis
 
-Status: Accepted direction; implementation roadmap proposed and not started.
+Status: Accepted direction; M1 complete, M2–M5 planned.
 
 Date: 2026-09-29 (Europe/Budapest)
 
@@ -29,6 +29,7 @@ Related records:
 - [ADR 0003: strategy proposals](0003-replay-informed-strategy-proposals.md)
 - [Current tick flow](../diagrams/tick-flow.puml)
 - [Replay commands and build provenance](../../README.md)
+- [Replay evidence contract](../architecture/replay-evidence-contract.md)
 
 ## Decision
 
@@ -73,12 +74,12 @@ a superseding ADR.
 
 ## Roadmap
 
-All milestones below are planned. Complete them in order; record implementation
+M1 is complete. Complete the remaining milestones in order; record implementation
 and live verification separately.
 
 | ID | Milestone | Status | Depends on | Completion evidence |
 | --- | --- | --- | --- | --- |
-| M1 | Define the evidence contract | Planned | Baseline | Reviewed schema, examples, compatibility and coverage rules |
+| M1 | Define the evidence contract | Complete | Baseline | [Reviewed schema, examples, compatibility and coverage rules](../architecture/replay-evidence-contract.md) |
 | M2 | Add membership diagnostics | Planned | M1 | Transition tests, importer round-trip evidence, unchanged selector inputs |
 | M3 | Add decision and action diagnostics | Planned | M1, M2 | Command-trace equivalence tests and diagnostic correlation tests |
 | M4 | Add deterministic replay analysis | Planned | M2, M3 | Known-answer fixtures, reproducible reports, read-only verification |
@@ -202,6 +203,7 @@ local tests; never silently convert an unknown into a pass.
 | Date | Milestone | Update | Evidence / next action |
 | --- | --- | --- | --- |
 | 2026-09-29 | Roadmap | Initial ADR draft; implementation not started | Begin M1 after roadmap review |
+| 2026-09-29 | M1 | Complete: documented the version-1 evidence contract without runtime or importer changes | Contract examples parsed as JSON; local links and whitespace checked. Begin M2 only in a separately authorized task. |
 
 ## Consequences
 
