@@ -27,6 +27,181 @@ const mapPayload = map => {
 const mapChecksum = map => sha256(mapContent(mapPayload(map)));
 const savedMapContent = map => mapContent({ ...mapPayload(map), checksum: mapChecksum(map) });
 const validBuildId = value => typeof value === 'string' && /^[a-f0-9]{64}$/.test(value);
+const membershipDiagnosticTypes = ['membership-baseline', 'membership-change'];
+const futureActionDiagnosticTypes = ['action-decision', 'action-attempt'];
+const futureCoveredTypes = [...membershipDiagnosticTypes, ...futureActionDiagnosticTypes];
+const evidenceCountKeys = [...membershipDiagnosticTypes, ...futureActionDiagnosticTypes,
+    'movement-decisions', 'healing-decisions', 'combat-decisions'];
+const roles = ['melee', 'ranged', 'healer', 'scout', 'mixed', 'unclassifiable'];
+const presences = ['present', 'missing', 'dead'];
+const membershipChangeOrder = ['member-added', 'assignment', 'presence', 'capability', 'participation'];
+const reasonToken = value => typeof value === 'string' && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value);
+const positiveInteger = value => Number.isSafeInteger(value) && value > 0;
+const nonnegativeInteger = value => Number.isSafeInteger(value) && value >= 0;
+
+function validPartCounts(value, nullable = false) {
+    if (nullable && value === null) return true;
+    return value && typeof value === 'object' && !Array.isArray(value) &&
+        Object.entries(value).every(([part, count]) => /^[a-z][a-z0-9_]*$/.test(part) && nonnegativeInteger(count));
+}
+
+function validMember(member) {
+    return member && typeof member === 'object' && !Array.isArray(member) &&
+        typeof member.id === 'string' && member.id.length > 0 && roles.includes(member.role) &&
+        validPartCounts(member.originalParts, true) &&
+        (member.squadId === null || typeof member.squadId === 'string') &&
+        (member.slotIndex === null || nonnegativeInteger(member.slotIndex)) &&
+        typeof member.late === 'boolean' && presences.includes(member.presence) &&
+        validPartCounts(member.functioning) && typeof member.capable === 'boolean' &&
+        typeof member.participating === 'boolean' && typeof member.canMoveNow === 'boolean';
+}
+
+function validMembershipEnvelope(entry, type) {
+    return entry?.type === type && entry.formatVersion === 1 && validBuildId(entry.buildId) &&
+        positiveInteger(entry.tick) && entry.phase === 'before-actions' &&
+        nonnegativeInteger(entry.sequence) && entry.recordId === `${entry.tick}:${entry.sequence}` &&
+        positiveInteger(entry.epoch);
+}
+
+function validBaseline(entry) {
+    if (!validMembershipEnvelope(entry, 'membership-baseline') ||
+        typeof entry.initialized !== 'boolean' ||
+        (entry.initializationReason !== null && !reasonToken(entry.initializationReason)) ||
+        (entry.initialized ? entry.initializationReason !== null : entry.initializationReason === null) ||
+        (entry.lastTick !== null && !positiveInteger(entry.lastTick)) ||
+        !Array.isArray(entry.squads) || !Array.isArray(entry.members) ||
+        !entry.members.every(validMember)) return false;
+    if (entry.members.some((member, index) => index && entry.members[index - 1].id >= member.id)) return false;
+    const memberIds = new Set(entry.members.map(member => member.id));
+    const assigned = new Set();
+    const squadIds = new Set();
+    for (const squad of entry.squads) {
+        if (!squad || typeof squad.id !== 'string' || !Array.isArray(squad.memberIds) ||
+            squadIds.has(squad.id) ||
+            squad.memberIds.some(id => typeof id !== 'string' || !memberIds.has(id) || assigned.has(id))) return false;
+        squadIds.add(squad.id);
+        squad.memberIds.forEach(id => assigned.add(id));
+    }
+    return entry.members.every(member => {
+        if (member.squadId === null) return member.slotIndex === null && !assigned.has(member.id);
+        const squad = entry.squads.find(item => item.id === member.squadId);
+        return squad && squad.memberIds[member.slotIndex] === member.id;
+    });
+}
+
+function validMembershipChange(change) {
+    if (!change || typeof change !== 'object' || Array.isArray(change)) return false;
+    if (change.kind === 'reset') return positiveInteger(change.previousTick) &&
+        positiveInteger(change.currentTick) && positiveInteger(change.fromEpoch) &&
+        positiveInteger(change.toEpoch) && change.toEpoch === change.fromEpoch + 1 && reasonToken(change.reason);
+    if (change.kind === 'initialization') return typeof change.initialized === 'boolean' &&
+        (change.initializationReason === null || reasonToken(change.initializationReason));
+    if (change.kind === 'member-added') return validMember(change.member);
+    if (typeof change.memberId !== 'string' || !change.memberId) return false;
+    if (change.kind === 'assignment') return (change.squadId === null || typeof change.squadId === 'string') &&
+        (change.slotIndex === null || nonnegativeInteger(change.slotIndex)) &&
+        ((change.squadId === null) === (change.slotIndex === null));
+    if (change.kind === 'presence') return presences.includes(change.from) &&
+        presences.includes(change.to) && change.from !== change.to;
+    if (change.kind === 'capability') return validPartCounts(change.functioning) &&
+        typeof change.capable === 'boolean' && typeof change.canMoveNow === 'boolean';
+    return change.kind === 'participation' && typeof change.participating === 'boolean';
+}
+
+function validChange(entry) {
+    if (!validMembershipEnvelope(entry, 'membership-change') || !Array.isArray(entry.changes) ||
+        entry.changes.length === 0 || !entry.changes.every(validMembershipChange)) return false;
+    const keys = entry.changes.map(change => {
+        if (change.kind === 'reset') {
+            if (change.currentTick !== entry.tick || change.toEpoch !== entry.epoch) return null;
+            return `0:${change.kind}`;
+        }
+        if (change.kind === 'initialization') return `1:${change.kind}`;
+        const memberId = change.memberId ?? change.member.id;
+        return `2:${memberId}:${String(membershipChangeOrder.indexOf(change.kind)).padStart(2, '0')}`;
+    });
+    return !keys.includes(null) && keys.every((key, index) => index === 0 || keys[index - 1] < key);
+}
+
+function validCoverage(entry) {
+    if (entry?.type !== 'evidence-coverage' || entry.formatVersion !== 1 ||
+        !validBuildId(entry.buildId) || !positiveInteger(entry.tick) || entry.phase !== 'after-actions' ||
+        !nonnegativeInteger(entry.sequence) || entry.recordId !== `${entry.tick}:${entry.sequence}` ||
+        !nonnegativeInteger(entry.recordCount) || entry.sequence !== entry.recordCount ||
+        entry.closed !== true || !Array.isArray(entry.coveredTypes) ||
+        canonical(entry.coveredTypes) !== canonical(membershipDiagnosticTypes) ||
+        !entry.counts || typeof entry.counts !== 'object' || Array.isArray(entry.counts) ||
+        canonical(Object.keys(entry.counts).sort()) !== canonical([...evidenceCountKeys].sort()) ||
+        !evidenceCountKeys.every(key => nonnegativeInteger(entry.counts[key])) ||
+        futureActionDiagnosticTypes.some(key => entry.counts[key] !== 0) ||
+        ['movement-decisions', 'healing-decisions', 'combat-decisions'].some(key => entry.counts[key] !== 0)) return false;
+    return entry.recordCount === 0
+        ? entry.firstSequence === null && entry.lastSequence === null
+        : entry.firstSequence === 0 && entry.lastSequence === entry.recordCount - 1;
+}
+
+export function summarizeDiagnosticCoverage(gameStateLines, diagnostics) {
+    const gameTicks = gameStateLines.map(line => JSON.parse(line).tick);
+    const diagnosticTicks = diagnostics.map(item => item.entry.tick);
+    const ticks = [...new Set([...gameTicks, ...diagnosticTicks])].sort((a, b) => a - b);
+    const summary = {
+        formatVersion: 1, firstTick: ticks[0] ?? null, lastTick: ticks.at(-1) ?? null,
+        versions: [...new Set(diagnostics.map(item => item.entry.formatVersion))].sort((a, b) => a - b),
+        coveredTypes: [],
+        completeTicks: [], missingClosures: [], gaps: [], duplicateRecordIds: [], conflicts: [],
+        typeCounts: Object.fromEntries([...membershipDiagnosticTypes, ...futureActionDiagnosticTypes,
+            'evidence-coverage'].map(type => [type, 0])),
+        channelCounts: { movement: 0, healing: 0, combat: 0 },
+    };
+    for (const item of diagnostics) summary.typeCounts[item.entry.type]++;
+    for (const tick of ticks) {
+        const atTick = diagnostics.filter(item => item.entry.tick === tick);
+        const byRecordId = new Map();
+        for (const item of atTick) {
+            const items = byRecordId.get(item.entry.recordId) ?? [];
+            items.push(item);
+            byRecordId.set(item.entry.recordId, items);
+        }
+        let conflict = false;
+        for (const [recordId, items] of byRecordId) {
+            const variants = new Set(items.map(item => canonical(item.entry)));
+            if (variants.size > 1) {
+                summary.conflicts.push({ tick, recordId, sources: items.map(item => item.key) });
+                conflict = true;
+            } else if (items.length > 1) {
+                summary.duplicateRecordIds.push({ tick, recordId, count: items.length,
+                    sources: items.map(item => item.key) });
+            }
+        }
+        const unique = [...byRecordId.values()].map(items => items[0].entry);
+        const closures = unique.filter(entry => entry.type === 'evidence-coverage');
+        if (closures.length === 0) {
+            summary.missingClosures.push(tick);
+            continue;
+        }
+        if (closures.length > 1) {
+            summary.conflicts.push({ tick, recordIds: closures.map(entry => entry.recordId),
+                sources: atTick.filter(item => item.entry.type === 'evidence-coverage').map(item => item.key) });
+            continue;
+        }
+        const closure = closures[0];
+        for (const type of closure.coveredTypes) {
+            if (!summary.coveredTypes.includes(type)) summary.coveredTypes.push(type);
+        }
+        const preceding = unique.filter(entry => entry.type !== 'evidence-coverage');
+        const actualSequences = [...new Set(preceding.map(entry => entry.sequence))].sort((a, b) => a - b);
+        const expectedSequences = Array.from({ length: closure.recordCount }, (_, index) => index);
+        const actualCounts = Object.fromEntries(membershipDiagnosticTypes.map(type =>
+            [type, preceding.filter(entry => entry.type === type).length]));
+        const countMismatch = membershipDiagnosticTypes.some(type => actualCounts[type] !== closure.counts[type]);
+        if (canonical(actualSequences) !== canonical(expectedSequences) || countMismatch || conflict) {
+            summary.gaps.push({ tick, expectedSequences, actualSequences, countMismatch });
+            continue;
+        }
+        summary.completeTicks.push(tick);
+    }
+    return summary;
+}
 
 function entryBuildId(entry, source) {
     if (!Object.hasOwn(entry, 'buildId')) return null;
@@ -109,6 +284,7 @@ export function parseCacheEntry(bytes) {
     }
     const gameState = [];
     const otherEntries = [];
+    const diagnostics = [];
     let map = null;
     let buildId;
     for (const [entryKey, raw] of Object.entries(response)) {
@@ -121,7 +297,7 @@ export function parseCacheEntry(bytes) {
             try {
                 parsed = JSON.parse(line);
             } catch {
-                if (/"type"\s*:\s*"(?:game-state|map-state|flag-allocation|healer-escort)"/.test(line)) {
+                if (/"type"\s*:\s*"(?:game-state|map-state|flag-allocation|healer-escort|membership-baseline|membership-change|action-decision|action-attempt|evidence-coverage)"/.test(line)) {
                     return issue('malformed', `Malformed state entry ${sourceKey} for ${key}`);
                 }
                 otherEntries.push({ key: sourceKey, raw: line });
@@ -175,6 +351,30 @@ export function parseCacheEntry(bytes) {
                 otherEntries.push({ key: sourceKey, raw: line, type: 'healer-escort' });
                 continue;
             }
+            if (futureActionDiagnosticTypes.includes(parsed?.type)) {
+                if (parsed.formatVersion !== 1) {
+                    return issue('unsupported', `Unsupported ${parsed.type} version in ${sourceKey} for ${key}`);
+                }
+                return issue('unsupported', `${parsed.type} import awaits ADR 0004 M3 in ${sourceKey} for ${key}`);
+            }
+            if (membershipDiagnosticTypes.includes(parsed?.type) || parsed?.type === 'evidence-coverage') {
+                if (parsed.formatVersion !== 1) {
+                    return issue('unsupported', `Unsupported ${parsed.type} version in ${sourceKey} for ${key}`);
+                }
+                if (parsed.type === 'evidence-coverage' &&
+                    canonical(parsed.coveredTypes) === canonical(futureCoveredTypes)) {
+                    return issue('unsupported', `Action evidence coverage awaits ADR 0004 M3 in ${sourceKey} for ${key}`);
+                }
+                const valid = parsed.type === 'membership-baseline' ? validBaseline(parsed) :
+                    parsed.type === 'membership-change' ? validChange(parsed) : validCoverage(parsed);
+                if (!valid) return issue('malformed', `Invalid ${parsed.type} entry ${sourceKey} for ${key}`);
+                try { buildId = consistentBuildId(buildId, entryBuildId(parsed, sourceKey), key); }
+                catch (error) { return issue('malformed', error.message); }
+                const item = { key: sourceKey, raw: line, type: parsed.type, formatVersion: 1 };
+                diagnostics.push({ ...item, entry: parsed });
+                otherEntries.push(item);
+                continue;
+            }
             if (parsed?.type !== 'game-state') {
                 otherEntries.push({ key: sourceKey, raw: line });
                 continue;
@@ -201,6 +401,7 @@ export function parseCacheEntry(bytes) {
         kind: 'log', replayId: match[1], requestedTick: Number(match[2]), key,
         fingerprint: sha256(body), gameState, otherEntries, map, buildId: buildId ?? null,
         coverage: { count: ticks.length, firstTick, lastTick, duplicates: [...counts].filter(([, n]) => n > 1).map(([tick]) => tick), gaps },
+        diagnosticCoverage: summarizeDiagnosticCoverage(gameState, diagnostics),
     };
 }
 
@@ -514,6 +715,7 @@ export async function importCacheFile(root, sourceFile) {
         }
         if (!active) return { kind: 'deferred', replayId: parsed.replayId,
             fingerprint: parsed.fingerprint, coverage: parsed.coverage,
+            diagnosticCoverage: parsed.diagnosticCoverage,
             message: 'No validated active map for replay; no JSONL created' };
         if (associateBuildId(active.association, parsed.buildId)) saveManifest(root, manifest);
         if (active.association.retiredFingerprints.includes(parsed.fingerprint)) {
@@ -546,7 +748,8 @@ export async function importCacheFile(root, sourceFile) {
             mapChecksum: active.registration.checksum, mapFile: active.registration.file,
             buildId: parsed.buildId,
             importedAt: new Date().toISOString(), status: 'pending',
-            coverage: parsed.coverage, otherEntries: parsed.otherEntries, reviews: {},
+            coverage: parsed.coverage, diagnosticCoverage: parsed.diagnosticCoverage,
+            otherEntries: parsed.otherEntries, reviews: {},
         };
         manifest.records.push(record);
         saveManifest(root, manifest);
@@ -624,7 +827,7 @@ export async function registerLocalFile(root, replayId, name) {
             importedAt: new Date().toISOString(), status: 'claim',
             coverage: { count: ticks.length, firstTick, lastTick,
                 duplicates: [...counts].filter(([, n]) => n > 1).map(([tick]) => tick), gaps },
-            otherEntries: [], reviews: {},
+            diagnosticCoverage: summarizeDiagnosticCoverage(lines, []), otherEntries: [], reviews: {},
         };
         manifest.records.push(record);
         saveManifest(root, manifest);
@@ -763,8 +966,8 @@ async function main() {
         const seen = new Map();
         const poll = async () => {
             for (const result of await scanCache(root, cacheDir, seen)) {
-                if (result.record) console.log(JSON.stringify({ event: result.kind, replayId: result.record.replayId, fingerprint: result.record.fingerprint, outputPath: result.record.outputPath, mapId: result.record.mapId, mapFile: result.record.mapFile, buildId: result.record.buildId ?? null, status: result.record.status, coverage: result.record.coverage, otherEntries: result.record.otherEntries.length }));
-                else if (['mapped', 'deferred'].includes(result.kind)) console.log(JSON.stringify({ event: result.kind, replayId: result.replayId, mapId: result.mapId, mapFile: result.mapFile, coverage: result.coverage, message: result.message }));
+                if (result.record) console.log(JSON.stringify({ event: result.kind, replayId: result.record.replayId, fingerprint: result.record.fingerprint, outputPath: result.record.outputPath, mapId: result.record.mapId, mapFile: result.record.mapFile, buildId: result.record.buildId ?? null, status: result.record.status, coverage: result.record.coverage, diagnosticCoverage: result.record.diagnosticCoverage, otherEntries: result.record.otherEntries.length }));
+                else if (['mapped', 'deferred'].includes(result.kind)) console.log(JSON.stringify({ event: result.kind, replayId: result.replayId, mapId: result.mapId, mapFile: result.mapFile, coverage: result.coverage, diagnosticCoverage: result.diagnosticCoverage, message: result.message }));
                 else console.error(JSON.stringify({ event: result.kind, source: result.source, message: result.message }));
             }
         };
@@ -775,7 +978,7 @@ async function main() {
         }
     } else if (command === 'list') {
         const manifest = await reconcileCleanup(root);
-        for (const record of manifest.records) console.log(JSON.stringify({ replayId: record.replayId, fingerprint: record.fingerprint, outputPath: record.outputPath, mapId: record.mapId, mapFile: record.mapFile, buildId: record.buildId ?? null, status: record.status, coverage: record.coverage, reviews: record.reviews, otherEntries: record.otherEntries.length }));
+        for (const record of manifest.records) console.log(JSON.stringify({ replayId: record.replayId, fingerprint: record.fingerprint, outputPath: record.outputPath, mapId: record.mapId, mapFile: record.mapFile, buildId: record.buildId ?? null, status: record.status, coverage: record.coverage, diagnosticCoverage: record.diagnosticCoverage ?? null, reviews: record.reviews, otherEntries: record.otherEntries.length }));
     } else if (command === 'migrate-status') {
         console.log(JSON.stringify({ migrated: await migrateReviewStatuses(root) }));
     } else if (command === 'register-local') {

@@ -1,9 +1,10 @@
 # Replay evidence contract
 
-This document defines the version-1 contract for future replay diagnostics in
-Pain and Gain. It completes milestone M1 of
-[ADR 0004](../decisions/0004-replay-evidence-and-analysis-roadmap.md); it does not
-implement membership or action diagnostics, importer changes, or analysis.
+This document defines the version-1 replay-diagnostic contract for Pain and
+Gain. It completed milestone M1 of
+[ADR 0004](../decisions/0004-replay-evidence-and-analysis-roadmap.md). M2 now
+implements its membership subset and importer support; action diagnostics and
+analysis remain planned for M3 and M4.
 
 The contract preserves the existing `game-state` and `map-state` records. New
 diagnostics are separate console records and must not become inputs to gameplay.
@@ -142,6 +143,7 @@ changes.
 | --- | --- | --- |
 | `reset` | `previousTick`, `currentTick`, `fromEpoch`, `toEpoch`, `reason` | Match-local state reset because the tick counter restarted or did not advance. |
 | `initialization` | `initialized`, `initializationReason` | Initialization result or reason changed. |
+| `member-added` | `member` | A previously unknown late ID appeared; `member` is the same full object shape used by the baseline. |
 | `assignment` | `memberId`, `squadId`, `slotIndex` | Stable slot changed; `squadId` and `slotIndex` may both be `null` for explicit unassignment. |
 | `presence` | `memberId`, `from`, `to` | Presence changed among `present`, `missing`, and `dead`. Absence alone must not produce `dead`. |
 | `capability` | `memberId`, `functioning`, `capable`, `canMoveNow` | Functioning parts or current capability/mobility changed. |
@@ -152,7 +154,9 @@ change shape exists for an explicit later state transition, but this contract
 does not authorize reassignment. Injury alone does not change membership.
 Missing members keep their slots, confirmed dead members remain tombstoned, and
 restored capabilities reactivate the original slot according to the existing
-membership rules.
+membership rules. A `member-added` change is required for an unexpected late ID
+because presence and capability changes alone cannot reconstruct its original
+role, parts, or unassigned status.
 
 A match reset emits a `reset` change and then a new full baseline in the new
 epoch. A module reload cannot describe the prior in-memory epoch; it emits only
@@ -181,10 +185,10 @@ These transitions retain squad A and slot 1; they do not imply reassignment.
 
 ## Action evidence
 
-The production path emits one `action-decision` for each owned actor and each
-channel reached in that tick: `movement`, `healing`, and `combat`. This includes
-actors with no selected command. Combat may select two compatible actions, so
-the decision carries an ordered `actions` array.
+When M3 is implemented, the production path will emit one `action-decision` for
+each owned actor and each channel reached in that tick: `movement`, `healing`,
+and `combat`. This includes actors with no selected command. Combat may select
+two compatible actions, so the decision carries an ordered `actions` array.
 
 ### `action-decision`
 
@@ -268,6 +272,8 @@ in `after-actions`. It contains:
 - `firstSequence`: `0` when diagnostics preceded it, otherwise `null`;
 - `lastSequence`: the last sequence before this record, otherwise `null`;
 - `recordCount`: count of preceding version-1 diagnostics for the tick;
+- `coveredTypes`: ordered diagnostic types whose execution paths this closure
+  covers;
 - `counts`: an object with exactly `membership-baseline`,
   `membership-change`, `action-decision`, `action-attempt`,
   `movement-decisions`, `healing-decisions`, and `combat-decisions`, each a
@@ -283,10 +289,16 @@ establishes that no preceding version-1 diagnostics were emitted for that tick.
 An entirely absent tick or absent coverage record is unknown, never an implicit
 zero.
 
+During M2, `coveredTypes` is exactly `["membership-baseline",
+"membership-change"]`. Zero action counts describe the records present, not
+action behavior or action-diagnostic coverage. M3 may extend `coveredTypes` to
+`action-decision` and `action-attempt` only when those production paths are
+instrumented and verified.
+
 Coverage closing the three-record hold example above:
 
 ```json
-{"type":"evidence-coverage","formatVersion":1,"buildId":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","tick":20,"phase":"after-actions","sequence":3,"recordId":"20:3","firstSequence":0,"lastSequence":2,"recordCount":3,"counts":{"membership-baseline":0,"membership-change":0,"action-decision":3,"action-attempt":0,"movement-decisions":1,"healing-decisions":1,"combat-decisions":1},"closed":true}
+{"type":"evidence-coverage","formatVersion":1,"buildId":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","tick":20,"phase":"after-actions","sequence":3,"recordId":"20:3","firstSequence":0,"lastSequence":2,"recordCount":3,"coveredTypes":["membership-baseline","membership-change","action-decision","action-attempt"],"counts":{"membership-baseline":0,"membership-change":0,"action-decision":3,"action-attempt":0,"movement-decisions":1,"healing-decisions":1,"combat-decisions":1},"closed":true}
 ```
 
 ### Reconstruction rules
@@ -327,7 +339,7 @@ preceding records leave `30:1` missing. Tick 30 is incomplete even if its
 `game-state` exists:
 
 ```json
-{"type":"evidence-coverage","formatVersion":1,"buildId":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","tick":30,"phase":"after-actions","sequence":3,"recordId":"30:3","firstSequence":0,"lastSequence":2,"recordCount":3,"counts":{"membership-baseline":0,"membership-change":0,"action-decision":2,"action-attempt":1,"movement-decisions":1,"healing-decisions":1,"combat-decisions":0},"closed":true}
+{"type":"evidence-coverage","formatVersion":1,"buildId":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","tick":30,"phase":"after-actions","sequence":3,"recordId":"30:3","firstSequence":0,"lastSequence":2,"recordCount":3,"coveredTypes":["membership-baseline","membership-change","action-decision","action-attempt"],"counts":{"membership-baseline":0,"membership-change":0,"action-decision":2,"action-attempt":1,"movement-decisions":1,"healing-decisions":1,"combat-decisions":0},"closed":true}
 ```
 
 The importer must report the missing sequence; it must not fabricate `30:1` or
@@ -350,15 +362,18 @@ for tick 7 are unknown:
 {"type":"game-state","buildId":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","tick":7,"phase":"before-actions","selectedFlagId":null,"creeps":[],"flags":[]}
 ```
 
-## Required importer and storage work for M2–M3
+## Importer and storage requirements for M2–M3
 
-Future implementation must make these focused changes without redefining old
-formats:
+M2 implements these requirements for `membership-baseline`,
+`membership-change`, and membership-only `evidence-coverage`. It recognizes
+`action-decision` and `action-attempt` as reserved version-1 types but reports
+them unsupported until M3 implements and validates their production paths. M3
+must complete the action-specific parts without redefining old formats:
 
 1. Recognize the five new types: `membership-baseline`, `membership-change`,
    `action-decision`, `action-attempt`, and `evidence-coverage`.
 2. Strictly validate the common envelope, type-specific fields, references,
-   phase, sequence, record IDs, build consistency, and version. A recognized
+   phase, sequence, record IDs, `coveredTypes`, build consistency, and version. A recognized
    type with an unsupported version is reported as unsupported, not silently
    treated as an ordinary console line.
 3. Reject an entire cached response when a recognized new diagnostic is
@@ -393,7 +408,7 @@ The contract matches the current boundaries documented in
 movement precedes tactics, and Arena action methods return scheduling/error
 codes rather than resolved effects.
 
-It deliberately specifies evidence that the current runtime does not emit.
-Implementing that evidence belongs to M2 and M3. Deterministic analysis,
-live-capture validation, performance measurements, and any strategy changes
-remain outside M1.
+M2 now emits the membership subset and its explicitly scoped coverage. Action
+decisions and attempts remain specified but unimplemented until M3.
+Deterministic analysis, live-capture validation, performance measurements, and
+any strategy changes remain outside M1 and M2.

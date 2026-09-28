@@ -87,14 +87,17 @@ test('runTick chooses combat movement or first-flag fallback before compatible t
         ['ally', 'attack', enemy],
     ]);
     const expectedTypes = oneScoutFlagExperiment
-        ? ['flag-allocation', 'map-state', 'game-state', 'game-state']
-        : ['map-state', 'game-state', 'game-state'];
+        ? ['membership-baseline', 'flag-allocation', 'map-state', 'game-state',
+            'evidence-coverage', 'game-state', 'evidence-coverage']
+        : ['membership-baseline', 'map-state', 'game-state', 'evidence-coverage',
+            'game-state', 'evidence-coverage'];
     assert.equal(logger.mock.callCount(), expectedTypes.length);
     assert.ok(logger.mock.calls.every(call => call.arguments.length === 1));
-    assert.deepEqual(actionCountsAtLog, oneScoutFlagExperiment ? [0, 0, 0, 4] : [0, 0, 4]);
+    assert.deepEqual(actionCountsAtLog, oneScoutFlagExperiment
+        ? [0, 0, 0, 0, 4, 4, 8] : [0, 0, 0, 4, 4, 8]);
     assert.deepEqual(snapshots.map(state => state.type), expectedTypes);
     if (oneScoutFlagExperiment) {
-        assert.deepEqual(snapshots[0], {
+        assert.deepEqual(snapshots.find(state => state.type === 'flag-allocation'), {
             type: 'flag-allocation', buildId, phase: 'before-actions', tick: 49,
             event: 'reject', reason: 'first-flag-not-owned', firstFlagId: 'first',
             state: null, objectiveId: 'first', scoutId: null, targetId: null,
@@ -152,7 +155,11 @@ function observedMember(id) {
 }
 
 test('runTick initializes and updates stable membership from current owned observations', t => {
-    t.mock.method(console, 'log', () => {});
+    const evidence = [];
+    t.mock.method(console, 'log', message => {
+        const record = JSON.parse(message);
+        if (record.type.startsWith('membership-') || record.type === 'evidence-coverage') evidence.push(record);
+    });
     const flag = Object.assign(new ScoreFlag(), { id: 'first', x: 50, y: 50 });
     const units = membershipFixture();
     globalThis.__painAndGainArenaObjects = new Map([[ScoreFlag, [flag]], [Creep, units]]);
@@ -164,6 +171,9 @@ test('runTick initializes and updates stable membership from current owned obser
         assert.deepEqual(first.squads.map(group => group.memberIds.length), [4, 4, 4]);
         assert.equal(first.members.length, 14);
         assert.equal(observedMember('scout_1').squadId, null);
+        const firstBaseline = evidence.find(record => record.type === 'membership-baseline' && record.tick === 1);
+        assert.equal(firstBaseline.initialized, true);
+        assert.equal(firstBaseline.members.length, 14);
 
         const absent = units.find(unit => unit.id.endsWith('melee_2'));
         globalThis.__painAndGainArenaObjects.set(Creep, units.filter(unit => unit !== absent));
@@ -171,6 +181,8 @@ test('runTick initializes and updates stable membership from current owned obser
         runTick();
         assert.equal(observedMember('melee_2').presence, 'missing');
         assert.equal(observedMember('melee_2').squadId, 'A');
+        assert.deepEqual(evidence.find(record => record.type === 'membership-change' && record.tick === 2)
+            .changes.map(change => change.kind), ['presence', 'capability', 'participation']);
 
         for (const part of absent.body) if (part.type === 'attack') part.hits = 0;
         absent.hits = 800;
@@ -180,6 +192,8 @@ test('runTick initializes and updates stable membership from current owned obser
         assert.equal(observedMember('melee_2').presence, 'present');
         assert.equal(observedMember('melee_2').capable, false);
         assert.equal(observedMember('melee_2').squadId, 'A');
+        assert.deepEqual(evidence.find(record => record.type === 'membership-change' && record.tick === 3)
+            .changes.map(change => change.kind), ['presence', 'capability']);
 
         for (const part of absent.body) if (part.type === 'attack') part.hits = 100;
         absent.hits = absent.hitsMax;
@@ -188,12 +202,18 @@ test('runTick initializes and updates stable membership from current owned obser
         assert.equal(observedMember('melee_2').capable, true);
         assert.equal(observedMember('melee_2').participating, true);
         assert.deepEqual(getMembershipState().squads, first.squads);
+        assert.deepEqual(evidence.find(record => record.type === 'membership-change' && record.tick === 4)
+            .changes.map(change => change.kind), ['capability', 'participation']);
 
         globalThis.__painAndGainArenaObjects.set(Creep, membershipFixture('pg_player2_'));
         globalThis.__painAndGainTick = 1;
         runTick();
         assert.equal(getMembershipState().initialized, true);
         assert.ok(getMembershipState().members.every(member => member.id.startsWith('pg_player2_')));
+        const lastReset = evidence.filter(record => record.type === 'membership-change' && record.tick === 1).at(-1);
+        assert.equal(lastReset.changes[0].kind, 'reset');
+        const lastBaseline = evidence.filter(record => record.type === 'membership-baseline' && record.tick === 1).at(-1);
+        assert.ok(lastBaseline.members.every(member => member.id.startsWith('pg_player2_')));
     } finally {
         delete globalThis.__painAndGainArenaObjects;
         delete globalThis.__painAndGainTick;

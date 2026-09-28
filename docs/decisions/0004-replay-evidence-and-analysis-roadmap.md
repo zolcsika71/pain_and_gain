@@ -1,6 +1,6 @@
 # ADR 0004: Improve replay evidence and deterministic analysis
 
-Status: Accepted direction; M1 complete, M2–M5 planned.
+Status: Accepted direction; M1–M2 complete, M3–M5 planned.
 
 Date: 2026-09-29 (Europe/Budapest)
 
@@ -69,18 +69,19 @@ a superseding ADR.
   evidence. An absent terminal snapshot alone is not a defect.
 - Record diagnostic overhead and capture completeness; do not assume that
   additional logging is free.
-- This documentation change does not implement the milestones or authorize
-  automatic match launches, strategy changes, or replay cleanup.
+- Roadmap documentation does not itself authorize automatic match launches,
+  strategy changes, or replay cleanup; each implementation milestone requires
+  its own task authorization.
 
 ## Roadmap
 
-M1 is complete. Complete the remaining milestones in order; record implementation
+M1 and M2 are complete. Complete the remaining milestones in order; record implementation
 and live verification separately.
 
 | ID | Milestone | Status | Depends on | Completion evidence |
 | --- | --- | --- | --- | --- |
 | M1 | Define the evidence contract | Complete | Baseline | [Reviewed schema, examples, compatibility and coverage rules](../architecture/replay-evidence-contract.md) |
-| M2 | Add membership diagnostics | Planned | M1 | Transition tests, importer round-trip evidence, unchanged selector inputs |
+| M2 | Add membership diagnostics | Complete | M1 | Transition tests, importer round-trip evidence, unchanged selector inputs |
 | M3 | Add decision and action diagnostics | Planned | M1, M2 | Command-trace equivalence tests and diagnostic correlation tests |
 | M4 | Add deterministic replay analysis | Planned | M2, M3 | Known-answer fixtures, reproducible reports, read-only verification |
 | M5 | Validate a new live capture and close the milestone | Planned | M4 | Build-identified capture, analysis report, overhead and evidence limitations |
@@ -204,6 +205,7 @@ local tests; never silently convert an unknown into a pass.
 | --- | --- | --- | --- |
 | 2026-09-29 | Roadmap | Initial ADR draft; implementation not started | Begin M1 after roadmap review |
 | 2026-09-29 | M1 | Complete: documented the version-1 evidence contract without runtime or importer changes | Contract examples parsed as JSON; local links and whitespace checked. Begin M2 only in a separately authorized task. |
+| 2026-09-29 | M2 | Complete: runtime emits an initial membership baseline, deterministic change-only transitions, and membership-only coverage; the importer validates and preserves those records while keeping JSONL game-state-only | Focused transition and importer round-trip tests cover initialization, assignment, presence, tombstones, capability/mobility, late IDs, resets, suppression, gaps, duplicates, conflicts, and legacy input. Tick-flow regression coverage preserves commands and order; all 105 local tests, syntax/build-ID checks, and whitespace checks passed. Local reset evidence is not live reset evidence; M3 action diagnostics and M5 live validation remain planned. |
 
 ## Consequences
 

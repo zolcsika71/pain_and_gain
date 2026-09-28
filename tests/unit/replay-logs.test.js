@@ -24,6 +24,28 @@ const mapEntry = (terrain = 0) => JSON.stringify({
 });
 const mappedFirst = () => `${mapEntry()}\n${entry(1)}`;
 const tagged = (raw, buildId) => JSON.stringify({ ...JSON.parse(raw), buildId });
+const evidenceBuildId = '9'.repeat(64);
+const evidenceBaseline = (tick = 1, sequence = 0) => ({
+    type: 'membership-baseline', formatVersion: 1, buildId: evidenceBuildId,
+    tick, phase: 'before-actions', sequence, recordId: `${tick}:${sequence}`, epoch: 1,
+    initialized: false, initializationReason: 'expected-14-owned-living', lastTick: tick,
+    squads: [], members: [],
+});
+const evidenceChange = (tick, sequence = 0) => ({
+    type: 'membership-change', formatVersion: 1, buildId: evidenceBuildId,
+    tick, phase: 'before-actions', sequence, recordId: `${tick}:${sequence}`, epoch: 1,
+    changes: [{ kind: 'initialization', initialized: false,
+        initializationReason: 'expected-14-owned-living' }],
+});
+const evidenceCoverage = (tick, recordCount, counts = {}) => ({
+    type: 'evidence-coverage', formatVersion: 1, buildId: evidenceBuildId,
+    tick, phase: 'after-actions', sequence: recordCount, recordId: `${tick}:${recordCount}`,
+    firstSequence: recordCount ? 0 : null, lastSequence: recordCount ? recordCount - 1 : null,
+    recordCount, coveredTypes: ['membership-baseline', 'membership-change'],
+    counts: { 'membership-baseline': 0, 'membership-change': 0,
+        'action-decision': 0, 'action-attempt': 0, 'movement-decisions': 0,
+        'healing-decisions': 0, 'combat-decisions': 0, ...counts }, closed: true,
+});
 const payloadDigest = ({ checksum, ...payload }) => createHash('sha256').update(`${JSON.stringify(payload,
     (_, value) => value && typeof value === 'object' && !Array.isArray(value)
         ? Object.fromEntries(Object.entries(value).sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0)) : value)}\n`).digest('hex');
@@ -121,6 +143,90 @@ test('imports escort diagnostics as typed non-error entries without changing gam
     assert.equal(parseCacheEntry(cacheFrame({ 1: tagged(entry(1), buildId),
         2: JSON.stringify({ ...JSON.parse(attempt), targetId: 'wrong' }) })).kind, 'malformed');
     assert.equal(parseCacheEntry(cacheFrame({ 1: mappedFirst() })).kind, 'log');
+});
+
+test('imports membership evidence separately, preserves provenance, and closes covered ticks', async t => {
+    const { root, cache } = workspace(t);
+    const baseline = JSON.stringify(evidenceBaseline());
+    const closure = JSON.stringify(evidenceCoverage(1, 1, { 'membership-baseline': 1 }));
+    const source = path.join(cache, 'membership');
+    fs.writeFileSync(source, cacheFrame({ 1: [tagged(mapEntry(), evidenceBuildId),
+        tagged(entry(1), evidenceBuildId), baseline, closure].join('\n') }, { tick: 1 }));
+    const imported = await importCacheFile(root, source);
+    assert.equal(imported.record.buildId, evidenceBuildId);
+    assert.deepEqual(imported.record.otherEntries, [
+        { key: '1:3', raw: baseline, type: 'membership-baseline', formatVersion: 1 },
+        { key: '1:4', raw: closure, type: 'evidence-coverage', formatVersion: 1 },
+    ]);
+    assert.deepEqual(imported.record.diagnosticCoverage, {
+        formatVersion: 1, firstTick: 1, lastTick: 1, versions: [1],
+        coveredTypes: ['membership-baseline', 'membership-change'],
+        completeTicks: [1], missingClosures: [], gaps: [], duplicateRecordIds: [], conflicts: [],
+        typeCounts: { 'membership-baseline': 1, 'membership-change': 0,
+            'action-decision': 0, 'action-attempt': 0, 'evidence-coverage': 1 },
+        channelCounts: { movement: 0, healing: 0, combat: 0 },
+    });
+    assert.equal(fs.readFileSync(path.join(root, 'replay_logs', imported.record.outputPath), 'utf8'),
+        `${tagged(entry(1), evidenceBuildId)}\n`);
+    const manifest = JSON.parse(fs.readFileSync(path.join(root, 'replay_logs', 'manifest.json')));
+    assert.deepEqual(manifest.records[0].diagnosticCoverage, imported.record.diagnosticCoverage);
+});
+
+test('reports exact diagnostic duplicates, conflicts, gaps, and legacy unknown coverage', () => {
+    const baseline = evidenceBaseline();
+    const reordered = { recordId: baseline.recordId, sequence: baseline.sequence,
+        members: baseline.members, squads: baseline.squads, lastTick: baseline.lastTick,
+        initializationReason: baseline.initializationReason, initialized: baseline.initialized,
+        epoch: baseline.epoch, phase: baseline.phase, tick: baseline.tick,
+        buildId: baseline.buildId, formatVersion: baseline.formatVersion, type: baseline.type };
+    const complete = parseCacheEntry(cacheFrame({ 1: [tagged(entry(1), evidenceBuildId),
+        JSON.stringify(baseline), JSON.stringify(reordered),
+        JSON.stringify(evidenceCoverage(1, 1, { 'membership-baseline': 1 }))].join('\n') }));
+    assert.deepEqual(complete.diagnosticCoverage.completeTicks, [1]);
+    assert.deepEqual(complete.diagnosticCoverage.duplicateRecordIds,
+        [{ tick: 1, recordId: '1:0', count: 2, sources: ['1:2', '1:3'] }]);
+
+    const conflicting = { ...baseline, initializationReason: 'initial-tick-missed' };
+    const conflict = parseCacheEntry(cacheFrame({ 1: [tagged(entry(1), evidenceBuildId),
+        JSON.stringify(baseline), JSON.stringify(conflicting),
+        JSON.stringify(evidenceCoverage(1, 1, { 'membership-baseline': 1 }))].join('\n') }));
+    assert.deepEqual(conflict.diagnosticCoverage.completeTicks, []);
+    assert.equal(conflict.diagnosticCoverage.conflicts[0].recordId, '1:0');
+
+    const gap = parseCacheEntry(cacheFrame({ 1: [tagged(entry(1), evidenceBuildId),
+        JSON.stringify({ ...evidenceChange(1, 1), recordId: '1:1' }),
+        JSON.stringify(evidenceCoverage(1, 2, { 'membership-change': 1 }))].join('\n') }));
+    assert.deepEqual(gap.diagnosticCoverage.gaps[0].expectedSequences, [0, 1]);
+    assert.deepEqual(gap.diagnosticCoverage.gaps[0].actualSequences, [1]);
+
+    const zero = parseCacheEntry(cacheFrame({ 1: [tagged(entry(2), evidenceBuildId),
+        JSON.stringify(evidenceCoverage(2, 0))].join('\n') }));
+    assert.deepEqual(zero.diagnosticCoverage.completeTicks, [2]);
+    assert.deepEqual(zero.diagnosticCoverage.missingClosures, []);
+
+    const legacy = parseCacheEntry(cacheFrame({ 1: entry(1), 2: entry(2) }));
+    assert.deepEqual(legacy.diagnosticCoverage.completeTicks, []);
+    assert.deepEqual(legacy.diagnosticCoverage.missingClosures, [1, 2]);
+    assert.deepEqual(legacy.diagnosticCoverage.coveredTypes, []);
+    assert.deepEqual(legacy.diagnosticCoverage.versions, []);
+});
+
+test('rejects malformed M2 diagnostics and reports action diagnostics as unsupported until M3', () => {
+    const badEnvelope = { ...evidenceBaseline(), recordId: 'wrong' };
+    assert.equal(parseCacheEntry(cacheFrame({ 1: JSON.stringify(badEnvelope) })).kind, 'malformed');
+    assert.equal(parseCacheEntry(cacheFrame({ 1: JSON.stringify({ ...evidenceBaseline(), formatVersion: 2 }) })).kind,
+        'unsupported');
+    assert.equal(parseCacheEntry(cacheFrame({ 1: JSON.stringify({
+        type: 'action-decision', formatVersion: 1, buildId: evidenceBuildId,
+        tick: 1, phase: 'movement', sequence: 0, recordId: '1:0',
+    }) })).kind, 'unsupported');
+    assert.equal(parseCacheEntry(cacheFrame({ 1: JSON.stringify({
+        ...evidenceCoverage(1, 0), coveredTypes: ['membership-baseline', 'membership-change', 'action-decision'],
+    }) })).kind, 'malformed');
+    assert.equal(parseCacheEntry(cacheFrame({ 1: JSON.stringify({
+        ...evidenceCoverage(1, 0),
+        coveredTypes: ['membership-baseline', 'membership-change', 'action-decision', 'action-attempt'],
+    }) })).kind, 'unsupported');
 });
 
 test('preserves replay build identity across chunks and rejects conflicting or mixed IDs', async t => {

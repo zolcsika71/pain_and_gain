@@ -9,6 +9,7 @@ component "src/squads/membership.js" as Membership
 component "src/config.js\nsrc/strategy/flag-allocation.js" as Allocation
 component "src/config.js\nsrc/tactics/healer-escort.js" as Escort
 component "src/debug/game-state.js" as Debug
+component "src/debug/replay-evidence.js" as Evidence
 component "src/arena/execute.js" as Execute
 component "src/tactics/movement.js" as Movement
 component "src/tactics/healing.js" as Healing
@@ -21,6 +22,8 @@ Loop --> Observe : collect flags, owned creeps,\nenemies, damaged allies
 Observe --> API : getObjectsByPrototype() / getTicks()
 Loop --> Membership : reset on tick restart; update from\nowned pre-action creeps
 note right of Membership : Bookkeeping only; no input to\nmovement or tactical decisions
+Loop --> Evidence : baseline or change-only membership\nevidence after update
+Membership --> Evidence : read resulting state\nwithout mutation
 Loop --> Objectives : select first flag
 Loop --> Allocation : optional one-scout fallback\n(default off; one attempt)
 Allocation --> API : searchPath() terrain-route estimates\nwhen enabled
@@ -41,5 +44,8 @@ Execute --> Combat : choose compatible attacks
 Healing --> Eligibility : functioning HEAL, range, target
 Combat --> Eligibility : functioning ATTACK / RANGED_ATTACK,\nrange, target
 Execute --> API : heal / rangedHeal / attack / rangedAttack
+Loop --> Evidence : membership-only coverage closure\nafter actions
+Evidence --> API : console.log(versioned records)
+note right of Evidence : M2 covers membership only;\naction diagnostics remain planned
 
 @enduml

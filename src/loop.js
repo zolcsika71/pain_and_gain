@@ -8,6 +8,7 @@ import { oneHealerEscortExperiment, oneScoutFlagExperiment } from './config.js';
 import { planScoutFlagAllocation } from './strategy/flag-allocation.js';
 import { planHealerEscort } from './tactics/healer-escort.js';
 import { resetMembership, updateMembership } from './squads/membership.js';
+import { beginEvidenceTick, closeEvidenceTick, logMembershipEvidence } from './debug/replay-evidence.js';
 
 const engagements = new Map();
 let flagAllocation = null;
@@ -39,7 +40,9 @@ function routeSteps(from, to, report) {
 
 export function runTick() {
     const state = observeArena();
-    if (state.tick <= lastTick) {
+    const previousTick = lastTick;
+    const matchReset = state.tick <= lastTick;
+    if (matchReset) {
         engagements.clear();
         flagAllocation = null;
         healerEscort = null;
@@ -47,8 +50,11 @@ export function runTick() {
         membership = resetMembership();
     }
     lastTick = state.tick;
+    beginEvidenceTick(state.tick, matchReset
+        ? { previousTick, reason: 'tick-not-increasing' } : null);
     const { flags, myCreeps, enemies, damagedFriends } = state;
     membership = updateMembership(membership, { tick: state.tick, myCreeps });
+    logMembershipEvidence(membership);
     const flag = selectFlag(flags);
     const fallbackById = oneScoutFlagExperiment
         ? planScoutFlagAllocation(state, flagAllocation, routeSteps, EFF_ATTACK_MODIFIER,
@@ -66,4 +72,5 @@ export function runTick() {
         escortPlan?.escort, escortPlan?.escort ? diagnostic => logHealerEscortDiagnostic({ tick: state.tick,
             phase: 'movement', reason: null, ...diagnostic }) : null);
     executeTactics(myCreeps, enemies, damagedFriends);
+    closeEvidenceTick();
 }
