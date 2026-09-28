@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { logGameState, logMapOnce } from '../../src/debug/game-state.js';
+import { logFlagAllocationDiagnostic, logGameState, logMapOnce } from '../../src/debug/game-state.js';
 import { buildId } from '../../src/debug/build-id.js';
 
 test('game state is one JSON line with health, active parts and all flag ownership states', t => {
@@ -63,5 +63,16 @@ test('map snapshot is logged once per match before actions and retries a failed 
     assert.deepEqual(JSON.parse(logger.mock.calls[0].arguments[0]), {
         type: 'map-state', formatVersion: 1, tick: 99, phase: 'before-actions', buildId,
         map: { terrain: { width: 100, height: 100, rows: [] }, objects: [], read: 1 },
+    });
+});
+
+test('allocation diagnostics are structured, build-tagged planner results', t => {
+    const logger = t.mock.method(console, 'log', () => {});
+    logFlagAllocationDiagnostic({ tick: 12, event: 'reject', reason: 'no-scout',
+        firstFlagId: 'first', state: null, objectiveId: 'first' });
+    assert.deepEqual(JSON.parse(logger.mock.calls[0].arguments[0]), {
+        type: 'flag-allocation', buildId, phase: 'before-actions', tick: 12,
+        event: 'reject', reason: 'no-scout', firstFlagId: 'first', state: null,
+        objectiveId: 'first',
     });
 });

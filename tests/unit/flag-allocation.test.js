@@ -154,3 +154,90 @@ test('a scout at the neutral target holds until capture; later route loss cancel
     decision = plan(f.state, started, () => null);
     assert.deepEqual(decision.state, { finished: true });
 });
+
+test('assignment diagnostics retain evaluated paths and ordering without extra path searches', () => {
+    const f = fixture();
+    const calls = [];
+    const route = (from, to, report) => {
+        calls.push([from.id, to.id]);
+        const length = to === f.a ? 22 : 18;
+        report?.({ incomplete: false, length, cost: length + 2, ops: 17 });
+        return length;
+    };
+    const diagnostics = [];
+    const decision = planScoutFlagAllocation(f.state, null, route, attackEffect,
+        value => diagnostics.push(value));
+    assert.equal(decision.state.targetId, 'z');
+    assert.deepEqual(calls, [['scout-2', 'a'], ['scout-2', 'z']]);
+    assert.equal(diagnostics.length, 1);
+    assert.equal(diagnostics[0].event, 'assign');
+    assert.equal(diagnostics[0].reason, 'shortest-eligible-route');
+    assert.equal(diagnostics[0].objectiveId, 'z');
+    assert.deepEqual(diagnostics[0].state, decision.state);
+    assert.deepEqual(diagnostics[0].evaluations.map(item => [item.flagId, item.scoutRoute]), [
+        ['a', { incomplete: false, length: 22, cost: 24, ops: 17 }],
+        ['z', { incomplete: false, length: 18, cost: 20, ops: 17 }],
+    ]);
+    calls.length = 0;
+    assert.deepEqual(planScoutFlagAllocation(f.state, null, route, attackEffect).state, decision.state);
+    assert.deepEqual(calls, [['scout-2', 'a'], ['scout-2', 'z']]);
+});
+
+test('rejection diagnostics include actual incomplete routes and enemy arrival comparisons', () => {
+    const f = fixture();
+    f.z.effectType = 'other';
+    f.state.enemies = [unit('enemy', 20, 0, ['move'], { my: false })];
+    const diagnostics = [];
+    const route = (from, to, report) => {
+        const incomplete = from.id === 'scout-2';
+        report?.({ incomplete, length: 24, cost: 27, ops: 5000 });
+        return incomplete ? null : 24;
+    };
+    assert.equal(planScoutFlagAllocation(f.state, null, route, attackEffect,
+        value => diagnostics.push(value)).state, null);
+    assert.equal(diagnostics[0].event, 'reject');
+    assert.equal(diagnostics[0].reason, 'no-eligible-target');
+    assert.equal(diagnostics[0].evaluations[0].reason, 'scout-route-ineligible');
+    assert.deepEqual(diagnostics[0].evaluations[0].scoutRoute,
+        { incomplete: true, length: 24, cost: 27, ops: 5000 });
+
+    diagnostics.length = 0;
+    const arrivalRoute = (from, to, report) => {
+        const length = from.id === 'enemy' ? 20 : 18;
+        report?.({ incomplete: false, length, cost: length, ops: 22 });
+        return length;
+    };
+    planScoutFlagAllocation(f.state, null, arrivalRoute, attackEffect,
+        value => diagnostics.push(value));
+    const evaluation = diagnostics[0].evaluations[0];
+    assert.equal(evaluation.requiredEnemySteps, 23);
+    assert.deepEqual(evaluation.enemyRoutes[0], {
+        enemyId: 'enemy', range: 10, route: { incomplete: false, length: 20, cost: 20, ops: 22 },
+        steps: 20, result: 'too-close',
+    });
+    assert.equal(evaluation.reason, 'enemy-arrival-margin');
+});
+
+test('active cancellation and capture completion diagnostics preserve first-flag fallback', () => {
+    const f = fixture();
+    const started = plan(f.state, null, f.route).state;
+    const diagnostics = [];
+    f.state.tick = 40;
+    f.state.enemies = [unit('enemy', 5, 0, ['move'], { my: false })];
+    const canceled = planScoutFlagAllocation(f.state, started, f.route, attackEffect,
+        value => diagnostics.push(value));
+    assert.deepEqual(canceled.state, { finished: true });
+    assert.deepEqual(diagnostics[0], {
+        tick: 40, event: 'cancel', reason: 'first-flag-threatened', firstFlagId: 'first',
+        state: { finished: true }, objectiveId: 'first', scoutId: 'scout-2', targetId: 'a',
+        threatEnemyId: 'enemy', threatRange: 5,
+    });
+    f.state.enemies = [];
+    f.a.my = true;
+    const completed = planScoutFlagAllocation(f.state, started, f.route, attackEffect,
+        value => diagnostics.push(value));
+    assert.deepEqual(completed.state, { finished: true });
+    assert.equal(diagnostics[1].event, 'complete');
+    assert.equal(diagnostics[1].reason, 'target-owned');
+    assert.equal(diagnostics[1].objectiveId, 'first');
+});

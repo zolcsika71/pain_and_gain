@@ -121,7 +121,7 @@ export function parseCacheEntry(bytes) {
             try {
                 parsed = JSON.parse(line);
             } catch {
-                if (/"type"\s*:\s*"(?:game-state|map-state)"/.test(line)) {
+                if (/"type"\s*:\s*"(?:game-state|map-state|flag-allocation)"/.test(line)) {
                     return issue('malformed', `Malformed state entry ${sourceKey} for ${key}`);
                 }
                 otherEntries.push({ key: sourceKey, raw: line });
@@ -139,6 +139,19 @@ export function parseCacheEntry(bytes) {
                 try { buildId = consistentBuildId(buildId, entryBuildId(parsed, sourceKey), key); }
                 catch (error) { return issue('malformed', error.message); }
                 map = candidate;
+                continue;
+            }
+            if (parsed?.type === 'flag-allocation') {
+                if (!Number.isSafeInteger(parsed.tick) || parsed.phase !== 'before-actions' ||
+                    !['assign', 'reject', 'retain', 'cancel', 'complete'].includes(parsed.event) ||
+                    typeof parsed.reason !== 'string' || !Object.hasOwn(parsed, 'state') ||
+                    (parsed.state !== null && (typeof parsed.state !== 'object' ||
+                        Array.isArray(parsed.state)))) {
+                    return issue('malformed', `Invalid flag-allocation entry ${sourceKey} for ${key}`);
+                }
+                try { buildId = consistentBuildId(buildId, entryBuildId(parsed, sourceKey), key); }
+                catch (error) { return issue('malformed', error.message); }
+                otherEntries.push({ key: sourceKey, raw: line, type: 'flag-allocation' });
                 continue;
             }
             if (parsed?.type !== 'game-state') {

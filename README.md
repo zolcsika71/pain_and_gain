@@ -86,6 +86,21 @@ node tools/replay-logs.js examined <replay-id> <fingerprint> <codex-task-id>
 node tools/replay-logs.js done <replay-id> <fingerprint> <codex-task-id>
 ```
 
+When the optional scout experiment is enabled, relevant planning ticks emit a compact
+`flag-allocation` JSON console entry with the runtime `buildId`. It records the
+allocator event (`assign`, `reject`, `retain`, `cancel`, or `complete`), reason,
+scout/flag IDs where applicable, resulting state and fallback objective, plus
+evaluated route lengths/costs/completeness and enemy-arrival comparisons. These
+are planning diagnostics, not issued commands or proof of movement/capture. The
+eligibility rule requires enemy arrival to exceed scout route steps plus five;
+equality rejects the target. The importer retains them as typed `otherEntries`
+in the manifest; retrieve them with `other` after claiming the managed capture.
+JSONL remains game-state only.
+Older captures without this entry have unknown allocator decisions and route
+results. Consecutive identical route-free rejections are collapsed; game-state
+snapshots still cover those ticks. Missing diagnostics in disabled-mode captures
+are expected.
+
 Before examining a managed log, use `claim` with a task identifier unique to that review. Its public record status remains `claim`; `examinedAt` is an internal checkpoint, not another public status. Save evidence and recommendations in Markdown, then use `examined` after reading and `done` only when that task's analysis is complete (`complete` remains an alias). All ownership claims must have both checkpoints before the record becomes `done`. Cleanup then verifies the managed path and content hash, deletes the JSONL and its manifest record, and retains the map, replay association, and retired fingerprint. The separate live gate for a proposed game-code change does not delay completion of an otherwise finished log review. No time limit or process exit implies completion. The importer refuses to delete changed content, a symlink, an unmanaged capture, or a path outside `replay_logs/`. Interrupted completed reviews are reconciled on the next `scan`, `watch`, or `list`. Pending imports require the source response to remain in the cache for recovery.
 
 For manually supplied JSONL already inside project-relative `replay_logs/`, `register-local` explicitly adopts a safe `<replay-id>.jsonl` or `<replay-id>-<hex>.jsonl` filename for managed review and later cleanup. Use it only when the replay identity has been independently established: JSONL itself contains no replay ID. The command requires that replay's existing active association to a checksum-validated map, checks every game's static flag IDs, positions, effects, and rates against that map, validates each game-state line, and records a content fingerprint and `claim` status. A filename or nearby map is not sufficient provenance. Unknown replay/map associations or unsupported manual map registration remain blocked until verified source evidence is available. Manual JSONL cannot establish whether other console entries or missing terminal ticks existed. An unchanged manual capture that was completed is not registered again, even if a copy reappears; that new copy remains unmanaged. Only explicitly registered local files become eligible for managed cleanup.

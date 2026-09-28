@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { registerHooks } from 'node:module';
+import { oneScoutFlagExperiment } from '../../src/config.js';
+import { buildId } from '../../src/debug/build-id.js';
 
 // Replace only Arena-provided imports; all project modules remain real.
 const arenaModules = new Map([
@@ -82,11 +84,24 @@ test('runTick chooses combat movement or first-flag fallback before compatible t
         ['healer', 'rangedAttack', enemy],
         ['ally', 'attack', enemy],
     ]);
-    assert.equal(logger.mock.callCount(), 3);
+    const expectedTypes = oneScoutFlagExperiment
+        ? ['flag-allocation', 'map-state', 'game-state', 'game-state']
+        : ['map-state', 'game-state', 'game-state'];
+    assert.equal(logger.mock.callCount(), expectedTypes.length);
     assert.ok(logger.mock.calls.every(call => call.arguments.length === 1));
-    assert.deepEqual(actionCountsAtLog, [0, 0, 4]);
-    assert.deepEqual(snapshots.map(state => state.type), ['map-state', 'game-state', 'game-state']);
+    assert.deepEqual(actionCountsAtLog, oneScoutFlagExperiment ? [0, 0, 0, 4] : [0, 0, 4]);
+    assert.deepEqual(snapshots.map(state => state.type), expectedTypes);
+    if (oneScoutFlagExperiment) {
+        assert.deepEqual(snapshots[0], {
+            type: 'flag-allocation', buildId, phase: 'before-actions', tick: 49,
+            event: 'reject', reason: 'first-flag-not-owned', firstFlagId: 'first',
+            state: null, objectiveId: 'first', scoutId: null, targetId: null,
+        });
+    }
     const map = snapshots.find(state => state.type === 'map-state');
+    assert.equal(map.buildId, buildId);
+    assert.equal(map.tick, 49);
+    assert.equal(map.phase, 'before-actions');
     assert.equal(map.map.terrain.rows.length, 100);
     assert.equal(map.map.terrain.rows[0].length, 100);
     assert.equal(map.map.objects.length, 2);
@@ -94,14 +109,15 @@ test('runTick chooses combat movement or first-flag fallback before compatible t
         ['ScoreFlag', 'first', 'heal', 4], ['ScoreFlag', 'second', 'attack', 3],
     ]);
     assert.ok(map.map.objects.every(object => !['healer', 'ally', 'scout', 'enemy'].includes(object.id)));
-    snapshots.splice(snapshots.indexOf(map), 1);
-    assert.deepEqual(snapshots.map(state => state.tick), [49, 50]);
-    assert.ok(snapshots.every(state => state.phase === 'before-actions'));
-    assert.ok(snapshots.every(state => state.selectedFlagId === firstFlag.id));
-    assert.deepEqual(snapshots[0].creeps.map(unit => [unit.id, unit.hits]), [
+    const gameStates = snapshots.filter(state => state.type === 'game-state');
+    assert.deepEqual(gameStates.map(state => state.tick), [49, 50]);
+    assert.ok(gameStates.every(state => state.phase === 'before-actions'));
+    assert.ok(gameStates.every(state => state.buildId === buildId));
+    assert.ok(gameStates.every(state => state.selectedFlagId === firstFlag.id));
+    assert.deepEqual(gameStates[0].creeps.map(unit => [unit.id, unit.hits]), [
         ['healer', 100], ['ally', 50], ['scout', 100], ['enemy', 100],
     ]);
-    assert.deepEqual(snapshots[1].creeps.map(unit => [unit.id, unit.hits]), [
+    assert.deepEqual(gameStates[1].creeps.map(unit => [unit.id, unit.hits]), [
         ['healer', 100], ['ally', 60], ['scout', 100], ['enemy', 80],
     ]);
 });

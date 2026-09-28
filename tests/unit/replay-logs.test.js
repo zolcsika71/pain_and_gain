@@ -71,6 +71,29 @@ test('splits Arena console calls joined under the same tick without changing eit
     assert.equal(bad.kind, 'malformed');
 });
 
+test('imports build-tagged allocation diagnostics separately from JSONL and retains legacy captures', async t => {
+    const { root, cache } = workspace(t);
+    const buildId = 'd'.repeat(64);
+    const diagnostic = JSON.stringify({ type: 'flag-allocation', buildId,
+        phase: 'before-actions', tick: 1, event: 'reject', reason: 'no-eligible-target',
+        firstFlagId: 'flag', state: null, objectiveId: 'flag', evaluations: [] });
+    const source = path.join(cache, 'diagnostic');
+    fs.writeFileSync(source, cacheFrame({ 1: [tagged(mapEntry(), buildId),
+        tagged(entry(1), buildId), diagnostic].join('\n') }, { tick: 1 }));
+    const imported = await importCacheFile(root, source);
+    assert.equal(imported.record.buildId, buildId);
+    assert.deepEqual(imported.record.otherEntries, [{ key: '1:3', raw: diagnostic, type: 'flag-allocation' }]);
+    assert.equal(fs.readFileSync(path.join(root, 'replay_logs', imported.record.outputPath), 'utf8'),
+        `${tagged(entry(1), buildId)}\n`);
+    const manifest = JSON.parse(fs.readFileSync(path.join(root, 'replay_logs', 'manifest.json')));
+    assert.deepEqual(manifest.records[0].otherEntries, imported.record.otherEntries);
+    assert.equal(parseCacheEntry(cacheFrame({ 1: mappedFirst() })).kind, 'log');
+    assert.equal(parseCacheEntry(cacheFrame({ 1: tagged(entry(1), buildId),
+        2: tagged(diagnostic, 'e'.repeat(64)) })).kind, 'malformed');
+    assert.equal(parseCacheEntry(cacheFrame({ 1: tagged(entry(1), buildId),
+        2: '{"type":"flag-allocation",broken' })).kind, 'malformed');
+});
+
 test('preserves replay build identity across chunks and rejects conflicting or mixed IDs', async t => {
     const { root, cache } = workspace(t);
     const firstId = 'a'.repeat(64);

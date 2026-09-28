@@ -38,6 +38,12 @@ export function logGameState({ tick, creeps, flags }, selectedFlag) {
     }));
 }
 
+// This is a planner result, not a record of commands issued or movement achieved.
+export function logFlagAllocationDiagnostic(diagnostic) {
+    console.log(JSON.stringify({ type: 'flag-allocation', buildId,
+        phase: 'before-actions', ...diagnostic }));
+}
+
 let mapLogged = false;
 let lastMapTick = 0;
 let mapAttempts = 0;
