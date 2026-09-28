@@ -5,6 +5,7 @@ component "src/main.mjs" as Main
 component "src/loop.js" as Loop
 component "src/arena/observe.js" as Observe
 component "src/strategy/objectives.js" as Objectives
+component "src/squads/membership.js" as Membership
 component "src/config.js\nsrc/strategy/flag-allocation.js" as Allocation
 component "src/config.js\nsrc/tactics/healer-escort.js" as Escort
 component "src/debug/game-state.js" as Debug
@@ -18,6 +19,8 @@ cloud "Screeps Arena API" as API
 Main --> Loop : runTick()
 Loop --> Observe : collect flags, owned creeps,\nenemies, damaged allies
 Observe --> API : getObjectsByPrototype() / getTicks()
+Loop --> Membership : reset on tick restart; update from\nowned pre-action creeps
+note right of Membership : Bookkeeping only; no input to\nmovement or tactical decisions
 Loop --> Objectives : select first flag
 Loop --> Allocation : optional one-scout fallback\n(default off; one attempt)
 Allocation --> API : searchPath() terrain-route estimates\nwhen enabled

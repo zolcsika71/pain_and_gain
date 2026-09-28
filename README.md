@@ -8,7 +8,7 @@ Screeps Arena code for the Pain and Gain arena. Armed creeps approach nearby ene
 - `src/loop.js` orchestrates each tick.
 - `src/arena/observe.js` reads flags, owned creeps, enemies, and damaged allies from the game API.
 - `src/strategy/objectives.js` selects the first flag.
-- `src/squads/membership.js` provides isolated match-local squad-membership bookkeeping; the tick loop does not use it.
+- `src/squads/membership.js` maintains match-local squad-membership bookkeeping from pre-action observations; the tick loop updates it but no gameplay selector uses it.
 - `src/arena/execute.js` issues movement and tactical actions for each owned creep.
 - `src/tactics/` checks functioning body parts, chooses deterministic targets, selects movement, and selects compatible healing and combat actions.
 - `src/debug/game-state.js` writes one JSON game-state snapshot per tick and one map snapshot per match before actions.

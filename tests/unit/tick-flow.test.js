@@ -23,7 +23,7 @@ registerHooks({
     },
 });
 
-const { runTick } = await import('../../src/loop.js');
+const { runTick, getMembershipState } = await import('../../src/loop.js');
 const { Creep } = await import('game/prototypes');
 const { ScoreFlag } = await import('arena/season_4/pain_and_gain/basic');
 
@@ -74,6 +74,8 @@ test('runTick chooses combat movement or first-flag fallback before compatible t
         delete globalThis.__painAndGainTick;
     }
 
+    // Exact pre-integration action trace on these same observations: membership
+    // bookkeeping must not change targets, commands, or their order.
     assert.deepEqual(calls, [
         ['ally', 'moveTo', enemy],
         ['scout', 'moveTo', firstFlag],
@@ -120,6 +122,109 @@ test('runTick chooses combat movement or first-flag fallback before compatible t
     assert.deepEqual(gameStates[1].creeps.map(unit => [unit.id, unit.hits]), [
         ['healer', 100], ['ally', 60], ['scout', 100], ['enemy', 80],
     ]);
+    assert.equal(getMembershipState().initialized, false);
+    assert.equal(getMembershipState().reason, 'initial-tick-missed');
+});
+
+function membershipFixture(prefix = 'pg_player1_') {
+    const specs = [
+        ['healer_1', 9, 11, 'heal', 6], ['melee_2', 10, 11, 'attack', 8],
+        ['melee_3', 10, 12, 'attack', 8], ['melee_4', 9, 12, 'attack', 8],
+        ['healer_2', 14, 6, 'heal', 6], ['melee_1', 15, 7, 'attack', 8],
+        ['ranged_1', 15, 6, 'ranged_attack', 6], ['ranged_2', 14, 7, 'ranged_attack', 6],
+        ['healer_3', 14, 11, 'heal', 6], ['ranged_3', 15, 11, 'ranged_attack', 6],
+        ['ranged_4', 14, 12, 'ranged_attack', 6], ['ranged_5', 15, 12, 'ranged_attack', 6],
+        ['scout_1', 12, 9, null, 1], ['scout_2', 9, 6, null, 1],
+    ];
+    return specs.map(([name, x, y, action, count]) => Object.assign(new Creep(), {
+        id: prefix + name, x, y, my: true, exists: true, fatigue: 0,
+        hits: (action ? count * 2 : count) * 100,
+        hitsMax: (action ? count * 2 : count) * 100,
+        body: [...Array(count).fill(action ?? 'move'),
+            ...Array(action ? count : 0).fill('move')].map(type => ({ type, hits: 100 })),
+        getRangeTo(target) { return Math.max(Math.abs(this.x - target.x), Math.abs(this.y - target.y)); },
+        moveTo() {}, attack() {}, rangedAttack() {}, heal() {}, rangedHeal() {},
+    }));
+}
+
+function observedMember(id) {
+    return getMembershipState().members.find(member => member.id.endsWith(id));
+}
+
+test('runTick initializes and updates stable membership from current owned observations', t => {
+    t.mock.method(console, 'log', () => {});
+    const flag = Object.assign(new ScoreFlag(), { id: 'first', x: 50, y: 50 });
+    const units = membershipFixture();
+    globalThis.__painAndGainArenaObjects = new Map([[ScoreFlag, [flag]], [Creep, units]]);
+    try {
+        globalThis.__painAndGainTick = 1;
+        runTick();
+        const first = getMembershipState();
+        assert.equal(first.initialized, true);
+        assert.deepEqual(first.squads.map(group => group.memberIds.length), [4, 4, 4]);
+        assert.equal(first.members.length, 14);
+        assert.equal(observedMember('scout_1').squadId, null);
+
+        const absent = units.find(unit => unit.id.endsWith('melee_2'));
+        globalThis.__painAndGainArenaObjects.set(Creep, units.filter(unit => unit !== absent));
+        globalThis.__painAndGainTick = 2;
+        runTick();
+        assert.equal(observedMember('melee_2').presence, 'missing');
+        assert.equal(observedMember('melee_2').squadId, 'A');
+
+        for (const part of absent.body) if (part.type === 'attack') part.hits = 0;
+        absent.hits = 800;
+        globalThis.__painAndGainArenaObjects.set(Creep, units);
+        globalThis.__painAndGainTick = 3;
+        runTick();
+        assert.equal(observedMember('melee_2').presence, 'present');
+        assert.equal(observedMember('melee_2').capable, false);
+        assert.equal(observedMember('melee_2').squadId, 'A');
+
+        for (const part of absent.body) if (part.type === 'attack') part.hits = 100;
+        absent.hits = absent.hitsMax;
+        globalThis.__painAndGainTick = 4;
+        runTick();
+        assert.equal(observedMember('melee_2').capable, true);
+        assert.equal(observedMember('melee_2').participating, true);
+        assert.deepEqual(getMembershipState().squads, first.squads);
+
+        globalThis.__painAndGainArenaObjects.set(Creep, membershipFixture('pg_player2_'));
+        globalThis.__painAndGainTick = 1;
+        runTick();
+        assert.equal(getMembershipState().initialized, true);
+        assert.ok(getMembershipState().members.every(member => member.id.startsWith('pg_player2_')));
+    } finally {
+        delete globalThis.__painAndGainArenaObjects;
+        delete globalThis.__painAndGainTick;
+    }
+});
+
+test('runTick preserves explicit invalid and late initialization reasons', async t => {
+    t.mock.method(console, 'log', () => {});
+    const flag = Object.assign(new ScoreFlag(), { id: 'first', x: 50, y: 50 });
+    const units = membershipFixture();
+    globalThis.__painAndGainArenaObjects = new Map([[ScoreFlag, [flag]], [Creep, units.slice(1)]]);
+    try {
+        globalThis.__painAndGainTick = 1;
+        runTick();
+        assert.equal(getMembershipState().reason, 'expected-14-owned-living');
+        globalThis.__painAndGainArenaObjects.set(Creep, units);
+        globalThis.__painAndGainTick = 2;
+        runTick();
+        assert.equal(getMembershipState().initialized, false);
+        assert.equal(getMembershipState().reason, 'expected-14-owned-living');
+
+        // A fresh loop module at tick > 1 models a late Arena module reload.
+        const lateLoop = await import('../../src/loop.js?late-membership-test');
+        globalThis.__painAndGainTick = 9;
+        lateLoop.runTick();
+        assert.equal(lateLoop.getMembershipState().initialized, false);
+        assert.equal(lateLoop.getMembershipState().reason, 'initial-tick-missed');
+    } finally {
+        delete globalThis.__painAndGainArenaObjects;
+        delete globalThis.__painAndGainTick;
+    }
 });
 
 test('runTick keeps escort opt-in, records actual movement results, and resets after a new match', t => {

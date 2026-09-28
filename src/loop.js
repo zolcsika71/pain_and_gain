@@ -7,12 +7,18 @@ import { EFF_ATTACK_MODIFIER } from 'game/constants';
 import { oneHealerEscortExperiment, oneScoutFlagExperiment } from './config.js';
 import { planScoutFlagAllocation } from './strategy/flag-allocation.js';
 import { planHealerEscort } from './tactics/healer-escort.js';
+import { resetMembership, updateMembership } from './squads/membership.js';
 
 const engagements = new Map();
 let flagAllocation = null;
 let healerEscort = null;
 let lastTick = 0;
 let lastIdleDiagnostic = null;
+let membership = resetMembership();
+
+export function getMembershipState() {
+    return membership;
+}
 
 function reportFlagAllocation(diagnostic) {
     // Repeated route-free rejections add no new decision evidence. Game-state
@@ -38,9 +44,11 @@ export function runTick() {
         flagAllocation = null;
         healerEscort = null;
         lastIdleDiagnostic = null;
+        membership = resetMembership();
     }
     lastTick = state.tick;
     const { flags, myCreeps, enemies, damagedFriends } = state;
+    membership = updateMembership(membership, { tick: state.tick, myCreeps });
     const flag = selectFlag(flags);
     const fallbackById = oneScoutFlagExperiment
         ? planScoutFlagAllocation(state, flagAllocation, routeSteps, EFF_ATTACK_MODIFIER,
