@@ -44,9 +44,10 @@ Execute --> Combat : choose compatible attacks
 Healing --> Eligibility : functioning HEAL, range, target
 Combat --> Eligibility : functioning ATTACK / RANGED_ATTACK,\nrange, target
 Execute --> API : heal / rangedHeal / attack / rangedAttack
-Loop --> Evidence : membership/action coverage closure\nafter actions
+Loop --> API : getCpuTime() after gameplay;\nread applicable Arena CPU limit
+Loop --> Evidence : runtime-cpu sample, then\nmembership/action/CPU coverage closure
 Evidence --> API : console.log(versioned records)
 Execute --> Evidence : decisions before original calls;\nattempts immediately after returns
-note right of Evidence : M2 membership-only closures remain valid;\nM3 covers decisions and attempts
+note right of Evidence : M2/M3 closures remain valid;\nversion 2 adds one late CPU sample
 
 @enduml

@@ -5,8 +5,8 @@ import { registerHooks } from 'node:module';
 // Keep production tick orchestration and planner; replace Arena imports and
 // the deployment switch only at the module boundary for this enabled-mode test.
 const arenaModules = new Map([
-    ['game/utils', 'export const getObjectsByPrototype = prototype => globalThis.__flagFlowObjects.get(prototype); export const getObjects = () => [...globalThis.__flagFlowObjects.values()].flat(); export const getTerrainAt = () => 0; export const getTicks = () => globalThis.__flagFlowTick;'],
-    ['game', 'export const arenaInfo = { name: "Pain and Gain", season: "4", level: 1, ticksLimit: 2000 };'],
+    ['game/utils', 'export const getObjectsByPrototype = prototype => globalThis.__flagFlowObjects.get(prototype); export const getObjects = () => [...globalThis.__flagFlowObjects.values()].flat(); export const getTerrainAt = () => 0; export const getTicks = () => globalThis.__flagFlowTick; export const getCpuTime = () => 123456;'],
+    ['game', 'export const arenaInfo = { name: "Pain and Gain", season: "4", level: 1, ticksLimit: 2000, cpuTimeLimit: 20000000, cpuTimeLimitFirstTick: 100000000 };'],
     ['game/path-finder', 'export const searchPath = (...args) => globalThis.__flagFlowSearch(...args);'],
     ['game/constants', 'export const EFF_ATTACK_MODIFIER = "eff_attack_modifier";'],
     ['game/prototypes', 'export class Creep {}'],

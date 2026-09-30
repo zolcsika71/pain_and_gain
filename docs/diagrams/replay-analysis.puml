@@ -16,7 +16,8 @@ elseif (Conflicting overlap?) then (yes)
   :Report fail for contradiction;\ndependent conclusions unknown;
 endif
 :Gate cross-record derivations by\ncompatible build provenance;
-:Evaluate replay coverage and\nM2/M3 coveredTypes;
+:Evaluate replay coverage and\nM2/M3/CPU coveredTypes;
+:Validate elapsed CPU and limit;\nderive sampling-point headroom;
 :Reconstruct membership only\nthrough uninterrupted evidence;
 :Check actor/channel completeness,\nactor/target consistency, range,\nparts and command compatibility;
 :Compare only consecutive snapshots\nfor displacement and health deltas;
@@ -25,6 +26,7 @@ note right
   No selector reconstruction
   No lifecycle mutation
   No engine-effect causality
+  No final-CPU or differential-overhead claim
   No report file write
 end note
 stop

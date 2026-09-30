@@ -183,12 +183,14 @@ test('emits correlated decisions, holds, no-actions, and actual return values in
         outcome: 'no-action', reason: 'no-functioning-heal', actions: [] });
     evidence.recordActionDecision({ phase: 'tactics', channel: 'combat', actorId: 'melee',
         outcome: 'hold', reason: 'combat-in-range', actions: [] });
+    evidence.recordCpuSample({ elapsedNs: 9_000_000, limitNs: 20_000_000,
+        limitKind: 'ordinary-tick' });
     evidence.closeTick();
 
     assert.deepEqual(records.map(record => [record.type, record.phase, record.sequence]), [
         ['action-decision', 'movement', 0], ['action-attempt', 'movement', 1],
         ['action-decision', 'tactics', 2], ['action-decision', 'tactics', 3],
-        ['evidence-coverage', 'after-actions', 4],
+        ['runtime-cpu', 'after-actions', 4], ['evidence-coverage', 'after-actions', 5],
     ]);
     assert.deepEqual(records[0].actions, [{ actionId: '9:0#0', method: 'moveTo',
         target: { kind: 'creep', id: 'enemy', x: 4, y: 5 } }]);
@@ -196,12 +198,31 @@ test('emits correlated decisions, holds, no-actions, and actual return values in
     assert.equal(records[1].actionId, '9:0#0');
     assert.equal(records[1].returnCode, -11);
     assert.deepEqual(records.at(-1).coveredTypes,
-        ['membership-baseline', 'membership-change', 'action-decision', 'action-attempt']);
+        ['membership-baseline', 'membership-change', 'action-decision', 'action-attempt', 'runtime-cpu']);
+    assert.equal(records.at(-1).formatVersion, 2);
     assert.deepEqual(records.at(-1).counts, {
         'membership-baseline': 0, 'membership-change': 0,
         'action-decision': 3, 'action-attempt': 1,
         'movement-decisions': 1, 'healing-decisions': 1, 'combat-decisions': 1,
+        'runtime-cpu': 1,
     });
+});
+
+test('requires one valid CPU sample before the current coverage closure', () => {
+    const records = [];
+    const evidence = createReplayEvidenceLogger({ runtimeBuildId: testBuildId,
+        emit: record => records.push(record) });
+    evidence.beginTick(1);
+    assert.throws(() => evidence.recordCpuSample({ elapsedNs: -1, limitNs: 100_000_000,
+        limitKind: 'first-tick' }), /Invalid runtime CPU sample/);
+    assert.throws(() => evidence.recordCpuSample({ elapsedNs: 1, limitNs: 20_000_000,
+        limitKind: 'ordinary-tick' }), /Invalid runtime CPU sample/);
+    assert.throws(() => evidence.closeTick(), /Missing runtime CPU sample/);
+    evidence.recordCpuSample({ elapsedNs: 1, limitNs: 100_000_000, limitKind: 'first-tick' });
+    assert.throws(() => evidence.recordCpuSample({ elapsedNs: 2, limitNs: 100_000_000,
+        limitKind: 'first-tick' }), /Unexpected runtime CPU sample/);
+    evidence.closeTick();
+    assert.deepEqual(records.map(record => record.type), ['runtime-cpu', 'evidence-coverage']);
 });
 
 function actionFixture(instrumented, records = []) {
@@ -230,7 +251,11 @@ function actionFixture(instrumented, records = []) {
             emit: record => records.push(record) });
         evidence.beginTick(12);
         return { decision: evidence.recordActionDecision, attempt: evidence.recordActionAttempt,
-            close: evidence.closeTick };
+            close() {
+                evidence.recordCpuSample({ elapsedNs: 8_000_000, limitNs: 20_000_000,
+                    limitKind: 'ordinary-tick' });
+                evidence.closeTick();
+            } };
     })() : null;
     const before = [mixed, healer, meleeHealer, scout, walker, enemy].map(creep => ({ id: creep.id, x: creep.x, y: creep.y,
         hits: creep.hits, body: creep.body.map(part => ({ ...part })) }));
@@ -283,6 +308,8 @@ test('measures diagnostic volume for 14-scout tick-1 and steady no-combat fixtur
     evidence.recordMembership(membership);
     moveCreeps(scouts, [], flag, new Map(), new Map(), null, null, reporter);
     executeTactics(scouts, [], [], reporter);
+    evidence.recordCpuSample({ elapsedNs: 15_000_000, limitNs: 100_000_000,
+        limitKind: 'first-tick' });
     evidence.closeTick();
     const firstTick = [...records];
 
@@ -292,15 +319,17 @@ test('measures diagnostic volume for 14-scout tick-1 and steady no-combat fixtur
     evidence.recordMembership(membership);
     moveCreeps(scouts, [], flag, new Map(), new Map(), null, null, reporter);
     executeTactics(scouts, [], [], reporter);
+    evidence.recordCpuSample({ elapsedNs: 10_000_000, limitNs: 20_000_000,
+        limitKind: 'ordinary-tick' });
     evidence.closeTick();
 
     const size = entries => entries.reduce((total, record) =>
         total + Buffer.byteLength(`${JSON.stringify(record)}\n`), 0);
-    assert.equal(firstTick.length, 58);
-    assert.equal(firstTick.at(-1).recordCount, 57);
-    assert.equal(size(firstTick), 22_813);
+    assert.equal(firstTick.length, 59);
+    assert.equal(firstTick.at(-1).recordCount, 58);
+    assert.equal(size(firstTick), 23_113);
     assert.equal(Math.max(...firstTick.map(record => Buffer.byteLength(JSON.stringify(record)))), 3_167);
-    assert.equal(records.length, 57);
-    assert.equal(records.at(-1).recordCount, 56);
-    assert.equal(size(records), 19_841);
+    assert.equal(records.length, 58);
+    assert.equal(records.at(-1).recordCount, 57);
+    assert.equal(size(records), 20_145);
 });

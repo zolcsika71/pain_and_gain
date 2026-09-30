@@ -46,7 +46,7 @@ function stream(tick, configure, covered = 'm3') {
     const records = [];
     const add = entry => {
         const sequence = records.length;
-        const record = { ...entry, formatVersion: 1, buildId, tick, sequence,
+        const record = { ...entry, formatVersion: entry.formatVersion ?? 1, buildId, tick, sequence,
             recordId: `${tick}:${sequence}` };
         if (record.type === 'action-decision') {
             record.decisionId = record.recordId;
@@ -71,15 +71,21 @@ function stream(tick, configure, covered = 'm3') {
         actorId: decisionRecord.actorId, method: decisionRecord.actions[index].method,
         target: decisionRecord.actions[index].target, returnCode,
     });
-    configure({ baseline, change, decision, attempt, records });
+    const cpu = (elapsedNs, limitNs = tick === 1 ? 100_000_000 : 20_000_000) => add({
+        type: 'runtime-cpu', phase: 'after-actions', elapsedNs, limitNs,
+        limitKind: tick === 1 ? 'first-tick' : 'ordinary-tick', unit: 'nanoseconds',
+    });
+    configure({ baseline, change, decision, attempt, cpu, records });
     const typeCount = type => records.filter(item => item.type === type).length;
     const channelCount = channel => records.filter(item =>
         item.type === 'action-decision' && item.channel === channel).length;
     const count = records.length;
-    add({ type: 'evidence-coverage', phase: 'after-actions', firstSequence: count ? 0 : null,
+    add({ type: 'evidence-coverage', formatVersion: covered === 'm5' ? 2 : 1,
+        phase: 'after-actions', firstSequence: count ? 0 : null,
         lastSequence: count ? count - 1 : null, recordCount: count,
         coveredTypes: covered === 'm2' ? ['membership-baseline', 'membership-change'] :
-            ['membership-baseline', 'membership-change', 'action-decision', 'action-attempt'],
+            ['membership-baseline', 'membership-change', 'action-decision', 'action-attempt',
+                ...(covered === 'm5' ? ['runtime-cpu'] : [])],
         counts: {
             'membership-baseline': typeCount('membership-baseline'),
             'membership-change': typeCount('membership-change'),
@@ -88,6 +94,7 @@ function stream(tick, configure, covered = 'm3') {
             'movement-decisions': channelCount('movement'),
             'healing-decisions': channelCount('healing'),
             'combat-decisions': channelCount('combat'),
+            ...(covered === 'm5' ? { 'runtime-cpu': typeCount('runtime-cpu') } : {}),
         }, closed: true,
     });
     return records;
@@ -167,7 +174,8 @@ function workspace(t, inputs, { localBuild = null } = {}) {
         const content = outputPath ? `${gameLines.join('\n')}\n` : null;
         if (outputPath) fs.writeFileSync(path.join(directory, outputPath), content);
         const items = input.otherEntries ?? diagnosticItems(diagnostics, `record-${index}`);
-        const coverageDiagnostics = diagnostics.filter(item => item.formatVersion === 1)
+        const coverageDiagnostics = diagnostics.filter(item => item.formatVersion === 1 ||
+            (item.type === 'evidence-coverage' && item.formatVersion === 2))
             .map((entry, itemIndex) => ({ entry, key: `record-${index}:${itemIndex + 1}` }));
         return {
             replayId, requestedTick: input.requestedTick ?? gameStates[0]?.tick ?? diagnostics[0]?.tick ?? 1,
@@ -583,4 +591,73 @@ test('withholds range when actor ownership or target coordinates contradict snap
     const actorReport = analyzeReplay({ root: actorConflict.root, replayId });
     assert.ok(findings(actorReport, 'action.actor-consistency').some(item => item.verdict === 'fail'));
     assert.ok(findings(actorReport, 'action.range').some(item => item.verdict === 'unknown'));
+});
+
+test('reports first-tick, ordinary, evidence-only, and legacy CPU evidence deterministically', t => {
+    const first = stream(1, api => api.cpu(25_000_000), 'm5');
+    const ordinary = stream(2, api => api.cpu(25_000_000), 'm5');
+    const legacy = stream(3, () => {});
+    const fixture = workspace(t, [
+        { gameStates: [gameState(1, 1, 100, { actorAbsent: true })], diagnostics: first },
+        { gameStates: [], diagnostics: ordinary },
+        { gameStates: [], diagnostics: ordinary },
+        { gameStates: [gameState(3, 1, 100, { actorAbsent: true })], diagnostics: legacy },
+    ], { localBuild: buildId });
+    const before = snapshotBytes(fixture.directory);
+    const report = analyzeReplay({ root: fixture.root, replayId });
+    assert.deepEqual(analyzeReplay({ root: fixture.root, replayId }), report);
+    assert.deepEqual(snapshotBytes(fixture.directory), before);
+    const measured = findings(report, 'cpu.measurement').filter(item => item.verdict === 'pass');
+    assert.deepEqual(measured.map(item => item.observed), [
+        { tick: 1, elapsedNs: 25_000_000, limitNs: 100_000_000,
+            limitKind: 'first-tick', unit: 'nanoseconds', headroomNs: 75_000_000,
+            scope: 'elapsed-through-sampling-point' },
+        { tick: 2, elapsedNs: 25_000_000, limitNs: 20_000_000,
+            limitKind: 'ordinary-tick', unit: 'nanoseconds', headroomNs: -5_000_000,
+            scope: 'elapsed-through-sampling-point' },
+    ]);
+    assert.equal(measured[1].evidence.length, 2);
+    assert.ok(measured.every(item => item.message.includes('not final-tick or differential')));
+    assert.ok(findings(report, 'cpu.measurement').some(item => item.verdict === 'unknown' &&
+        item.observed.tick === 3 && item.message.includes('older closure')));
+    assert.equal(findings(report, 'diagnostic.stored-coverage').filter(item => item.verdict === 'fail').length, 0);
+});
+
+test('keeps missing, malformed, conflicting, unsupported, and build-incompatible CPU evidence unknown', t => {
+    const missing = stream(4, api => api.cpu(8_000_000), 'm5');
+    missing.splice(0, 1);
+    const conflictA = stream(5, api => api.cpu(8_000_000), 'm5');
+    const conflictB = structuredClone(conflictA);
+    conflictB[0].elapsedNs = 9_000_000;
+    const malformed = { ...stream(6, api => api.cpu(8_000_000), 'm5')[0], elapsedNs: 'bad' };
+    const unsupported = { ...stream(7, api => api.cpu(8_000_000), 'm5')[0], formatVersion: 2 };
+    const split = stream(8, api => api.cpu(8_000_000), 'm5');
+    const splitSample = split[0];
+    const splitClosure = { ...split[1], buildId: otherBuildId };
+    const fixture = workspace(t, [
+        { gameStates: [], diagnostics: missing },
+        { gameStates: [], diagnostics: conflictA },
+        { gameStates: [], diagnostics: conflictB },
+        { gameStates: [], diagnostics: [malformed] },
+        { gameStates: [], diagnostics: [], otherEntries: [{ key: 'unsupported-cpu',
+            raw: JSON.stringify(unsupported), type: 'runtime-cpu', formatVersion: 2 }],
+            diagnosticCoverage: null },
+        { gameStates: [], diagnostics: [splitSample] },
+        { buildId: otherBuildId, gameStates: [], diagnostics: [splitClosure] },
+    ]);
+    const before = snapshotBytes(fixture.directory);
+    const report = analyzeReplay({ root: fixture.root, replayId });
+    assert.deepEqual(snapshotBytes(fixture.directory), before);
+    assert.ok(findings(report, 'diagnostic.raw-schema').some(item => item.verdict === 'fail' &&
+        item.observed.type === 'runtime-cpu'));
+    assert.ok(findings(report, 'diagnostic.version').some(item => item.verdict === 'unknown' &&
+        item.observed.type === 'runtime-cpu'));
+    assert.ok(findings(report, 'diagnostic.conflicting-overlap').some(item => item.verdict === 'fail' &&
+        item.observed.tick === 5));
+    assert.ok(findings(report, 'diagnostic.build-consistency').some(item => item.verdict === 'fail' &&
+        item.observed.tick === 8));
+    for (const tick of [4, 5, 8]) assert.ok(findings(report, 'cpu.measurement').some(item =>
+        item.verdict === 'unknown' && item.observed.tick === tick));
+    assert.equal(findings(report, 'cpu.measurement').filter(item =>
+        [4, 5, 8].includes(item.observed.tick) && item.verdict === 'pass').length, 0);
 });

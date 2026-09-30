@@ -15,6 +15,7 @@ import {
     validBuildId,
     validChange,
     validCoverage,
+    validCpuSample,
     validMap,
 } from './replay-logs.js';
 
@@ -25,7 +26,7 @@ const outputNamePattern = /^[a-f0-9]{24}(?:-[a-f0-9]{12,64}(?:-\d+)?)?\.jsonl$/;
 const mapNamePattern = /^pain_and_gain_map_\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-\d{3}Z(?:-[a-f0-9]{12,64})?\.json$/;
 const sourceKeyPattern = /^1\/0\/https:\/\/arena\.screeps\.com\/api\/game\/([a-f0-9]{24})\/log\/\d+$/;
 const diagnosticTypes = new Set(['membership-baseline', 'membership-change',
-    'action-decision', 'action-attempt', 'evidence-coverage']);
+    'action-decision', 'action-attempt', 'runtime-cpu', 'evidence-coverage']);
 const allCoveredTypes = ['membership-baseline', 'membership-change',
     'action-decision', 'action-attempt'];
 const requiredPart = { moveTo: 'move', heal: 'heal', rangedHeal: 'heal',
@@ -135,7 +136,13 @@ function diagnosticValidator(type) {
     return type === 'membership-baseline' ? validBaseline
         : type === 'membership-change' ? validChange
             : type === 'action-decision' ? validActionDecision
-                : type === 'action-attempt' ? validActionAttempt : validCoverage;
+                : type === 'action-attempt' ? validActionAttempt
+                    : type === 'runtime-cpu' ? validCpuSample : validCoverage;
+}
+
+function supportedDiagnosticVersion(entry) {
+    return entry.type === 'evidence-coverage' ? [1, 2].includes(entry.formatVersion)
+        : entry.formatVersion === 1;
 }
 
 function gameCoverage(lines) {
@@ -274,7 +281,7 @@ function validateManifestRecord(state, record, directory, manifestPath, active, 
             diagnosticsValid = false;
             continue;
         }
-        if (entry.formatVersion !== 1) {
+        if (!supportedDiagnosticVersion(entry)) {
             addFinding(state, 'diagnostic.version', 'unknown', [entryRef],
                 `Diagnostic format version ${entry.formatVersion} is unsupported.`,
                 { type: entry.type, formatVersion: entry.formatVersion }, [entry.buildId ?? record.buildId]);
@@ -435,7 +442,7 @@ function mergeDiagnostics(state, diagnostics, snapshotLines) {
             items.map(item => item.source), 'Exact overlapping diagnostics were deduplicated.',
             { tick: items[0].entry.tick, recordId: items[0].entry.recordId, copies: items.length },
             items.map(item => item.buildId));
-        unique.push(items[0]);
+        unique.push({ ...items[0], sources: items.map(item => item.source) });
     }
     const replayDiagnostics = unique.map(item => ({ ...item, key: item.replayKey }));
     const summary = summarizeDiagnosticCoverage(snapshotLines.map(item => item.raw), replayDiagnostics);
@@ -480,6 +487,43 @@ function mergeDiagnostics(state, diagnostics, snapshotLines) {
             items.map(item => item.buildId));
     }
     return { unique, byTick, closures, complete, summary };
+}
+
+function analyzeCpuMeasurements(state, merged, snapshots) {
+    const ticks = [...new Set([...merged.byTick.keys(), ...snapshots.keys()])].sort((a, b) => a - b);
+    for (const tick of ticks) {
+        const items = merged.byTick.get(tick) ?? [];
+        const closureItem = items.find(item => item.entry.type === 'evidence-coverage');
+        const closure = closureItem?.entry;
+        const samples = items.filter(item => item.entry.type === 'runtime-cpu');
+        const refs = items.flatMap(item => item.sources ?? [item.source]);
+        const builds = items.map(item => item.buildId);
+        if (!closure) {
+            addFinding(state, 'cpu.measurement', 'unknown', refs.length ? refs :
+                [evidence('replay_logs/manifest.json', { tick })],
+            'No diagnostic closure establishes CPU measurement coverage for this tick.', { tick }, builds);
+            continue;
+        }
+        if (!closure.coveredTypes.includes('runtime-cpu')) {
+            addFinding(state, 'cpu.measurement', 'unknown', refs,
+                'This older closure does not support runtime CPU evidence.',
+                { tick, coveredTypes: closure.coveredTypes }, builds);
+            continue;
+        }
+        if (!merged.complete.has(tick) || samples.length !== 1) {
+            addFinding(state, 'cpu.measurement', 'unknown', refs,
+                'CPU measurement depends on complete, unconflicted coverage with exactly one sample.',
+                { tick, sampleCount: samples.length }, builds);
+            continue;
+        }
+        const sample = samples[0];
+        addFinding(state, 'cpu.measurement', 'pass', sample.sources ?? [sample.source],
+            'Elapsed tick CPU and sampling-point headroom are recorded; this is not final-tick or differential overhead evidence.',
+            { tick, elapsedNs: sample.entry.elapsedNs, limitNs: sample.entry.limitNs,
+                limitKind: sample.entry.limitKind, unit: sample.entry.unit,
+                headroomNs: sample.entry.limitNs - sample.entry.elapsedNs,
+                scope: 'elapsed-through-sampling-point' }, [sample.entry.buildId]);
+    }
 }
 
 function mapFlagChecks(state, savedMap, snapshots) {
@@ -973,6 +1017,7 @@ export function analyzeReplay({ root = projectRoot, replayId, fingerprints } = {
     const snapshots = mergeSnapshots(state, snapshotLines);
     const merged = mergeDiagnostics(state, diagnosticLines, [...snapshots.values()]);
     mapFlagChecks(state, mapResult.map, snapshots);
+    analyzeCpuMeasurements(state, merged, snapshots);
     analyzeMembership(state, merged, snapshots);
     const movement = analyzeActions(state, merged, snapshots);
     analyzeObservedChanges(state, snapshots, movement);

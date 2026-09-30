@@ -65,6 +65,20 @@ const actionCoverage = (tick, recordCount, counts) => ({
     ...evidenceCoverage(tick, recordCount, counts),
     coveredTypes: ['membership-baseline', 'membership-change', 'action-decision', 'action-attempt'],
 });
+const cpuSample = (tick, sequence = 0, overrides = {}) => ({
+    type: 'runtime-cpu', formatVersion: 1, buildId: evidenceBuildId,
+    tick, phase: 'after-actions', sequence, recordId: `${tick}:${sequence}`,
+    elapsedNs: 8_000_000, limitNs: tick === 1 ? 100_000_000 : 20_000_000,
+    limitKind: tick === 1 ? 'first-tick' : 'ordinary-tick', unit: 'nanoseconds',
+    ...overrides,
+});
+const cpuCoverage = (tick, recordCount, counts = {}) => ({
+    ...actionCoverage(tick, recordCount, counts), formatVersion: 2,
+    coveredTypes: ['membership-baseline', 'membership-change', 'action-decision',
+        'action-attempt', 'runtime-cpu'],
+    counts: { ...actionCoverage(tick, recordCount, counts).counts,
+        'runtime-cpu': counts['runtime-cpu'] ?? 0 },
+});
 const payloadDigest = ({ checksum, ...payload }) => createHash('sha256').update(`${JSON.stringify(payload,
     (_, value) => value && typeof value === 'object' && !Array.isArray(value)
         ? Object.fromEntries(Object.entries(value).sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0)) : value)}\n`).digest('hex');
@@ -283,6 +297,52 @@ test('persists and reviews diagnostic-only evidence without inventing a JSONL', 
     assert.equal(cleaned.replays[0].status, 'active');
     assert.ok(cleaned.replays[0].retiredFingerprints.includes(imported.record.fingerprint));
     assert.equal((await importCacheFile(root, source)).kind, 'deduplicated');
+});
+
+test('imports and persists diagnostic-only CPU evidence with versioned coverage', async t => {
+    const { root, cache } = workspace(t);
+    const mapSource = path.join(cache, 'map');
+    fs.writeFileSync(mapSource, cacheFrame({ 1: mapEntry() }, { tick: 1 }));
+    assert.equal((await importCacheFile(root, mapSource)).kind, 'mapped');
+
+    const sample = cpuSample(4);
+    const closure = cpuCoverage(4, 1, { 'runtime-cpu': 1 });
+    const source = path.join(cache, 'cpu');
+    fs.writeFileSync(source, cacheFrame({ 4: `${JSON.stringify(sample)}\n${JSON.stringify(closure)}` },
+        { tick: 4 }));
+    const imported = await importCacheFile(root, source);
+    assert.equal(imported.kind, 'imported');
+    assert.equal(imported.record.outputPath, null);
+    assert.equal(imported.record.outputFingerprint, null);
+    assert.deepEqual(imported.record.otherEntries.map(item => [item.type, item.formatVersion]),
+        [['runtime-cpu', 1], ['evidence-coverage', 2]]);
+    assert.deepEqual(imported.record.diagnosticCoverage.completeTicks, [4]);
+    assert.deepEqual(imported.record.diagnosticCoverage.coveredTypes,
+        ['membership-baseline', 'membership-change', 'action-decision', 'action-attempt', 'runtime-cpu']);
+    assert.equal(imported.record.diagnosticCoverage.typeCounts['runtime-cpu'], 1);
+    const reloaded = await reconcileCleanup(root);
+    assert.deepEqual(reloaded.records[0].otherEntries, imported.record.otherEntries);
+    assert.deepEqual(reloaded.records[0].diagnosticCoverage, imported.record.diagnosticCoverage);
+    assert.equal((await importCacheFile(root, source)).kind, 'deduplicated');
+
+    const fileSample = cpuSample(5);
+    const fileClosure = cpuCoverage(5, 1, { 'runtime-cpu': 1 });
+    const fileSource = path.join(cache, 'cpu-with-state');
+    fs.writeFileSync(fileSource, cacheFrame({ 5: [tagged(entry(5), evidenceBuildId),
+        JSON.stringify(fileSample), JSON.stringify(fileClosure)].join('\n') }, { tick: 5 }));
+    const fileBacked = await importCacheFile(root, fileSource);
+    assert.match(fileBacked.record.outputPath, /\.jsonl$/);
+    assert.deepEqual(fileBacked.record.otherEntries.map(item => item.type),
+        ['runtime-cpu', 'evidence-coverage']);
+    assert.equal(fs.readFileSync(path.join(root, 'replay_logs', fileBacked.record.outputPath), 'utf8'),
+        `${tagged(entry(5), evidenceBuildId)}\n`);
+
+    const invalid = parseCacheEntry(cacheFrame({ 4: JSON.stringify(cpuSample(4, 0,
+        { elapsedNs: -1 })) }, { tick: 4 }));
+    assert.equal(invalid.kind, 'malformed');
+    const unsupported = parseCacheEntry(cacheFrame({ 4: JSON.stringify(cpuSample(4, 0,
+        { formatVersion: 2 })) }, { tick: 4 }));
+    assert.equal(unsupported.kind, 'unsupported');
 });
 
 test('retries deferred diagnostic-only evidence after its map arrives without duplication', async t => {

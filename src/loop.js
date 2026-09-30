@@ -3,13 +3,15 @@ import { moveCreeps, executeTactics } from './arena/execute.js';
 import { selectFlag } from './strategy/objectives.js';
 import { logFlagAllocationDiagnostic, logGameState, logHealerEscortDiagnostic, logMapOnce } from './debug/game-state.js';
 import { searchPath } from 'game/path-finder';
+import { getCpuTime } from 'game/utils';
+import { arenaInfo } from 'game';
 import { EFF_ATTACK_MODIFIER } from 'game/constants';
 import { oneHealerEscortExperiment, oneScoutFlagExperiment } from './config.js';
 import { planScoutFlagAllocation } from './strategy/flag-allocation.js';
 import { planHealerEscort } from './tactics/healer-escort.js';
 import { resetMembership, updateMembership } from './squads/membership.js';
 import { beginEvidenceTick, closeEvidenceTick, logActionAttempt,
-    logActionDecision, logMembershipEvidence } from './debug/replay-evidence.js';
+    logActionDecision, logCpuEvidence, logMembershipEvidence } from './debug/replay-evidence.js';
 
 const engagements = new Map();
 let flagAllocation = null;
@@ -74,5 +76,9 @@ export function runTick() {
         escortPlan?.escort, escortPlan?.escort ? diagnostic => logHealerEscortDiagnostic({ tick: state.tick,
             phase: 'movement', reason: null, ...diagnostic }) : null, actionReporter);
     executeTactics(myCreeps, enemies, damagedFriends, actionReporter);
+    const limitKind = state.tick === 1 ? 'first-tick' : 'ordinary-tick';
+    const limitNs = state.tick === 1 ? arenaInfo.cpuTimeLimitFirstTick : arenaInfo.cpuTimeLimit;
+    const elapsedNs = getCpuTime();
+    logCpuEvidence({ elapsedNs, limitNs, limitKind });
     closeEvidenceTick();
 }

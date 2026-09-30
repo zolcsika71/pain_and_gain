@@ -30,13 +30,16 @@ const validSha256 = value => typeof value === 'string' && /^[a-f0-9]{64}$/.test(
 export const validBuildId = validSha256;
 const membershipDiagnosticTypes = ['membership-baseline', 'membership-change'];
 const actionDiagnosticTypes = ['action-decision', 'action-attempt'];
-const allCoveredTypes = [...membershipDiagnosticTypes, ...actionDiagnosticTypes];
-const retainedDiagnosticTypes = [...allCoveredTypes, 'evidence-coverage',
+const actionCoveredTypes = [...membershipDiagnosticTypes, ...actionDiagnosticTypes];
+const cpuDiagnosticTypes = ['runtime-cpu'];
+const currentCoveredTypes = [...actionCoveredTypes, ...cpuDiagnosticTypes];
+const retainedDiagnosticTypes = [...currentCoveredTypes, 'evidence-coverage',
     'flag-allocation', 'healer-escort'];
-const evidenceCountKeys = [...allCoveredTypes,
+const evidenceCountKeys = [...actionCoveredTypes,
     'movement-decisions', 'healing-decisions', 'combat-decisions'];
 const channels = ['movement', 'healing', 'combat'];
-const phaseOrder = new Map(['before-actions', 'movement', 'tactics'].map((phase, index) => [phase, index]));
+const phaseOrder = new Map(['before-actions', 'movement', 'tactics', 'after-actions']
+    .map((phase, index) => [phase, index]));
 const actionMethods = ['moveTo', 'heal', 'rangedHeal', 'attack', 'rangedAttack'];
 const targetKinds = ['creep', 'score-flag', 'position', 'game-object', 'unknown'];
 const roles = ['melee', 'ranged', 'healer', 'scout', 'mixed', 'unclassifiable'];
@@ -171,19 +174,33 @@ export function validActionAttempt(entry) {
         (entry.returnCode === null || Number.isSafeInteger(entry.returnCode));
 }
 
+export function validCpuSample(entry) {
+    return entry?.type === 'runtime-cpu' && entry.formatVersion === 1 &&
+        validBuildId(entry.buildId) && positiveInteger(entry.tick) && entry.phase === 'after-actions' &&
+        nonnegativeInteger(entry.sequence) && entry.recordId === `${entry.tick}:${entry.sequence}` &&
+        nonnegativeInteger(entry.elapsedNs) && positiveInteger(entry.limitNs) &&
+        entry.limitKind === (entry.tick === 1 ? 'first-tick' : 'ordinary-tick') &&
+        entry.unit === 'nanoseconds';
+}
+
 export function validCoverage(entry) {
     const membershipOnly = canonical(entry?.coveredTypes) === canonical(membershipDiagnosticTypes);
-    const allEvidence = canonical(entry?.coveredTypes) === canonical(allCoveredTypes);
-    if (entry?.type !== 'evidence-coverage' || entry.formatVersion !== 1 ||
+    const actionEvidence = canonical(entry?.coveredTypes) === canonical(actionCoveredTypes);
+    const cpuEvidence = canonical(entry?.coveredTypes) === canonical(currentCoveredTypes);
+    const expectedCountKeys = [...evidenceCountKeys, ...(cpuEvidence ? cpuDiagnosticTypes : [])];
+    if (entry?.type !== 'evidence-coverage' ||
+        !((entry.formatVersion === 1 && (membershipOnly || actionEvidence)) ||
+            (entry.formatVersion === 2 && cpuEvidence)) ||
         !validBuildId(entry.buildId) || !positiveInteger(entry.tick) || entry.phase !== 'after-actions' ||
         !nonnegativeInteger(entry.sequence) || entry.recordId !== `${entry.tick}:${entry.sequence}` ||
         !nonnegativeInteger(entry.recordCount) || entry.sequence !== entry.recordCount ||
-        entry.closed !== true || !Array.isArray(entry.coveredTypes) || (!membershipOnly && !allEvidence) ||
+        entry.closed !== true || !Array.isArray(entry.coveredTypes) ||
         !entry.counts || typeof entry.counts !== 'object' || Array.isArray(entry.counts) ||
-        canonical(Object.keys(entry.counts).sort()) !== canonical([...evidenceCountKeys].sort()) ||
-        !evidenceCountKeys.every(key => nonnegativeInteger(entry.counts[key])) ||
+        canonical(Object.keys(entry.counts).sort()) !== canonical([...expectedCountKeys].sort()) ||
+        !expectedCountKeys.every(key => nonnegativeInteger(entry.counts[key])) ||
         (membershipOnly && [...actionDiagnosticTypes, 'movement-decisions', 'healing-decisions',
-            'combat-decisions'].some(key => entry.counts[key] !== 0))) return false;
+            'combat-decisions'].some(key => entry.counts[key] !== 0)) ||
+        (cpuEvidence && entry.counts['runtime-cpu'] !== 1)) return false;
     return entry.recordCount === 0
         ? entry.firstSequence === null && entry.lastSequence === null
         : entry.firstSequence === 0 && entry.lastSequence === entry.recordCount - 1;
@@ -193,13 +210,16 @@ export function summarizeDiagnosticCoverage(gameStateLines, diagnostics) {
     const gameTicks = gameStateLines.map(line => JSON.parse(line).tick);
     const diagnosticTicks = diagnostics.map(item => item.entry.tick);
     const ticks = [...new Set([...gameTicks, ...diagnosticTicks])].sort((a, b) => a - b);
+    const cpuDeclared = diagnostics.some(item => item.entry.type === 'runtime-cpu' ||
+        (item.entry.type === 'evidence-coverage' && item.entry.coveredTypes.includes('runtime-cpu')));
+    const countedDiagnosticTypes = [...actionCoveredTypes, ...(cpuDeclared ? cpuDiagnosticTypes : [])];
     const summary = {
         formatVersion: 1, firstTick: ticks[0] ?? null, lastTick: ticks.at(-1) ?? null,
         versions: [...new Set(diagnostics.map(item => item.entry.formatVersion))].sort((a, b) => a - b),
         coveredTypes: [],
         completeTicks: [], missingClosures: [], gaps: [], duplicateRecordIds: [], conflicts: [],
         correlationIssues: [],
-        typeCounts: Object.fromEntries([...membershipDiagnosticTypes, ...actionDiagnosticTypes,
+        typeCounts: Object.fromEntries([...countedDiagnosticTypes,
             'evidence-coverage'].map(type => [type, 0])),
         channelCounts: { movement: 0, healing: 0, combat: 0 },
     };
@@ -244,11 +264,13 @@ export function summarizeDiagnosticCoverage(gameStateLines, diagnostics) {
         const preceding = unique.filter(entry => entry.type !== 'evidence-coverage');
         const actualSequences = [...new Set(preceding.map(entry => entry.sequence))].sort((a, b) => a - b);
         const expectedSequences = Array.from({ length: closure.recordCount }, (_, index) => index);
-        const actualCounts = Object.fromEntries(allCoveredTypes.map(type =>
+        const closureTypes = closure.coveredTypes.includes('runtime-cpu')
+            ? currentCoveredTypes : actionCoveredTypes;
+        const actualCounts = Object.fromEntries(closureTypes.map(type =>
             [type, preceding.filter(entry => entry.type === type).length]));
         const actualChannels = Object.fromEntries(channels.map(channel => [channel,
             preceding.filter(entry => entry.type === 'action-decision' && entry.channel === channel).length]));
-        const countMismatch = allCoveredTypes.some(type => actualCounts[type] !== closure.counts[type]) ||
+        const countMismatch = closureTypes.some(type => actualCounts[type] !== closure.counts[type]) ||
             channels.some(channel => actualChannels[channel] !== closure.counts[`${channel}-decisions`]);
 
         const decisions = preceding.filter(entry => entry.type === 'action-decision');
@@ -398,7 +420,7 @@ export function parseCacheEntry(bytes) {
             try {
                 parsed = JSON.parse(line);
             } catch {
-                if (/"type"\s*:\s*"(?:game-state|map-state|flag-allocation|healer-escort|membership-baseline|membership-change|action-decision|action-attempt|evidence-coverage)"/.test(line)) {
+                if (/"type"\s*:\s*"(?:game-state|map-state|flag-allocation|healer-escort|membership-baseline|membership-change|action-decision|action-attempt|runtime-cpu|evidence-coverage)"/.test(line)) {
                     return issue('malformed', `Malformed state entry ${sourceKey} for ${key}`);
                 }
                 otherEntries.push({ key: sourceKey, raw: line });
@@ -466,8 +488,24 @@ export function parseCacheEntry(bytes) {
                 otherEntries.push(item);
                 continue;
             }
-            if (membershipDiagnosticTypes.includes(parsed?.type) || parsed?.type === 'evidence-coverage') {
+            if (parsed?.type === 'runtime-cpu') {
                 if (parsed.formatVersion !== 1) {
+                    return issue('unsupported', `Unsupported ${parsed.type} version in ${sourceKey} for ${key}`);
+                }
+                if (!validCpuSample(parsed)) {
+                    return issue('malformed', `Invalid ${parsed.type} entry ${sourceKey} for ${key}`);
+                }
+                try { buildId = consistentBuildId(buildId, entryBuildId(parsed, sourceKey), key); }
+                catch (error) { return issue('malformed', error.message); }
+                const item = { key: sourceKey, raw: line, type: parsed.type, formatVersion: 1 };
+                diagnostics.push({ ...item, entry: parsed });
+                otherEntries.push(item);
+                continue;
+            }
+            if (membershipDiagnosticTypes.includes(parsed?.type) || parsed?.type === 'evidence-coverage') {
+                const supportedVersion = parsed.type === 'evidence-coverage'
+                    ? [1, 2].includes(parsed.formatVersion) : parsed.formatVersion === 1;
+                if (!supportedVersion) {
                     return issue('unsupported', `Unsupported ${parsed.type} version in ${sourceKey} for ${key}`);
                 }
                 const valid = parsed.type === 'membership-baseline' ? validBaseline(parsed) :
@@ -475,7 +513,8 @@ export function parseCacheEntry(bytes) {
                 if (!valid) return issue('malformed', `Invalid ${parsed.type} entry ${sourceKey} for ${key}`);
                 try { buildId = consistentBuildId(buildId, entryBuildId(parsed, sourceKey), key); }
                 catch (error) { return issue('malformed', error.message); }
-                const item = { key: sourceKey, raw: line, type: parsed.type, formatVersion: 1 };
+                const item = { key: sourceKey, raw: line, type: parsed.type,
+                    formatVersion: parsed.formatVersion };
                 diagnostics.push({ ...item, entry: parsed });
                 otherEntries.push(item);
                 continue;

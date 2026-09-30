@@ -6,8 +6,8 @@ import { buildId } from '../../src/debug/build-id.js';
 
 // Replace only Arena-provided imports; all project modules remain real.
 const arenaModules = new Map([
-    ['game/utils', 'export const getObjectsByPrototype = prototype => globalThis.__painAndGainArenaObjects.get(prototype); export const getObjects = () => [...globalThis.__painAndGainArenaObjects.values()].flat(); export const getTerrainAt = () => 0; export const getTicks = () => globalThis.__painAndGainTick;'],
-    ['game', 'export const arenaInfo = { name: "Pain and Gain", season: "4", level: 1, ticksLimit: 2000 };'],
+    ['game/utils', 'export const getObjectsByPrototype = prototype => globalThis.__painAndGainArenaObjects.get(prototype); export const getObjects = () => [...globalThis.__painAndGainArenaObjects.values()].flat(); export const getTerrainAt = () => 0; export const getTicks = () => globalThis.__painAndGainTick; export const getCpuTime = () => globalThis.__painAndGainCpuTime ?? 123456;'],
+    ['game', 'export const arenaInfo = { name: "Pain and Gain", season: "4", level: 1, ticksLimit: 2000, cpuTimeLimit: 20000000, cpuTimeLimitFirstTick: 100000000 };'],
     ['game/path-finder', 'export const searchPath = () => { globalThis.__painAndGainPathCalls = (globalThis.__painAndGainPathCalls ?? 0) + 1; return { path: [], incomplete: false }; };'],
     ['game/constants', 'export const EFF_ATTACK_MODIFIER = "eff_attack_modifier";'],
     ['game/prototypes', 'export class Creep {}'],
@@ -89,10 +89,10 @@ test('runTick chooses combat movement or first-flag fallback before compatible t
     const legacyTypes = oneScoutFlagExperiment
         ? ['flag-allocation', 'map-state', 'game-state', 'game-state']
         : ['map-state', 'game-state', 'game-state'];
-    assert.equal(logger.mock.callCount(), oneScoutFlagExperiment ? 33 : 32);
+    assert.equal(logger.mock.callCount(), oneScoutFlagExperiment ? 35 : 34);
     assert.ok(logger.mock.calls.every(call => call.arguments.length === 1));
     assert.deepEqual(snapshots.filter(state => !['membership-baseline', 'membership-change',
-        'action-decision', 'action-attempt', 'evidence-coverage'].includes(state.type))
+        'action-decision', 'action-attempt', 'runtime-cpu', 'evidence-coverage'].includes(state.type))
         .map(state => state.type), legacyTypes);
     const actionEvidence = snapshots.filter(state => state.type === 'action-decision' ||
         state.type === 'action-attempt');
@@ -109,13 +109,27 @@ test('runTick chooses combat movement or first-flag fallback before compatible t
     }
     assert.deepEqual(snapshots.filter(state => state.type === 'evidence-coverage')
         .map(state => [state.tick, state.recordCount, state.counts]), [
-        [49, 14, { 'membership-baseline': 1, 'membership-change': 0,
+        [49, 15, { 'membership-baseline': 1, 'membership-change': 0,
             'action-decision': 9, 'action-attempt': 4, 'movement-decisions': 3,
-            'healing-decisions': 3, 'combat-decisions': 3 }],
-        [50, 13, { 'membership-baseline': 0, 'membership-change': 0,
+            'healing-decisions': 3, 'combat-decisions': 3, 'runtime-cpu': 1 }],
+        [50, 14, { 'membership-baseline': 0, 'membership-change': 0,
             'action-decision': 9, 'action-attempt': 4, 'movement-decisions': 3,
-            'healing-decisions': 3, 'combat-decisions': 3 }],
+            'healing-decisions': 3, 'combat-decisions': 3, 'runtime-cpu': 1 }],
     ]);
+    assert.deepEqual(snapshots.filter(state => state.type === 'runtime-cpu').map(state => ({
+        tick: state.tick, phase: state.phase, elapsedNs: state.elapsedNs,
+        limitNs: state.limitNs, limitKind: state.limitKind, unit: state.unit,
+    })), [
+        { tick: 49, phase: 'after-actions', elapsedNs: 123456,
+            limitNs: 20000000, limitKind: 'ordinary-tick', unit: 'nanoseconds' },
+        { tick: 50, phase: 'after-actions', elapsedNs: 123456,
+            limitNs: 20000000, limitKind: 'ordinary-tick', unit: 'nanoseconds' },
+    ]);
+    assert.ok(snapshots.filter(state => state.type === 'runtime-cpu').every((sample, index) =>
+        snapshots.indexOf(sample) + 1 === snapshots.indexOf(snapshots.filter(state =>
+            state.type === 'evidence-coverage')[index])));
+    assert.deepEqual(snapshots.map((state, index) => state.type === 'runtime-cpu'
+        ? actionCountsAtLog[index] : null).filter(value => value !== null), [4, 8]);
     assert.equal(actionCountsAtLog[snapshots.findIndex(state => state.type === 'action-attempt')], 1);
     if (oneScoutFlagExperiment) {
         assert.deepEqual(snapshots.find(state => state.type === 'flag-allocation'), {
@@ -148,6 +162,32 @@ test('runTick chooses combat movement or first-flag fallback before compatible t
     ]);
     assert.equal(getMembershipState().initialized, false);
     assert.equal(getMembershipState().reason, 'initial-tick-missed');
+});
+
+test('runTick selects the first-tick CPU limit and emits the sample immediately before closure', t => {
+    const records = [];
+    t.mock.method(console, 'log', message => records.push(JSON.parse(message)));
+    globalThis.__painAndGainArenaObjects = new Map([[ScoreFlag, []], [Creep, []]]);
+    globalThis.__painAndGainTick = 1;
+    globalThis.__painAndGainCpuTime = 25_000_000;
+    try {
+        runTick();
+    } finally {
+        delete globalThis.__painAndGainArenaObjects;
+        delete globalThis.__painAndGainTick;
+        delete globalThis.__painAndGainCpuTime;
+    }
+    const sampleIndex = records.findIndex(record => record.type === 'runtime-cpu');
+    const closureIndex = records.findIndex(record => record.type === 'evidence-coverage');
+    assert.deepEqual(records[sampleIndex], {
+        type: 'runtime-cpu', formatVersion: 1, buildId, tick: 1,
+        phase: 'after-actions', sequence: 2, recordId: '1:2',
+        elapsedNs: 25_000_000, limitNs: 100_000_000,
+        limitKind: 'first-tick', unit: 'nanoseconds',
+    });
+    assert.equal(closureIndex, sampleIndex + 1);
+    assert.equal(records[closureIndex].formatVersion, 2);
+    assert.ok(records[closureIndex].coveredTypes.includes('runtime-cpu'));
 });
 
 function membershipFixture(prefix = 'pg_player1_') {

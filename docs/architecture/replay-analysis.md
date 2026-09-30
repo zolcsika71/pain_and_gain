@@ -84,6 +84,15 @@ an explicit covered zero; a recorded hold or no-action is an explicit decision.
 Missing records, unsupported versions, missing closures, gaps, conflicts, and
 correlation failures remain distinct unknowns.
 
+Current version-2 closures additionally cover exactly one `runtime-cpu` sample.
+For a valid complete sample, rule `cpu.measurement` reports raw `elapsedNs`, the
+applicable `limitNs`/`limitKind`, and derived `headroomNs`. This is elapsed CPU
+through the sampling call, not exact final-tick CPU or differential diagnostic
+overhead. Negative headroom is retained as an observation without imposing a
+threshold. M2/M3 closures remain valid but yield unknown CPU availability;
+missing, malformed, unsupported, conflicting, incomplete, or build-incompatible
+CPU dependencies cannot produce a measurement pass.
+
 For supported M3 producer evidence, action completeness also requires exactly
 one movement, healing, and combat decision for each owned creep in a compatible
 same-tick snapshot. Holds and no-actions satisfy that requirement. Covered zero
@@ -120,5 +129,6 @@ Neither kind of state change is assigned to a command, and missing ticks are
 never bridged.
 
 Synthetic fixtures verify these rules and byte-for-byte read-only behavior.
-Live capture completeness, runtime overhead, reset behavior, engine effects,
-and strategic benefit remain M5 work.
+Live capture completeness, CPU/headroom and diagnostic-size observations,
+timeouts, reset behavior, and engine effects remain M5 work. Differential
+diagnostic CPU overhead and strategic benefit are not established.

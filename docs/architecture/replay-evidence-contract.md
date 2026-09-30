@@ -1,11 +1,12 @@
 # Replay evidence contract
 
-This document defines the version-1 replay-diagnostic contract for Pain and
+This document defines the versioned replay-diagnostic contract for Pain and
 Gain. It completed milestone M1 of
 [ADR 0004](../decisions/0004-replay-evidence-and-analysis-roadmap.md). M2
 implemented membership evidence and M3 now implements action decisions,
-attempts, and importer support. M4 implements deterministic read-only analysis;
-live validation remains planned for M5.
+attempts, and importer support. M4 implements deterministic read-only analysis.
+The M5 prerequisite adds version-1 runtime CPU samples and a version-2 coverage
+closure; live validation remains planned.
 
 The contract preserves the existing `game-state` and `map-state` records. New
 diagnostics are separate console records and must not become inputs to gameplay.
@@ -49,9 +50,9 @@ The following formats are unchanged:
 
 Legacy captures remain usable. The absence of the new records in a legacy
 capture means that membership transitions, selector decisions, command
-attempts, return codes, and diagnostic completeness are unknown.
+attempts, return codes, CPU measurements, and diagnostic completeness are unknown.
 
-## Common version-1 diagnostic envelope
+## Common diagnostic envelope
 
 Every new diagnostic is one compact JSON object on one console line with all of
 these fields:
@@ -59,14 +60,14 @@ these fields:
 | Field | Type | Rule |
 | --- | --- | --- |
 | `type` | string | One of the record types defined below. |
-| `formatVersion` | integer | Exactly `1`. |
+| `formatVersion` | integer | `1` for membership, action, and CPU records and M2/M3 closures; `2` for the current CPU-covering closure. |
 | `buildId` | string | Lowercase 64-character hexadecimal runtime build ID. |
 | `tick` | integer | Positive Arena tick observed by the running loop. |
 | `phase` | string | `before-actions`, `movement`, `tactics`, or `after-actions`. |
-| `sequence` | integer | Zero-based emission order among version-1 diagnostics for this tick. |
+| `sequence` | integer | Zero-based emission order among supported diagnostics for this tick. |
 | `recordId` | string | Exactly `<tick>:<sequence>`, for example `43:2`. |
 
-The sequence resets to zero each tick and increases by one for every version-1
+The sequence resets to zero each tick and increases by one for every supported
 diagnostic, across all types and phases. It records console-emission order, not
 engine resolution order. Within a tick, phase order is:
 
@@ -74,7 +75,8 @@ engine resolution order. Within a tick, phase order is:
 2. `movement`: movement decisions and their attempts in production order;
 3. `tactics`: healing and combat decisions and their attempts in production
    order;
-4. `after-actions`: the one closing `evidence-coverage` record.
+4. `after-actions`: the optional `runtime-cpu` sample followed immediately by
+   the one closing `evidence-coverage` record.
 
 The actual `sequence` is authoritative if multiple actors or actions share a
 phase. Diagnostics are emitted from the existing selection and execution paths;
@@ -272,22 +274,53 @@ Example selected movement followed by an actual failed call (`ERR_TIRED`, `-11`)
 The attempt proves the method, argument, and direct failure code. It does not
 prove what caused fatigue or what would have happened with a different target.
 
+## Runtime CPU evidence
+
+### `runtime-cpu`
+
+The current producer emits exactly one CPU sample after all gameplay commands
+and existing membership/action diagnostics, immediately before coverage closes:
+
+| Field | Type | Rule |
+| --- | --- | --- |
+| `elapsedNs` | integer | Nonnegative CPU wall time elapsed in the current tick when `getCpuTime()` is called. |
+| `limitNs` | integer | Positive applicable Arena CPU limit. |
+| `limitKind` | string | `first-tick` at tick 1; `ordinary-tick` otherwise. |
+| `unit` | string | Exactly `nanoseconds`. |
+
+The sample includes runtime work completed through the `getCpuTime()` call. It
+excludes construction, serialization, and emission of its own record, the
+following coverage closure, and later return/runtime work. The analyzer derives
+sampling-point headroom as `limitNs - elapsedNs`; negative values are permitted
+observations and no acceptance threshold is implied. This is neither exact
+final-tick CPU nor differential diagnostic overhead.
+
+```json
+{"type":"runtime-cpu","formatVersion":1,"buildId":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","tick":20,"phase":"after-actions","sequence":3,"recordId":"20:3","elapsedNs":8000000,"limitNs":20000000,"limitKind":"ordinary-tick","unit":"nanoseconds"}
+```
+
+A missing sample, including timeout before the sampling point, is unknown rather
+than zero. A sample proves only that execution reached the sampling call; it does
+not prove that its own output, the closure, or any subsequent work completed.
+
 ## Diagnostic coverage and reconstruction
 
 ### `evidence-coverage`
 
-The final version-1 diagnostic for each tick is one `evidence-coverage` record
-in `after-actions`. It contains:
+The final diagnostic for each tick reaching its close point is one
+`evidence-coverage` record in `after-actions`. Version 1 represents M2/M3
+coverage; version 2 adds current CPU coverage. It contains:
 
 - `firstSequence`: `0` when diagnostics preceded it, otherwise `null`;
 - `lastSequence`: the last sequence before this record, otherwise `null`;
-- `recordCount`: count of preceding version-1 diagnostics for the tick;
+- `recordCount`: count of preceding versioned diagnostics for the tick;
 - `coveredTypes`: ordered diagnostic types whose execution paths this closure
   covers;
 - `counts`: an object with exactly `membership-baseline`,
   `membership-change`, `action-decision`, `action-attempt`,
   `movement-decisions`, `healing-decisions`, and `combat-decisions`, each a
-  nonnegative integer;
+  nonnegative integer. Version 2 additionally requires `runtime-cpu`, exactly
+  `1`;
 - `closed`: exactly `true`, meaning the instrumented tick path reached its
   diagnostic close point.
 
@@ -295,7 +328,7 @@ The coverage record's own sequence equals `recordCount`. It does not count
 itself. `closed: true` establishes only that the runtime reached the close point
 and reported its expected counts. Importer capture can still be partial.
 Only a present, valid coverage record at sequence zero with `recordCount: 0`
-establishes that no preceding version-1 diagnostics were emitted for that tick.
+establishes that no preceding diagnostics were emitted for that tick.
 An entirely absent tick or absent coverage record is unknown, never an implicit
 zero.
 
@@ -303,7 +336,10 @@ An M2 closure has `coveredTypes` exactly `["membership-baseline",
 "membership-change"]`; its zero action counts do not claim action coverage. An
 M3 closure has exactly `["membership-baseline", "membership-change",
 "action-decision", "action-attempt"]`. The importer accepts both forms so
-membership-only captures retain their original meaning.
+membership-only captures retain their original meaning. The current version-2
+closure has those four types followed by `"runtime-cpu"`; it requires exactly
+one preceding sample. Older otherwise-complete closures remain valid and mean
+that CPU evidence is unsupported, not zero or missing from their declared scope.
 
 Coverage closing the three-record hold example above:
 
@@ -311,9 +347,15 @@ Coverage closing the three-record hold example above:
 {"type":"evidence-coverage","formatVersion":1,"buildId":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","tick":20,"phase":"after-actions","sequence":3,"recordId":"20:3","firstSequence":0,"lastSequence":2,"recordCount":3,"coveredTypes":["membership-baseline","membership-change","action-decision","action-attempt"],"counts":{"membership-baseline":0,"membership-change":0,"action-decision":3,"action-attempt":0,"movement-decisions":1,"healing-decisions":1,"combat-decisions":1},"closed":true}
 ```
 
+Current closure for the CPU example above:
+
+```json
+{"type":"evidence-coverage","formatVersion":2,"buildId":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","tick":20,"phase":"after-actions","sequence":4,"recordId":"20:4","firstSequence":0,"lastSequence":3,"recordCount":4,"coveredTypes":["membership-baseline","membership-change","action-decision","action-attempt","runtime-cpu"],"counts":{"membership-baseline":0,"membership-change":0,"action-decision":3,"action-attempt":0,"movement-decisions":1,"healing-decisions":1,"combat-decisions":1,"runtime-cpu":1},"closed":true}
+```
+
 ### Reconstruction rules
 
-For each replay and tick, combine version-1 records only when build ID and
+For each replay and tick, combine supported versioned records only when build ID and
 record identity agree:
 
 - A contiguous sequence from zero through the coverage record, matching its
@@ -373,14 +415,14 @@ for tick 7 are unknown:
 {"type":"game-state","buildId":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","tick":7,"phase":"before-actions","selectedFlagId":null,"creeps":[],"flags":[]}
 ```
 
-## Importer and storage requirements for M2–M3
+## Importer and storage requirements for M2–M5
 
-M2 implements these requirements for membership evidence and M3 implements
-them for action decisions, attempts, correlation, and full coverage. Neither
-milestone redefines existing formats:
+M2 implements these requirements for membership evidence, M3 for action
+decisions and attempts, and the M5 prerequisite for CPU samples and version-2
+coverage. These additions do not redefine existing formats:
 
-1. Recognize the five new types: `membership-baseline`, `membership-change`,
-   `action-decision`, `action-attempt`, and `evidence-coverage`.
+1. Recognize `membership-baseline`, `membership-change`, `action-decision`,
+   `action-attempt`, `runtime-cpu`, and `evidence-coverage`.
 2. Strictly validate the common envelope, type-specific fields, references,
    phase, sequence, record IDs, `coveredTypes`, build consistency, and version. A recognized
    type with an unsupported version is reported as unsupported, not silently
@@ -406,7 +448,7 @@ milestone redefines existing formats:
    existing map validation, build-provenance rules, fingerprints, review state,
    atomic publication, and cleanup boundaries.
 
-A response containing at least one validated version-1, allocation, or escort
+A response containing at least one validated versioned, allocation, or escort
 diagnostic but no `game-state` line is an evidence-only response. After the same
 validated replay/map association gate as a file-backed import, persist it as a
 normal manifest record with its response fingerprint, source, replay/map/build
@@ -425,7 +467,7 @@ record. Missing closures, gaps, or absent game-state lines remain unknown.
 
 Unknown future diagnostic types remain ordinary `otherEntries` unless their
 type is reserved by a newer supported contract. Their presence does not make
-version-1 evidence complete. Existing `flag-allocation` and `healer-escort`
+any declared closure scope complete. Existing `flag-allocation` and `healer-escort`
 entries continue through their current compatibility path.
 
 ## M4 analyzer requirements
@@ -497,3 +539,9 @@ produced 58 records and 22,813 bytes; the longest line was the 3,167-byte
 baseline. This is a fixture-size measurement, not live console, capture, CPU, or
 memory evidence. Live-capture validation and strategy changes remain outside
 M1–M4.
+
+With the M5 CPU prerequisite enabled, the same synthetic fixture produces 59
+records/23,113 bytes for tick 1 and 58 records/20,145 bytes for the two-digit
+steady tick. The added sample plus version-2 closure metadata increase those
+fixtures by 300 and 304 bytes respectively. These remain serialized fixture
+sizes, not live capture completeness or CPU-performance measurements.

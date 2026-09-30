@@ -2,8 +2,9 @@ import { buildId } from './build-id.js';
 
 const membershipTypes = ['membership-baseline', 'membership-change'];
 const actionTypes = ['action-decision', 'action-attempt'];
-const coveredTypes = [...membershipTypes, ...actionTypes];
-const countKeys = [...coveredTypes,
+const actionCoveredTypes = [...membershipTypes, ...actionTypes];
+const cpuType = 'runtime-cpu';
+const legacyCountKeys = [...actionCoveredTypes,
     'movement-decisions', 'healing-decisions', 'combat-decisions'];
 const changeOrder = new Map(['member-added', 'assignment', 'presence', 'capability', 'participation']
     .map((kind, index) => [kind, index]));
@@ -92,8 +93,9 @@ function membershipChanges(previous, current) {
     });
 }
 
-function emptyCounts() {
-    return Object.fromEntries(countKeys.map(key => [key, 0]));
+function emptyCounts(cpuCoverage) {
+    return Object.fromEntries([...legacyCountKeys, ...(cpuCoverage ? [cpuType] : [])]
+        .map(key => [key, 0]));
 }
 
 function targetSnapshot(target, kind) {
@@ -106,10 +108,11 @@ function targetSnapshot(target, kind) {
 }
 
 export function createReplayEvidenceLogger({ runtimeBuildId = buildId,
-    emit = record => console.log(JSON.stringify(record)), actionCoverage = true } = {}) {
+    emit = record => console.log(JSON.stringify(record)), actionCoverage = true,
+    cpuCoverage = true } = {}) {
     let tick = null;
     let sequence = 0;
-    let counts = emptyCounts();
+    let counts = emptyCounts(cpuCoverage);
     let epoch = 1;
     let baselineEmitted = false;
     let previousMembership = null;
@@ -128,7 +131,7 @@ export function createReplayEvidenceLogger({ runtimeBuildId = buildId,
     function beginTick(currentTick, reset = null) {
         tick = currentTick;
         sequence = 0;
-        counts = emptyCounts();
+        counts = emptyCounts(cpuCoverage);
         closed = false;
         pendingReset = reset;
         if (reset) {
@@ -190,16 +193,30 @@ export function createReplayEvidenceLogger({ runtimeBuildId = buildId,
         });
     }
 
+    function recordCpuSample({ elapsedNs, limitNs, limitKind }) {
+        if (!cpuCoverage || counts[cpuType] === 1) throw new Error('Unexpected runtime CPU sample');
+        if (!Number.isSafeInteger(elapsedNs) || elapsedNs < 0 ||
+            !Number.isSafeInteger(limitNs) || limitNs <= 0 ||
+            limitKind !== (tick === 1 ? 'first-tick' : 'ordinary-tick')) {
+            throw new Error('Invalid runtime CPU sample');
+        }
+        return emitRecord(cpuType, 'after-actions', {
+            elapsedNs, limitNs, limitKind, unit: 'nanoseconds',
+        });
+    }
+
     function closeTick() {
         if (closed) return null;
+        if (cpuCoverage && counts[cpuType] !== 1) throw new Error('Missing runtime CPU sample');
         const recordCount = sequence;
         const record = {
-            type: 'evidence-coverage', formatVersion: 1, buildId: runtimeBuildId,
+            type: 'evidence-coverage', formatVersion: cpuCoverage ? 2 : 1, buildId: runtimeBuildId,
             tick, phase: 'after-actions', sequence, recordId: `${tick}:${sequence}`,
             firstSequence: recordCount ? 0 : null,
             lastSequence: recordCount ? recordCount - 1 : null,
             recordCount,
-            coveredTypes: [...(actionCoverage ? coveredTypes : membershipTypes)],
+            coveredTypes: [...(actionCoverage ? actionCoveredTypes : membershipTypes),
+                ...(cpuCoverage ? [cpuType] : [])],
             counts: { ...counts },
             closed: true,
         };
@@ -208,12 +225,13 @@ export function createReplayEvidenceLogger({ runtimeBuildId = buildId,
         return record;
     }
 
-    return { beginTick, recordMembership, recordActionDecision, recordActionAttempt, closeTick };
+    return { beginTick, recordMembership, recordActionDecision, recordActionAttempt,
+        recordCpuSample, closeTick };
 }
 
 // M2 fixtures can still express membership-only closure semantics.
 export const createMembershipEvidenceLogger = options =>
-    createReplayEvidenceLogger({ ...options, actionCoverage: false });
+    createReplayEvidenceLogger({ ...options, actionCoverage: false, cpuCoverage: false });
 
 const replayEvidence = createReplayEvidenceLogger();
 
@@ -222,4 +240,5 @@ export const logMembershipEvidence = state => replayEvidence.recordMembership(st
 export const logActionDecision = decision => replayEvidence.recordActionDecision(decision);
 export const logActionAttempt = (decision, actionIndex, action, returnValue) =>
     replayEvidence.recordActionAttempt(decision, actionIndex, action, returnValue);
+export const logCpuEvidence = sample => replayEvidence.recordCpuSample(sample);
 export const closeEvidenceTick = () => replayEvidence.closeTick();

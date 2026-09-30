@@ -67,8 +67,11 @@ a superseding ADR.
 - Keep old captures analyzable, explicitly reporting unavailable diagnostics.
 - Do not claim complete console coverage or terminal-tick coverage without
   evidence. An absent terminal snapshot alone is not a defect.
-- Record diagnostic overhead and capture completeness; do not assume that
-  additional logging is free.
+- Record live elapsed tick CPU/headroom at the approved sampling point,
+  diagnostic output size, timeout observations, and capture completeness; do
+  not assume that additional logging is free. These measurements satisfy M5's
+  bounded performance-evidence requirement. Differential diagnostic overhead
+  is explicitly deferred and must not be inferred from total CPU/headroom.
 - Roadmap documentation does not itself authorize automatic match launches,
   strategy changes, or replay cleanup; each implementation milestone requires
   its own task authorization.
@@ -172,6 +175,15 @@ found in available output, diagnostic size/CPU measurements, and all remaining
 unknowns. Link the implementation commit, test results, capture fingerprints,
 map reference/checksum, and report.
 
+For this milestone, CPU measurement means build-tagged elapsed tick CPU through
+the late sampling point, the applicable first/ordinary-tick limit, derived
+sampling-point headroom, diagnostic byte volume, and timeout observations. The
+sample excludes its own formatting/emission, the following coverage closure,
+and later runtime work; it is not exact final-tick CPU. Missing samples remain
+unknown, and a present sample does not prove later completion. Differential CPU
+cost attributable to diagnostics is not required by M5 and remains deferred.
+No arbitrary CPU/headroom acceptance threshold is introduced.
+
 A single match need not exercise every transition. Record unexercised reset or
 other scenarios as residual limitations; require targeted additional evidence
 before claiming those behaviors were verified live. Successful instrumentation
@@ -207,7 +219,8 @@ local tests; never silently convert an unknown into a pass.
 | 2026-09-29 | M1 | Complete: documented the version-1 evidence contract without runtime or importer changes | Contract examples parsed as JSON; local links and whitespace checked. Begin M2 only in a separately authorized task. |
 | 2026-09-29 | M2 | Complete: runtime emits an initial membership baseline, deterministic change-only transitions, and membership-only coverage; the importer validates and preserves those records while keeping JSONL game-state-only | Focused transition and importer round-trip tests cover initialization, assignment, presence, tombstones, capability/mobility, late IDs, resets, suppression, gaps, duplicates, conflicts, and legacy input. Tick-flow regression coverage preserves commands and order; all 105 local tests, syntax/build-ID checks, and whitespace checks passed. Local reset evidence is not live reset evidence; M3 action diagnostics and M5 live validation remain planned. |
 | 2026-09-30 | M3 | Complete: committed as `912ba61c025c1ad626f0106dc73e57135cf248b2`; production selection/execution paths emit movement, healing, and combat decisions plus correlated command attempts, and the importer validates and preserves them with full M3 coverage | Local equivalence fixtures cover mixed weapons, healing compatibility, holds, no-actions, numeric failures, and missing numeric returns without changing ordered commands or inputs. Importer fixtures cover normal and diagnostic-only round trips, deferred retry, evidence-only review/cleanup and retirement, persistence, M2 compatibility, correlations and ordering, closures, gaps, canonical duplicates, conflicts, truncation, and unsupported versions. The diagnostic-only regression failed before the lifecycle fix and then passed. `npm run check`, 53 focused tests, all 115 tests, explicit build-ID verification, and whitespace checks passed with unchanged runtime build ID `c68afb80a447dbc69b12e4283757992d53b949c8c8aad6690b12200d53d1cf96`. The documented 14-scout fixture measured 57 records/19,841 bytes for a two-digit steady action-only tick and 58 records/22,813 bytes with the tick-1 membership baseline. Live capture completeness, runtime overhead, engine effects, and live reset behavior remain for M5. |
-| 2026-09-30 | M4 | Complete locally (intentionally uncommitted): added an importable, guarded-CLI, deterministic read-only analyzer for file-backed and evidence-only replay records | Synthetic fixtures cover overlap deduplication and conflicts, legacy and M2 partial evidence, membership epochs and invalid transitions, actions/range/parts/compatibility/returns, movement and health observations, gaps and incomplete/unsupported evidence, provenance, map/build/summary/hash/path integrity, symlinks, deterministic output, and byte-for-byte read-only behavior on success and failure. Pre-commit review found and temporary probes reproduced seven semantic defects; regressions now verify dependency-scoped conflicting-build uncertainty, tri-state null returns, actor/channel coverage, original summary keys plus replay-qualified references, reset/rebaseline boundaries, actor/target consistency, and explicit unknown provenance for missing fingerprints. Focused analyzer/importer tests passed 53/53 and the full suite passed 127/127; syntax, build-ID, and whitespace checks passed with unchanged runtime build ID `c68afb80a447dbc69b12e4283757992d53b949c8c8aad6690b12200d53d1cf96`. Live capture completeness, runtime overhead, reset behavior, engine effects, and strategic benefit remain unverified for M5; M5 remains planned. |
+| 2026-09-30 | M4 | Complete: committed as `442a53be4ad97aebe0a3d3b57ab110e71587860d`; added an importable, guarded-CLI, deterministic read-only analyzer for file-backed and evidence-only replay records | Synthetic fixtures cover overlap deduplication and conflicts, legacy and M2 partial evidence, membership epochs and invalid transitions, actions/range/parts/compatibility/returns, movement and health observations, gaps and incomplete/unsupported evidence, provenance, map/build/summary/hash/path integrity, symlinks, deterministic output, and byte-for-byte read-only behavior on success and failure. Pre-commit review found and temporary probes reproduced seven semantic defects; regressions now verify dependency-scoped conflicting-build uncertainty, tri-state null returns, actor/channel coverage, original summary keys plus replay-qualified references, reset/rebaseline boundaries, actor/target consistency, and explicit unknown provenance for missing fingerprints. Focused analyzer/importer tests passed 53/53 and the full suite passed 127/127; syntax, build-ID, and whitespace checks passed with unchanged runtime build ID `c68afb80a447dbc69b12e4283757992d53b949c8c8aad6690b12200d53d1cf96`. Live capture completeness, runtime overhead, reset behavior, engine effects, and strategic benefit remain unverified for M5; M5 remains planned. |
+| 2026-09-30 | M5 prerequisite | Implemented locally; M5 remains Planned pending a user-launched live match and retained-evidence review | The approved interpretation records build-tagged elapsed tick CPU, applicable limit, sampling-point headroom, diagnostic size, and timeout observations; differential diagnostic overhead is deferred. Runtime emits one late `runtime-cpu` record followed by version-2 coverage without changing gameplay commands. Importer/analyzer support preserves M2/M3/legacy and evidence-only behavior. The 14-scout fixture measures 59 records/23,113 bytes at tick 1 and 58 records/20,145 bytes on a two-digit steady tick. Focused tests passed 70/70 and the full suite passed 132/132; syntax, build-ID, and whitespace checks passed with runtime build ID `09eba928208ff65843cb8e15bd68f0e8167ae84e1e1a303dfbc6addc5c6bca23`. No live CPU, capture completeness, timeout, reset, engine-effect, or strategic-benefit result is claimed. |
 
 ## Consequences
 
