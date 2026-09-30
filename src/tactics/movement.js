@@ -5,7 +5,14 @@ const engagementRange = 5;
 const healerSupportRange = 5;
 const rangedHealRange = 3;
 
-export function selectMovementDecision(creep, enemies, flag, previous = null, friends = []) {
+function fallbackPlan(flag) {
+    return flag ? { target: flag, engagement: null, outcome: 'selected',
+        reason: 'flag-fallback', targetKind: 'score-flag' }
+        : { target: null, engagement: null, outcome: 'no-action',
+            reason: 'no-movement-objective', targetKind: null };
+}
+
+export function selectMovementPlan(creep, enemies, flag, previous = null, friends = []) {
     const attackRange = hasFunctioningPart(creep, 'attack') ? 1
         : hasFunctioningPart(creep, 'ranged_attack') ? 3 : null;
     if (attackRange === null) {
@@ -14,10 +21,14 @@ export function selectMovementDecision(creep, enemies, flag, previous = null, fr
                 friend.hits > 0 && friend.hits < friend.hitsMax);
             const distant = nearestTarget(creep, injured.filter(ally => creep.getRangeTo(ally) > rangedHealRange),
                 healerSupportRange);
-            if (distant) return { target: distant, engagement: null };
-            if (nearestTarget(creep, injured, rangedHealRange)) return { target: null, engagement: null };
+            if (distant) return { target: distant, engagement: null, outcome: 'selected',
+                reason: 'injured-ally-approach', targetKind: 'creep' };
+            if (nearestTarget(creep, injured, rangedHealRange)) {
+                return { target: null, engagement: null, outcome: 'hold',
+                    reason: 'injured-ally-in-range', targetKind: null };
+            }
         }
-        return { target: flag ?? null, engagement: null };
+        return fallbackPlan(flag);
     }
 
     const livingEnemies = enemies.filter(enemy => !enemy.my && enemy.hits > 0);
@@ -30,11 +41,20 @@ export function selectMovementDecision(creep, enemies, flag, previous = null, fr
             outsideTicks = 1;
         }
     }
-    if (!target) return { target: flag ?? null, engagement: null };
+    if (!target) return fallbackPlan(flag);
+    const approach = creep.getRangeTo(target) > attackRange;
     return {
-        target: creep.getRangeTo(target) > attackRange ? target : null,
+        target: approach ? target : null,
         engagement: { id: target.id, outsideTicks },
+        outcome: approach ? 'selected' : 'hold',
+        reason: approach ? 'combat-approach' : 'combat-in-range',
+        targetKind: approach ? 'creep' : null,
     };
+}
+
+export function selectMovementDecision(creep, enemies, flag, previous = null, friends = []) {
+    const { target, engagement } = selectMovementPlan(creep, enemies, flag, previous, friends);
+    return { target, engagement };
 }
 
 export function selectMovementTarget(creep, enemies, flag) {

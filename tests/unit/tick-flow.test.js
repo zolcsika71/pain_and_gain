@@ -86,16 +86,37 @@ test('runTick chooses combat movement or first-flag fallback before compatible t
         ['healer', 'rangedAttack', enemy],
         ['ally', 'attack', enemy],
     ]);
-    const expectedTypes = oneScoutFlagExperiment
-        ? ['membership-baseline', 'flag-allocation', 'map-state', 'game-state',
-            'evidence-coverage', 'game-state', 'evidence-coverage']
-        : ['membership-baseline', 'map-state', 'game-state', 'evidence-coverage',
-            'game-state', 'evidence-coverage'];
-    assert.equal(logger.mock.callCount(), expectedTypes.length);
+    const legacyTypes = oneScoutFlagExperiment
+        ? ['flag-allocation', 'map-state', 'game-state', 'game-state']
+        : ['map-state', 'game-state', 'game-state'];
+    assert.equal(logger.mock.callCount(), oneScoutFlagExperiment ? 33 : 32);
     assert.ok(logger.mock.calls.every(call => call.arguments.length === 1));
-    assert.deepEqual(actionCountsAtLog, oneScoutFlagExperiment
-        ? [0, 0, 0, 0, 4, 4, 8] : [0, 0, 0, 4, 4, 8]);
-    assert.deepEqual(snapshots.map(state => state.type), expectedTypes);
+    assert.deepEqual(snapshots.filter(state => !['membership-baseline', 'membership-change',
+        'action-decision', 'action-attempt', 'evidence-coverage'].includes(state.type))
+        .map(state => state.type), legacyTypes);
+    const actionEvidence = snapshots.filter(state => state.type === 'action-decision' ||
+        state.type === 'action-attempt');
+    assert.equal(actionEvidence.filter(record => record.type === 'action-decision').length, 18);
+    assert.equal(actionEvidence.filter(record => record.type === 'action-attempt').length, 8);
+    for (const attempt of actionEvidence.filter(record => record.type === 'action-attempt')) {
+        const selection = actionEvidence.find(record => record.type === 'action-decision' &&
+            record.decisionId === attempt.decisionId);
+        const action = selection.actions.find(item => item.actionId === attempt.actionId);
+        assert.equal(attempt.actorId, selection.actorId);
+        assert.equal(attempt.channel, selection.channel);
+        assert.equal(attempt.method, action.method);
+        assert.deepEqual(attempt.target, action.target);
+    }
+    assert.deepEqual(snapshots.filter(state => state.type === 'evidence-coverage')
+        .map(state => [state.tick, state.recordCount, state.counts]), [
+        [49, 14, { 'membership-baseline': 1, 'membership-change': 0,
+            'action-decision': 9, 'action-attempt': 4, 'movement-decisions': 3,
+            'healing-decisions': 3, 'combat-decisions': 3 }],
+        [50, 13, { 'membership-baseline': 0, 'membership-change': 0,
+            'action-decision': 9, 'action-attempt': 4, 'movement-decisions': 3,
+            'healing-decisions': 3, 'combat-decisions': 3 }],
+    ]);
+    assert.equal(actionCountsAtLog[snapshots.findIndex(state => state.type === 'action-attempt')], 1);
     if (oneScoutFlagExperiment) {
         assert.deepEqual(snapshots.find(state => state.type === 'flag-allocation'), {
             type: 'flag-allocation', buildId, phase: 'before-actions', tick: 49,

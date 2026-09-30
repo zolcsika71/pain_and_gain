@@ -44,8 +44,9 @@ Execute --> Combat : choose compatible attacks
 Healing --> Eligibility : functioning HEAL, range, target
 Combat --> Eligibility : functioning ATTACK / RANGED_ATTACK,\nrange, target
 Execute --> API : heal / rangedHeal / attack / rangedAttack
-Loop --> Evidence : membership-only coverage closure\nafter actions
+Loop --> Evidence : membership/action coverage closure\nafter actions
 Evidence --> API : console.log(versioned records)
-note right of Evidence : M2 covers membership only;\naction diagnostics remain planned
+Execute --> Evidence : decisions before original calls;\nattempts immediately after returns
+note right of Evidence : M2 membership-only closures remain valid;\nM3 covers decisions and attempts
 
 @enduml

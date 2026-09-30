@@ -26,12 +26,19 @@ const mapPayload = map => {
 };
 const mapChecksum = map => sha256(mapContent(mapPayload(map)));
 const savedMapContent = map => mapContent({ ...mapPayload(map), checksum: mapChecksum(map) });
-const validBuildId = value => typeof value === 'string' && /^[a-f0-9]{64}$/.test(value);
+const validSha256 = value => typeof value === 'string' && /^[a-f0-9]{64}$/.test(value);
+const validBuildId = validSha256;
 const membershipDiagnosticTypes = ['membership-baseline', 'membership-change'];
-const futureActionDiagnosticTypes = ['action-decision', 'action-attempt'];
-const futureCoveredTypes = [...membershipDiagnosticTypes, ...futureActionDiagnosticTypes];
-const evidenceCountKeys = [...membershipDiagnosticTypes, ...futureActionDiagnosticTypes,
+const actionDiagnosticTypes = ['action-decision', 'action-attempt'];
+const allCoveredTypes = [...membershipDiagnosticTypes, ...actionDiagnosticTypes];
+const retainedDiagnosticTypes = [...allCoveredTypes, 'evidence-coverage',
+    'flag-allocation', 'healer-escort'];
+const evidenceCountKeys = [...allCoveredTypes,
     'movement-decisions', 'healing-decisions', 'combat-decisions'];
+const channels = ['movement', 'healing', 'combat'];
+const phaseOrder = new Map(['before-actions', 'movement', 'tactics'].map((phase, index) => [phase, index]));
+const actionMethods = ['moveTo', 'heal', 'rangedHeal', 'attack', 'rangedAttack'];
+const targetKinds = ['creep', 'score-flag', 'position', 'game-object', 'unknown'];
 const roles = ['melee', 'ranged', 'healer', 'scout', 'mixed', 'unclassifiable'];
 const presences = ['present', 'missing', 'dead'];
 const membershipChangeOrder = ['member-added', 'assignment', 'presence', 'capability', 'participation'];
@@ -123,18 +130,60 @@ function validChange(entry) {
     return !keys.includes(null) && keys.every((key, index) => index === 0 || keys[index - 1] < key);
 }
 
+function validActionEnvelope(entry, type) {
+    const phase = entry?.channel === 'movement' ? 'movement' : 'tactics';
+    return entry?.type === type && entry.formatVersion === 1 && validBuildId(entry.buildId) &&
+        positiveInteger(entry.tick) && channels.includes(entry.channel) && entry.phase === phase &&
+        nonnegativeInteger(entry.sequence) && entry.recordId === `${entry.tick}:${entry.sequence}` &&
+        typeof entry.actorId === 'string' && entry.actorId.length > 0;
+}
+
+function validTarget(target) {
+    return target && typeof target === 'object' && !Array.isArray(target) &&
+        targetKinds.includes(target.kind) &&
+        (target.id === null || (typeof target.id === 'string' && target.id.length > 0)) &&
+        Number.isSafeInteger(target.x) && Number.isSafeInteger(target.y);
+}
+
+function validMethodForChannel(method, channel) {
+    return actionMethods.includes(method) && (channel === 'movement' ? method === 'moveTo'
+        : channel === 'healing' ? ['heal', 'rangedHeal'].includes(method)
+            : ['attack', 'rangedAttack'].includes(method));
+}
+
+function validActionDecision(entry) {
+    if (!validActionEnvelope(entry, 'action-decision') || entry.decisionId !== entry.recordId ||
+        !['selected', 'hold', 'no-action'].includes(entry.outcome) || !reasonToken(entry.reason) ||
+        !Array.isArray(entry.actions) ||
+        (entry.outcome === 'selected' ? entry.actions.length === 0 : entry.actions.length !== 0)) return false;
+    return entry.actions.every((action, index) => action && typeof action === 'object' &&
+        !Array.isArray(action) && action.actionId === `${entry.decisionId}#${index}` &&
+        validMethodForChannel(action.method, entry.channel) && validTarget(action.target));
+}
+
+function validActionAttempt(entry) {
+    const actionMatch = typeof entry?.actionId === 'string'
+        ? entry.actionId.match(/^(\d+:\d+)#(0|[1-9]\d*)$/) : null;
+    return validActionEnvelope(entry, 'action-attempt') &&
+        typeof entry.decisionId === 'string' && /^\d+:\d+$/.test(entry.decisionId) &&
+        entry.decisionId.startsWith(`${entry.tick}:`) && actionMatch?.[1] === entry.decisionId &&
+        validMethodForChannel(entry.method, entry.channel) && validTarget(entry.target) &&
+        (entry.returnCode === null || Number.isSafeInteger(entry.returnCode));
+}
+
 function validCoverage(entry) {
+    const membershipOnly = canonical(entry?.coveredTypes) === canonical(membershipDiagnosticTypes);
+    const allEvidence = canonical(entry?.coveredTypes) === canonical(allCoveredTypes);
     if (entry?.type !== 'evidence-coverage' || entry.formatVersion !== 1 ||
         !validBuildId(entry.buildId) || !positiveInteger(entry.tick) || entry.phase !== 'after-actions' ||
         !nonnegativeInteger(entry.sequence) || entry.recordId !== `${entry.tick}:${entry.sequence}` ||
         !nonnegativeInteger(entry.recordCount) || entry.sequence !== entry.recordCount ||
-        entry.closed !== true || !Array.isArray(entry.coveredTypes) ||
-        canonical(entry.coveredTypes) !== canonical(membershipDiagnosticTypes) ||
+        entry.closed !== true || !Array.isArray(entry.coveredTypes) || (!membershipOnly && !allEvidence) ||
         !entry.counts || typeof entry.counts !== 'object' || Array.isArray(entry.counts) ||
         canonical(Object.keys(entry.counts).sort()) !== canonical([...evidenceCountKeys].sort()) ||
         !evidenceCountKeys.every(key => nonnegativeInteger(entry.counts[key])) ||
-        futureActionDiagnosticTypes.some(key => entry.counts[key] !== 0) ||
-        ['movement-decisions', 'healing-decisions', 'combat-decisions'].some(key => entry.counts[key] !== 0)) return false;
+        (membershipOnly && [...actionDiagnosticTypes, 'movement-decisions', 'healing-decisions',
+            'combat-decisions'].some(key => entry.counts[key] !== 0))) return false;
     return entry.recordCount === 0
         ? entry.firstSequence === null && entry.lastSequence === null
         : entry.firstSequence === 0 && entry.lastSequence === entry.recordCount - 1;
@@ -149,11 +198,15 @@ export function summarizeDiagnosticCoverage(gameStateLines, diagnostics) {
         versions: [...new Set(diagnostics.map(item => item.entry.formatVersion))].sort((a, b) => a - b),
         coveredTypes: [],
         completeTicks: [], missingClosures: [], gaps: [], duplicateRecordIds: [], conflicts: [],
-        typeCounts: Object.fromEntries([...membershipDiagnosticTypes, ...futureActionDiagnosticTypes,
+        correlationIssues: [],
+        typeCounts: Object.fromEntries([...membershipDiagnosticTypes, ...actionDiagnosticTypes,
             'evidence-coverage'].map(type => [type, 0])),
         channelCounts: { movement: 0, healing: 0, combat: 0 },
     };
-    for (const item of diagnostics) summary.typeCounts[item.entry.type]++;
+    for (const item of diagnostics) {
+        summary.typeCounts[item.entry.type]++;
+        if (item.entry.type === 'action-decision') summary.channelCounts[item.entry.channel]++;
+    }
     for (const tick of ticks) {
         const atTick = diagnostics.filter(item => item.entry.tick === tick);
         const byRecordId = new Map();
@@ -191,13 +244,61 @@ export function summarizeDiagnosticCoverage(gameStateLines, diagnostics) {
         const preceding = unique.filter(entry => entry.type !== 'evidence-coverage');
         const actualSequences = [...new Set(preceding.map(entry => entry.sequence))].sort((a, b) => a - b);
         const expectedSequences = Array.from({ length: closure.recordCount }, (_, index) => index);
-        const actualCounts = Object.fromEntries(membershipDiagnosticTypes.map(type =>
+        const actualCounts = Object.fromEntries(allCoveredTypes.map(type =>
             [type, preceding.filter(entry => entry.type === type).length]));
-        const countMismatch = membershipDiagnosticTypes.some(type => actualCounts[type] !== closure.counts[type]);
-        if (canonical(actualSequences) !== canonical(expectedSequences) || countMismatch || conflict) {
-            summary.gaps.push({ tick, expectedSequences, actualSequences, countMismatch });
-            continue;
+        const actualChannels = Object.fromEntries(channels.map(channel => [channel,
+            preceding.filter(entry => entry.type === 'action-decision' && entry.channel === channel).length]));
+        const countMismatch = allCoveredTypes.some(type => actualCounts[type] !== closure.counts[type]) ||
+            channels.some(channel => actualChannels[channel] !== closure.counts[`${channel}-decisions`]);
+
+        const decisions = preceding.filter(entry => entry.type === 'action-decision');
+        const attempts = preceding.filter(entry => entry.type === 'action-attempt');
+        const selected = new Map(decisions.flatMap(decision => decision.actions.map((action, actionIndex) =>
+            [action.actionId, { decision, action, actionIndex }])));
+        const attemptsByAction = new Map();
+        for (const attempt of attempts) {
+            const list = attemptsByAction.get(attempt.actionId) ?? [];
+            list.push(attempt);
+            attemptsByAction.set(attempt.actionId, list);
         }
+        const tickIssues = [];
+        for (const [actionId, selection] of selected) {
+            const matching = attemptsByAction.get(actionId) ?? [];
+            if (matching.length === 0) tickIssues.push({ tick, kind: 'missing-attempt', actionId });
+            if (matching.length > 1) tickIssues.push({ tick, kind: 'duplicate-attempt', actionId,
+                recordIds: matching.map(attempt => attempt.recordId) });
+            for (const attempt of matching) {
+                if (attempt.decisionId !== selection.decision.decisionId ||
+                    attempt.actorId !== selection.decision.actorId ||
+                    attempt.channel !== selection.decision.channel || attempt.method !== selection.action.method ||
+                    canonical(attempt.target) !== canonical(selection.action.target)) {
+                    tickIssues.push({ tick, kind: 'mismatched-attempt', actionId,
+                        recordId: attempt.recordId });
+                }
+                if (attempt.sequence !== selection.decision.sequence + selection.actionIndex + 1) {
+                    tickIssues.push({ tick, kind: 'misordered-attempt', actionId,
+                        recordId: attempt.recordId });
+                }
+            }
+        }
+        for (const attempt of attempts) {
+            if (!selected.has(attempt.actionId)) tickIssues.push({ tick, kind: 'orphan-attempt',
+                actionId: attempt.actionId, recordId: attempt.recordId });
+        }
+        const bySequence = [...preceding].sort((a, b) => a.sequence - b.sequence);
+        for (let index = 1; index < bySequence.length; index++) {
+            if (phaseOrder.get(bySequence[index].phase) < phaseOrder.get(bySequence[index - 1].phase)) {
+                tickIssues.push({ tick, kind: 'phase-order',
+                    recordIds: [bySequence[index - 1].recordId, bySequence[index].recordId] });
+            }
+        }
+        summary.correlationIssues.push(...tickIssues);
+        const structuralProblem = canonical(actualSequences) !== canonical(expectedSequences) ||
+            countMismatch || conflict;
+        if (structuralProblem) {
+            summary.gaps.push({ tick, expectedSequences, actualSequences, countMismatch });
+        }
+        if (structuralProblem || tickIssues.length) continue;
         summary.completeTicks.push(tick);
     }
     return summary;
@@ -351,19 +452,23 @@ export function parseCacheEntry(bytes) {
                 otherEntries.push({ key: sourceKey, raw: line, type: 'healer-escort' });
                 continue;
             }
-            if (futureActionDiagnosticTypes.includes(parsed?.type)) {
+            if (actionDiagnosticTypes.includes(parsed?.type)) {
                 if (parsed.formatVersion !== 1) {
                     return issue('unsupported', `Unsupported ${parsed.type} version in ${sourceKey} for ${key}`);
                 }
-                return issue('unsupported', `${parsed.type} import awaits ADR 0004 M3 in ${sourceKey} for ${key}`);
+                const valid = parsed.type === 'action-decision'
+                    ? validActionDecision(parsed) : validActionAttempt(parsed);
+                if (!valid) return issue('malformed', `Invalid ${parsed.type} entry ${sourceKey} for ${key}`);
+                try { buildId = consistentBuildId(buildId, entryBuildId(parsed, sourceKey), key); }
+                catch (error) { return issue('malformed', error.message); }
+                const item = { key: sourceKey, raw: line, type: parsed.type, formatVersion: 1 };
+                diagnostics.push({ ...item, entry: parsed });
+                otherEntries.push(item);
+                continue;
             }
             if (membershipDiagnosticTypes.includes(parsed?.type) || parsed?.type === 'evidence-coverage') {
                 if (parsed.formatVersion !== 1) {
                     return issue('unsupported', `Unsupported ${parsed.type} version in ${sourceKey} for ${key}`);
-                }
-                if (parsed.type === 'evidence-coverage' &&
-                    canonical(parsed.coveredTypes) === canonical(futureCoveredTypes)) {
-                    return issue('unsupported', `Action evidence coverage awaits ADR 0004 M3 in ${sourceKey} for ${key}`);
                 }
                 const valid = parsed.type === 'membership-baseline' ? validBaseline(parsed) :
                     parsed.type === 'membership-change' ? validChange(parsed) : validCoverage(parsed);
@@ -694,6 +799,22 @@ function ensureOutput(root, record, lines) {
     try { fs.linkSync(temporary, target); } finally { fs.unlinkSync(temporary); }
 }
 
+function hasManagedOutput(record) {
+    const noPath = record.outputPath === null;
+    const noFingerprint = record.outputFingerprint === null;
+    if (noPath || noFingerprint) {
+        if (!noPath || !noFingerprint) throw new Error('Invalid evidence-only output metadata');
+        return false;
+    }
+    if (typeof record.outputPath !== 'string' || !validSha256(record.outputFingerprint)) {
+        throw new Error('Invalid managed output metadata');
+    }
+    return true;
+}
+
+const hasRetainedDiagnostics = parsed =>
+    parsed.otherEntries.some(entry => retainedDiagnosticTypes.includes(entry.type));
+
 export async function importCacheFile(root, sourceFile) {
     const parsed = parseCacheEntry(fs.readFileSync(sourceFile));
     if (parsed.kind !== 'log') return parsed;
@@ -716,7 +837,7 @@ export async function importCacheFile(root, sourceFile) {
         if (!active) return { kind: 'deferred', replayId: parsed.replayId,
             fingerprint: parsed.fingerprint, coverage: parsed.coverage,
             diagnosticCoverage: parsed.diagnosticCoverage,
-            message: 'No validated active map for replay; no JSONL created' };
+            message: 'No validated active map for replay; no record created' };
         if (associateBuildId(active.association, parsed.buildId)) saveManifest(root, manifest);
         if (active.association.retiredFingerprints.includes(parsed.fingerprint)) {
             return { kind: 'deduplicated', replayId: parsed.replayId, fingerprint: parsed.fingerprint };
@@ -726,36 +847,45 @@ export async function importCacheFile(root, sourceFile) {
             if (record.mapId !== active.registration.id || record.mapFile !== active.registration.file) {
                 throw new Error(`Log/map association mismatch for replay ${parsed.replayId}`);
             }
-            if (record.status === 'pending' || (record.outputPath && record.status === 'claim' && !pathOccupied(managedPath(root, record.outputPath)))) {
+            const managedOutput = hasManagedOutput(record);
+            if (!managedOutput && record.status === 'pending') {
+                record.status = 'claim';
+                saveManifest(root, manifest);
+            } else if (managedOutput && (record.status === 'pending' ||
+                (record.status === 'claim' && !pathOccupied(managedPath(root, record.outputPath))))) {
                 ensureOutput(root, record, parsed.gameState);
                 record.status = 'claim';
                 saveManifest(root, manifest);
-            } else if (record.outputPath && record.status === 'claim') {
+            } else if (managedOutput && record.status === 'claim') {
                 ensureOutput(root, record, parsed.gameState);
             }
             return { kind: 'deduplicated', record };
         }
-        if (!parsed.gameState.length) return { kind: 'mapped', replayId: parsed.replayId,
+        const evidenceOnly = !parsed.gameState.length && hasRetainedDiagnostics(parsed);
+        if (!parsed.gameState.length && !evidenceOnly) return { kind: 'mapped', replayId: parsed.replayId,
             mapId: active.registration.id, mapFile: active.registration.file,
             otherEntries: parsed.otherEntries };
-        const outputPath = parsed.gameState.length ? chooseOutputName(root, manifest, parsed.replayId, parsed.fingerprint) : null;
-        if (parsed.gameState.length && !outputPath) throw new Error(`No safe output filename for ${parsed.replayId}`);
-        const content = `${parsed.gameState.join('\n')}\n`;
+        const outputPath = evidenceOnly ? null
+            : chooseOutputName(root, manifest, parsed.replayId, parsed.fingerprint);
+        if (!evidenceOnly && !outputPath) throw new Error(`No safe output filename for ${parsed.replayId}`);
+        const content = evidenceOnly ? null : `${parsed.gameState.join('\n')}\n`;
         record = {
             replayId: parsed.replayId, requestedTick: parsed.requestedTick, sourceEntry: sourceFile,
             sourceKey: parsed.key, fingerprint: parsed.fingerprint, outputPath,
-            outputFingerprint: sha256(content), mapId: active.registration.id,
+            outputFingerprint: content === null ? null : sha256(content), mapId: active.registration.id,
             mapChecksum: active.registration.checksum, mapFile: active.registration.file,
             buildId: parsed.buildId,
-            importedAt: new Date().toISOString(), status: 'pending',
+            importedAt: new Date().toISOString(), status: evidenceOnly ? 'claim' : 'pending',
             coverage: parsed.coverage, diagnosticCoverage: parsed.diagnosticCoverage,
             otherEntries: parsed.otherEntries, reviews: {},
         };
         manifest.records.push(record);
         saveManifest(root, manifest);
-        ensureOutput(root, record, parsed.gameState);
-        record.status = 'claim';
-        saveManifest(root, manifest);
+        if (!evidenceOnly) {
+            ensureOutput(root, record, parsed.gameState);
+            record.status = 'claim';
+            saveManifest(root, manifest);
+        }
         return { kind: 'imported', record };
     });
 }
@@ -891,14 +1021,16 @@ function cleanup(root, manifest, record) {
     }
     const association = manifest.replays.find(item => item.replayId === record.replayId && item.mapId === record.mapId);
     if (!association) throw new Error(`Missing replay/map association for ${record.replayId}`);
-    const file = managedPath(root, record.outputPath);
-    const existing = pathOccupied(file);
-    if (existing) {
-        if (!existing.isFile() || existing.isSymbolicLink() ||
-            sha256(fs.readFileSync(file)) !== record.outputFingerprint) {
-            throw new Error(`Refusing to delete changed or unsafe output: ${file}`);
+    if (hasManagedOutput(record)) {
+        const file = managedPath(root, record.outputPath);
+        const existing = pathOccupied(file);
+        if (existing) {
+            if (!existing.isFile() || existing.isSymbolicLink() ||
+                sha256(fs.readFileSync(file)) !== record.outputFingerprint) {
+                throw new Error(`Refusing to delete changed or unsafe output: ${file}`);
+            }
+            fs.unlinkSync(file);
         }
-        fs.unlinkSync(file);
     }
     association.retiredFingerprints ??= [];
     if (!association.retiredFingerprints.includes(record.fingerprint)) association.retiredFingerprints.push(record.fingerprint);

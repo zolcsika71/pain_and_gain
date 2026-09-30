@@ -2,9 +2,9 @@
 
 This document defines the version-1 replay-diagnostic contract for Pain and
 Gain. It completed milestone M1 of
-[ADR 0004](../decisions/0004-replay-evidence-and-analysis-roadmap.md). M2 now
-implements its membership subset and importer support; action diagnostics and
-analysis remain planned for M3 and M4.
+[ADR 0004](../decisions/0004-replay-evidence-and-analysis-roadmap.md). M2
+implemented membership evidence and M3 now implements action decisions,
+attempts, and importer support. Deterministic analysis remains planned for M4.
 
 The contract preserves the existing `game-state` and `map-state` records. New
 diagnostics are separate console records and must not become inputs to gameplay.
@@ -185,7 +185,7 @@ These transitions retain squad A and slot 1; they do not imply reassignment.
 
 ## Action evidence
 
-When M3 is implemented, the production path will emit one `action-decision` for
+The production path emits one `action-decision` for
 each owned actor and each channel reached in that tick: `movement`, `healing`,
 and `combat`. This includes actors with no selected command. Combat may select
 two compatible actions, so the decision carries an ordered `actions` array.
@@ -214,6 +214,15 @@ objective was already satisfied. `no-action` means there was no eligible or
 compatible action. Both have an empty `actions` array and a non-null reason.
 Suppression caused by healing/action compatibility is a `no-action` combat
 decision with an explicit reason, not missing combat evidence.
+
+Current movement reasons are `combat-approach`, `combat-in-range`,
+`injured-ally-approach`, `injured-ally-in-range`, `flag-fallback`,
+`no-movement-objective`, `escort-approach`, `escort-in-range`, and
+`escort-fatigue-pause`. Current healing reasons are `self-heal`,
+`injured-ally-in-range`, `no-functioning-heal`, and
+`no-injured-target-in-range`. Current combat reasons are `target-in-range`,
+`healing-compatibility`, `no-functioning-weapon`, and `no-target-in-range`.
+These name the production result; they do not establish an engine effect.
 
 ### `action-attempt`
 
@@ -289,11 +298,11 @@ establishes that no preceding version-1 diagnostics were emitted for that tick.
 An entirely absent tick or absent coverage record is unknown, never an implicit
 zero.
 
-During M2, `coveredTypes` is exactly `["membership-baseline",
-"membership-change"]`. Zero action counts describe the records present, not
-action behavior or action-diagnostic coverage. M3 may extend `coveredTypes` to
-`action-decision` and `action-attempt` only when those production paths are
-instrumented and verified.
+An M2 closure has `coveredTypes` exactly `["membership-baseline",
+"membership-change"]`; its zero action counts do not claim action coverage. An
+M3 closure has exactly `["membership-baseline", "membership-change",
+"action-decision", "action-attempt"]`. The importer accepts both forms so
+membership-only captures retain their original meaning.
 
 Coverage closing the three-record hold example above:
 
@@ -308,9 +317,10 @@ record identity agree:
 
 - A contiguous sequence from zero through the coverage record, matching its
   counts, is diagnostically complete for that tick's instrumented paths.
-- Absence of `evidence-coverage`, a sequence gap, a count mismatch, or a missing
-  selected-action attempt makes the affected evidence incomplete and therefore
-  unknown. Existing snapshots remain usable independently.
+- Absence of `evidence-coverage`, a sequence gap, a count mismatch, a phase-order
+  violation, or a missing or misordered selected-action attempt makes the
+  affected evidence incomplete and therefore unknown. Existing snapshots remain
+  usable independently.
 - Exact duplicate records with the same `recordId` and canonical content are
   deduplicated for analysis and reported as duplicate transport evidence.
 - The same `recordId` with different canonical content is a conflict. Do not
@@ -364,11 +374,9 @@ for tick 7 are unknown:
 
 ## Importer and storage requirements for M2–M3
 
-M2 implements these requirements for `membership-baseline`,
-`membership-change`, and membership-only `evidence-coverage`. It recognizes
-`action-decision` and `action-attempt` as reserved version-1 types but reports
-them unsupported until M3 implements and validates their production paths. M3
-must complete the action-specific parts without redefining old formats:
+M2 implements these requirements for membership evidence and M3 implements
+them for action decisions, attempts, correlation, and full coverage. Neither
+milestone redefines existing formats:
 
 1. Recognize the five new types: `membership-baseline`, `membership-change`,
    `action-decision`, `action-attempt`, and `evidence-coverage`.
@@ -387,12 +395,32 @@ must complete the action-specific parts without redefining old formats:
    metadata: observed tick range, missing sequences/closures, duplicate IDs,
    conflicts, versions, and type/channel counts. This summary is derived; raw
    lines remain the evidence.
-7. When records from multiple chunks are analyzed together, deduplicate exact
+7. Report selected actions without attempts, attempts without selections,
+   duplicate attempts, and mismatched actor/channel/method/target correlation as
+   incomplete evidence rather than inventing a result.
+8. When records from multiple chunks are analyzed together, deduplicate exact
    overlaps and surface conflicts without overwriting either source. The
    importer must not claim complete replay coverage from a complete response.
-8. Preserve replay association from the verified request/source metadata,
+9. Preserve replay association from the verified request/source metadata,
    existing map validation, build-provenance rules, fingerprints, review state,
    atomic publication, and cleanup boundaries.
+
+A response containing at least one validated version-1, allocation, or escort
+diagnostic but no `game-state` line is an evidence-only response. After the same
+validated replay/map association gate as a file-backed import, persist it as a
+normal manifest record with its response fingerprint, source, replay/map/build
+provenance, zero game-state coverage, diagnostic coverage, all `otherEntries`,
+and review state. Set both `outputPath` and `outputFingerprint` to `null`; do not
+create an empty JSONL or infer an empty observed game state. Publish this
+manifest-only record atomically with status `claim`; `pending` remains the
+recovery state for a JSONL that still needs publication.
+
+Evidence-only records participate in listing, `other`, ownership claims,
+examination, completion, deduplication, and fingerprint retirement exactly like
+file-backed records. Completed cleanup removes the manifest record without a
+file operation and preserves the map registration and replay association. A
+pure map-only response still establishes its association without creating a
+record. Missing closures, gaps, or absent game-state lines remain unknown.
 
 Unknown future diagnostic types remain ordinary `otherEntries` unless their
 type is reserved by a newer supported contract. Their presence does not make
@@ -408,7 +436,13 @@ The contract matches the current boundaries documented in
 movement precedes tactics, and Arena action methods return scheduling/error
 codes rather than resolved effects.
 
-M2 now emits the membership subset and its explicitly scoped coverage. Action
-decisions and attempts remain specified but unimplemented until M3.
-Deterministic analysis, live-capture validation, performance measurements, and
-any strategy changes remain outside M1 and M2.
+M2 emits membership evidence and M3 emits action decisions and attempts through
+the same ordered stream. Local fixtures verify command-trace equivalence and
+importer correlation, but do not establish live capture completeness or engine
+effects. On the deterministic 14-scout, no-combat fixture, a two-digit action-only
+steady tick produced 57 records and 19,841 serialized JSON-line bytes including newlines (42
+decisions, 14 attempts, and one closure). Adding its tick-1 membership baseline
+produced 58 records and 22,813 bytes; the longest line was the 3,167-byte
+baseline. This is a fixture-size measurement, not live console, capture, CPU, or
+memory evidence. Deterministic analysis, live-capture validation, and strategy
+changes remain outside M1–M3.

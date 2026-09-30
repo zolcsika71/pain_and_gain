@@ -1,7 +1,9 @@
 import { buildId } from './build-id.js';
 
 const membershipTypes = ['membership-baseline', 'membership-change'];
-const countKeys = [...membershipTypes, 'action-decision', 'action-attempt',
+const actionTypes = ['action-decision', 'action-attempt'];
+const coveredTypes = [...membershipTypes, ...actionTypes];
+const countKeys = [...coveredTypes,
     'movement-decisions', 'healing-decisions', 'combat-decisions'];
 const changeOrder = new Map(['member-added', 'assignment', 'presence', 'capability', 'participation']
     .map((kind, index) => [kind, index]));
@@ -94,8 +96,17 @@ function emptyCounts() {
     return Object.fromEntries(countKeys.map(key => [key, 0]));
 }
 
-export function createMembershipEvidenceLogger({ runtimeBuildId = buildId,
-    emit = record => console.log(JSON.stringify(record)) } = {}) {
+function targetSnapshot(target, kind) {
+    return {
+        kind,
+        id: typeof target.id === 'string' ? target.id : null,
+        x: target.x,
+        y: target.y,
+    };
+}
+
+export function createReplayEvidenceLogger({ runtimeBuildId = buildId,
+    emit = record => console.log(JSON.stringify(record)), actionCoverage = true } = {}) {
     let tick = null;
     let sequence = 0;
     let counts = emptyCounts();
@@ -153,6 +164,32 @@ export function createMembershipEvidenceLogger({ runtimeBuildId = buildId,
         previousMembership = current;
     }
 
+    function recordActionDecision({ phase, channel, actorId, outcome, reason, actions }) {
+        const decisionId = `${tick}:${sequence}`;
+        const selected = actions.map((action, index) => ({
+            actionId: `${decisionId}#${index}`,
+            method: action.method,
+            target: targetSnapshot(action.target, action.targetKind),
+        }));
+        const record = emitRecord('action-decision', phase, {
+            decisionId, channel, actorId, outcome, reason, actions: selected,
+        });
+        counts[`${channel}-decisions`]++;
+        return record;
+    }
+
+    function recordActionAttempt(decision, actionIndex, action, returnValue) {
+        return emitRecord('action-attempt', decision.phase, {
+            decisionId: decision.decisionId,
+            actionId: `${decision.decisionId}#${actionIndex}`,
+            channel: decision.channel,
+            actorId: decision.actorId,
+            method: action.method,
+            target: targetSnapshot(action.target, action.targetKind),
+            returnCode: Number.isSafeInteger(returnValue) ? returnValue : null,
+        });
+    }
+
     function closeTick() {
         if (closed) return null;
         const recordCount = sequence;
@@ -162,7 +199,7 @@ export function createMembershipEvidenceLogger({ runtimeBuildId = buildId,
             firstSequence: recordCount ? 0 : null,
             lastSequence: recordCount ? recordCount - 1 : null,
             recordCount,
-            coveredTypes: [...membershipTypes],
+            coveredTypes: [...(actionCoverage ? coveredTypes : membershipTypes)],
             counts: { ...counts },
             closed: true,
         };
@@ -171,11 +208,18 @@ export function createMembershipEvidenceLogger({ runtimeBuildId = buildId,
         return record;
     }
 
-    return { beginTick, recordMembership, closeTick };
+    return { beginTick, recordMembership, recordActionDecision, recordActionAttempt, closeTick };
 }
 
-const membershipEvidence = createMembershipEvidenceLogger();
+// M2 fixtures can still express membership-only closure semantics.
+export const createMembershipEvidenceLogger = options =>
+    createReplayEvidenceLogger({ ...options, actionCoverage: false });
 
-export const beginEvidenceTick = (tick, reset) => membershipEvidence.beginTick(tick, reset);
-export const logMembershipEvidence = state => membershipEvidence.recordMembership(state);
-export const closeEvidenceTick = () => membershipEvidence.closeTick();
+const replayEvidence = createReplayEvidenceLogger();
+
+export const beginEvidenceTick = (tick, reset) => replayEvidence.beginTick(tick, reset);
+export const logMembershipEvidence = state => replayEvidence.recordMembership(state);
+export const logActionDecision = decision => replayEvidence.recordActionDecision(decision);
+export const logActionAttempt = (decision, actionIndex, action, returnValue) =>
+    replayEvidence.recordActionAttempt(decision, actionIndex, action, returnValue);
+export const closeEvidenceTick = () => replayEvidence.closeTick();

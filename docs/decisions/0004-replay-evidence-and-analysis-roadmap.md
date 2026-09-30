@@ -1,6 +1,6 @@
 # ADR 0004: Improve replay evidence and deterministic analysis
 
-Status: Accepted direction; M1–M2 complete, M3–M5 planned.
+Status: Accepted direction; M1–M3 complete, M4–M5 planned.
 
 Date: 2026-09-29 (Europe/Budapest)
 
@@ -75,14 +75,14 @@ a superseding ADR.
 
 ## Roadmap
 
-M1 and M2 are complete. Complete the remaining milestones in order; record implementation
+M1–M3 are complete. Complete the remaining milestones in order; record implementation
 and live verification separately.
 
 | ID | Milestone | Status | Depends on | Completion evidence |
 | --- | --- | --- | --- | --- |
 | M1 | Define the evidence contract | Complete | Baseline | [Reviewed schema, examples, compatibility and coverage rules](../architecture/replay-evidence-contract.md) |
 | M2 | Add membership diagnostics | Complete | M1 | Transition tests, importer round-trip evidence, unchanged selector inputs |
-| M3 | Add decision and action diagnostics | Planned | M1, M2 | Command-trace equivalence tests and diagnostic correlation tests |
+| M3 | Add decision and action diagnostics | Complete | M1, M2 | Command-trace equivalence tests and diagnostic correlation tests |
 | M4 | Add deterministic replay analysis | Planned | M2, M3 | Known-answer fixtures, reproducible reports, read-only verification |
 | M5 | Validate a new live capture and close the milestone | Planned | M4 | Build-identified capture, analysis report, overhead and evidence limitations |
 
@@ -206,6 +206,7 @@ local tests; never silently convert an unknown into a pass.
 | 2026-09-29 | Roadmap | Initial ADR draft; implementation not started | Begin M1 after roadmap review |
 | 2026-09-29 | M1 | Complete: documented the version-1 evidence contract without runtime or importer changes | Contract examples parsed as JSON; local links and whitespace checked. Begin M2 only in a separately authorized task. |
 | 2026-09-29 | M2 | Complete: runtime emits an initial membership baseline, deterministic change-only transitions, and membership-only coverage; the importer validates and preserves those records while keeping JSONL game-state-only | Focused transition and importer round-trip tests cover initialization, assignment, presence, tombstones, capability/mobility, late IDs, resets, suppression, gaps, duplicates, conflicts, and legacy input. Tick-flow regression coverage preserves commands and order; all 105 local tests, syntax/build-ID checks, and whitespace checks passed. Local reset evidence is not live reset evidence; M3 action diagnostics and M5 live validation remain planned. |
+| 2026-09-30 | M3 | Complete locally (intentionally uncommitted): production selection/execution paths emit movement, healing, and combat decisions plus correlated command attempts, and the importer validates and preserves them with full M3 coverage | Local equivalence fixtures cover mixed weapons, healing compatibility, holds, no-actions, numeric failures, and missing numeric returns without changing ordered commands or inputs. Importer fixtures cover normal and diagnostic-only round trips, deferred retry, evidence-only review/cleanup and retirement, persistence, M2 compatibility, correlations and ordering, closures, gaps, canonical duplicates, conflicts, truncation, and unsupported versions. The diagnostic-only regression failed before the lifecycle fix and then passed. `npm run check`, 53 focused tests, all 115 tests, explicit build-ID verification, and whitespace checks passed with unchanged runtime build ID `c68afb80a447dbc69b12e4283757992d53b949c8c8aad6690b12200d53d1cf96`. The documented 14-scout fixture measured 57 records/19,841 bytes for a two-digit steady action-only tick and 58 records/22,813 bytes with the tick-1 membership baseline. Live capture completeness, runtime overhead, engine effects, and live reset behavior remain for M5. M4–M5 remain planned. |
 
 ## Consequences
 

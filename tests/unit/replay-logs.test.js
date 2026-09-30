@@ -46,6 +46,25 @@ const evidenceCoverage = (tick, recordCount, counts = {}) => ({
         'action-decision': 0, 'action-attempt': 0, 'movement-decisions': 0,
         'healing-decisions': 0, 'combat-decisions': 0, ...counts }, closed: true,
 });
+const actionTarget = (id = 'enemy', x = 2, y = 3) => ({ kind: 'creep', id, x, y });
+const actionDecision = (tick, sequence, channel, outcome, actions = [], reason = 'target-in-range') => ({
+    type: 'action-decision', formatVersion: 1, buildId: evidenceBuildId,
+    tick, phase: channel === 'movement' ? 'movement' : 'tactics', sequence,
+    recordId: `${tick}:${sequence}`, decisionId: `${tick}:${sequence}`, channel,
+    actorId: 'actor', outcome, reason,
+    actions: actions.map((action, index) => ({ ...action, actionId: `${tick}:${sequence}#${index}` })),
+});
+const actionAttempt = (tick, sequence, decision, actionIndex, returnCode = 0) => ({
+    type: 'action-attempt', formatVersion: 1, buildId: evidenceBuildId,
+    tick, phase: decision.phase, sequence, recordId: `${tick}:${sequence}`,
+    decisionId: decision.decisionId, actionId: `${decision.decisionId}#${actionIndex}`,
+    channel: decision.channel, actorId: decision.actorId,
+    method: decision.actions[actionIndex].method, target: decision.actions[actionIndex].target, returnCode,
+});
+const actionCoverage = (tick, recordCount, counts) => ({
+    ...evidenceCoverage(tick, recordCount, counts),
+    coveredTypes: ['membership-baseline', 'membership-change', 'action-decision', 'action-attempt'],
+});
 const payloadDigest = ({ checksum, ...payload }) => createHash('sha256').update(`${JSON.stringify(payload,
     (_, value) => value && typeof value === 'object' && !Array.isArray(value)
         ? Object.fromEntries(Object.entries(value).sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0)) : value)}\n`).digest('hex');
@@ -162,6 +181,7 @@ test('imports membership evidence separately, preserves provenance, and closes c
         formatVersion: 1, firstTick: 1, lastTick: 1, versions: [1],
         coveredTypes: ['membership-baseline', 'membership-change'],
         completeTicks: [1], missingClosures: [], gaps: [], duplicateRecordIds: [], conflicts: [],
+        correlationIssues: [],
         typeCounts: { 'membership-baseline': 1, 'membership-change': 0,
             'action-decision': 0, 'action-attempt': 0, 'evidence-coverage': 1 },
         channelCounts: { movement: 0, healing: 0, combat: 0 },
@@ -170,6 +190,249 @@ test('imports membership evidence separately, preserves provenance, and closes c
         `${tagged(entry(1), evidenceBuildId)}\n`);
     const manifest = JSON.parse(fs.readFileSync(path.join(root, 'replay_logs', 'manifest.json')));
     assert.deepEqual(manifest.records[0].diagnosticCoverage, imported.record.diagnosticCoverage);
+});
+
+test('imports correlated action evidence without changing game-state JSONL', async t => {
+    const { root, cache } = workspace(t);
+    const movement = actionDecision(4, 0, 'movement', 'selected',
+        [{ method: 'moveTo', target: actionTarget() }], 'combat-approach');
+    const attempt = actionAttempt(4, 1, movement, 0, -11);
+    const healing = actionDecision(4, 2, 'healing', 'no-action', [], 'no-functioning-heal');
+    const combat = actionDecision(4, 3, 'combat', 'no-action', [], 'no-target-in-range');
+    const closure = actionCoverage(4, 4, { 'action-decision': 3, 'action-attempt': 1,
+        'movement-decisions': 1, 'healing-decisions': 1, 'combat-decisions': 1 });
+    const raw = [tagged(mapEntry(), evidenceBuildId), tagged(entry(4), evidenceBuildId),
+        movement, attempt, healing, combat, closure]
+        .map(item => typeof item === 'string' ? item : JSON.stringify(item)).join('\n');
+    const source = path.join(cache, 'actions');
+    fs.writeFileSync(source, cacheFrame({ 4: raw }, { tick: 4 }));
+
+    const imported = await importCacheFile(root, source);
+    assert.equal(imported.record.otherEntries.length, 5);
+    assert.deepEqual(imported.record.otherEntries.map(item => item.type),
+        ['action-decision', 'action-attempt', 'action-decision', 'action-decision', 'evidence-coverage']);
+    assert.deepEqual(imported.record.diagnosticCoverage.completeTicks, [4]);
+    assert.deepEqual(imported.record.diagnosticCoverage.coveredTypes,
+        ['membership-baseline', 'membership-change', 'action-decision', 'action-attempt']);
+    assert.deepEqual(imported.record.diagnosticCoverage.channelCounts,
+        { movement: 1, healing: 1, combat: 1 });
+    assert.deepEqual(imported.record.diagnosticCoverage.correlationIssues, []);
+    assert.equal(fs.readFileSync(path.join(root, 'replay_logs', imported.record.outputPath), 'utf8'),
+        `${tagged(entry(4), evidenceBuildId)}\n`);
+});
+
+test('persists and reviews diagnostic-only evidence without inventing a JSONL', async t => {
+    const { root, cache } = workspace(t);
+    const mapSource = path.join(cache, 'map');
+    fs.writeFileSync(mapSource, cacheFrame({ 1: mapEntry() }, { tick: 1 }));
+    assert.equal((await importCacheFile(root, mapSource)).kind, 'mapped');
+
+    const hold = actionDecision(4, 0, 'movement', 'hold', [], 'combat-in-range');
+    const closure = actionCoverage(4, 1, { 'action-decision': 1, 'movement-decisions': 1 });
+    const source = path.join(cache, 'diagnostics');
+    fs.writeFileSync(source, cacheFrame({ 4: `${JSON.stringify(hold)}\n${JSON.stringify(closure)}` },
+        { tick: 4 }));
+
+    const imported = await importCacheFile(root, source);
+    assert.equal(imported.kind, 'imported');
+    assert.equal(imported.record.outputPath, null);
+    assert.equal(imported.record.outputFingerprint, null);
+    assert.equal(imported.record.status, 'claim');
+    assert.equal(imported.record.sourceEntry, source);
+    assert.equal(imported.record.requestedTick, 4);
+    assert.match(imported.record.sourceKey,
+        new RegExp(`https://arena\\.screeps\\.com/api/game/${replayId}/log/4$`));
+    assert.match(imported.record.fingerprint, /^[a-f0-9]{64}$/);
+    assert.equal(imported.record.buildId, evidenceBuildId);
+    assert.equal(imported.record.mapId, imported.record.mapChecksum);
+    assert.match(imported.record.mapFile, /^pain_and_gain_map_/);
+    assert.deepEqual(imported.record.coverage,
+        { count: 0, firstTick: null, lastTick: null, duplicates: [], gaps: [] });
+    assert.deepEqual(imported.record.diagnosticCoverage.completeTicks, [4]);
+    assert.deepEqual(imported.record.otherEntries.map(item => item.type),
+        ['action-decision', 'evidence-coverage']);
+    assert.deepEqual(fs.readdirSync(path.join(root, 'replay_logs'))
+        .filter(name => name.endsWith('.jsonl')), []);
+
+    const reloaded = await reconcileCleanup(root);
+    assert.equal(reloaded.records.length, 1);
+    assert.equal(reloaded.records[0].fingerprint, imported.record.fingerprint);
+    assert.equal(reloaded.records[0].outputPath, null);
+    assert.deepEqual(reloaded.records[0].otherEntries, imported.record.otherEntries);
+    assert.deepEqual(reloaded.records[0].diagnosticCoverage, imported.record.diagnosticCoverage);
+    assert.equal((await importCacheFile(root, source)).kind, 'deduplicated');
+    assert.equal(JSON.parse(fs.readFileSync(path.join(root, 'replay_logs', 'manifest.json')))
+        .records.length, 1);
+
+    await updateReview(root, 'claim', replayId, imported.record.fingerprint, 'codex/evidence-only');
+    let persisted = JSON.parse(fs.readFileSync(path.join(root, 'replay_logs', 'manifest.json')))
+        .records[0];
+    assert.equal(persisted.reviews['codex/evidence-only'].examinedAt, null);
+    assert.equal(persisted.reviews['codex/evidence-only'].completedAt, null);
+    await updateReview(root, 'examined', replayId, imported.record.fingerprint, 'codex/evidence-only');
+    persisted = JSON.parse(fs.readFileSync(path.join(root, 'replay_logs', 'manifest.json')))
+        .records[0];
+    assert.notEqual(persisted.reviews['codex/evidence-only'].examinedAt, null);
+    assert.equal(persisted.reviews['codex/evidence-only'].completedAt, null);
+    const done = await updateReview(root, 'done', replayId, imported.record.fingerprint,
+        'codex/evidence-only');
+    assert.equal(done.status, 'done');
+    const cleaned = JSON.parse(fs.readFileSync(path.join(root, 'replay_logs', 'manifest.json')));
+    assert.equal(cleaned.records.length, 0);
+    assert.equal(cleaned.maps.length, 1);
+    assert.equal(cleaned.replays[0].status, 'active');
+    assert.ok(cleaned.replays[0].retiredFingerprints.includes(imported.record.fingerprint));
+    assert.equal((await importCacheFile(root, source)).kind, 'deduplicated');
+});
+
+test('retries deferred diagnostic-only evidence after its map arrives without duplication', async t => {
+    const { root, cache } = workspace(t);
+    const hold = actionDecision(5, 0, 'movement', 'hold', [], 'combat-in-range');
+    const closure = actionCoverage(5, 1, { 'action-decision': 1, 'movement-decisions': 1 });
+    const diagnosticSource = path.join(cache, 'a_diagnostics');
+    fs.writeFileSync(diagnosticSource,
+        cacheFrame({ 5: `${JSON.stringify(hold)}\n${JSON.stringify(closure)}` }, { tick: 5 }));
+    const mapSource = path.join(cache, 'z_map');
+    fs.writeFileSync(mapSource, cacheFrame({ 1: mapEntry() }, { tick: 1 }));
+
+    const seen = new Map();
+    const events = await scanCache(root, cache, seen);
+    assert.deepEqual(events.map(event => event.kind), ['mapped', 'imported']);
+    const record = events[1].record;
+    assert.equal(record.outputPath, null);
+    assert.deepEqual(record.diagnosticCoverage.completeTicks, [5]);
+    assert.deepEqual(await scanCache(root, cache, seen), []);
+    assert.equal((await importCacheFile(root, diagnosticSource)).kind, 'deduplicated');
+    const manifest = JSON.parse(fs.readFileSync(path.join(root, 'replay_logs', 'manifest.json')));
+    assert.equal(manifest.records.length, 1);
+    assert.equal(manifest.records[0].fingerprint, record.fingerprint);
+});
+
+test('persists diagnostic-only missing closures and sequence gaps as incomplete evidence', async t => {
+    const { root, cache } = workspace(t);
+    const mapSource = path.join(cache, 'map');
+    fs.writeFileSync(mapSource, cacheFrame({ 1: mapEntry() }, { tick: 1 }));
+    await importCacheFile(root, mapSource);
+
+    const unclosed = actionDecision(5, 0, 'movement', 'hold', [], 'combat-in-range');
+    const afterGap = actionDecision(6, 1, 'movement', 'hold', [], 'combat-in-range');
+    const closure = actionCoverage(6, 2, { 'action-decision': 1, 'movement-decisions': 1 });
+    const source = path.join(cache, 'incomplete-diagnostics');
+    fs.writeFileSync(source, cacheFrame({
+        5: JSON.stringify(unclosed),
+        6: `${JSON.stringify(afterGap)}\n${JSON.stringify(closure)}`,
+    }, { tick: 6 }));
+
+    const imported = await importCacheFile(root, source);
+    assert.equal(imported.kind, 'imported');
+    assert.equal(imported.record.outputPath, null);
+    assert.deepEqual(imported.record.diagnosticCoverage.completeTicks, []);
+    assert.deepEqual(imported.record.diagnosticCoverage.missingClosures, [5]);
+    assert.deepEqual(imported.record.diagnosticCoverage.gaps, [{
+        tick: 6, expectedSequences: [0, 1], actualSequences: [1], countMismatch: false,
+    }]);
+    assert.equal(imported.record.otherEntries.length, 3);
+    const persisted = JSON.parse(fs.readFileSync(path.join(root, 'replay_logs', 'manifest.json')))
+        .records[0];
+    assert.deepEqual(persisted.diagnosticCoverage, imported.record.diagnosticCoverage);
+    assert.deepEqual(persisted.otherEntries, imported.record.otherEntries);
+});
+
+test('retains diagnostic-only M2 coverage while map-only responses remain record-free', async t => {
+    const { root, cache } = workspace(t);
+    const mapSource = path.join(cache, 'map');
+    fs.writeFileSync(mapSource, cacheFrame({ 1: mapEntry() }, { tick: 1 }));
+    assert.equal((await importCacheFile(root, mapSource)).kind, 'mapped');
+    let manifest = JSON.parse(fs.readFileSync(path.join(root, 'replay_logs', 'manifest.json')));
+    assert.equal(manifest.records.length, 0);
+
+    const baseline = evidenceBaseline(2, 0);
+    const closure = evidenceCoverage(2, 1, { 'membership-baseline': 1 });
+    const source = path.join(cache, 'm2-diagnostics');
+    fs.writeFileSync(source,
+        cacheFrame({ 2: `${JSON.stringify(baseline)}\n${JSON.stringify(closure)}` }, { tick: 2 }));
+    const imported = await importCacheFile(root, source);
+    assert.equal(imported.kind, 'imported');
+    assert.equal(imported.record.outputPath, null);
+    assert.deepEqual(imported.record.diagnosticCoverage.coveredTypes,
+        ['membership-baseline', 'membership-change']);
+    assert.deepEqual(imported.record.diagnosticCoverage.completeTicks, [2]);
+    manifest = JSON.parse(fs.readFileSync(path.join(root, 'replay_logs', 'manifest.json')));
+    assert.equal(manifest.records.length, 1);
+});
+
+test('reports missing, orphaned, and mismatched action attempts as incomplete evidence', () => {
+    const movement = actionDecision(5, 0, 'movement', 'selected',
+        [{ method: 'moveTo', target: actionTarget() }], 'combat-approach');
+    const missing = parseCacheEntry(cacheFrame({ 5: [tagged(entry(5), evidenceBuildId),
+        JSON.stringify(movement), JSON.stringify(actionCoverage(5, 1,
+            { 'action-decision': 1, 'movement-decisions': 1 }))].join('\n') }));
+    assert.deepEqual(missing.diagnosticCoverage.completeTicks, []);
+    assert.deepEqual(missing.diagnosticCoverage.correlationIssues,
+        [{ tick: 5, kind: 'missing-attempt', actionId: '5:0#0' }]);
+
+    const orphan = { ...actionAttempt(6, 0, { ...movement, tick: 6, phase: 'movement',
+        decisionId: '6:9', actions: [{ ...movement.actions[0], actionId: '6:9#0' }] }, 0),
+    };
+    const orphaned = parseCacheEntry(cacheFrame({ 6: [tagged(entry(6), evidenceBuildId),
+        JSON.stringify(orphan), JSON.stringify(actionCoverage(6, 1,
+            { 'action-attempt': 1 }))].join('\n') }));
+    assert.equal(orphaned.diagnosticCoverage.correlationIssues[0].kind, 'orphan-attempt');
+
+    const wrong = { ...actionAttempt(7, 1, { ...movement, tick: 7, phase: 'movement',
+        decisionId: '7:0', actions: [{ ...movement.actions[0], actionId: '7:0#0' }] }, 0),
+        actorId: 'other' };
+    const decision = { ...movement, tick: 7, recordId: '7:0', decisionId: '7:0',
+        actions: [{ ...movement.actions[0], actionId: '7:0#0' }] };
+    const mismatched = parseCacheEntry(cacheFrame({ 7: [tagged(entry(7), evidenceBuildId),
+        JSON.stringify(decision), JSON.stringify(wrong), JSON.stringify(actionCoverage(7, 2,
+            { 'action-decision': 1, 'action-attempt': 1, 'movement-decisions': 1 }))].join('\n') }));
+    assert.equal(mismatched.diagnosticCoverage.correlationIssues[0].kind, 'mismatched-attempt');
+    assert.deepEqual(mismatched.diagnosticCoverage.completeTicks, []);
+
+    const lateDecision = actionDecision(9, 1, 'movement', 'selected',
+        [{ method: 'moveTo', target: actionTarget() }], 'combat-approach');
+    const earlyAttempt = actionAttempt(9, 0, lateDecision, 0);
+    const misordered = parseCacheEntry(cacheFrame({ 9: [tagged(entry(9), evidenceBuildId),
+        JSON.stringify(earlyAttempt), JSON.stringify(lateDecision), JSON.stringify(actionCoverage(9, 2,
+            { 'action-decision': 1, 'action-attempt': 1, 'movement-decisions': 1 }))].join('\n') }));
+    assert.ok(misordered.diagnosticCoverage.correlationIssues.some(issue =>
+        issue.kind === 'misordered-attempt'));
+    assert.deepEqual(misordered.diagnosticCoverage.completeTicks, []);
+
+    const tactics = actionDecision(10, 0, 'healing', 'no-action', [], 'no-functioning-heal');
+    const movementAfter = actionDecision(10, 1, 'movement', 'hold', [], 'combat-in-range');
+    const reversedPhases = parseCacheEntry(cacheFrame({ 10: [tagged(entry(10), evidenceBuildId),
+        JSON.stringify(tactics), JSON.stringify(movementAfter), JSON.stringify(actionCoverage(10, 2,
+            { 'action-decision': 2, 'movement-decisions': 1, 'healing-decisions': 1 }))].join('\n') }));
+    assert.ok(reversedPhases.diagnosticCoverage.correlationIssues.some(issue =>
+        issue.kind === 'phase-order'));
+    assert.deepEqual(reversedPhases.diagnosticCoverage.completeTicks, []);
+});
+
+test('canonically deduplicates action records and reports action conflicts and missing closure', () => {
+    const hold = actionDecision(8, 0, 'movement', 'hold', [], 'combat-in-range');
+    const reordered = { actions: hold.actions, reason: hold.reason, outcome: hold.outcome,
+        actorId: hold.actorId, channel: hold.channel, decisionId: hold.decisionId,
+        recordId: hold.recordId, sequence: hold.sequence, phase: hold.phase, tick: hold.tick,
+        buildId: hold.buildId, formatVersion: hold.formatVersion, type: hold.type };
+    const duplicate = parseCacheEntry(cacheFrame({ 8: [tagged(entry(8), evidenceBuildId),
+        JSON.stringify(hold), JSON.stringify(reordered), JSON.stringify(actionCoverage(8, 1,
+            { 'action-decision': 1, 'movement-decisions': 1 }))].join('\n') }));
+    assert.deepEqual(duplicate.diagnosticCoverage.completeTicks, [8]);
+    assert.equal(duplicate.diagnosticCoverage.duplicateRecordIds[0].recordId, '8:0');
+
+    const conflicting = { ...hold, reason: 'flag-fallback' };
+    const conflict = parseCacheEntry(cacheFrame({ 8: [tagged(entry(8), evidenceBuildId),
+        JSON.stringify(hold), JSON.stringify(conflicting), JSON.stringify(actionCoverage(8, 1,
+            { 'action-decision': 1, 'movement-decisions': 1 }))].join('\n') }));
+    assert.deepEqual(conflict.diagnosticCoverage.completeTicks, []);
+    assert.equal(conflict.diagnosticCoverage.conflicts[0].recordId, '8:0');
+
+    const truncated = parseCacheEntry(cacheFrame({ 8: [tagged(entry(8), evidenceBuildId),
+        JSON.stringify(hold)].join('\n') }));
+    assert.deepEqual(truncated.diagnosticCoverage.missingClosures, [8]);
+    assert.deepEqual(truncated.diagnosticCoverage.completeTicks, []);
 });
 
 test('reports exact diagnostic duplicates, conflicts, gaps, and legacy unknown coverage', () => {
@@ -211,7 +474,7 @@ test('reports exact diagnostic duplicates, conflicts, gaps, and legacy unknown c
     assert.deepEqual(legacy.diagnosticCoverage.versions, []);
 });
 
-test('rejects malformed M2 diagnostics and reports action diagnostics as unsupported until M3', () => {
+test('rejects malformed diagnostics and unsupported evidence versions', () => {
     const badEnvelope = { ...evidenceBaseline(), recordId: 'wrong' };
     assert.equal(parseCacheEntry(cacheFrame({ 1: JSON.stringify(badEnvelope) })).kind, 'malformed');
     assert.equal(parseCacheEntry(cacheFrame({ 1: JSON.stringify({ ...evidenceBaseline(), formatVersion: 2 }) })).kind,
@@ -219,6 +482,9 @@ test('rejects malformed M2 diagnostics and reports action diagnostics as unsuppo
     assert.equal(parseCacheEntry(cacheFrame({ 1: JSON.stringify({
         type: 'action-decision', formatVersion: 1, buildId: evidenceBuildId,
         tick: 1, phase: 'movement', sequence: 0, recordId: '1:0',
+    }) })).kind, 'malformed');
+    assert.equal(parseCacheEntry(cacheFrame({ 1: JSON.stringify({
+        ...actionDecision(1, 0, 'movement', 'hold', [], 'combat-in-range'), formatVersion: 2,
     }) })).kind, 'unsupported');
     assert.equal(parseCacheEntry(cacheFrame({ 1: JSON.stringify({
         ...evidenceCoverage(1, 0), coveredTypes: ['membership-baseline', 'membership-change', 'action-decision'],
@@ -226,7 +492,7 @@ test('rejects malformed M2 diagnostics and reports action diagnostics as unsuppo
     assert.equal(parseCacheEntry(cacheFrame({ 1: JSON.stringify({
         ...evidenceCoverage(1, 0),
         coveredTypes: ['membership-baseline', 'membership-change', 'action-decision', 'action-attempt'],
-    }) })).kind, 'unsupported');
+    }) })).kind, 'log');
 });
 
 test('preserves replay build identity across chunks and rejects conflicting or mixed IDs', async t => {
