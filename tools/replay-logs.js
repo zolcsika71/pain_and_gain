@@ -12,22 +12,22 @@ const defaultCacheDir = path.join(os.homedir(), 'Library/Application Support/scr
 const cacheMagic = Buffer.from('305c72a71b6dfbfc', 'hex');
 const logKey = /^1\/0\/https:\/\/arena\.screeps\.com\/api\/game\/([a-f0-9]{24})\/log\/(\d+)$/;
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
-const sha256 = value => createHash('sha256').update(value).digest('hex');
-const canonical = value => JSON.stringify(value, (_, item) =>
+export const sha256 = value => createHash('sha256').update(value).digest('hex');
+export const canonical = value => JSON.stringify(value, (_, item) =>
     item && typeof item === 'object' && !Array.isArray(item)
         ? Object.fromEntries(Object.keys(item).sort().map(key => [key, item[key]]))
         : item);
 const mapContent = map => `${canonical(map)}\n`;
 // Only the saved map's top-level checksum is metadata; nested fields remain payload.
-const mapPayload = map => {
+export const mapPayload = map => {
     if (!map || typeof map !== 'object' || Array.isArray(map)) return map;
     const { checksum, ...payload } = map;
     return payload;
 };
-const mapChecksum = map => sha256(mapContent(mapPayload(map)));
+export const mapChecksum = map => sha256(mapContent(mapPayload(map)));
 const savedMapContent = map => mapContent({ ...mapPayload(map), checksum: mapChecksum(map) });
 const validSha256 = value => typeof value === 'string' && /^[a-f0-9]{64}$/.test(value);
-const validBuildId = validSha256;
+export const validBuildId = validSha256;
 const membershipDiagnosticTypes = ['membership-baseline', 'membership-change'];
 const actionDiagnosticTypes = ['action-decision', 'action-attempt'];
 const allCoveredTypes = [...membershipDiagnosticTypes, ...actionDiagnosticTypes];
@@ -70,7 +70,7 @@ function validMembershipEnvelope(entry, type) {
         positiveInteger(entry.epoch);
 }
 
-function validBaseline(entry) {
+export function validBaseline(entry) {
     if (!validMembershipEnvelope(entry, 'membership-baseline') ||
         typeof entry.initialized !== 'boolean' ||
         (entry.initializationReason !== null && !reasonToken(entry.initializationReason)) ||
@@ -115,7 +115,7 @@ function validMembershipChange(change) {
     return change.kind === 'participation' && typeof change.participating === 'boolean';
 }
 
-function validChange(entry) {
+export function validChange(entry) {
     if (!validMembershipEnvelope(entry, 'membership-change') || !Array.isArray(entry.changes) ||
         entry.changes.length === 0 || !entry.changes.every(validMembershipChange)) return false;
     const keys = entry.changes.map(change => {
@@ -151,7 +151,7 @@ function validMethodForChannel(method, channel) {
             : ['attack', 'rangedAttack'].includes(method));
 }
 
-function validActionDecision(entry) {
+export function validActionDecision(entry) {
     if (!validActionEnvelope(entry, 'action-decision') || entry.decisionId !== entry.recordId ||
         !['selected', 'hold', 'no-action'].includes(entry.outcome) || !reasonToken(entry.reason) ||
         !Array.isArray(entry.actions) ||
@@ -161,7 +161,7 @@ function validActionDecision(entry) {
         validMethodForChannel(action.method, entry.channel) && validTarget(action.target));
 }
 
-function validActionAttempt(entry) {
+export function validActionAttempt(entry) {
     const actionMatch = typeof entry?.actionId === 'string'
         ? entry.actionId.match(/^(\d+:\d+)#(0|[1-9]\d*)$/) : null;
     return validActionEnvelope(entry, 'action-attempt') &&
@@ -171,7 +171,7 @@ function validActionAttempt(entry) {
         (entry.returnCode === null || Number.isSafeInteger(entry.returnCode));
 }
 
-function validCoverage(entry) {
+export function validCoverage(entry) {
     const membershipOnly = canonical(entry?.coveredTypes) === canonical(membershipDiagnosticTypes);
     const allEvidence = canonical(entry?.coveredTypes) === canonical(allCoveredTypes);
     if (entry?.type !== 'evidence-coverage' || entry.formatVersion !== 1 ||
@@ -315,7 +315,7 @@ function consistentBuildId(current, next, source) {
     return next;
 }
 
-function validMap(map) {
+export function validMap(map) {
     const terrain = map?.terrain;
     return map && typeof map === 'object' && !Array.isArray(map) &&
         Object.keys(map).sort().join(',') === 'arena,objects,terrain' &&

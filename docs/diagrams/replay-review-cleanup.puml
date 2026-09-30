@@ -4,16 +4,19 @@ title Replay log review and cleanup
 start
 :Imported or locally registered log has status claim;
 :Review task claims replay and fingerprint\n(ownership is separate from status);
-:Read the managed JSONL and linked validated map;
+:Read optional managed JSONL, retained diagnostics,\nand linked validated map;
 :Record examined checkpoint after actual examination;
 :Save analysis and proposals in Markdown;
 :Record done for this review task;
 if (Other active reviewers?) then (yes)
-  :Keep status claim, JSONL, and manifest record;
+  :Keep status claim, optional JSONL, and manifest record;
 else (no)
   :Mark log done;
-  :Verify managed path and output checksum;
-  :Delete JSONL and its manifest record;
+  if (Record has managed JSONL?) then (yes)
+    :Verify managed path and output checksum;
+    :Delete JSONL;
+  endif
+  :Delete manifest record;
   :Retain map file, registration and replay association;
   :Retain retired fingerprint to prevent reimport;
 endif

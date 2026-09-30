@@ -1,0 +1,32 @@
+@startuml
+title Deterministic read-only replay analysis
+
+start
+:Read manifest version 2 directly\nwithout lifecycle reconciliation;
+:Select replay records\n(optionally restrict fingerprints);
+:Validate source/build/map linkage;
+:Read and hash optional JSONL files;
+:Read evidence-only diagnostics\nfrom manifest otherEntries;
+:Validate saved map schema and\ncanonical payload checksum;
+:Revalidate raw schemas and\nstored per-response summaries;
+:Merge chunks by tick / record ID;
+if (Exact canonical overlap?) then (yes)
+  :Retain source references\nand deduplicate for analysis;
+elseif (Conflicting overlap?) then (yes)
+  :Report fail for contradiction;\ndependent conclusions unknown;
+endif
+:Gate cross-record derivations by\ncompatible build provenance;
+:Evaluate replay coverage and\nM2/M3 coveredTypes;
+:Reconstruct membership only\nthrough uninterrupted evidence;
+:Check actor/channel completeness,\nactor/target consistency, range,\nparts and command compatibility;
+:Compare only consecutive snapshots\nfor displacement and health deltas;
+:Emit deterministic JSON to stdout;
+note right
+  No selector reconstruction
+  No lifecycle mutation
+  No engine-effect causality
+  No report file write
+end note
+stop
+
+@enduml

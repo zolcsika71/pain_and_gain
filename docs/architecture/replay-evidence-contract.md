@@ -4,7 +4,8 @@ This document defines the version-1 replay-diagnostic contract for Pain and
 Gain. It completed milestone M1 of
 [ADR 0004](../decisions/0004-replay-evidence-and-analysis-roadmap.md). M2
 implemented membership evidence and M3 now implements action decisions,
-attempts, and importer support. Deterministic analysis remains planned for M4.
+attempts, and importer support. M4 implements deterministic read-only analysis;
+live validation remains planned for M5.
 
 The contract preserves the existing `game-state` and `map-state` records. New
 diagnostics are separate console records and must not become inputs to gameplay.
@@ -427,6 +428,55 @@ type is reserved by a newer supported contract. Their presence does not make
 version-1 evidence complete. Existing `flag-allocation` and `healer-escort`
 entries continue through their current compatibility path.
 
+## M4 analyzer requirements
+
+`tools/replay-analysis.js` reads manifest version 2 directly and never invokes
+importer reconciliation, ownership, examination, completion, or cleanup. It
+supports all selected file-backed and evidence-only records for one replay and
+can restrict selection by full response fingerprint. Its deterministic JSON
+report goes to stdout; it does not write an analysis artifact or update review
+metadata.
+
+The analyzer revalidates manifest and source fields, safe regular-file paths,
+JSONL bytes and schemas, replay/map associations, registered and embedded map
+checksums, raw diagnostics, builds, and stored coverage summaries. The map ID is
+the checksum of canonical payload JSON plus a newline with only the top-level
+`checksum` excluded. The saved map file's byte hash is reported separately and
+is never treated as the map ID.
+
+Replay-wide merging applies the existing canonical comparison rule. Exact
+overlaps retain their source references and are analyzed once. Conflicting
+snapshots or diagnostics are reported without choosing a variant, and any
+dependent conclusion is unknown. Stored per-response summaries retain original
+`otherEntries` keys; replay-wide references are fingerprint-qualified. Complete
+M2 closure supports membership only; complete M3 closure supports membership
+and actions only when its supported actor/channel expectation can be checked
+against compatible same-tick state. A covered zero action count is established
+only for a known empty owned roster. Explicit holds and no-actions remain known
+evidence, while missing, unsupported, incomplete, and conflicting evidence
+remain distinct.
+
+Membership reconstruction requires an uninterrupted complete path from a valid
+baseline. The analyzer checks epochs/resets, member additions, transition source
+values, stable assignments, dead-member nonreactivation, and consistency with
+available compatible owned pre-action snapshots. Reset continuity requires the
+declared next same-build baseline; unexplained rebaselining is not treated as a
+continuous valid epoch. It checks recorded attempts for owned actors, consistent
+target identities and coordinates, required functioning parts, Chebyshev
+attack/heal range, and documented same-tick command compatibility without
+rerunning selectors.
+
+Movement attempts and return codes remain separate from displacement observed
+in the next consecutive snapshot. A stationary actor after `OK` is an observed
+zero displacement, not proof of engine failure. Health changes are reported as
+positive, negative, or zero deltas only across consecutive snapshots, without
+damage or healing attribution. Report provenance is `local-source-match`,
+`tagged-unmatched`, `legacy-unknown`, or `conflicting`; a valid nonlocal build is
+not itself a failure. A null return proves an attempt but leaves scheduling
+acceptance unknown; zero means accepted for scheduling and a nonzero integer
+means rejected. Cross-build membership, action, movement, and health dependencies
+remain unknown while independent compatible findings are retained.
+
 ## M1 review conclusions
 
 The contract matches the current boundaries documented in
@@ -437,12 +487,13 @@ movement precedes tactics, and Arena action methods return scheduling/error
 codes rather than resolved effects.
 
 M2 emits membership evidence and M3 emits action decisions and attempts through
-the same ordered stream. Local fixtures verify command-trace equivalence and
-importer correlation, but do not establish live capture completeness or engine
-effects. On the deterministic 14-scout, no-combat fixture, a two-digit action-only
+the same ordered stream. M4 consumes those records without changing their
+lifecycle state. Local fixtures verify command-trace equivalence, importer
+correlation, deterministic reports, and read-only analysis, but do not establish
+live capture completeness or engine effects. On the deterministic 14-scout, no-combat fixture, a two-digit action-only
 steady tick produced 57 records and 19,841 serialized JSON-line bytes including newlines (42
 decisions, 14 attempts, and one closure). Adding its tick-1 membership baseline
 produced 58 records and 22,813 bytes; the longest line was the 3,167-byte
 baseline. This is a fixture-size measurement, not live console, capture, CPU, or
-memory evidence. Deterministic analysis, live-capture validation, and strategy
-changes remain outside M1–M3.
+memory evidence. Live-capture validation and strategy changes remain outside
+M1–M4.

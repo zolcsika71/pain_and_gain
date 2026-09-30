@@ -41,3 +41,23 @@ The importer extracts the creep-free `map-state` entry, saves its map content wi
 The explicit `upgrade-map-checksums` command locks the manifest, verifies legacy saved payloads against existing registrations, and atomically embeds missing checksums. It preserves registrations and all manifest bytes, reports failures per map without replacing mismatched values, and is safe to retry. Normal validation requires the embedded field. An orphaned map publication can be reused only after matching the verified incoming payload; a conflicting embedded checksum is rejected. Neither checksum embedding nor validation changes runtime console records.
 
 `replay_logs/manifest.json` has `maps`, `replays`, and `records` collections. File-backed records move from transient import status `pending` to `claim` after JSONL publication; evidence-only records are atomically published directly as `claim`. Task ownership claims are stored separately in `reviews`. Existing `waiting` records migrate to `claim` under the manifest lock without losing checkpoints, map associations, or fingerprints. Records retain source fingerprint, map/build provenance, coverage, other console entries, and per-task review checkpoints. A file-backed record has string `outputPath` and `outputFingerprint` values; an evidence-only record has `null` for both and never creates an empty JSONL. Manifest updates and cleanup share a process lock. A local JSONL file can be explicitly registered only when its replay already has a validated active map association and its game-state flags match that map; JSONL alone cannot prove replay identity. Claims retain records until every claiming task explicitly records examination and completion after saving findings outside the manifest. Only then does the record become `done`; cleanup verifies and deletes a managed JSONL when present, removes the record, and retains map files and registrations. A replay association retains retired fingerprints to prevent unchanged data from reimporting, but not the deleted record's review history. Unregistered reference files are never adopted automatically. Empty version-1 manifests migrate automatically; nonempty version-1 manifests require deliberate migration before using this importer. CLI commands and format limitations are documented in `README.md`.
+
+## Read-only replay analysis
+
+`tools/replay-analysis.js` implements the deterministic M4 analyzer outside the
+Arena runtime. Its importable `analyzeReplay({ root, replayId, fingerprints? })`
+function and guarded CLI read manifest version 2 directly without invoking the
+importer's migration, reconciliation, review, or cleanup paths. It validates the
+selected record and source metadata, optional JSONL bytes, raw diagnostics,
+replay/map linkage, and both canonical map payload and saved-file hashes.
+
+The analyzer merges selected response chunks across file-backed and
+evidence-only records. Exact canonical overlaps are deduplicated with all source
+references retained; conflicting variants remain visible and make dependent
+conclusions unknown. Complete M2 and M3 coverage remain distinct. Membership is
+reconstructed only across uninterrupted complete evidence. Recorded attempts
+are checked against pre-action positions and functioning parts without rerunning
+selectors. Movement displacement and health deltas use only tick-adjacent
+snapshots and are reported without engine-effect causality. The stable JSON
+report is written to stdout only. Details and report semantics are in
+[deterministic replay analysis](replay-analysis.md).

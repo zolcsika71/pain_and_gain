@@ -13,6 +13,7 @@ Screeps Arena code for the Pain and Gain arena. Armed creeps approach nearby ene
 - `src/arena/execute.js` issues movement and tactical actions for each owned creep.
 - `src/tactics/` checks functioning body parts, chooses deterministic targets, selects movement, and selects compatible healing and combat actions.
 - `src/debug/game-state.js` writes one JSON game-state snapshot per tick and one map snapshot per match before actions.
+- `tools/replay-analysis.js` reads already managed replay evidence and emits a deterministic read-only JSON report without changing review lifecycle state.
 - `tests/unit/` contains local decision and action regression tests.
 - `docs/architecture/`, `docs/decisions/`, and `docs/diagrams/` hold architecture notes, ADRs, and PlantUML diagrams.
 
@@ -91,6 +92,35 @@ node tools/replay-logs.js claim <replay-id> <fingerprint> <codex-task-id>
 node tools/replay-logs.js examined <replay-id> <fingerprint> <codex-task-id>
 node tools/replay-logs.js done <replay-id> <fingerprint> <codex-task-id>
 ```
+
+### Read-only deterministic analysis
+
+After using the external review workflow to claim every managed response in the
+intended scope, analyze all current records for a replay with:
+
+```sh
+npm run replay:analyze -- <replay-id>
+```
+
+Append one or more full response fingerprints to restrict the report to those
+records. The analyzer reads `manifest.json` directly; it does not call `list`,
+reconcile cleanup, change claims/checkpoints, or write a report file. It supports
+file-backed and evidence-only records, revalidates raw evidence rather than
+trusting stored summaries, merges canonical overlaps, and emits stable JSON to
+stdout. Save or redirect that output separately if the review requires a report
+artifact, then use `examined` and `done` only through the documented lifecycle.
+
+Every finding identifies its evidence and build provenance and uses `pass`,
+`fail`, or `unknown`. M2 closures support membership only; legacy evidence keeps
+unknown provenance; missing/incomplete/conflicting evidence stays unknown for
+dependent conclusions. Complete M3 action coverage also requires the expected
+movement/healing/combat decision for every owned same-tick actor; covered zero
+actions require a known empty owned roster. Attempts distinguish accepted
+scheduling (`0`), rejected scheduling (nonzero), and unavailable numeric results
+(`null`). Movement and health comparisons use consecutive compatible-build
+snapshots only. `OK` is scheduling evidence, stationary movement is an
+observation rather than an engine failure, and health changes are not attributed
+to attacks or healing. See [deterministic replay analysis](docs/architecture/replay-analysis.md).
 
 When the optional scout experiment is enabled, relevant planning ticks emit a compact
 `flag-allocation` JSON console entry with the runtime `buildId`. It records the

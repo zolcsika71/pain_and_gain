@@ -22,7 +22,11 @@ if (Active, validated map for this replay?) then (yes)
     :Create JSONL with original lines;
     :Record map ID, checksum, file,\nresponse build ID and claim status;
   else (no)
-    :Keep map registration and association only;
+    if (Validated retained diagnostics?) then (yes)
+      :Create evidence-only claim record;\nKeep output path/fingerprint null;
+    else (no)
+      :Keep map registration and association only;
+    endif
   endif
 else (no)
   :Defer response without JSONL;

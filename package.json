@@ -4,7 +4,8 @@
   "scripts": {
     "build-id:generate": "node tools/build-id.js generate",
     "build-id:check": "node tools/build-id.js check",
-    "check": "node tools/build-id.js check && node --check src/main.mjs && node --check src/loop.js && node --check src/config.js && node --check src/arena/observe.js && node --check src/arena/execute.js && node --check src/strategy/objectives.js && node --check src/strategy/flag-allocation.js && node --check src/squads/membership.js && node --check src/tactics/body.js && node --check src/tactics/targets.js && node --check src/tactics/healing.js && node --check src/tactics/combat.js && node --check src/tactics/movement.js && node --check src/tactics/healer-escort.js && node --check src/debug/game-state.js && node --check src/debug/replay-evidence.js && node --check src/debug/build-id.js && node --check tools/build-id.js && node --check tools/replay-logs.js",
+    "replay:analyze": "node tools/replay-analysis.js",
+    "check": "node tools/build-id.js check && node --check src/main.mjs && node --check src/loop.js && node --check src/config.js && node --check src/arena/observe.js && node --check src/arena/execute.js && node --check src/strategy/objectives.js && node --check src/strategy/flag-allocation.js && node --check src/squads/membership.js && node --check src/tactics/body.js && node --check src/tactics/targets.js && node --check src/tactics/healing.js && node --check src/tactics/combat.js && node --check src/tactics/movement.js && node --check src/tactics/healer-escort.js && node --check src/debug/game-state.js && node --check src/debug/replay-evidence.js && node --check src/debug/build-id.js && node --check tools/build-id.js && node --check tools/replay-logs.js && node --check tools/replay-analysis.js",
     "test": "node --test tests/unit/*.test.js"
   }
 }
