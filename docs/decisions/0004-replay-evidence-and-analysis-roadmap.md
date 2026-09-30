@@ -1,6 +1,6 @@
 # ADR 0004: Improve replay evidence and deterministic analysis
 
-Status: Accepted direction; M1–M4 complete, M5 planned.
+Status: Complete; M1–M5 complete.
 
 Date: 2026-09-29 (Europe/Budapest)
 
@@ -78,8 +78,8 @@ a superseding ADR.
 
 ## Roadmap
 
-M1–M4 are complete. Complete the remaining milestone in order; record implementation
-and live verification separately.
+M1–M5 are complete. Implementation and live verification remain recorded
+separately so fixture evidence is not mistaken for live evidence.
 
 | ID | Milestone | Status | Depends on | Completion evidence |
 | --- | --- | --- | --- | --- |
@@ -87,7 +87,7 @@ and live verification separately.
 | M2 | Add membership diagnostics | Complete | M1 | Transition tests, importer round-trip evidence, unchanged selector inputs |
 | M3 | Add decision and action diagnostics | Complete | M1, M2 | Command-trace equivalence tests and diagnostic correlation tests |
 | M4 | Add deterministic replay analysis | Complete | M2, M3 | Known-answer fixtures, reproducible reports, read-only verification |
-| M5 | Validate a new live capture and close the milestone | Planned | M4 | Build-identified capture, analysis report, overhead and evidence limitations |
+| M5 | Validate a new live capture and close the milestone | Complete | M4 | [Build-identified capture, analysis report, CPU/size observations, and evidence limitations](../architecture/replay-validation-2026-09-30.md) |
 
 ### M1 — Evidence contract
 
@@ -221,6 +221,7 @@ local tests; never silently convert an unknown into a pass.
 | 2026-09-30 | M3 | Complete: committed as `912ba61c025c1ad626f0106dc73e57135cf248b2`; production selection/execution paths emit movement, healing, and combat decisions plus correlated command attempts, and the importer validates and preserves them with full M3 coverage | Local equivalence fixtures cover mixed weapons, healing compatibility, holds, no-actions, numeric failures, and missing numeric returns without changing ordered commands or inputs. Importer fixtures cover normal and diagnostic-only round trips, deferred retry, evidence-only review/cleanup and retirement, persistence, M2 compatibility, correlations and ordering, closures, gaps, canonical duplicates, conflicts, truncation, and unsupported versions. The diagnostic-only regression failed before the lifecycle fix and then passed. `npm run check`, 53 focused tests, all 115 tests, explicit build-ID verification, and whitespace checks passed with unchanged runtime build ID `c68afb80a447dbc69b12e4283757992d53b949c8c8aad6690b12200d53d1cf96`. The documented 14-scout fixture measured 57 records/19,841 bytes for a two-digit steady action-only tick and 58 records/22,813 bytes with the tick-1 membership baseline. Live capture completeness, runtime overhead, engine effects, and live reset behavior remain for M5. |
 | 2026-09-30 | M4 | Complete: committed as `442a53be4ad97aebe0a3d3b57ab110e71587860d`; added an importable, guarded-CLI, deterministic read-only analyzer for file-backed and evidence-only replay records | Synthetic fixtures cover overlap deduplication and conflicts, legacy and M2 partial evidence, membership epochs and invalid transitions, actions/range/parts/compatibility/returns, movement and health observations, gaps and incomplete/unsupported evidence, provenance, map/build/summary/hash/path integrity, symlinks, deterministic output, and byte-for-byte read-only behavior on success and failure. Pre-commit review found and temporary probes reproduced seven semantic defects; regressions now verify dependency-scoped conflicting-build uncertainty, tri-state null returns, actor/channel coverage, original summary keys plus replay-qualified references, reset/rebaseline boundaries, actor/target consistency, and explicit unknown provenance for missing fingerprints. Focused analyzer/importer tests passed 53/53 and the full suite passed 127/127; syntax, build-ID, and whitespace checks passed with unchanged runtime build ID `c68afb80a447dbc69b12e4283757992d53b949c8c8aad6690b12200d53d1cf96`. Live capture completeness, runtime overhead, reset behavior, engine effects, and strategic benefit remain unverified for M5; M5 remains planned. |
 | 2026-09-30 | M5 prerequisite | Implemented locally; M5 remains Planned pending a user-launched live match and retained-evidence review | The approved interpretation records build-tagged elapsed tick CPU, applicable limit, sampling-point headroom, diagnostic size, and timeout observations; differential diagnostic overhead is deferred. Runtime emits one late `runtime-cpu` record followed by version-2 coverage without changing gameplay commands. Importer/analyzer support preserves M2/M3/legacy and evidence-only behavior. The 14-scout fixture measures 59 records/23,113 bytes at tick 1 and 58 records/20,145 bytes on a two-digit steady tick. Focused tests passed 70/70 and the full suite passed 132/132; syntax, build-ID, and whitespace checks passed with runtime build ID `09eba928208ff65843cb8e15bd68f0e8167ae84e1e1a303dfbc6addc5c6bca23`. No live CPU, capture completeness, timeout, reset, engine-effect, or strategic-benefit result is claimed. |
+| 2026-09-30 | M5 | Complete: retained and analyzed current-build live replay `6abd2590212b1d5ce6ae89a0` from implementation commit `dee83ef74587d9e4d058f5d3f9574a7650fb9216` | Two claimed responses provide contiguous snapshots and complete version-2 diagnostics for ticks 1–138, matching build `09eba928208ff65843cb8e15bd68f0e8167ae84e1e1a303dfbc6addc5c6bca23` and a checksum-validated map. Repeated explicit-fingerprint analysis is byte-identical with 20,817 pass, 0 fail, and 42 dependency-scoped unknown findings. The [live checkpoint](../architecture/replay-validation-2026-09-30.md) records fingerprints, report hash, map, diagnostic volume, elapsed CPU/headroom, action/state observations, lifecycle operations, and limitations. The UI final tick 139 is not captured; reset, exact final CPU, differential overhead, causality, and strategic benefit remain unknown. Claims are examined but deliberately not completed so all evidence remains retained. |
 
 ## Consequences
 

@@ -128,7 +128,9 @@ negative, or zero deltas only for consecutive compatible-build snapshots.
 Neither kind of state change is assigned to a command, and missing ticks are
 never bridged.
 
-Synthetic fixtures verify these rules and byte-for-byte read-only behavior.
-Live capture completeness, CPU/headroom and diagnostic-size observations,
-timeouts, reset behavior, and engine effects remain M5 work. Differential
-diagnostic CPU overhead and strategic benefit are not established.
+Synthetic fixtures verify these rules and byte-for-byte read-only behavior. The
+[M5 live-validation checkpoint](replay-validation-2026-09-30.md) records one
+current-build replay, deterministic report, captured coverage, CPU/headroom,
+diagnostic size, timeout observations, and exercised state changes. The absent
+terminal tick, live reset behavior, exact final CPU, differential diagnostic CPU
+overhead, engine causality, and strategic benefit remain unknown.

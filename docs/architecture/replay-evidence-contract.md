@@ -6,7 +6,8 @@ Gain. It completed milestone M1 of
 implemented membership evidence and M3 now implements action decisions,
 attempts, and importer support. M4 implements deterministic read-only analysis.
 The M5 prerequisite adds version-1 runtime CPU samples and a version-2 coverage
-closure; live validation remains planned.
+closure. The [M5 live-validation checkpoint](replay-validation-2026-09-30.md)
+records one retained current-build capture and its remaining evidence limits.
 
 The contract preserves the existing `game-state` and `map-state` records. New
 diagnostics are separate console records and must not become inputs to gameplay.

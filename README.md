@@ -47,6 +47,19 @@ The replay-evidence stream emits one version-1 `membership-baseline` for each lo
 
 ## Verification checkpoint
 
+ADR 0004 M5 is complete for its bounded live-validation criteria. User-launched
+replay `6abd2590212b1d5ce6ae89a0` produced current-build snapshots and complete
+version-2 diagnostics for ticks 1–138; the UI reported final tick 139, which is
+not present in the capture. Two explicit-fingerprint analyzer runs were
+byte-identical with no failures. The retained
+[M5 checkpoint](docs/architecture/replay-validation-2026-09-30.md) records the
+implementation commit, fingerprints, map checksum, report hash, diagnostic
+volume, elapsed CPU/headroom, exercised actions and state observations, exact
+lifecycle operations, and remaining unknowns. The captures are claimed and
+examined but intentionally not completed. This evidence does not measure
+differential diagnostic CPU overhead or establish terminal execution, command
+causality, reset behavior, or strategic benefit.
+
 The local combat-positioning candidate is reviewed in [combat-positioning validation](docs/architecture/combat-positioning-validation.md), including same-snapshot comparisons on two explicitly map-linked replays. Their movement is consistent with the candidate, but exact code provenance and a new live-match check remain outstanding. Snapshot comparisons do not establish improved match outcomes.
 
 Replay `6ab963a6fa7e227bfcc9abf8` adds four map-linked chunks covering observed ticks 1–400. Across all four, the controlled army stays at least 35 tiles from an enemy, so the candidate selects the same first-flag objective as the committed baseline for every owned creep snapshot. This confirms no combat-positioning decision in the available range; the live movement gate and complete-match coverage remain unverified. The [validation note](docs/architecture/combat-positioning-validation.md#additional-replay-check-6ab963a6fa7e227bfcc9abf8) records the four filenames, linked map, limits, and completed managed cleanup.
@@ -152,4 +165,4 @@ Before examining a managed response, use `claim` with a task identifier unique t
 
 For manually supplied JSONL already inside project-relative `replay_logs/`, `register-local` explicitly adopts a safe `<replay-id>.jsonl` or `<replay-id>-<hex>.jsonl` filename for managed review and later cleanup. Use it only when the replay identity has been independently established: JSONL itself contains no replay ID. The command requires that replay's existing active association to a checksum-validated map, checks every game's static flag IDs, positions, effects, and rates against that map, validates each game-state line, and records a content fingerprint and `claim` status. A filename or nearby map is not sufficient provenance. Unknown replay/map associations or unsupported manual map registration remain blocked until verified source evidence is available. Manual JSONL cannot establish whether other console entries or missing terminal ticks existed. An unchanged manual capture that was completed is not registered again, even if a copy reappears; that new copy remains unmanaged. Only explicitly registered local files become eligible for managed cleanup.
 
-In an earlier live monitoring check, opening replay `6ab85550e03513394c91eb0d` produced three cached responses reporting ticks 1–100, 101–200, and 201–235. The first response's 100 imported JSONL records exactly matched its cache payload and the manifest output hash. A watcher restart retained its review claim and deduplicated unchanged content; after explicit examination and completion, the utility deleted only that managed capture and did not reimport it on another restart. The later two captures were not independently examined. These response ranges do not prove complete replay coverage. The version-2 map-gated lifecycle described above has not been verified in a live match.
+In an earlier live monitoring check, opening replay `6ab85550e03513394c91eb0d` produced three cached responses reporting ticks 1–100, 101–200, and 201–235. The first response's 100 imported JSONL records exactly matched its cache payload and the manifest output hash. A watcher restart retained its review claim and deduplicated unchanged content; after explicit examination and completion, the utility deleted only that managed capture and did not reimport it on another restart. The later two captures were not independently examined. These response ranges do not prove complete replay coverage. The later [M5 checkpoint](docs/architecture/replay-validation-2026-09-30.md) verifies a scoped two-response version-2 map-linked import and retained review; it did not exercise watcher reconciliation or cleanup.
