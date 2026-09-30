@@ -51,7 +51,7 @@ function inputSnapshot(flag, creeps) {
             body: creep.body.map(part => ({ ...part })) })) });
 }
 
-test('enabled runTick changes only selected healer movement, releases for injury, and resets', t => {
+test('enabled runTick retains for remote injury, releases for local injury, and resets', t => {
     assert.equal(oneScoutFlagExperiment, false);
     assert.equal(oneHealerEscortExperiment, true);
     const calls = [];
@@ -76,15 +76,25 @@ test('enabled runTick changes only selected healer movement, releases for injury
         runTick();
         assert.equal(inputSnapshot(first, creeps), beforeHealthyTick);
 
-        healer.x = 3;
-        melee.hits = 80;
+        scout.x = 10;
+        scout.y = 0;
+        scout.hits = 80; // Six tiles from the assigned healer.
         globalThis.__escortFlowTick = 99;
-        const beforeInjuredTick = inputSnapshot(first, creeps);
+        const beforeRemoteInjuryTick = inputSnapshot(first, creeps);
         runTick();
-        assert.equal(inputSnapshot(first, creeps), beforeInjuredTick);
+        assert.equal(inputSnapshot(first, creeps), beforeRemoteInjuryTick);
+
+        healer.x = 3;
+        scout.x = 6; // Three tiles from the assigned healer.
+        globalThis.__escortFlowTick = 100;
+        const beforeLocalInjuryTick = inputSnapshot(first, creeps);
+        runTick();
+        assert.equal(inputSnapshot(first, creeps), beforeLocalInjuryTick);
 
         healer.x = 4;
-        melee.hits = 100;
+        scout.hits = 100;
+        scout.x = 1;
+        scout.y = 2;
         globalThis.__escortFlowTick = 1;
         const beforeResetTick = inputSnapshot(first, creeps);
         runTick();
@@ -109,8 +119,12 @@ test('enabled runTick changes only selected healer movement, releases for injury
         [98, 'ranged', 'rangedAttack', 'engaged', 0],
         [99, 'melee', 'moveTo', 'engaged', 0],
         [99, 'scout', 'moveTo', 'first', 0],
-        [99, 'healer', 'rangedHeal', 'melee', 0],
+        [99, 'healer', 'moveTo', 'melee', 0],
         [99, 'ranged', 'rangedAttack', 'engaged', 0],
+        [100, 'melee', 'moveTo', 'engaged', 0],
+        [100, 'scout', 'moveTo', 'first', 0],
+        [100, 'healer', 'rangedHeal', 'scout', 0],
+        [100, 'ranged', 'rangedAttack', 'engaged', 0],
         [1, 'melee', 'moveTo', 'engaged', 0],
         [1, 'scout', 'moveTo', 'first', 0],
         [1, 'healer', 'moveTo', 'melee', 0],
@@ -124,8 +138,14 @@ test('enabled runTick changes only selected healer movement, releases for injury
     assert.deepEqual(calls.slice(4, 8), [
         [99, 'melee', 'moveTo', 'engaged', 0],
         [99, 'scout', 'moveTo', 'first', 0],
-        [99, 'healer', 'rangedHeal', 'melee', 0],
+        [99, 'healer', 'moveTo', 'melee', 0],
         [99, 'ranged', 'rangedAttack', 'engaged', 0],
+    ]);
+    assert.deepEqual(calls.slice(8, 12), [
+        [100, 'melee', 'moveTo', 'engaged', 0],
+        [100, 'scout', 'moveTo', 'first', 0],
+        [100, 'healer', 'rangedHeal', 'scout', 0],
+        [100, 'ranged', 'rangedAttack', 'engaged', 0],
     ]);
     assert.equal(pathCalls, 0);
     assert.ok(calls.filter(([, , method]) => method === 'moveTo').every((call, index, moves) =>
@@ -136,7 +156,8 @@ test('enabled runTick changes only selected healer movement, releases for injury
         record.healerId, record.allyId, record.targetId, record.returnCode]), [
         [98, 'before-actions', 'assign', 'local-engagement', 'healer', 'melee', null, null],
         [98, 'movement', 'move-attempt', null, 'healer', 'melee', 'melee', -11],
-        [99, 'before-actions', 'release', 'friendly-injured', 'healer', 'melee', null, null],
+        [99, 'movement', 'move-attempt', null, 'healer', 'melee', 'melee', 0],
+        [100, 'before-actions', 'release', 'friendly-injured', 'healer', 'melee', null, null],
         [1, 'before-actions', 'assign', 'local-engagement', 'healer', 'melee', null, null],
         [1, 'movement', 'move-attempt', null, 'healer', 'melee', 'melee', 0],
     ]);
@@ -159,14 +180,25 @@ test('enabled runTick changes only selected healer movement, releases for injury
         decisionId: escortDecision.decisionId, actionId: escortDecision.actions[0].actionId,
         method: 'moveTo', target: escortDecision.actions[0].target, returnCode: -11,
     });
-    const releasedMovement = decisions.find(record => record.tick === 99 &&
+    const retainedDecision = decisions.find(record => record.tick === 99 &&
         record.actorId === 'healer' && record.channel === 'movement');
-    const healingDecision = decisions.find(record => record.tick === 99 &&
+    const retainedAttempt = attempts.find(record => record.tick === 99 &&
+        record.actorId === 'healer' && record.channel === 'movement');
+    assert.deepEqual({ outcome: retainedDecision.outcome, reason: retainedDecision.reason,
+        decisionId: retainedAttempt.decisionId, actionId: retainedAttempt.actionId,
+        returnCode: retainedAttempt.returnCode }, {
+        outcome: 'selected', reason: 'escort-approach',
+        decisionId: retainedDecision.decisionId,
+        actionId: retainedDecision.actions[0].actionId, returnCode: 0,
+    });
+    const releasedMovement = decisions.find(record => record.tick === 100 &&
+        record.actorId === 'healer' && record.channel === 'movement');
+    const healingDecision = decisions.find(record => record.tick === 100 &&
         record.actorId === 'healer' && record.channel === 'healing');
     assert.deepEqual([releasedMovement.outcome, releasedMovement.reason,
         releasedMovement.actions.length], ['hold', 'injured-ally-in-range', 0]);
     assert.deepEqual([healingDecision.outcome, healingDecision.reason,
         healingDecision.actions[0].method, healingDecision.actions[0].target.id],
-    ['selected', 'injured-ally-in-range', 'rangedHeal', 'melee']);
+    ['selected', 'injured-ally-in-range', 'rangedHeal', 'scout']);
     assert.ok(!records.some(record => record.type === 'flag-allocation'));
 });

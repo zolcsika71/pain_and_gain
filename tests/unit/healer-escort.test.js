@@ -100,6 +100,29 @@ test('tick-98-shaped counterfactual deterministically selects healer_3 with mele
     assert.equal(JSON.stringify(friends), before);
 });
 
+test('tick-126-shaped counterfactual retains a healthy range-two pair despite remote injury', () => {
+    // The assessed shape is a healthy assigned pair at range two plus an
+    // unrelated injured friendly at range 44. Coordinates, bodies, health
+    // values, enemy placement, and flag ownership are synthetic; this fixed
+    // snapshot does not represent an alternate match trajectory or outcome.
+    const m = melee('pg_player2_melee_1', 2, 0);
+    const h = healer('pg_player2_healer_3', 0, 0);
+    const remote = creep('pg_player2_ranged_5', 44, 0, ['ranged_attack', 'move']);
+    const foe = enemy('synthetic_enemy', 6, 0);
+    const friends = [m, h, remote];
+    const acquired = planHealerEscort(state(125, friends, [foe]), flag);
+    remote.hits = 80;
+    const before = JSON.stringify(friends);
+
+    const retained = planHealerEscort(state(126, friends, [foe]), flag, acquired.state);
+
+    assert.deepEqual(retained.state.pair, acquired.state.pair);
+    assert.equal(retained.transition, null);
+    assert.equal(retained.escort.distance, 2);
+    assert.equal(retained.escort.mode, 'hold');
+    assert.equal(JSON.stringify(friends), before);
+});
+
 test('escort movement correlates its decision and sole attempt with the direct return value', () => {
     for (const [label, distance, directReturn, expectedReturn] of [
         ['failed command', 3, -11, -11],
@@ -162,6 +185,8 @@ test('acquisition rejects fatigue, mixed roles, injury, absent flag, danger, and
     m.body[1].hits = 0; assert.equal(check(), null); m.body[1].hits = 100;
     h.x = 6; assert.equal(check(), null); h.x = 4;
     h.hits = 90; assert.equal(check(), null); h.hits = 100;
+    const remote = creep('remote', 10, 0, ['move'], { hits: 90 });
+    assert.equal(check([m, h, remote]), null); // Acquisition keeps the global injury gate.
     assert.equal(check([m, h], { ...flag, my: false }), null);
     h.x = -1; assert.equal(check(), null);
     h.x = 4;
@@ -185,6 +210,36 @@ test('injury immediately releases escort; baseline injured movement and healing 
     m.hits = 100;
     assert.equal(planHealerEscort(state(3, [m, h], [e]), flag, released.state).escort, null);
     assert.ok(planHealerEscort(state(1, [m, h], [e]), flag).escort); // New-match reset.
+});
+
+test('retained escort releases for partner or range-one-to-five injury, but not remote injury', () => {
+    for (const injuryRange of [1, 2, 3, 4, 5, 6, 9]) {
+        const m = melee(`m-${injuryRange}`, 0, 0);
+        const h = healer(`h-${injuryRange}`, 4, 0);
+        const injuredFriendly = creep(`injured-${injuryRange}`, 4 + injuryRange, 0, ['move'], { hits: 80 });
+        const e = enemy(`e-${injuryRange}`, -4, 0);
+        const acquired = planHealerEscort(state(1, [m, h], [e]), flag);
+        const continued = planHealerEscort(state(2, [m, h, injuredFriendly], [e]), flag, acquired.state);
+        if (injuryRange <= 5) {
+            assert.equal(continued.transition.reason, 'friendly-injured', `range ${injuryRange}`);
+            assert.equal(continued.escort, null, `range ${injuryRange}`);
+        } else {
+            assert.deepEqual(continued.state.pair, acquired.state.pair, `range ${injuryRange}`);
+            assert.equal(continued.transition, null, `range ${injuryRange}`);
+            assert.equal(continued.escort.mode, 'move-attempt', `range ${injuryRange}`);
+        }
+    }
+
+    for (const injuredPartner of ['healer', 'melee']) {
+        const m = melee(`m-${injuredPartner}`, 0, 0);
+        const h = healer(`h-${injuredPartner}`, 4, 0);
+        const e = enemy(`e-${injuredPartner}`, -4, 0);
+        const acquired = planHealerEscort(state(1, [m, h], [e]), flag);
+        (injuredPartner === 'healer' ? h : m).hits = 80;
+        const released = planHealerEscort(state(2, [m, h], [e]), flag, acquired.state);
+        assert.equal(released.transition.reason, 'friendly-injured', injuredPartner);
+        assert.equal(released.escort, null, injuredPartner);
+    }
 });
 
 test('fatigue pauses movement without releasing and the twelfth tick is the last escort tick', () => {

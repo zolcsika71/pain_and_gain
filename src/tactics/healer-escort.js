@@ -9,6 +9,7 @@ const maxEscortTicks = 12;
 const range = (a, b) => a.getRangeTo(b);
 const livingEnemies = enemies => enemies.filter(enemy => !enemy.my && enemy.hits > 0);
 const enemyRange = (creep, enemies) => Math.min(Infinity, ...enemies.map(enemy => range(creep, enemy)));
+const injured = creep => creep.hits > 0 && creep.hits < creep.hitsMax;
 const healthy = creep => creep.hits > 0 && creep.hits === creep.hitsMax;
 const pureMelee = creep => hasFunctioningPart(creep, 'attack') && hasFunctioningPart(creep, 'move') &&
     !hasFunctioningPart(creep, 'ranged_attack') && !hasFunctioningPart(creep, 'heal');
@@ -18,7 +19,10 @@ const pureHealer = creep => hasFunctioningPart(creep, 'heal') && hasFunctioningP
 function releaseReason(pair, state, flag, friends, enemies, tick) {
     const healer = friends.find(creep => creep.id === pair.healerId);
     const ally = friends.find(creep => creep.id === pair.allyId);
-    if (friends.some(creep => creep.hits > 0 && creep.hits < creep.hitsMax)) return 'friendly-injured';
+    if (friends.some(creep => injured(creep) &&
+        (creep.id === pair.healerId || creep.id === pair.allyId || healer && range(healer, creep) <= supportRange))) {
+        return 'friendly-injured';
+    }
     if (!healer || !ally || healer.hits <= 0 || ally.hits <= 0) return 'partner-lost';
     if (!pureHealer(healer) || !pureMelee(ally)) return 'role-lost';
     if (flag?.my !== true) return 'first-flag-lost';
@@ -45,7 +49,7 @@ export function planHealerEscort({ tick, myCreeps, enemies }, flag, previous = n
             mode: healer.fatigue > 0 || ally.fatigue > 0 ? 'fatigue-pause'
                 : distance <= holdRange ? 'hold' : 'move-attempt' }, transition: null };
     }
-    if (state.used || flag?.my !== true || myCreeps.some(creep => creep.hits > 0 && creep.hits < creep.hitsMax)) {
+    if (state.used || flag?.my !== true || myCreeps.some(injured)) {
         return { state, escort: null, transition: null };
     }
 
