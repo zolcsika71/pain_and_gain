@@ -10,7 +10,10 @@ function creep(id, x, y, parts, options = {}) {
         hitsMax: 100, fatigue: options.fatigue ?? 0,
         body: parts.map(type => ({ type, hits: 100 })), calls,
         getRangeTo(target) { return Math.max(Math.abs(this.x - target.x), Math.abs(this.y - target.y)); },
-        moveTo(target) { calls.push(['moveTo', target.id]); return options.returnCode ?? 0; },
+        moveTo(target) {
+            calls.push(['moveTo', target.id]);
+            return Object.hasOwn(options, 'returnCode') ? options.returnCode : 0;
+        },
         heal(target) { calls.push(['heal', target.id]); return 0; },
         rangedHeal(target) { calls.push(['rangedHeal', target.id]); return 0; },
     };
@@ -71,6 +74,79 @@ test('pair ranking uses threat, ally ID, distance, then healer ID', () => {
     b.y = 2; // Threat range two beats ally ID and healer proximity.
     const newMatch = planHealerEscort(state(1, [a, b, hA, hB], [foe]), flag);
     assert.equal(newMatch.state.pair.allyId, 'b');
+});
+
+test('tick-98-shaped counterfactual deterministically selects healer_3 with melee_1', () => {
+    // Only these positions come from the replay assessment: melee_1 (48,48),
+    // healer_2 (49,52), and the evaluated healer_3/melee_1 range of two.
+    // Body state, health, fatigue, enemy placement, flag state, and healer_3's
+    // concrete coordinate are synthetic eligibility conditions, not history.
+    const m = melee('pg_player2_melee_1', 48, 48);
+    const h2 = healer('pg_player2_healer_2', 49, 52);
+    const h3 = healer('pg_player2_healer_3', 50, 50);
+    const foe = enemy('synthetic_enemy', 44, 48);
+    const friends = [h2, m, h3];
+    const before = JSON.stringify(friends);
+
+    const plan = planHealerEscort(state(98, friends, [foe]), { ...flag, my: true });
+
+    assert.deepEqual(plan.state.pair, {
+        healerId: 'pg_player2_healer_3', allyId: 'pg_player2_melee_1',
+    });
+    assert.equal(plan.escort.distance, 2);
+    assert.equal(plan.escort.mode, 'hold');
+    assert.deepEqual(plan.transition, { event: 'assign', reason: 'local-engagement',
+        healerId: 'pg_player2_healer_3', allyId: 'pg_player2_melee_1' });
+    assert.equal(JSON.stringify(friends), before);
+});
+
+test('escort movement correlates its decision and sole attempt with the direct return value', () => {
+    for (const [label, distance, directReturn, expectedReturn] of [
+        ['failed command', 3, -11, -11],
+        ['unavailable numeric return', 4, undefined, null],
+        ['successful command', 5, 0, 0],
+    ]) {
+        const h = healer(`h-${label}`, distance, 0, { returnCode: directReturn });
+        const m = melee(`m-${label}`, 0, 0);
+        const decisions = [];
+        const attempts = [];
+        const legacy = [];
+        const reporter = {
+            decision(input) {
+                const decision = { ...input, decisionId: `${label}:0`,
+                    actions: input.actions.map((action, index) => ({ ...action,
+                        actionId: `${label}:0#${index}` })) };
+                decisions.push(decision);
+                return decision;
+            },
+            attempt(decision, index, attempted, returnValue) {
+                attempts.push({ decisionId: decision.decisionId,
+                    actionId: decision.actions[index].actionId,
+                    actorId: decision.actorId, channel: decision.channel,
+                    method: attempted.method, target: attempted.target,
+                    returnValue });
+            },
+        };
+
+        moveCreeps([h], [], flag, new Map(), new Map(), {
+            healerId: h.id, allyId: m.id, ally: m, distance, mode: 'move-attempt',
+        }, diagnostic => legacy.push(diagnostic), reporter);
+
+        assert.equal(decisions.length, 1, label);
+        assert.deepEqual(decisions[0], {
+            phase: 'movement', channel: 'movement', actorId: h.id,
+            outcome: 'selected', reason: 'escort-approach',
+            actions: [{ method: 'moveTo', target: m, targetKind: 'creep',
+                actionId: `${label}:0#0` }],
+            decisionId: `${label}:0`,
+        }, label);
+        assert.deepEqual(attempts, [{ decisionId: `${label}:0`, actionId: `${label}:0#0`,
+            actorId: h.id, channel: 'movement', method: 'moveTo',
+            target: { id: m.id, x: 0, y: 0 }, returnValue: expectedReturn }], label);
+        assert.deepEqual(h.calls, [['moveTo', m.id]], label);
+        assert.deepEqual(legacy, [{ event: 'move-attempt', healerId: h.id, allyId: m.id,
+            range: distance, targetId: m.id, returnCode: expectedReturn }], label);
+    }
 });
 
 test('acquisition rejects fatigue, mixed roles, injury, absent flag, danger, and excessive range', () => {
@@ -134,18 +210,20 @@ test('fatigue pauses movement without releasing and the twelfth tick is the last
     assert.equal(planHealerEscort(state(22, [m, h], [e]), flag, plan.state).transition.reason, 'timeout');
 });
 
-test('assigned healer holds within range two without issuing movement', () => {
-    const m = melee('m', 0, 0);
-    const h = healer('h', 2, 0);
-    const e = enemy('e', -4, 0);
-    const plan = planHealerEscort(state(1, [m, h], [e]), flag);
-    assert.equal(plan.escort.mode, 'hold');
-    const diagnostics = [];
-    moveCreeps([h, m], [e], flag, new Map(), new Map(), plan.escort,
-        diagnostic => diagnostics.push(diagnostic));
-    assert.deepEqual(h.calls, []);
-    assert.deepEqual(diagnostics, [{ event: 'hold', healerId: 'h', allyId: 'm',
-        range: 2, targetId: null, returnCode: null }]);
+test('assigned healer holds throughout range zero to two without issuing movement', () => {
+    for (const distance of [0, 1, 2]) {
+        const m = melee(`m-${distance}`, 0, 0);
+        const h = healer(`h-${distance}`, distance, 0);
+        const e = enemy(`e-${distance}`, -4, 0);
+        const plan = planHealerEscort(state(1, [m, h], [e]), flag);
+        assert.equal(plan.escort.mode, 'hold');
+        const diagnostics = [];
+        moveCreeps([h, m], [e], flag, new Map(), new Map(), plan.escort,
+            diagnostic => diagnostics.push(diagnostic));
+        assert.deepEqual(h.calls, []);
+        assert.deepEqual(diagnostics, [{ event: 'hold', healerId: h.id, allyId: m.id,
+            range: distance, targetId: null, returnCode: null }]);
+    }
 });
 
 test('each partner or safety loss releases once without reassignment', () => {
