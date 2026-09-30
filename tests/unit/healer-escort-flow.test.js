@@ -1,9 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { registerHooks } from 'node:module';
+import { oneHealerEscortExperiment, oneScoutFlagExperiment } from '../../src/config.js';
 
-// Exercise production orchestration and selectors with only the deployment
-// switch replaced at this test module boundary. Production config stays off.
+// Exercise production orchestration, selectors, and the checked-in deployment
+// configuration. Only Arena-provided modules are replaced.
 const arenaModules = new Map([
     ['game/utils', 'export const getObjectsByPrototype = prototype => globalThis.__escortFlowObjects.get(prototype); export const getObjects = () => [...globalThis.__escortFlowObjects.values()].flat(); export const getTerrainAt = () => 0; export const getTicks = () => globalThis.__escortFlowTick; export const getCpuTime = () => 123456;'],
     ['game', 'export const arenaInfo = { name: "Pain and Gain", season: "4", level: 1, ticksLimit: 2000, cpuTimeLimit: 20000000, cpuTimeLimitFirstTick: 100000000 };'],
@@ -14,9 +15,6 @@ const arenaModules = new Map([
 ]);
 registerHooks({
     resolve(specifier, context, nextResolve) {
-        if (specifier === './config.js' && context.parentURL?.endsWith('/src/loop.js')) {
-            return { url: 'data:text/javascript,export const oneScoutFlagExperiment = false; export const oneHealerEscortExperiment = true;', shortCircuit: true };
-        }
         const source = arenaModules.get(specifier);
         if (source) return { url: `data:text/javascript,${encodeURIComponent(source)}`, shortCircuit: true };
         return nextResolve(specifier, context);
@@ -54,6 +52,8 @@ function inputSnapshot(flag, creeps) {
 }
 
 test('enabled runTick changes only selected healer movement, releases for injury, and resets', t => {
+    assert.equal(oneScoutFlagExperiment, false);
+    assert.equal(oneHealerEscortExperiment, true);
     const calls = [];
     const records = [];
     t.mock.method(console, 'log', line => records.push(JSON.parse(line)));

@@ -1,4 +1,4 @@
-// Opt in only for a deliberately verified Arena run. The default keeps the
-// committed first-flag fallback unchanged.
+// Scout allocation remains disabled. Healer escort is enabled for this prepared
+// activation checkpoint; user-launched live validation is separate.
 export const oneScoutFlagExperiment = false;
-export const oneHealerEscortExperiment = false;
+export const oneHealerEscortExperiment = true;
