@@ -18,6 +18,7 @@ import {
     validCpuSample,
     validMap,
 } from './replay-logs.js';
+import { analyzeScoreEvidence } from './replay-score-analysis.js';
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const replayIdPattern = /^[a-f0-9]{24}$/;
@@ -81,6 +82,10 @@ function finalReport(state, localId, selectedBuildIds) {
         reportVersion: 1,
         replayId: state.replayId,
         selectedFingerprints: [...state.selectedFingerprints].sort(),
+        ...(state.selectedScoreFingerprints === undefined ? {} : {
+            selectedScoreFingerprints: [...state.selectedScoreFingerprints].sort(),
+            scoring: state.scoring,
+        }),
         findings,
         summary: {
             pass: findings.filter(item => item.verdict === 'pass').length,
@@ -947,11 +952,15 @@ function analyzeObservedChanges(state, snapshots, movement) {
     }
 }
 
-export function analyzeReplay({ root = projectRoot, replayId, fingerprints } = {}) {
+export function analyzeReplay({ root = projectRoot, replayId, fingerprints, scoreFingerprints } = {}) {
     if (!replayIdPattern.test(replayId ?? '')) throw new Error('Expected a verified 24-character replay ID');
     if (fingerprints !== undefined && (!Array.isArray(fingerprints) ||
         fingerprints.some(item => !fingerprintPattern.test(item)))) {
         throw new Error('Fingerprints must be full SHA-256 strings');
+    }
+    if (scoreFingerprints !== undefined && (!Array.isArray(scoreFingerprints) ||
+        !scoreFingerprints.length || scoreFingerprints.some(item => !fingerprintPattern.test(item)))) {
+        throw new Error('Score fingerprints must be a nonempty array of full SHA-256 strings');
     }
     const resolvedRoot = path.resolve(root);
     const directory = path.join(resolvedRoot, 'replay_logs');
@@ -998,17 +1007,19 @@ export function analyzeReplay({ root = projectRoot, replayId, fingerprints } = {
     if (!selected.length) {
         addFinding(state, 'manifest.record-selection', 'unknown', [evidence(manifestPath)],
             'No current manifest records were selected for this replay.');
-        return finalReport(state, localId, [null]);
+        if (scoreFingerprints === undefined) return finalReport(state, localId, [null]);
     }
     const selectedBuildIds = selected.map(item => item.buildId ?? null);
     const tagged = [...new Set(selectedBuildIds.filter(validBuildId))];
-    addFinding(state, 'build.replay-consistency', tagged.length > 1 ? 'fail' : tagged.length ? 'pass' : 'unknown',
+    if (selected.length) addFinding(state, 'build.replay-consistency', tagged.length > 1 ? 'fail' :
+        tagged.length ? 'pass' : 'unknown',
         selected.map(item => evidence(manifestPath, { fingerprint: item.fingerprint })),
         tagged.length > 1 ? 'Selected records contain conflicting build IDs.' : tagged.length ?
             'Selected tagged records use one build ID; legacy records remain independently unknown.' :
             'Selected records have legacy unknown build provenance.', { buildIds: tagged }, selectedBuildIds);
 
-    const mapResult = validateMapEvidence(state, directory, manifestPath, manifest, selected);
+    const mapResult = selected.length ? validateMapEvidence(state, directory, manifestPath, manifest, selected) :
+        { active: null, registration: null, map: null };
     const contexts = selected.map(record => validateManifestRecord(state, record, directory,
         manifestPath, mapResult.active, mapResult.registration));
     const trusted = contexts.filter(item => item.trusted);
@@ -1016,19 +1027,35 @@ export function analyzeReplay({ root = projectRoot, replayId, fingerprints } = {
     const diagnosticLines = trusted.filter(item => item.diagnosticsValid).flatMap(item => item.diagnostics);
     const snapshots = mergeSnapshots(state, snapshotLines);
     const merged = mergeDiagnostics(state, diagnosticLines, [...snapshots.values()]);
-    mapFlagChecks(state, mapResult.map, snapshots);
-    analyzeCpuMeasurements(state, merged, snapshots);
-    analyzeMembership(state, merged, snapshots);
-    const movement = analyzeActions(state, merged, snapshots);
-    analyzeObservedChanges(state, snapshots, movement);
+    if (selected.length) {
+        mapFlagChecks(state, mapResult.map, snapshots);
+        analyzeCpuMeasurements(state, merged, snapshots);
+        analyzeMembership(state, merged, snapshots);
+        const movement = analyzeActions(state, merged, snapshots);
+        analyzeObservedChanges(state, snapshots, movement);
+    }
+    if (scoreFingerprints !== undefined) {
+        const result = analyzeScoreEvidence({ directory, manifest, replayId, scoreFingerprints,
+            snapshots, merged, selectedBuildIds,
+            addFinding: (rule, verdict, refs, message, observed = null, buildIds = [null]) =>
+                addFinding(state, rule, verdict, refs, message, observed, buildIds) });
+        state.selectedScoreFingerprints = result.selectedScoreFingerprints;
+        state.scoring = result.scoring;
+    }
     return finalReport(state, localId, selectedBuildIds);
 }
 
 async function main() {
-    const [replayId, ...fingerprints] = process.argv.slice(2);
-    if (!replayId) throw new Error('Usage: node tools/replay-analysis.js <replay-id> [fingerprint...]');
+    const [replayId, ...args] = process.argv.slice(2);
+    if (!replayId) throw new Error(
+        'Usage: node tools/replay-analysis.js <replay-id> [log-fingerprint...] [--score score-fingerprint...]');
+    const marker = args.indexOf('--score');
+    if (marker !== args.lastIndexOf('--score')) throw new Error('Use --score at most once');
+    const fingerprints = marker < 0 ? args : args.slice(0, marker);
+    const scoreFingerprints = marker < 0 ? undefined : args.slice(marker + 1);
+    if (marker >= 0 && !scoreFingerprints.length) throw new Error('--score requires at least one fingerprint');
     const report = analyzeReplay({ root: projectRoot, replayId,
-        fingerprints: fingerprints.length ? fingerprints : undefined });
+        fingerprints: fingerprints.length ? fingerprints : undefined, scoreFingerprints });
     console.log(JSON.stringify(report, null, 2));
     if (report.summary.fail) process.exitCode = 1;
 }

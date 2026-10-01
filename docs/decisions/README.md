@@ -6,6 +6,6 @@ ADRs record the rationale and consequences of architectural choices and strategy
 - [0002-map-linked-replay-logs.md](0002-map-linked-replay-logs.md) — accepted design for validated map linkage and replay-log review cleanup.
 - [0003-replay-informed-strategy-proposals.md](0003-replay-informed-strategy-proposals.md) — proposed strategy evaluations; some narrow rules are implemented, but strategic benefits remain unproven.
 - [0004-replay-evidence-and-analysis-roadmap.md](0004-replay-evidence-and-analysis-roadmap.md) — completed M1–M5 roadmap for replay evidence, deterministic analysis, and bounded live validation.
-- [0005-replay-frame-scoring-evidence.md](0005-replay-frame-scoring-evidence.md) — accepted replay-score evidence contract; managed source retention is implemented, while scoring analysis remains deferred.
+- [0005-replay-frame-scoring-evidence.md](0005-replay-frame-scoring-evidence.md) — accepted replay-score evidence contract with managed source retention and explicit-fingerprint read-only scoring analysis.
 
 For a new ADR, use the next number, state its status explicitly, and document context, the decision or proposal, and consequences. Update status and implementation notes as work evolves; do not treat a proposal or an implemented experiment as a validated improvement. Link supporting [architecture and evidence](../architecture/README.md) and relevant [diagrams](../diagrams/README.md).

@@ -12,7 +12,7 @@ cleanup, or write report files.
 The library interface is:
 
 ```js
-analyzeReplay({ root, replayId, fingerprints? })
+analyzeReplay({ root, replayId, fingerprints?, scoreFingerprints? })
 ```
 
 The CLI uses the repository root and accepts a replay plus optional full
@@ -28,6 +28,18 @@ fingerprint is reported as unknown. File-backed and evidence-only records are
 both supported. Review claiming, examination, saving a report, and completion
 remain separate operations documented in the README.
 
+Scoring analysis is opt-in and requires a nonempty list of full managed
+score-source fingerprints:
+
+```sh
+npm run replay:analyze -- <replay-id> [log-fingerprint...] --score <score-fingerprint...>
+```
+
+The `--score` marker separates log fingerprints from score fingerprints.
+Omitting it preserves the existing log-only report shape. A score-only API call
+can pass `fingerprints: []`; the CLI without log fingerprints preserves its
+established default of selecting all current log records.
+
 The analyzer reads `manifest.json` directly. It deliberately does not call the
 importer's `list` command or `reconcileCleanup()`, because those lifecycle paths
 may migrate or remove records. It requires `replay_logs/`, the manifest, saved
@@ -39,6 +51,12 @@ root. Source cache entries are provenance metadata and are not reopened.
 Reports have `reportVersion`, `replayId`, sorted selected fingerprints, sorted
 findings, and pass/fail/unknown totals. Volatile timestamps and absolute paths
 are excluded. Repeated analysis of unchanged bytes produces identical data.
+When scoring is selected, the report additionally has sorted
+`selectedScoreFingerprints` and `scoring` with source limitations, segments,
+groups, relationships, mapping, alignment, build association, observations,
+slot-derived comparisons, event associations, and explicit unknown terminal
+status. Invalid selected sources remain visible with `integrity: "invalid"`
+but contribute no segments or measurements.
 
 Every finding contains:
 
@@ -127,6 +145,54 @@ stationary is not labeled an engine failure. Health findings report positive,
 negative, or zero deltas only for consecutive compatible-build snapshots.
 Neither kind of state change is assigned to a command, and missing ticks are
 never bridged.
+
+## ADR 0005 scoring analysis
+
+Every selected score artifact is rechecked as a safe uniquely owned regular
+file. The analyzer verifies its response and request-qualified hashes, reparses
+the exact body, recomputes layered validation and coverage, and accepts legacy
+numeric gap arrays only through the Milestone 1 comparison normalization. It
+never trusts `sourceEntry`, timestamps, filenames, import order, requested-time
+order, or review state as sequence evidence.
+
+Strict `gameTime` decreases and malformed frame elements create local segment
+boundaries. Exact canonical frames create candidate edges only between sources.
+The complete candidate graph is evaluated before grouping; a component with
+two same-source segments or a cycle in source-proven overlap order is rejected
+whole as `ambiguous-overlap-bridge`. No compatible subset is selected.
+Accepted overlaps are deduplicated with all source references, while different
+same-time frames in an accepted group fail integrity. Same-time frames in
+unrelated groups remain `ambiguous-segment` rather than being merged.
+
+Direct slot observations come only from recomputed valid item assessments.
+Derived score change requires the previous integer `gameTime` in the same local
+segment or accepted group and two valid cumulative scores. Gaps, conflicts,
+missing scores, and decreases produce an explicit non-derived status. A decrease
+breaks that pair without proving a reset; the current observation can begin a
+later consecutive pair. Displayed gain is always direct and may differ from the
+derived change, including repeated-score terminal-style frames.
+
+Version 1 cross-evidence mapping recognizes optional replay-frame `objects`
+entries only when they carry a stable string `id` and an explicit
+`user: "player1"` or `user: "player2"`. Those IDs must agree consistently with
+the `my` field in selected trusted runtime snapshots, with both slots supported
+and opposite. Reversed mapping is valid. Mapping applies only within a local or
+accepted sequence group that independently establishes it; it is not carried
+across an ambiguous or rejected boundary. Missing or conflicting evidence keeps
+ours/opponent differences unknown.
+
+Alignment compares optional frame `objects` (`id`, position, health, fatigue)
+and flags (`id`, position, ownership, score rate) with selected snapshots. One
+offset must have at least two compared times, no conflicting frame, and no
+structural frame gap across its supporting interval; zero or multiple fitting
+offsets remain unknown. Each candidate records the exact snapshots and build
+IDs that support it. Mapping and alignment are independent. Build association
+is valid only when every contributing snapshot carries the same valid build ID;
+legacy-only or mixed tagged/legacy contributors remain unknown, while different
+tagged contributor builds conflict. Objective and escort-decision associations
+are limited to the established interval and compatible tagged snapshots and
+diagnostics. Score records retain `embeddedBuildId: null`, and all associations
+explicitly disclaim causality and strategic benefit.
 
 Synthetic fixtures verify these rules and byte-for-byte read-only behavior. The
 [M5 live-validation checkpoint](replay-validation-2026-09-30.md) records one

@@ -697,7 +697,7 @@ function normalizeStoredScoreCoverage(coverage) {
         gaps: normalizeStoredScoreGaps(segment.gaps) })) };
 }
 
-function scoreCoverageMatches(stored, recomputed) {
+export function scoreCoverageMatches(stored, recomputed) {
     return canonical(normalizeStoredScoreCoverage(stored)) === canonical(recomputed);
 }
 

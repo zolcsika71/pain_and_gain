@@ -14,7 +14,7 @@ Screeps Arena code for the Pain and Gain arena. Armed creeps approach nearby ene
 - `src/tactics/` checks functioning body parts, chooses deterministic targets, selects movement, and selects compatible healing and combat actions.
 - `src/debug/game-state.js` writes one JSON game-state snapshot per tick and one map snapshot per match before actions.
 - `tools/replay-logs.js` manages map-linked console evidence and exact replay-score source retention with separate lifecycles.
-- `tools/replay-analysis.js` reads already managed replay evidence and emits a deterministic read-only JSON report without changing review lifecycle state; scoring analysis is not implemented.
+- `tools/replay-analysis.js` reads explicitly selected managed log and scoring evidence and emits a deterministic read-only JSON report without changing review lifecycle state.
 - `tests/unit/` contains local decision and action regression tests.
 - `docs/architecture/`, `docs/decisions/`, and `docs/diagrams/` hold architecture notes, ADRs, and PlantUML diagrams.
 
@@ -154,9 +154,9 @@ node tools/replay-logs.js score-done <replay-id> <fingerprint> <codex-task-id>
 node tools/replay-logs.js score-cleanup <replay-id> <fingerprint>
 ```
 
-Milestone 1 does not group frame sequences, calculate score changes, map player
-slots, align replay time with runtime ticks, or associate scores with events.
-Those read-only analysis features remain deferred to ADR 0005 Milestone 2.
+Milestone 1 does not itself interpret retained score sources. ADR 0005
+Milestone 2 adds explicit-fingerprint, read-only analysis without changing the
+retention or review lifecycle.
 
 For replay `6abd7222b72ca0c20fa0bce2`, Milestone 1 retained and hash-verified
 the inventoried metadata source and all 17 inventoried replay-frame sources
@@ -175,7 +175,35 @@ npm run replay:analyze -- <replay-id>
 ```
 
 Append one or more full response fingerprints to restrict the report to those
-records. The analyzer reads `manifest.json` directly; it does not call `list`,
+log records. To analyze scoring evidence, append `--score` and one or more full
+score-source fingerprints:
+
+```sh
+npm run replay:analyze -- <replay-id> [log-fingerprint...] --score <score-fingerprint...>
+```
+
+Score selection is always explicit; omitting `--score` preserves the log-only
+report contract. The analyzer verifies exact managed response bytes and stored
+Milestone 1 summaries, constructs source-qualified local segments, and groups
+only complete exact-overlap components without same-source boundaries or
+ordering cycles. Ambiguous bridges, unrelated repeated times, conflicts, gaps,
+and decreases remain explicit and suppress only dependent conclusions.
+
+Direct `cumulativeScore` and `displayedGain` remain distinct. A
+`derivedScoreChange` is emitted only for consecutive compatible observations;
+its status explains initial, gap, missing-score, conflict, decrease, or derived
+continuity. Ours/opponent labels require stable replay-object IDs whose
+`user: "player1"`/`"player2"` slots agree with selected runtime snapshots.
+Tick alignment independently requires exactly one offset supported by at least
+two matching frame/snapshot pairs without a structural gap or conflicting frame
+across the supporting interval. Build association comes only from the snapshots
+that actually support that offset; legacy or mixed-build contributors cannot
+borrow provenance from unrelated selected records. Objective and escort-decision
+associations require mapping, alignment, and compatible tagged evidence and make
+no causal or strategic-benefit claim. Selected frames never establish terminal
+match state by themselves.
+
+The analyzer reads `manifest.json` directly; it does not call `list`,
 reconcile cleanup, change claims/checkpoints, or write a report file. It supports
 file-backed and evidence-only records, revalidates raw evidence rather than
 trusting stored summaries, merges canonical overlaps, and emits stable JSON to

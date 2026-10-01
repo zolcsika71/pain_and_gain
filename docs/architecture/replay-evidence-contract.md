@@ -560,6 +560,18 @@ acceptance unknown; zero means accepted for scheduling and a nonzero integer
 means rejected. Cross-build membership, action, movement, and health dependencies
 remain unknown while independent compatible findings are retained.
 
+ADR 0005 Milestone 2 extends this same read-only analyzer through explicit
+`scoreFingerprints`. Selected score files and stored summaries are revalidated
+from exact bytes. Source-qualified segments group only through complete,
+noncontradictory exact-overlap components; same-source bridges and overlap-order
+cycles reject the whole component. Direct cumulative score and displayed gain
+remain separate, derived change requires consecutive compatible observations,
+and every unavailable delta carries a continuity reason. Optional replay-object
+slot labels, snapshot ownership, tick alignment, and selected-log build identity
+remain independent evidence chains. Event associations require all applicable
+chains and never claim causality. Replay frames alone leave terminal status
+unknown. Omitting score selection leaves the log-only report unchanged.
+
 ## M1 review conclusions
 
 The contract matches the current boundaries documented in

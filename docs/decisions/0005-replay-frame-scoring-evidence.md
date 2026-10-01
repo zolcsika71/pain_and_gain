@@ -4,7 +4,9 @@ Status: Accepted.
 
 Decision approved: 2026-10-01 (Europe/Budapest).
 
-Implementation: Milestone 1 completed 2026-10-01; Milestone 2 is not implemented.
+Implementation: Milestones 1 and 2 completed 2026-10-01. Milestone 2 was verified
+with isolated synthetic evidence only; the retained selected replay was not
+analyzed during implementation.
 
 Date: 2026-09-30 (Europe/Budapest)
 
@@ -811,9 +813,13 @@ and event associations across all three local segments unknown.
 | Stored item count, order, blocker, occurrence, status, issue order, or issue multiplicity differs from recomputation | Integrity mismatch; do not use the persisted summary or dependent score conclusion. |
 | Score decrease without other boundary evidence | End derived continuity; do not infer a reset or new epoch. |
 | One valid tick offset | Cross-evidence findings cite the offset and both source sets. |
+| Matching endpoint snapshots across a structural frame gap | Alignment and dependent events remain unknown. |
+| Matching snapshots around a conflicting frame in an accepted group | The affected group alignment and dependent events remain unknown. |
 | Multiple/contradictory offsets | Cross-evidence alignment unknown; frame-time score remains usable. |
 | Frame with no build ID plus matched tagged logs | Frame provenance stays unknown; association reports the log build separately. |
-| Mixed tagged log builds | Build-dependent cross-evidence findings unknown. |
+| Alignment supported only by legacy snapshots plus an unrelated tagged record | Alignment may remain valid, but build association and dependent events are unknown. |
+| Mixed tagged/legacy alignment contributors | Build association and dependent events are unknown. |
+| Conflicting tagged alignment contributors | Build association conflicts and dependent events are unknown. |
 | Interrupted publication before/after file creation | Retry publishes or verifies exactly once without overwrite. |
 | Repeated exact import | No duplicate record; hashes and existing reviews unchanged. |
 | Changed response for the same request | Separate record retained; overlap conflict preserved. |
@@ -928,19 +934,36 @@ selected sources are managed, claimed, examined, and locally ignored. Retirement
 behavior was verified with synthetic roots; the selected sources remain retained
 and were not completed or cleaned up.
 
-### Milestone 2 — read-only analysis
+### Milestone 2 — read-only analysis (completed 2026-10-01)
 
-1. Extend the analyzer interface with explicit score fingerprints.
-2. Revalidate raw sources and layered summaries, establish only
-   evidence-supported local segments, merge only exact-overlap components that
-   satisfy the group-wide invariant, and preserve ambiguity, conflicts, and
+1. Extended the analyzer interface with explicit score fingerprints.
+2. Revalidates raw sources and layered summaries, establishes only
+   evidence-supported local segments, merges only exact-overlap components that
+   satisfy the group-wide invariant, and preserves ambiguity, conflicts, and
    source references.
-3. Implement player mapping, tick alignment, direct measurements, consecutive
+3. Implements player mapping, tick alignment, direct measurements, consecutive
    derived changes, differences, and event alignment.
-4. Add the synthetic matrix above plus deterministic-output and byte-preservation
-   tests on success and failure paths.
-5. Reproduce the selected replay observations from managed sources and document
-   any differences without rewriting the historical checkpoint.
+4. Added focused synthetic matrix cases plus deterministic-output and
+   byte-preservation tests on success and failure paths.
+5. Production application remains a separate explicitly selected read-only
+   review. This implementation task did not open or analyze the retained
+   selected-replay sources and did not rewrite the historical checkpoint.
+
+The implementation recognizes optional replay-frame object evidence only when
+an object has a stable string ID and explicit `user: "player1"` or
+`user: "player2"`; selected trusted runtime snapshots must establish consistent
+and opposite ownership for both slots within the local or accepted sequence
+group where the mapping is used; mapping evidence does not cross an ambiguous
+or rejected boundary. Alignment independently compares
+optional object position/health/fatigue and flag position/ownership/rate fields,
+requires exactly one offset supported at two or more times without an intervening
+structural gap or conflicting frame, and records the exact contributing
+snapshots. Build association uses only those contributors: unknown build IDs
+remain unknown and different tagged builds conflict. Event associations stay
+inside the supported interval and require compatible tagged snapshot and
+diagnostic evidence. The analyzer never copies a log build ID into a score
+source. Reports keep terminal state unknown unless a future separately validated
+evidence contract establishes it.
 
 No runtime source, build ID, game-state JSONL, map format, diagnostic schema, or
 existing log record changes are required.
@@ -976,9 +999,10 @@ future versions must remain unsupported/unknown until separately validated.
 
 Milestone 1 preserves evictable score sources with the same ownership and
 safety properties as replay logs while keeping game-state JSONL and runtime
-diagnostics unchanged. It enables a future deterministic score analyzer without
+diagnostics unchanged. Milestone 2 supplies that deterministic analyzer without
 claiming frame build provenance or causal strategy effects.
 
 Costs include local raw-response storage, another explicitly selected evidence
 class, manifest/tooling complexity, and maintenance for undocumented Arena UI
-payload versions. Milestone 2 analysis remains separately unimplemented.
+payload versions. Applying Milestone 2 to retained production evidence remains
+a separately authorized review rather than part of implementation verification.
