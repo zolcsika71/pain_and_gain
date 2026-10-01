@@ -699,6 +699,18 @@ raw response bytes directly, verifies every manifest and output hash, reparses
 the source, and compares stored summaries with recomputed coverage. Existing
 log-only invocation and output remain compatible.
 
+The published analyzer now has two presentation modes over the same analysis.
+Routine CLI output is compact; `--full-detail` preserves the exhaustive report
+defined here. The importable API continues to default to full mode and accepts
+an explicit `reportMode: "compact"`. Compact mode retains exact totals,
+measurements, differences, statuses, coverage, group-scoped mapping, alignment
+outcomes, build association, event eligibility, and terminal uncertainty. It
+replaces repeated evidence chains and ambiguous alternatives with stable group
+or segment references, exact counts/ranges, and labeled representative samples.
+It cannot choose an offset, join a boundary, discard a contradiction, or
+strengthen a conclusion. Repeating the same explicit selection in full-detail
+mode remains the route to every finding and provenance chain.
+
 For each slot and mapped player, report:
 
 - direct cumulative score by `gameTime`;

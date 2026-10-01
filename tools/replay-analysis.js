@@ -42,7 +42,60 @@ function evidence(pathname, details = {}) {
     return { path: pathname, ...details };
 }
 
+function retainStableSample(values, value, limit = 3) {
+    const key = canonical(value);
+    if (values.some(item => canonical(item) === key)) return;
+    values.push(value);
+    values.sort((a, b) => canonical(a).localeCompare(canonical(b)));
+    if (values.length > limit) values.length = limit;
+}
+
+function updateSpan(summary, value, name) {
+    if (!Number.isSafeInteger(value)) return;
+    const first = `first${name}`;
+    const last = `last${name}`;
+    summary[first] = summary[first] === null ? value : Math.min(summary[first], value);
+    summary[last] = summary[last] === null ? value : Math.max(summary[last], value);
+}
+
+function abbreviatedValue(value, depth = 0) {
+    if (value === null || typeof value !== 'object') return value;
+    if (depth >= 4) return { abbreviated: true, type: Array.isArray(value) ? 'array' : 'object' };
+    if (Array.isArray(value)) {
+        const indexes = value.length <= 3 ? value.map((ignored, index) => index) : [0, 1, value.length - 1];
+        return { count: value.length, representatives: indexes.map(index =>
+            abbreviatedValue(value[index], depth + 1)), abbreviated: value.length > indexes.length };
+    }
+    return Object.fromEntries(Object.keys(value).sort().map(key =>
+        [key, abbreviatedValue(value[key], depth + 1)]));
+}
+
 function addFinding(state, rule, verdict, refs, message, observed = null, buildIds = undefined) {
+    if (state.reportMode === 'compact') {
+        state.summary[verdict]++;
+        const findingProvenance = provenance(buildIds ?? state.selectedBuildIds, state.localId);
+        const key = canonical([rule, verdict, findingProvenance]);
+        const summary = state.compactFindings.get(key) ?? {
+            rule, verdict, provenance: findingProvenance, count: 0, evidenceReferenceCount: 0,
+            firstTick: null, lastTick: null, firstGameTime: null, lastGameTime: null,
+            representativeEvidence: [], representativeMessages: [], representativeObserved: [],
+            abbreviated: true,
+        };
+        summary.count++;
+        summary.evidenceReferenceCount += refs.length;
+        for (const ref of refs) {
+            updateSpan(summary, ref?.tick, 'Tick');
+            updateSpan(summary, ref?.gameTime, 'GameTime');
+            retainStableSample(summary.representativeEvidence, ref);
+        }
+        updateSpan(summary, observed?.tick, 'Tick');
+        updateSpan(summary, observed?.gameTime, 'GameTime');
+        retainStableSample(summary.representativeMessages, message);
+        if (observed !== null) retainStableSample(summary.representativeObserved,
+            abbreviatedValue(observed));
+        state.compactFindings.set(key, summary);
+        return;
+    }
     state.findings.push({ rule, verdict, replayId: state.replayId, evidence: refs,
         message, ...(observed === null ? {} : { observed }), _buildIds: buildIds });
 }
@@ -68,6 +121,40 @@ function provenance(buildIds, localId) {
 }
 
 function finalReport(state, localId, selectedBuildIds) {
+    if (state.reportMode === 'compact') {
+        const findingSummary = [...state.compactFindings.values()].map(item => ({
+            ...item,
+            ...(item.firstTick === null ? { firstTick: undefined, lastTick: undefined } : {}),
+            ...(item.firstGameTime === null ? { firstGameTime: undefined, lastGameTime: undefined } : {}),
+        })).map(item => Object.fromEntries(Object.entries(item).filter(([, value]) => value !== undefined)))
+            .sort((a, b) => canonical([a.rule, a.verdict, a.provenance])
+                .localeCompare(canonical([b.rule, b.verdict, b.provenance])));
+        return {
+            reportVersion: 1,
+            reportMode: 'compact',
+            replayId: state.replayId,
+            selectedFingerprints: [...state.selectedFingerprints].sort(),
+            ...(state.selectedScoreFingerprints === undefined ? {} : {
+                selectedScoreFingerprints: [...state.selectedScoreFingerprints].sort(),
+                scoring: state.scoring,
+            }),
+            evidenceSummary: state.evidenceSummary ?? {
+                selectedLogRecords: 0, trustedLogRecords: 0,
+                buildProvenance: provenance(selectedBuildIds, localId),
+                snapshots: { count: 0, tickRanges: [] },
+                completeDiagnosticTicks: { count: 0, tickRanges: [] },
+            },
+            findingSummary,
+            summary: { ...state.summary },
+            detail: {
+                exhaustive: false,
+                abbreviatedFields: ['findingSummary', 'scoring.relationshipSummary',
+                    'scoring.alignment', 'scoring.events'],
+                fullDetailOption: '--full-detail',
+                note: 'Use full-detail mode with the same explicit selections for exhaustive findings and evidence.',
+            },
+        };
+    }
     const findings = state.findings.map(item => {
         const { _buildIds, ...finding } = item;
         return { ...finding, provenance: provenance(_buildIds ?? selectedBuildIds, localId) };
@@ -93,6 +180,17 @@ function finalReport(state, localId, selectedBuildIds) {
             unknown: findings.filter(item => item.verdict === 'unknown').length,
         },
     };
+}
+
+function inclusiveRanges(values) {
+    const sorted = [...new Set(values)].sort((a, b) => a - b);
+    const ranges = [];
+    for (const value of sorted) {
+        const last = ranges.at(-1);
+        if (last && value === last.last + 1) last.last = value;
+        else ranges.push({ first: value, last: value });
+    }
+    return ranges;
 }
 
 function safeRegularFile(directory, name, pattern) {
@@ -952,8 +1050,12 @@ function analyzeObservedChanges(state, snapshots, movement) {
     }
 }
 
-export function analyzeReplay({ root = projectRoot, replayId, fingerprints, scoreFingerprints } = {}) {
+export function analyzeReplay({ root = projectRoot, replayId, fingerprints, scoreFingerprints,
+    reportMode = 'full' } = {}) {
     if (!replayIdPattern.test(replayId ?? '')) throw new Error('Expected a verified 24-character replay ID');
+    if (!['compact', 'full'].includes(reportMode)) {
+        throw new Error('Report mode must be compact or full');
+    }
     if (fingerprints !== undefined && (!Array.isArray(fingerprints) ||
         fingerprints.some(item => !fingerprintPattern.test(item)))) {
         throw new Error('Fingerprints must be full SHA-256 strings');
@@ -965,8 +1067,10 @@ export function analyzeReplay({ root = projectRoot, replayId, fingerprints, scor
     const resolvedRoot = path.resolve(root);
     const directory = path.join(resolvedRoot, 'replay_logs');
     const manifestPath = 'replay_logs/manifest.json';
-    const state = { replayId, selectedFingerprints: fingerprints ?? [], findings: [] };
     const localId = localBuildId(resolvedRoot);
+    const state = { replayId, reportMode, localId, selectedBuildIds: [],
+        selectedFingerprints: fingerprints ?? [], findings: [], compactFindings: new Map(),
+        summary: { pass: 0, fail: 0, unknown: 0 } };
     let manifestBytes;
     try {
         const directoryStat = fs.lstatSync(directory);
@@ -1010,6 +1114,7 @@ export function analyzeReplay({ root = projectRoot, replayId, fingerprints, scor
         if (scoreFingerprints === undefined) return finalReport(state, localId, [null]);
     }
     const selectedBuildIds = selected.map(item => item.buildId ?? null);
+    state.selectedBuildIds = selectedBuildIds;
     const tagged = [...new Set(selectedBuildIds.filter(validBuildId))];
     if (selected.length) addFinding(state, 'build.replay-consistency', tagged.length > 1 ? 'fail' :
         tagged.length ? 'pass' : 'unknown',
@@ -1027,6 +1132,14 @@ export function analyzeReplay({ root = projectRoot, replayId, fingerprints, scor
     const diagnosticLines = trusted.filter(item => item.diagnosticsValid).flatMap(item => item.diagnostics);
     const snapshots = mergeSnapshots(state, snapshotLines);
     const merged = mergeDiagnostics(state, diagnosticLines, [...snapshots.values()]);
+    if (reportMode === 'compact') state.evidenceSummary = {
+        selectedLogRecords: selected.length,
+        trustedLogRecords: trusted.length,
+        buildProvenance: provenance(selectedBuildIds, localId),
+        snapshots: { count: snapshots.size, tickRanges: inclusiveRanges([...snapshots.keys()]) },
+        completeDiagnosticTicks: { count: merged.complete.size,
+            tickRanges: inclusiveRanges([...merged.complete]) },
+    };
     if (selected.length) {
         mapFlagChecks(state, mapResult.map, snapshots);
         analyzeCpuMeasurements(state, merged, snapshots);
@@ -1036,7 +1149,7 @@ export function analyzeReplay({ root = projectRoot, replayId, fingerprints, scor
     }
     if (scoreFingerprints !== undefined) {
         const result = analyzeScoreEvidence({ directory, manifest, replayId, scoreFingerprints,
-            snapshots, merged, selectedBuildIds,
+            snapshots, merged, selectedBuildIds, reportMode,
             addFinding: (rule, verdict, refs, message, observed = null, buildIds = [null]) =>
                 addFinding(state, rule, verdict, refs, message, observed, buildIds) });
         state.selectedScoreFingerprints = result.selectedScoreFingerprints;
@@ -1120,17 +1233,27 @@ export async function writeJsonReport(report, writable = process.stdout) {
     if (buffered) await writeChunk(writable, buffered);
 }
 
-async function main() {
-    const [replayId, ...args] = process.argv.slice(2);
+export function parseReplayAnalysisArgs(argv) {
+    const args = [...argv];
+    const fullDetailCount = args.filter(item => item === '--full-detail').length;
+    if (fullDetailCount > 1) throw new Error('Use --full-detail at most once');
+    const reportMode = fullDetailCount ? 'full' : 'compact';
+    const filtered = args.filter(item => item !== '--full-detail');
+    const [replayId, ...selection] = filtered;
     if (!replayId) throw new Error(
-        'Usage: node tools/replay-analysis.js <replay-id> [log-fingerprint...] [--score score-fingerprint...]');
-    const marker = args.indexOf('--score');
-    if (marker !== args.lastIndexOf('--score')) throw new Error('Use --score at most once');
-    const fingerprints = marker < 0 ? args : args.slice(0, marker);
-    const scoreFingerprints = marker < 0 ? undefined : args.slice(marker + 1);
+        'Usage: node tools/replay-analysis.js <replay-id> [log-fingerprint...] [--score score-fingerprint...] [--full-detail]');
+    const marker = selection.indexOf('--score');
+    if (marker !== selection.lastIndexOf('--score')) throw new Error('Use --score at most once');
+    const fingerprints = marker < 0 ? selection : selection.slice(0, marker);
+    const scoreFingerprints = marker < 0 ? undefined : selection.slice(marker + 1);
     if (marker >= 0 && !scoreFingerprints.length) throw new Error('--score requires at least one fingerprint');
-    const report = analyzeReplay({ root: projectRoot, replayId,
-        fingerprints: fingerprints.length ? fingerprints : undefined, scoreFingerprints });
+    return { replayId, fingerprints: fingerprints.length ? fingerprints : undefined,
+        scoreFingerprints, reportMode };
+}
+
+async function main() {
+    const selection = parseReplayAnalysisArgs(process.argv.slice(2));
+    const report = analyzeReplay({ root: projectRoot, ...selection });
     await writeJsonReport(report);
     if (report.summary.fail) process.exitCode = 1;
 }

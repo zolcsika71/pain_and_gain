@@ -4,7 +4,8 @@ import os from 'node:os';
 import path from 'node:path';
 import { Writable } from 'node:stream';
 import test from 'node:test';
-import { analyzeReplay, jsonReportChunks, writeJsonReport } from '../../tools/replay-analysis.js';
+import { analyzeReplay, jsonReportChunks, parseReplayAnalysisArgs,
+    writeJsonReport } from '../../tools/replay-analysis.js';
 import {
     canonical,
     mapChecksum,
@@ -288,6 +289,81 @@ test('requires explicit score selection and verifies provenance without changing
     assert.ok(findings(legacyReport, 'score.record-selection').some(item => item.verdict === 'unknown'));
 });
 
+test('defaults the CLI to compact while preserving the full API contract explicitly', t => {
+    assert.deepEqual(parseReplayAnalysisArgs([replayId]), {
+        replayId, fingerprints: undefined, scoreFingerprints: undefined, reportMode: 'compact',
+    });
+    assert.deepEqual(parseReplayAnalysisArgs([replayId, 'a'.repeat(64), '--score', 'b'.repeat(64),
+        '--full-detail']), {
+        replayId, fingerprints: ['a'.repeat(64)], scoreFingerprints: ['b'.repeat(64)], reportMode: 'full',
+    });
+    assert.throws(() => parseReplayAnalysisArgs([replayId, '--full-detail', '--full-detail']),
+        /at most once/);
+    assert.throws(() => analyzeReplay({ root: workspace(t).root, replayId, reportMode: 'brief' }),
+        /compact or full/);
+
+    const fixture = workspace(t, { scoreSources: [{ body: [scoreFrame(1, [10, 3, 4, 1])] }] });
+    const selection = { root: fixture.root, replayId,
+        scoreFingerprints: [fixture.scoreRecords[0].fingerprint] };
+    assert.deepEqual(analyzeReplay(selection), analyzeReplay({ ...selection, reportMode: 'full' }));
+
+    const frame = scoreFrame(1, [10, 3, 4, 1]);
+    const logOnly = workspace(t, { gameStates: [gameState(2, frame)] });
+    const compactLog = analyzeReplay({ root: logOnly.root, replayId, reportMode: 'compact' });
+    assert.equal(Object.hasOwn(compactLog, 'scoring'), false);
+    assert.equal(compactLog.evidenceSummary.selectedLogRecords, 1);
+    assert.deepEqual(compactLog.evidenceSummary.snapshots.tickRanges, [{ first: 2, last: 2 }]);
+});
+
+test('compact mode preserves outcomes while summarizing repeated evidence deterministically', t => {
+    const frames = Array.from({ length: 60 }, (_, index) =>
+        scoreFrame(index + 1, [index * 3, 3, index * 2, 2]));
+    const snapshots = [
+        ...frames.map(frame => gameState(frame.gameTime + 1, frame)),
+        ...frames.map(frame => gameState(frame.gameTime + 101, frame)),
+    ];
+    const fixture = workspace(t, { scoreSources: [{ body: frames }], gameStates: snapshots });
+    const selection = { root: fixture.root, replayId,
+        fingerprints: [fixture.records[0].fingerprint],
+        scoreFingerprints: [fixture.scoreRecords[0].fingerprint] };
+    const before = snapshotBytes(fixture.directory);
+    const full = analyzeReplay({ ...selection, reportMode: 'full' });
+    const compact = analyzeReplay({ ...selection, reportMode: 'compact' });
+    assert.deepEqual(analyzeReplay({ ...selection, reportMode: 'compact' }), compact);
+    assert.deepEqual(snapshotBytes(fixture.directory), before);
+
+    assert.equal(compact.reportMode, 'compact');
+    assert.equal(Object.hasOwn(compact, 'findings'), false);
+    assert.equal(compact.detail.exhaustive, false);
+    assert.deepEqual(compact.summary, full.summary);
+    assert.deepEqual(compact.scoring.mapping, full.scoring.mapping);
+    assert.equal(compact.scoring.alignment.status, full.scoring.alignment.status);
+    assert.equal(compact.scoring.alignment.offset, full.scoring.alignment.offset);
+    assert.deepEqual(compact.scoring.alignment.groups.map(item => ({ groupId: item.groupId,
+        status: item.status, offset: item.offset, blockedBy: item.blockedBy })),
+    full.scoring.alignment.groups.map(item => ({ groupId: item.groupId,
+        status: item.status, offset: item.offset, blockedBy: item.blockedBy })));
+    assert.equal(compact.scoring.alignment.groups[0].candidateSummary.count,
+        full.scoring.alignment.groups[0].candidates.length);
+    assert.deepEqual(compact.scoring.buildAssociation, full.scoring.buildAssociation);
+    assert.deepEqual(compact.scoring.terminal, full.scoring.terminal);
+    assert.deepEqual(compact.scoring.sources[0].validation.items.counts,
+        full.scoring.sources[0].validation.items.counts);
+    assert.equal(compact.scoring.sources[0].validation.items.assessmentSummary.count,
+        full.scoring.sources[0].validation.items.assessments.length);
+    assert.equal(Object.hasOwn(compact.scoring.sources[0].validation.items, 'assessments'), false);
+    assert.deepEqual(compact.scoring.scoreProgression,
+        full.scoring.observations.map(({ segmentIds, sourceReferences, ...item }) => item));
+    assert.deepEqual(compact.scoring.comparisons, full.scoring.comparisons);
+    assert.equal(compact.scoring.events.count, full.scoring.events.length);
+    assert.ok(compact.findingSummary.some(item => item.rule === 'score.tick-alignment' &&
+        item.verdict === 'unknown'));
+
+    const fullBytes = Buffer.byteLength([...jsonReportChunks(full)].join(''));
+    const compactBytes = Buffer.byteLength([...jsonReportChunks(compact)].join(''));
+    assert.ok(compactBytes < fullBytes / 4, `${compactBytes} should be less than 25% of ${fullBytes}`);
+});
+
 test('streams exact JSON with completed writes, backpressure, failures, and caller ownership', async () => {
     const report = { escaped: 'quote" slash\\ newline\n tab\t snowman ☃',
         omitted: undefined, sparse: [null, undefined, , false, -0, Number.NaN],
@@ -387,6 +463,17 @@ test('reports reversed mapping, alignment, direct and derived measurements, term
     assert.ok(event.logEvidence.every(item => item.fingerprint));
     assert.ok(findings(report, 'score.event-association').some(item =>
         item.verdict === 'pass' && item.observed.causalClaim === false));
+    const compact = analyzeReplay({ root: fixture.root, replayId,
+        fingerprints: [fixture.records[0].fingerprint],
+        scoreFingerprints: fixture.scoreRecords.map(item => item.fingerprint).reverse(),
+        reportMode: 'compact' });
+    assert.deepEqual(snapshotBytes(fixture.directory), before);
+    assert.equal(compact.scoring.events.count, report.scoring.events.length);
+    assert.equal(compact.scoring.events.representatives.find(item => item.gameTime === 2).runtimeTick, 3);
+    assert.equal(compact.scoring.events.representatives.find(item => item.gameTime === 2)
+        .escortDecisions[0].reason, 'escort-approach');
+    assert.ok(compact.findingSummary.some(item => item.rule === 'score.event-association' &&
+        item.verdict === 'pass' && item.representativeObserved.length));
 
     const contradictorySnapshots = [gameState(2, frames[1], 'player1'),
         gameState(3, frames[2], 'player2')];
@@ -815,6 +902,12 @@ test('withholds conflicting accepted overlaps and remains read-only when stored 
     assert.ok(findings(failed, 'score.stored-summary').some(item => item.verdict === 'fail'));
     assert.equal(failed.scoring.sources.length, 2);
     assert.ok(failed.scoring.sources.some(item => item.integrity === 'invalid'));
+    const compactFailed = analyzeReplay({ root: fixture.root, replayId,
+        scoreFingerprints: fixture.scoreRecords.map(item => item.fingerprint), reportMode: 'compact' });
+    assert.deepEqual(snapshotBytes(fixture.directory), before);
+    assert.ok(compactFailed.findingSummary.some(item => item.rule === 'score.stored-summary' &&
+        item.verdict === 'fail'));
+    assert.ok(compactFailed.scoring.sources.some(item => item.integrity === 'invalid'));
 });
 
 test('rejects analyzer-specific file hazards and accepts only legacy gap normalization', t => {

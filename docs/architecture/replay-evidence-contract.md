@@ -593,7 +593,9 @@ and every unavailable delta carries a continuity reason. Optional replay-object
 slot labels, snapshot ownership, tick alignment, and selected-log build identity
 remain independent evidence chains. Event associations require all applicable
 chains and never claim causality. Replay frames alone leave terminal status
-unknown. Omitting score selection leaves the log-only report unchanged.
+unknown. Omitting score selection keeps analysis log-only; the API's default
+full mode leaves the established log-only report shape unchanged, while routine
+CLI output uses the documented compact presentation.
 
 ## M1 review conclusions
 

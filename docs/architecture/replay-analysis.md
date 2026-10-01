@@ -12,7 +12,7 @@ cleanup, or write report files.
 The library interface is:
 
 ```js
-analyzeReplay({ root, replayId, fingerprints?, scoreFingerprints? })
+analyzeReplay({ root, replayId, fingerprints?, scoreFingerprints?, reportMode? })
 ```
 
 The CLI uses the repository root and accepts a replay plus optional full
@@ -36,9 +36,23 @@ npm run replay:analyze -- <replay-id> [log-fingerprint...] --score <score-finger
 ```
 
 The `--score` marker separates log fingerprints from score fingerprints.
-Omitting it preserves the existing log-only report shape. A score-only API call
-can pass `fingerprints: []`; the CLI without log fingerprints preserves its
-established default of selecting all current log records.
+Omitting it keeps analysis log-only; full API mode preserves the existing
+log-only report shape. A score-only API call can pass `fingerprints: []`; the
+CLI without log fingerprints preserves its established default of selecting all
+current log records.
+
+The CLI uses compact mode by default. `--full-detail` selects the original
+exhaustive report:
+
+```sh
+npm run replay:analyze -- <replay-id> [fingerprint...] \
+  --score <score-fingerprint...> --full-detail
+```
+
+The importable API defaults `reportMode` to `"full"`, preserving existing
+programmatic consumers and the version-1 full report shape. Callers may request
+`reportMode: "compact"` explicitly. An invalid mode is rejected before any
+evidence is read.
 
 The analyzer reads `manifest.json` directly. It deliberately does not call the
 importer's `list` command or `reconcileCleanup()`, because those lifecycle paths
@@ -48,16 +62,40 @@ root. Source cache entries are provenance metadata and are not reopened.
 
 ## Report contract
 
-Reports have `reportVersion`, `replayId`, sorted selected fingerprints, sorted
-findings, and pass/fail/unknown totals. Volatile timestamps and absolute paths
-are excluded. Repeated analysis of unchanged bytes produces identical data.
-The CLI serializes the same two-space-indented JSON incrementally, so a large
-evidence-complete report does not require one process-sized string; no finding,
-candidate, observation, or provenance is omitted or compacted by that writer.
-The analysis and report are still fully materialized before serialization. Each
+Full reports have `reportVersion`, `replayId`, sorted selected fingerprints,
+sorted findings, and pass/fail/unknown totals. Volatile timestamps and absolute
+paths are excluded. Repeated analysis of unchanged bytes produces identical
+data. Full mode retains every finding, alignment candidate, score observation,
+event, and provenance chain exactly as before.
+
+Compact reports add `reportMode: "compact"`, `evidenceSummary`,
+`findingSummary`, and an explicit non-exhaustive `detail` declaration. Finding
+totals remain exact. Finding summaries group by rule, verdict, and build
+provenance and provide counts, evidence-reference counts, tick/game-time spans,
+and up to three deterministic representative references, messages, and bounded
+observed-value summaries. Scoring sources, validation, coverage, groups,
+mapping, build association, terminal
+uncertainty, every direct/derived measurement, and every mapped difference are
+retained. Per-source validation retains layer statuses, item-status counts,
+blockers, issue counts by kind, covered ranges, and representative assessments;
+full mode retains every assessment and issue. Repeated frame identities use
+segment IDs plus counts/endpoints; relationships use counts/ranges and labeled
+representative records. Alignment
+alternatives use exact candidate counts and offset ranges plus representative
+contributors. Event output gives exact counts/ranges and representative events.
+These abbreviations never select an alternative or turn an unknown into a
+conclusion. The report names `--full-detail` as the reproducible route to every
+omitted evidence chain.
+
+The CLI serializes either mode as deterministic two-space-indented JSON
+incrementally, so output does not require one process-sized string. Each
 submitted write must complete before the next one, output errors and premature
 closure reject the operation, and the writer neither ends nor destroys its
-caller-owned destination.
+caller-owned destination. Compact analysis aggregates findings as they are
+produced and discards exhaustive contributor lists for ambiguous alignment
+candidates. Parsed inputs, normalized timelines, score progression,
+comparisons, and event analysis remain materialized; compact mode is not a
+streaming analyzer.
 When scoring is selected, the report additionally has sorted
 `selectedScoreFingerprints` and `scoring` with source limitations, segments,
 groups, relationships, mapping, alignment, build association, observations,
@@ -234,3 +272,30 @@ current-build replay, deterministic report, captured coverage, CPU/headroom,
 diagnostic size, timeout observations, and exercised state changes. The absent
 terminal tick, live reset behavior, exact final CPU, differential diagnostic CPU
 overhead, engine causality, and strategic benefit remain unknown.
+
+## Synthetic report-mode benchmark
+
+Run the bounded benchmark with:
+
+```sh
+node tests/benchmarks/replay-report-modes.mjs
+```
+
+It creates and removes an isolated synthetic root, then runs full and compact
+analysis in separate fresh Node.js processes over the same 180-frame selection.
+The fixture has 167,992 selected artifact bytes, repeated provenance, and many
+valid alignment offsets so alternative handling dominates the full report. Both
+modes produced the same 554 pass, zero fail, and 547 unknown totals and the same
+unknown alignment outcome. On the 2026-10-02 verification environment:
+
+| Mode | Serialized bytes | Peak RSS (`maxRSS`) | Elapsed |
+| --- | ---: | ---: | ---: |
+| Full | 61,189,120 | 139,808 KiB | 1,441.875 ms |
+| Compact | 217,138 | 75,504 KiB | 92.013 ms |
+
+That run reduced output by 99.65% and peak process RSS by 45.99%. Elapsed time
+also fell because the exhaustive candidate graph was neither retained nor
+serialized. These are one-run synthetic measurements, not production replay
+performance guarantees. Peak RSS includes process startup and all analysis;
+the remaining parsed evidence, timelines, measurements, comparisons, and event
+work still scale with selected input.

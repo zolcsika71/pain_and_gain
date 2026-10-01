@@ -27,6 +27,24 @@ function hashParts(domain, ...parts) {
     return sha256(Buffer.concat(buffers));
 }
 
+function appendNumberRange(ranges, value) {
+    const last = ranges.at(-1);
+    if (last && value === last.last + 1) last.last = value;
+    else if (!last || value > last.last) ranges.push({ first: value, last: value });
+}
+
+function retainRepresentative(values, value, limit = 3) {
+    if (values.length < limit) values.push(value);
+    else values[limit - 1] = value;
+}
+
+function compactContributor(contributor) {
+    return { gameTime: contributor.gameTime, runtimeTick: contributor.runtimeTick,
+        buildId: contributor.buildId, scoreSourceCount: contributor.scoreSources.length,
+        scoreSources: contributor.scoreSources.slice(0, 2), source: contributor.source,
+        abbreviated: contributor.scoreSources.length > 2 };
+}
+
 function scoreOutputNameMatches(record) {
     const prefix = `replay-score-source-${record.replayId}-`;
     if (typeof record.outputPath !== 'string' || !record.outputPath.startsWith(prefix)) return false;
@@ -676,7 +694,7 @@ function compareFrameSnapshot(frame, snapshot) {
     return { comparisons, conflicts };
 }
 
-function establishAlignment(groups, timelines, snapshots, add) {
+function establishAlignment(groups, timelines, snapshots, add, fullDetail) {
     const groupResults = [];
     const snapshotTicks = [...snapshots.keys()].sort((a, b) => a - b);
     for (const group of groups) {
@@ -687,6 +705,8 @@ function establishAlignment(groups, timelines, snapshots, add) {
         const offsets = new Set();
         for (const item of frames) for (const tick of snapshotTicks) offsets.add(tick - item.gameTime);
         const candidates = [];
+        const candidateSummary = { count: 0, offsetRanges: [], representatives: [], abbreviated: true };
+        let soleCandidate = null;
         const rejectedBy = new Set();
         for (const offset of conflicts.length || representationConflicts.length ? [] :
             [...offsets].sort((a, b) => a - b)) {
@@ -721,24 +741,40 @@ function establishAlignment(groups, timelines, snapshots, add) {
                 rejectedBy.add('structural-gap');
                 continue;
             }
-            candidates.push({ offset, matchedTimes: contributors.length, comparisonCount,
-                firstGameTime, lastGameTime, contributors });
+            const candidate = { offset, matchedTimes: contributors.length, comparisonCount,
+                firstGameTime, lastGameTime, contributors };
+            if (fullDetail) candidates.push(candidate);
+            else {
+                candidateSummary.count++;
+                appendNumberRange(candidateSummary.offsetRanges, offset);
+                retainRepresentative(candidateSummary.representatives, {
+                    offset, matchedTimes: contributors.length, comparisonCount,
+                    firstGameTime, lastGameTime, contributorCount: contributors.length,
+                    representativeContributors: contributors.length ? [compactContributor(contributors[0]),
+                        ...contributors.length > 1 ? [compactContributor(contributors.at(-1))] : []] : [],
+                    abbreviated: true,
+                });
+                soleCandidate = candidateSummary.count === 1 ? candidate : null;
+            }
         }
-        const status = candidates.length === 1 ? 'established' : 'unknown';
+        const candidateCount = fullDetail ? candidates.length : candidateSummary.count;
+        const status = candidateCount === 1 ? 'established' : 'unknown';
         const blockedBy = conflicts.length ? ['conflicting-overlap'] : representationConflicts.length ?
             ['conflicting-payload-representation'] : status === 'established' ? [] :
-            candidates.length > 1 ? ['multiple-offsets'] : [...rejectedBy].sort();
+            candidateCount > 1 ? ['multiple-offsets'] : [...rejectedBy].sort();
         groupResults.push({ groupId: group.id, status,
-            offset: status === 'established' ? candidates[0].offset : null, blockedBy, candidates });
+            offset: status === 'established' ? (fullDetail ? candidates[0] : soleCandidate).offset : null,
+            blockedBy, ...(fullDetail ? { candidates } : { candidateSummary, _soleCandidate: soleCandidate }) });
     }
     const establishedOffsets = [...new Set(groupResults.filter(item => item.status === 'established')
         .map(item => item.offset))];
-    const ambiguous = groupResults.some(item => item.candidates.length > 1);
+    const ambiguous = groupResults.some(item => fullDetail ? item.candidates.length > 1 :
+        item.candidateSummary.count > 1);
     const status = establishedOffsets.length === 1 && !ambiguous ? 'established'
         : establishedOffsets.length > 1 ? 'conflicting' : 'unknown';
     const contributors = status === 'established' ? groupResults.filter(item =>
         item.status === 'established' && item.offset === establishedOffsets[0])
-        .flatMap(item => item.candidates[0].contributors)
+        .flatMap(item => (fullDetail ? item.candidates[0] : item._soleCandidate).contributors)
         .filter((item, index, values) => values.findIndex(candidate =>
             canonical(candidate.source) === canonical(item.source)) === index)
         .sort((a, b) => canonical(a).localeCompare(canonical(b))) : [];
@@ -834,7 +870,7 @@ function associateEvents(observations, groups, alignment, mapping, build, snapsh
         const timing = groupAlignment.get(observation.groupId);
         if (!groupMapping.has(observation.groupId) || !timing ||
             !groupById.has(observation.groupId)) continue;
-        const candidate = timing.candidates[0];
+        const candidate = timing.candidates?.[0] ?? timing._soleCandidate;
         if (observation.gameTime < candidate.firstGameTime || observation.gameTime > candidate.lastGameTime) continue;
         const runtimeTick = observation.gameTime + alignment.offset;
         const snapshot = snapshots.get(runtimeTick);
@@ -863,9 +899,136 @@ function associateEvents(observations, groups, alignment, mapping, build, snapsh
     return events;
 }
 
+function numberRanges(values) {
+    const ranges = [];
+    for (const value of [...new Set(values)].sort((a, b) => a - b)) appendNumberRange(ranges, value);
+    return ranges;
+}
+
+function compactRelationship(relationship) {
+    return {
+        type: relationship.type,
+        ...(relationship.groupId === undefined ? {} : { groupId: relationship.groupId }),
+        ...(relationship.gameTime === undefined ? {} : { gameTime: relationship.gameTime }),
+        ...(relationship.segmentIds === undefined ? {} : { segmentIds: relationship.segmentIds }),
+        ...(relationship.groupIds === undefined ? {} : { groupIds: relationship.groupIds }),
+        ...(relationship.reasons === undefined ? {} : { reasons: relationship.reasons }),
+        candidateEdgeCount: relationship.candidateEdges?.length ?? 0,
+        overlapCount: relationship.overlap?.length ?? 0,
+        sharedFrameIdentityCount: relationship.candidateEdges?.reduce((total, edge) =>
+            total + edge.frameIdentities.length, 0) ?? 0,
+    };
+}
+
+function compactRelationships(relationships) {
+    const summaries = new Map();
+    for (const relationship of relationships) {
+        const key = canonical([relationship.type, relationship.reasons ?? []]);
+        const summary = summaries.get(key) ?? { type: relationship.type,
+            ...(relationship.reasons === undefined ? {} : { reasons: relationship.reasons }),
+            count: 0, gameTimes: [], representatives: [], abbreviated: true };
+        summary.count++;
+        if (Number.isSafeInteger(relationship.gameTime)) summary.gameTimes.push(relationship.gameTime);
+        retainRepresentative(summary.representatives, compactRelationship(relationship));
+        summaries.set(key, summary);
+    }
+    return [...summaries.values()].map(({ gameTimes, ...summary }) => ({ ...summary,
+        ...(gameTimes.length ? { gameTimeRanges: numberRanges(gameTimes) } : {}) }))
+        .sort((a, b) => canonical([a.type, a.reasons ?? []])
+            .localeCompare(canonical([b.type, b.reasons ?? []])));
+}
+
+function compactAlignment(alignment) {
+    return {
+        status: alignment.status,
+        offset: alignment.offset,
+        contributorSummary: {
+            count: alignment.contributors.length,
+            gameTimeRanges: numberRanges(alignment.contributors.map(item => item.gameTime)),
+            runtimeTickRanges: numberRanges(alignment.contributors.map(item => item.runtimeTick)),
+            buildIds: [...new Set(alignment.contributors.map(item => item.buildId))]
+                .sort((a, b) => String(a).localeCompare(String(b))),
+            representatives: alignment.contributors.length ? [compactContributor(alignment.contributors[0]),
+                ...alignment.contributors.length > 1 ?
+                    [compactContributor(alignment.contributors.at(-1))] : []] : [],
+            abbreviated: true,
+        },
+        groups: alignment.groups.map(({ _soleCandidate: ignored, ...group }) => group),
+    };
+}
+
+function compactEvents(events) {
+    const representatives = [];
+    for (const event of events) retainRepresentative(representatives, {
+        groupId: event.groupId, gameTime: event.gameTime, runtimeTick: event.runtimeTick,
+        objectiveFlags: event.objectiveFlags,
+        escortDecisionCount: event.escortDecisions.length,
+        escortDecisions: event.escortDecisions.slice(0, 3),
+        scoreEvidenceCount: event.scoreEvidence.length,
+        scoreEvidence: event.scoreEvidence.slice(0, 2),
+        logEvidenceCount: event.logEvidence.length,
+        logEvidence: event.logEvidence.slice(0, 2),
+        abbreviated: event.escortDecisions.length > 3 || event.scoreEvidence.length > 2 ||
+            event.logEvidence.length > 2,
+    });
+    return { count: events.length,
+        gameTimeRanges: numberRanges(events.map(item => item.gameTime)),
+        runtimeTickRanges: numberRanges(events.map(item => item.runtimeTick)),
+        representatives, abbreviated: true };
+}
+
+function compactValidation(validation) {
+    if (!validation) return null;
+    const assessments = validation.items?.assessments ?? [];
+    const { assessments: ignoredAssessments, ...itemSummary } = validation.items ?? {};
+    const issues = validation.issues ?? [];
+    const issueKinds = new Map();
+    for (const issue of issues) issueKinds.set(issue.kind, (issueKinds.get(issue.kind) ?? 0) + 1);
+    return {
+        ...validation,
+        items: { ...itemSummary,
+            assessmentSummary: {
+                count: assessments.length,
+                gameTimeRanges: numberRanges(assessments.map(item => item.gameTime)
+                    .filter(Number.isSafeInteger)),
+                representatives: assessments.length ? [assessments[0],
+                    ...assessments.length > 1 ? [assessments.at(-1)] : []] : [],
+                abbreviated: true,
+            } },
+        issues: { count: issues.length,
+            byKind: Object.fromEntries([...issueKinds].sort(([a], [b]) => a.localeCompare(b))),
+            gameTimeRanges: numberRanges(issues.map(item => item.gameTime).filter(Number.isSafeInteger)),
+            representatives: issues.length ? [issues[0], ...issues.length > 1 ? [issues.at(-1)] : []] : [],
+            abbreviated: true },
+    };
+}
+
+function compactScoring(scoring) {
+    return {
+        sources: scoring.sources.map(source => ({ ...source,
+            validation: compactValidation(source.validation) })),
+        segments: scoring.segments.map(({ frameIdentities, ...segment }) => ({ ...segment,
+            frameIdentityCount: frameIdentities.length,
+            firstFrameIdentity: frameIdentities[0] ?? null,
+            lastFrameIdentity: frameIdentities.at(-1) ?? null,
+            abbreviated: true,
+        })),
+        groups: scoring.groups,
+        relationshipSummary: compactRelationships(scoring.relationships),
+        metadataIdentity: scoring.metadataIdentity,
+        mapping: scoring.mapping,
+        alignment: compactAlignment(scoring.alignment),
+        buildAssociation: scoring.buildAssociation,
+        scoreProgression: scoring.observations.map(({ segmentIds, sourceReferences, ...measurement }) => measurement),
+        comparisons: scoring.comparisons,
+        events: compactEvents(scoring.events),
+        terminal: scoring.terminal,
+    };
+}
+
 export function analyzeScoreEvidence({ directory, manifest, replayId, scoreFingerprints,
     snapshots = new Map(), merged = { byTick: new Map(), complete: new Set() },
-    selectedBuildIds = [], addFinding }) {
+    selectedBuildIds = [], reportMode = 'full', addFinding }) {
     if (!replayIdPattern.test(replayId ?? '')) throw new Error('Expected a verified 24-character replay ID');
     if (!Array.isArray(scoreFingerprints) || !scoreFingerprints.length ||
         scoreFingerprints.some(item => !fingerprintPattern.test(item))) {
@@ -878,7 +1041,7 @@ export function analyzeScoreEvidence({ directory, manifest, replayId, scoreFinge
         for (const fingerprint of requested) add('score.record-selection', 'unknown',
             [{ path: 'replay_logs/manifest.json', scoreFingerprint: fingerprint }],
             'Manifest has no scoreRecords collection; retained score support is unavailable.');
-        return { selectedScoreFingerprints: [], scoring: { sources: [], segments: [], groups: [],
+        const scoring = { sources: [], segments: [], groups: [],
             relationships: [], metadataIdentity: { status: 'unknown', oursSlot: null,
                 opponentSlot: null, slotUsers: null, sources: [] },
             mapping: { status: 'unknown', oursSlot: null, opponentSlot: null },
@@ -886,7 +1049,9 @@ export function analyzeScoreEvidence({ directory, manifest, replayId, scoreFinge
             buildAssociation: { status: 'unknown', logBuildId: null, scoreEmbeddedBuildId: null,
                 supportedBuildIds: [], hasUnknownBuild: false, contributingSnapshots: 0 },
             observations: [], comparisons: [], events: [], terminal: { status: 'unknown', gameTime: null,
-                reason: 'Selected replay-frame sources do not by themselves establish terminal match state.' } } };
+                reason: 'Selected replay-frame sources do not by themselves establish terminal match state.' } };
+        return { selectedScoreFingerprints: [],
+            scoring: reportMode === 'compact' ? compactScoring(scoring) : scoring };
     }
     const selectedRecords = manifest.scoreRecords.filter(record => record?.replayId === replayId &&
         requested.includes(record.fingerprint)).sort((a, b) => a.fingerprint.localeCompare(b.fingerprint));
@@ -908,7 +1073,8 @@ export function analyzeScoreEvidence({ directory, manifest, replayId, scoreFinge
     const metadataIdentity = establishMetadataIdentity(sources, add);
     const mapping = establishMapping(established.groups, measured.timelines, snapshots,
         metadataIdentity, add, selectedBuildIds);
-    const alignment = establishAlignment(established.groups, measured.timelines, snapshots, add);
+    const alignment = establishAlignment(established.groups, measured.timelines, snapshots, add,
+        reportMode === 'full');
     const association = buildAssociation(alignment, add);
     const comparisons = decorateMeasurements(measured.observations, mapping);
     const events = associateEvents(measured.observations, established.groups, alignment, mapping,
@@ -918,9 +1084,7 @@ export function analyzeScoreEvidence({ directory, manifest, replayId, scoreFinge
     add('score.terminal-status', 'unknown', sources.length ? sources.map(source => source.outputRef) :
         [{ path: 'replay_logs/manifest.json' }],
         terminal.reason, terminal);
-    return {
-        selectedScoreFingerprints: selectedRecords.map(item => item.fingerprint).sort(),
-        scoring: {
+    const scoring = {
             sources: selectedRecords.map(record => {
                 const source = sources.find(item => item.record === record);
                 return source ? { fingerprint: record.fingerprint, responseFingerprint: record.responseFingerprint,
@@ -947,6 +1111,9 @@ export function analyzeScoreEvidence({ directory, manifest, replayId, scoreFinge
             comparisons,
             events,
             terminal,
-        },
+        };
+    return {
+        selectedScoreFingerprints: selectedRecords.map(item => item.fingerprint).sort(),
+        scoring: reportMode === 'compact' ? compactScoring(scoring) : scoring,
     };
 }

@@ -15,7 +15,8 @@ Screeps Arena code for the Pain and Gain arena. Armed creeps approach nearby ene
 - `src/debug/game-state.js` writes one JSON game-state snapshot per tick and one map snapshot per match before actions.
 - `tools/replay-logs.js` manages map-linked console evidence and exact replay-score source retention with separate lifecycles.
 - `tools/replay-analysis.js` reads explicitly selected managed log and scoring evidence and emits a deterministic read-only JSON report without changing review lifecycle state.
-- `tests/unit/` contains local decision and action regression tests.
+- `tests/unit/` contains local decision and action regression tests;
+  `tests/benchmarks/` contains bounded synthetic tooling benchmarks.
 - `docs/architecture/`, `docs/decisions/`, and `docs/diagrams/` hold architecture notes, ADRs, and PlantUML diagrams.
 
 Additional strategy, squad, state, and config modules can be added when they have behavior to own.
@@ -182,8 +183,26 @@ score-source fingerprints:
 npm run replay:analyze -- <replay-id> [log-fingerprint...] --score <score-fingerprint...>
 ```
 
-Score selection is always explicit; omitting `--score` preserves the log-only
-report contract. The analyzer verifies exact managed response bytes and stored
+The CLI emits a compact report by default. Append `--full-detail` anywhere after
+the replay ID to reproduce the exhaustive finding/evidence contract:
+
+```sh
+npm run replay:analyze -- <replay-id> [log-fingerprint...] \
+  --score <score-fingerprint...> --full-detail
+```
+
+Score selection is always explicit; omitting `--score` preserves log-only
+analysis. Compact output retains exact selection, coverage, finding totals,
+status/provenance summaries, every scoring measurement and difference, and
+event eligibility. It replaces repeated finding evidence and ambiguous
+alignment contributor chains with exact counts, ranges, stable references, and
+labeled representative samples. Use the same explicit selection with
+`--full-detail` whenever every finding, candidate, observation provenance chain,
+or event record is required. Programmatic callers remain compatible:
+`analyzeReplay()` defaults to `reportMode: "full"` and may explicitly request
+`"compact"`.
+
+The analyzer verifies exact managed response bytes and stored
 Milestone 1 summaries, constructs source-qualified local segments, and groups
 only complete exact-overlap components without same-source boundaries or
 ordering cycles. Ambiguous bridges, unrelated repeated times, conflicts, gaps,
@@ -218,9 +237,11 @@ file-backed and evidence-only records, revalidates raw evidence rather than
 trusting stored summaries, merges canonical overlaps, and emits stable JSON to
 stdout. Its incremental writer awaits each submitted write, rejects output
 errors or premature closure, and never ends a caller-owned stream. The analysis
-and report remain fully materialized in memory; only serialization avoids one
-additional process-sized JSON string. Save or redirect that output separately
-if the review requires a report artifact, then use `examined` and `done` only
+still materializes parsed evidence, timelines, score progression, comparisons,
+and event analysis. Compact mode avoids retaining exhaustive findings and all
+ambiguous-candidate contributor chains; streaming avoids an additional
+process-sized JSON string in both modes. Save or redirect output separately if
+the review requires a report artifact, then use `examined` and `done` only
 through the documented lifecycle.
 
 Every finding identifies its evidence and build provenance and uses `pass`,

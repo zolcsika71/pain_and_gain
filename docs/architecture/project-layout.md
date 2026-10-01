@@ -45,7 +45,8 @@ The explicit `upgrade-map-checksums` command locks the manifest, verifies legacy
 ## Read-only replay analysis
 
 `tools/replay-analysis.js` implements the deterministic M4 analyzer outside the
-Arena runtime. Its importable `analyzeReplay({ root, replayId, fingerprints? })`
+Arena runtime. Its importable
+`analyzeReplay({ root, replayId, fingerprints?, scoreFingerprints?, reportMode? })`
 function and guarded CLI read manifest version 2 directly without invoking the
 importer's migration, reconciliation, review, or cleanup paths. It validates the
 selected record and source metadata, optional JSONL bytes, raw diagnostics,
@@ -60,5 +61,8 @@ are checked against pre-action positions and functioning parts without rerunning
 selectors. Movement displacement and health deltas use only tick-adjacent
 snapshots and are reported without engine-effect causality. The stable JSON
 report also derives sampling-point CPU headroom without treating it as final
-tick CPU or diagnostic overhead, and is written to stdout only. Details and report semantics are in
+tick CPU or diagnostic overhead, and is written to stdout only. The CLI defaults
+to a compact deterministic summary and accepts `--full-detail` for the original
+exhaustive contract; the importable API defaults to full mode for compatibility.
+Details and report semantics are in
 [deterministic replay analysis](replay-analysis.md).
