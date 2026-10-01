@@ -2,7 +2,7 @@
 
 ## Scope and result
 
-This checkpoint records three user-launched matches and partial live validation
+This checkpoint records four user-launched matches and partial live validation
 for the committed healer-escort injury-release refinement. Runtime commit
 `0e6b6dddb8de2ca9aecd9d1bdd08528b119c8932` retains an existing escort when
 only unrelated injured friendlies beyond Chebyshev range five from the assigned
@@ -10,17 +10,18 @@ healer are injured. Partner injuries and other friendly injuries at range five
 or less still release before ordinary action selection. Acquisition remains
 blocked by any friendly injury.
 
-All three matches carry runtime build
+All four matches carry runtime build
 `cc9d4e61eaac6962dde089593d5779d094b8ec58d1ae27c07228f136bccf1f85`,
 which matches that commit. Healer escort was enabled and scout allocation was
-disabled. Capture and analyzer integrity passed for all three attempts. The
-first two never acquired an escort. In the third, an unrelated friendly injury
-at exactly Chebyshev range five released an otherwise continuable escort before
-ordinary movement selection. Ordinary support then approached on ticks 51–52
-and attempted `rangedHeal` with return code 0 on tick 53. That return establishes
-scheduling acceptance, not healing effectiveness. This is partial live
-validation: remote-injury retention beyond five and assigned-partner injury
-release remain unexercised on this build and retain synthetic coverage only.
+disabled. Capture and analyzer integrity passed for all four attempts. The
+first, second, and fourth attempts never acquired an escort. In the third, an
+unrelated friendly injury at exactly Chebyshev range five released an otherwise
+continuable escort before ordinary movement selection. Ordinary support then
+approached on ticks 51–52 and attempted `rangedHeal` with return code 0 on tick
+53. That return establishes scheduling acceptance, not healing effectiveness.
+This is partial live validation: remote-injury retention beyond five and
+assigned-partner injury release remain unexercised on this build and retain
+synthetic coverage only.
 
 ## Replay identity and provenance
 
@@ -393,7 +394,7 @@ records/24,928 bytes, assignment tick 50 at 60/21,745, release tick 51 at
 deduplicated totals are equal. No untyped or runtime-error entry was observed in
 the captured response.
 
-## Three-attempt synthesis
+## Prior three-attempt synthesis
 
 The first and second attempts never acquire an escort. The third attempt
 validates assignment, one accepted escort movement attempt, the inclusive
@@ -408,3 +409,187 @@ build is likewise unexercised. Synthetic tests remain the evidence for those
 branches. Nothing here establishes exact engine effects, prevented damage,
 healing effectiveness, strategic benefit, or win-rate improvement. No further
 match is requested by this checkpoint.
+
+## Fourth attempt — replay `6abd7222b72ca0c20fa0bce2`
+
+### Identity, integrity, and retention
+
+Exact cached game metadata identifies bushdoctor2008 v17 against RICKSTALLION
+v22. The game was created at `2026-09-30T20:33:38.486Z` (22:33:38.486
+Europe/Budapest), is marked finished, and records winner index 0. Metadata maps
+the current user's code to slot 0, so it supports a Victory result. The replay
+was selected from its exact game metadata and request keys rather than timestamp
+or UI ordering.
+
+Sixteen exact `/log/<tick>` responses carry runtime build
+`cc9d4e61eaac6962dde089593d5779d094b8ec58d1ae27c07228f136bccf1f85`
+and cover snapshots and complete version-2 diagnostic closures for ticks
+1–1,535 without gaps, overlaps, duplicates, conflicts, missing closures,
+sequence/count issues, or decision/attempt correlation issues. Metadata reports
+1,536 ticks. The response requested at 1,536 ends at tick 1,535, so tick 1,536
+runtime execution, CPU, closure, state, and timeout status remain unknown.
+
+The active map is
+`pain_and_gain_map_2026-09-30T20-43-09-772Z.json`. Its map ID, registered
+checksum, embedded checksum, and recalculated canonical payload checksum all
+equal `e95bd38626a0c15f123829fb9f55baa8028b0606dd3efd25ca62a785cbc00517`.
+The saved map is 21,376 bytes with file SHA-256
+`14bad09c01600fc380700590799911be1611db60eeddf53538c28d16c53ca090`.
+
+The selected response records are:
+
+| Requested tick | Captured ticks | Fingerprint |
+| ---: | ---: | --- |
+| 100 | 1–100 | `8873d5fd5a11a822b79c9ff9424b77fb846f6f5335947ef5f75173ac907011f0` |
+| 200 | 101–200 | `9cbdcec1847fe3e800851cc376246cbf747b857487f9b9906f5e7bfcbbb9e5cf` |
+| 300 | 201–300 | `b406ec46d6ca87e857c5b344fc20ad44548f656015b20086048d6a81aa3e7cb6` |
+| 400 | 301–400 | `bea1992b7c54e8cc75a75ffd18f2a616d508a98563232c95f0e576524256a2e2` |
+| 500 | 401–500 | `6e6fffba4de6725a80180befc7c0b5f0a265c9fd8c0b627bf5dc67cc894c33d5` |
+| 600 | 501–600 | `459508a4a83c4242337370a4182293e2aac2e8abe29ffdc5b3676908ade385ac` |
+| 700 | 601–700 | `8b0e57ef2e4f1a1136e0fdc38f371d86c9b775017afd8791b0ff58ddd0d1997f` |
+| 800 | 701–800 | `3b283acf963530ac0bc96f44cf8c7725680d408e835d274375f22bd564c79baf` |
+| 900 | 801–900 | `1fd09cfc4ff648c0748710ab9f597e76ca19775f1778c27bc7a3de1c6da6fde3` |
+| 1,000 | 901–1,000 | `8f5ebfc8a97d76213905209935fde23c3e7c32b55e37024074eb1220063e8f42` |
+| 1,100 | 1,001–1,100 | `66b35cb94dee1ad0fd54d570936a61d94989be7cdf4b0a9f37ed023d18e877f2` |
+| 1,200 | 1,101–1,200 | `ac53103795ab29a8e94951dbe6bd8d295a5be4fb4320c4416c19a7bec476dbf5` |
+| 1,300 | 1,201–1,300 | `7a25c70ee74126060c90b0af0165d94fcfaf9b279b24308fd6823f9c8bff61ba` |
+| 1,400 | 1,301–1,400 | `a0d9d9e2ae3a45c4fb2533f704989abc0dd8c79ba55d915bd5bf8b8861a61f8d` |
+| 1,500 | 1,401–1,500 | `db057efe93e3ea0ed2bd0afd1d83e827dadf88082257b2d8fa19db19339a775a` |
+| 1,536 | 1,501–1,535 | `5f912540cfcb1dcb048bb2dbefdf2fa749a963b8b6c56fba87a4d0a8ffd2571c` |
+
+All 16 records are retained under review task
+`codex/healer-escort-refinement-attempt4-910a5f0-20260930`, marked examined
+after this section was saved, and left with `completedAt: null`. Earlier records,
+review owners, and timestamps were preserved. No record was marked done and no
+cleanup was run.
+
+### Analyzer report
+
+The ignored, local-only analyzer report is
+`replay_logs/replay-analysis-6abd7222b72ca0c20fa0bce2-refinement-attempt4-2026-09-30.json`.
+It is 287,494,552 bytes with SHA-256
+`db91f75df6253b0096716986edd0eb9f8c620d715acc0dd1f80fa3c35b337ee3`.
+A repository clone does not include the report or retained inputs. Two analyzer
+runs with the exact fingerprint selection above produced byte-identical output.
+Reproduce without overwriting the retained report:
+
+```sh
+tmp_report=$(mktemp /tmp/healer-escort-refinement-attempt4.XXXXXX.json)
+node tools/replay-analysis.js 6abd7222b72ca0c20fa0bce2 \
+  8873d5fd5a11a822b79c9ff9424b77fb846f6f5335947ef5f75173ac907011f0 \
+  9cbdcec1847fe3e800851cc376246cbf747b857487f9b9906f5e7bfcbbb9e5cf \
+  b406ec46d6ca87e857c5b344fc20ad44548f656015b20086048d6a81aa3e7cb6 \
+  bea1992b7c54e8cc75a75ffd18f2a616d508a98563232c95f0e576524256a2e2 \
+  6e6fffba4de6725a80180befc7c0b5f0a265c9fd8c0b627bf5dc67cc894c33d5 \
+  459508a4a83c4242337370a4182293e2aac2e8abe29ffdc5b3676908ade385ac \
+  8b0e57ef2e4f1a1136e0fdc38f371d86c9b775017afd8791b0ff58ddd0d1997f \
+  3b283acf963530ac0bc96f44cf8c7725680d408e835d274375f22bd564c79baf \
+  1fd09cfc4ff648c0748710ab9f597e76ca19775f1778c27bc7a3de1c6da6fde3 \
+  8f5ebfc8a97d76213905209935fde23c3e7c32b55e37024074eb1220063e8f42 \
+  66b35cb94dee1ad0fd54d570936a61d94989be7cdf4b0a9f37ed023d18e877f2 \
+  ac53103795ab29a8e94951dbe6bd8d295a5be4fb4320c4416c19a7bec476dbf5 \
+  7a25c70ee74126060c90b0af0165d94fcfaf9b279b24308fd6823f9c8bff61ba \
+  a0d9d9e2ae3a45c4fb2533f704989abc0dd8c79ba55d915bd5bf8b8861a61f8d \
+  db057efe93e3ea0ed2bd0afd1d83e827dadf88082257b2d8fa19db19339a775a \
+  5f912540cfcb1dcb048bb2dbefdf2fa749a963b8b6c56fba87a4d0a8ffd2571c \
+  > "$tmp_report"
+shasum -a 256 "$tmp_report"
+```
+
+The report contains 242,590 pass, zero fail, and 42 unknown findings. The
+unknowns are exactly 28 health and 14 movement comparisons at tick 1,535 whose
+next snapshot is unavailable. They do not establish damage, healing, movement
+failure, death, terminal execution, or timeout.
+
+### Escort-policy result
+
+The selected vulnerability flag was neutral through tick 38 and ours from tick
+39 through the captured interval. No owned creep was injured in any captured
+snapshot. Nevertheless, no escort was assigned: on all 1,497 ticks after flag
+ownership, no healthy pure melee was within range five of a living enemy. The
+closest recorded pure-melee/enemy pairing is `pg_player1_melee_3` at (48,50)
+and `pg_player2_melee_1` at (54,59), range nine, at tick 39.
+
+There is therefore no existing escort on which a remote injury could test
+retention and no assigned partner whose injury could test release. Both branches
+remain unexercised and unknown. No independent safety release occurred because
+there was no pair. Across complete action coverage, all 21,490 attempts are
+single `moveTo` calls with return code 0, no actor/tick has duplicate movement
+attempts, and no decision/attempt correlation issue exists. These return codes
+establish scheduling only, not displacement or strategic benefit.
+
+### CPU and diagnostic volume
+
+Every captured tick has one valid CPU sample. Tick 1 records 13,739,233 ns
+against the 1,000,000,000 ns first-tick limit, leaving 986,260,767 ns of
+sampling-point headroom. The 1,534 ordinary samples use the 100,000,000 ns
+limit: minimum 1,900,518 ns at tick 38, median 8,057,383 ns, arithmetic mean
+8,210,588.068 ns, nearest-rank p95 9,561,380 ns, and maximum 45,693,436 ns at
+tick 216. Minimum ordinary sampling-point headroom is 54,306,564 ns.
+
+The 16 non-overlapping responses contain 89,031 retained typed diagnostics and
+32,949,337 UTF-8 bytes including one LF per record. Captured and canonical
+deduplicated totals are equal. Representative sizes are tick 1 at 59
+records/24,928 bytes, tick 10 at 58/21,207, tick 100 at 58/21,407, and tick
+1,535 at 58/21,607. These serialization sizes are not CPU-overhead measurements.
+No untyped or runtime-error entry was observed in the captured responses.
+
+### Verified score evidence in this replay
+
+The installed runtime API definitions expose `ScoreFlag.scorePerTick`, but no
+cumulative player score or per-tick gain. The `/api/game/<replay-id>` metadata
+contains identity, code/version, result, and tick count but no score. The
+selected `/log/<tick>` evidence likewise records flag ownership and
+`scorePerTick`, not cumulative scores or a direct player gain.
+
+The selected replay-frame responses at `/replay/<tick>` do carry direct UI
+evidence. Replay frames have `ui.version: 1`; from `gameTime` 1 through 1,536,
+`ui.items` contains `player1-score` and `player2-score` items named `Score`, and
+`player1-gain` and `player2-gain` items named `Gained this tick`. Frame 0 has no
+score items. During this original investigation, these replay-frame payloads
+were inspected read-only in the Arena cache and had not been imported or
+retained by the then-current managed log workflow, so reproduction depended on
+that cache. Milestone 1 subsequently retained them; current retention and
+supported results are recorded in the
+[published production validation](replay-score-production-validation-2026-10-02.md).
+Game metadata maps bushdoctor2008 v17 to slot 0, while replay objects mark
+`pg_player1_*` as `user: "player1"`; the same IDs are `my: true` in the runtime
+snapshots. Thus `player1` is bushdoctor2008 and `player2` is RICKSTALLION for
+this replay; UI ordering was not assumed.
+
+The original exploratory comparison treated the numerically adjacent replay
+responses as one series and tested the candidate relationship `game-state` tick
+`t` before actions to replay-frame `gameTime t - 1`. Across all 1,535 runtime
+snapshots, it recorded 42,980 creep and 10,745 flag identity, position,
+health/fatigue, owner, and scoring-rate comparisons with zero mismatches. On all
+1,536 score-bearing frames, it also observed that each `Gained this tick` value
+equaled the sum of `scorePerTick` for flags owned by that player in the same
+frame. Its 1,534 transition calculation from `gameTime` 2 through 1,535 found
+that cumulative score delta equaled the destination frame's direct gain for
+both players, but that calculation included transitions across response-source
+boundaries. These remain historical exploratory observations, not validated
+global alignment or supported cross-source derived changes. The later
+source-qualified analysis keeps 17 groups separate, establishes offset `+1`
+only for `gameTime` 1–100, 101–200, and 1,301–1,400, and leaves global timing
+unknown.
+
+At `gameTime` 1,535 the scores are 7,490–19,130 with displayed gains 5–13, and
+the last observed frame at `gameTime` 1,536 repeats the scores while still
+displaying gains 5–13. A displayed gain therefore must not be treated as an
+awarded delta. These are last-observed values, not asserted final scores;
+terminal status remains unknown. Missing frames, frame 0, resets, or
+nonconsecutive frames do not imply zero gain and do not support dividing a
+multi-tick score change. These score observations do not establish global
+timing, cross-source association, causal benefit from flags, escort behavior,
+or any strategy.
+
+## Four-attempt synthesis
+
+The third attempt remains the only live exercise of the refined injury boundary:
+it validates inclusive range-five release and restoration of ordinary support.
+The fourth attempt adds a provenance-matched, complete pre-terminal capture but
+never acquires an escort and contains no injury. Remote-injury retention beyond
+five and assigned-partner injury release therefore remain live-unexercised and
+synthetically covered only. Terminal execution, other safety releases, causality,
+prevented damage, healing effectiveness, strategic benefit, and win-rate effect
+remain unproven. No additional match is requested by this checkpoint.
