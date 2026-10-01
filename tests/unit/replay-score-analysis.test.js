@@ -2,8 +2,9 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { Writable } from 'node:stream';
 import test from 'node:test';
-import { analyzeReplay } from '../../tools/replay-analysis.js';
+import { analyzeReplay, jsonReportChunks, writeJsonReport } from '../../tools/replay-analysis.js';
 import {
     canonical,
     mapChecksum,
@@ -39,6 +40,47 @@ function scoreFrame(gameTime, values = [0, 0, 0, 0], options = {}) {
             : { version: options.uiVersion ?? 1, items: scoreItems(...values) },
         ...(options.marker === undefined ? {} : { marker: options.marker }),
     };
+}
+
+function productionFrame(gameTime, values = [0, 0, 0, 0], options = {}) {
+    const objects = options.objects ?? [
+        { _id: 'p1', prototypeName: 'Creep', type: 'creep', user: 'player1',
+            x: gameTime + 10, y: 10, hits: 100, fatigue: 0 },
+        { _id: 'p2', prototypeName: 'Creep', type: 'creep', user: 'player2',
+            x: gameTime + 20, y: 10, hits: 100, fatigue: 0 },
+        { _id: 'flag', prototypeName: 'ScoreFlag', type: 'flag', user: 'player1',
+            x: 5, y: 5, scorePerTick: 3 },
+    ];
+    return { gameTime, objects,
+        ...(options.flags === undefined ? {} : { flags: options.flags }),
+        ui: { version: 1, items: scoreItems(...values) } };
+}
+
+function productionGameState(tick, frame, oursSlot = 'player1') {
+    const creeps = new Map(frame.objects.filter(item => item.prototypeName === 'Creep')
+        .map(object => [object._id, object]));
+    const flags = new Map(frame.objects.filter(item => item.prototypeName === 'ScoreFlag')
+        .map(flag => [flag._id, flag]));
+    return { type: 'game-state', buildId, tick, phase: 'before-actions', selectedFlagId: 'flag',
+        creeps: [...creeps.values()].map(object => ({
+            id: object._id, my: object.user === oursSlot, x: object.x, y: object.y,
+            hits: object.hits, hitsMax: 100, fatigue: object.fatigue, activeBodyParts: { move: 1 },
+        })),
+        flags: [...flags.values()].map(flag => ({
+            id: flag._id, x: flag.x, y: flag.y, owner: 'me', scorePerTick: flag.scorePerTick,
+            effectType: 'attack',
+        })),
+    };
+}
+
+function productionMetadata(ours = 'user-b') {
+    return { game: { _id: 'game', user: ours,
+        users: [{ _id: 'user-a', username: 'untrusted-a' },
+            { _id: 'user-b', username: 'untrusted-b' }],
+        codes: [{ _id: 'code-a', user: 'user-a', version: 1 },
+            { _id: 'code-b', user: 'user-b', version: 1 }],
+        game: { usersCode: ['code-a', 'code-b'], firstPlayerIndex: 0 },
+    }, ok: 1 };
 }
 
 function gameState(tick, frame, oursSlot = 'player1', stateBuildId = buildId) {
@@ -223,6 +265,7 @@ test('requires explicit score selection and verifies provenance without changing
     const before = snapshotBytes(fixture.directory);
     const report = analyzeReplay({ root: fixture.root, replayId, scoreFingerprints: [fingerprint] });
     assert.deepEqual(snapshotBytes(fixture.directory), before);
+    assert.equal([...jsonReportChunks(report)].join(''), `${JSON.stringify(report, null, 2)}\n`);
     assert.deepEqual(report.selectedScoreFingerprints, [fingerprint]);
     assert.equal(report.scoring.sources[0].embeddedBuildId, null);
     assert.equal(report.scoring.sources[0].integrity, 'verified');
@@ -245,6 +288,57 @@ test('requires explicit score selection and verifies provenance without changing
     assert.ok(findings(legacyReport, 'score.record-selection').some(item => item.verdict === 'unknown'));
 });
 
+test('streams exact JSON with completed writes, backpressure, failures, and caller ownership', async () => {
+    const report = { escaped: 'quote" slash\\ newline\n tab\t snowman ☃',
+        omitted: undefined, sparse: [null, undefined, , false, -0, Number.NaN],
+        rows: Array.from({ length: 5000 }, (_, index) => ({ index, value: `row-${index}` })) };
+    const expected = `${JSON.stringify(report, null, 2)}\n`;
+    const chunks = [];
+    let completedBytes = 0;
+    const slow = new Writable({ highWaterMark: 1024, write(chunk, ignored, callback) {
+        chunks.push(Buffer.from(chunk));
+        setTimeout(() => {
+            completedBytes += chunk.length;
+            callback();
+        }, 1);
+    } });
+    const baselineListeners = { error: slow.listenerCount('error'), close: slow.listenerCount('close') };
+    await writeJsonReport(report, slow);
+    assert.equal(Buffer.concat(chunks).toString(), expected);
+    assert.equal(completedBytes, Buffer.byteLength(expected));
+    assert.equal(slow.writableEnded, false);
+    assert.equal(slow.destroyed, false);
+    assert.equal(slow.listenerCount('error'), baselineListeners.error);
+    assert.equal(slow.listenerCount('close'), baselineListeners.close);
+
+    for (const [highWaterMark, expectedReturn] of [[1024 * 1024, true], [1, false]]) {
+        const returns = [];
+        const failing = new Writable({ highWaterMark, write(chunk, ignored, callback) {
+            setTimeout(() => callback(new Error(`delayed failure ${highWaterMark}`)), 1);
+        } });
+        const write = failing.write;
+        failing.write = function (...args) {
+            const result = write.apply(this, args);
+            returns.push(result);
+            return result;
+        };
+        await assert.rejects(writeJsonReport(report, failing), /delayed failure/);
+        await new Promise(resolve => setImmediate(resolve));
+        assert.equal(returns[0], expectedReturn);
+        assert.equal(failing.listenerCount('error'), 0);
+        assert.equal(failing.listenerCount('close'), 0);
+    }
+
+    const closed = new Writable({ write(chunk, ignored, callback) { callback(); } });
+    closed.destroy();
+    await assert.rejects(writeJsonReport({ ok: true }, closed), /not writable/);
+
+    const premature = new Writable({ write() { setImmediate(() => this.destroy()); } });
+    await assert.rejects(writeJsonReport({ ok: true }, premature), /closed before the write completed/);
+    assert.equal(premature.listenerCount('error'), 0);
+    assert.equal(premature.listenerCount('close'), 0);
+});
+
 test('reports reversed mapping, alignment, direct and derived measurements, terminal differences, and events', t => {
     const frames = [
         scoreFrame(0, [0, 0, 0, 0], { missingItems: true }),
@@ -265,6 +359,7 @@ test('reports reversed mapping, alignment, direct and derived measurements, term
     assert.deepEqual(snapshotBytes(fixture.directory), before);
     assert.equal(report.scoring.mapping.status, 'established');
     assert.equal(report.scoring.mapping.oursSlot, 'player2');
+    assert.equal(report.scoring.metadataIdentity.status, 'unknown');
     assert.equal(report.scoring.alignment.status, 'established');
     assert.equal(report.scoring.alignment.offset, 1);
     assert.equal(report.scoring.buildAssociation.status, 'associated');
@@ -302,6 +397,218 @@ test('reports reversed mapping, alignment, direct and derived measurements, term
     assert.equal(conflictReport.scoring.mapping.status, 'conflicting');
     assert.ok(conflictReport.scoring.comparisons.every(item => item.scoreDifference === null));
     assert.deepEqual(conflictReport.scoring.events, []);
+});
+
+test('supports bounded production-shaped identity, embedded flags, and nested metadata references', t => {
+    const frames = [productionFrame(1, [10, 2, 8, 1]), productionFrame(2, [12, 2, 9, 1])];
+    const fixture = workspace(t, { scoreSources: [
+        { kind: 'game-metadata', body: productionMetadata('user-b') },
+        { body: frames, requestedGameTime: 2 },
+    ], gameStates: frames.map((frame, index) => productionGameState(index + 2, frame, 'player2')) });
+    const before = snapshotBytes(fixture.directory);
+    const report = analyzeReplay({ root: fixture.root, replayId,
+        fingerprints: [fixture.records[0].fingerprint],
+        scoreFingerprints: fixture.scoreRecords.map(item => item.fingerprint) });
+    assert.deepEqual(snapshotBytes(fixture.directory), before);
+    assert.equal(report.scoring.sources.find(item => item.kind === 'game-metadata')
+        .validation.metadata, 'partial');
+    assert.equal(report.scoring.metadataIdentity.status, 'established');
+    assert.equal(report.scoring.metadataIdentity.oursSlot, 'player2');
+    assert.deepEqual(report.scoring.metadataIdentity.slotUsers, ['user-a', 'user-b']);
+    assert.equal(report.scoring.mapping.status, 'established');
+    assert.equal(report.scoring.mapping.oursSlot, 'player2');
+    assert.equal(report.scoring.alignment.status, 'established');
+    assert.equal(report.scoring.alignment.offset, 1);
+    assert.equal(report.scoring.buildAssociation.status, 'associated');
+    assert.ok(report.scoring.observations.filter(item => item.slot === 'player2')
+        .every(item => item.player === 'ours'));
+    assert.equal(report.scoring.comparisons.find(item => item.gameTime === 2).scoreDifference, -3);
+    assert.ok(findings(report, 'score.metadata-identity').some(item => item.verdict === 'pass'));
+});
+
+test('checks every partial snapshot ownership observation against metadata mapping', t => {
+    const frames = [productionFrame(1, [10, 2, 8, 1]), productionFrame(2, [12, 2, 9, 1])];
+    const states = frames.map((frame, index) => {
+        const state = productionGameState(index + 2, frame, 'player2');
+        state.creeps = state.creeps.filter(creep => creep.id === 'p1');
+        return state;
+    });
+    const contradictory = workspace(t, { scoreSources: [
+        { kind: 'game-metadata', body: productionMetadata('user-a') }, { body: frames },
+    ], gameStates: states, diagnostics: actionDiagnostics(2, 'p1') });
+    const before = snapshotBytes(contradictory.directory);
+    const report = analyzeReplay({ root: contradictory.root, replayId,
+        fingerprints: [contradictory.records[0].fingerprint],
+        scoreFingerprints: contradictory.scoreRecords.map(item => item.fingerprint) });
+    assert.deepEqual(snapshotBytes(contradictory.directory), before);
+    assert.equal(report.scoring.metadataIdentity.status, 'established');
+    assert.equal(report.scoring.mapping.status, 'conflicting');
+    assert.ok(report.scoring.comparisons.every(item => item.oursSlot === null &&
+        item.scoreDifference === null));
+    assert.deepEqual(report.scoring.events, []);
+    assert.ok(findings(report, 'score.player-mapping').some(item => item.verdict === 'fail'));
+
+    const agreeingStates = frames.map((frame, index) => {
+        const state = productionGameState(index + 2, frame, 'player1');
+        state.creeps = state.creeps.filter(creep => creep.id === 'p1');
+        return state;
+    });
+    const agreeing = workspace(t, { scoreSources: [
+        { kind: 'game-metadata', body: productionMetadata('user-a') }, { body: frames },
+    ], gameStates: agreeingStates });
+    const agreeingReport = analyzeReplay({ root: agreeing.root, replayId,
+        scoreFingerprints: agreeing.scoreRecords.map(item => item.fingerprint) });
+    assert.equal(agreeingReport.scoring.mapping.status, 'established');
+    assert.equal(agreeingReport.scoring.mapping.oursSlot, 'player1');
+
+    const metadataOnly = workspace(t, { scoreSources: [
+        { kind: 'game-metadata', body: productionMetadata('user-a') }, { body: frames },
+    ] });
+    const metadataOnlyReport = analyzeReplay({ root: metadataOnly.root, replayId,
+        scoreFingerprints: metadataOnly.scoreRecords.map(item => item.fingerprint) });
+    assert.equal(metadataOnlyReport.scoring.mapping.status, 'established');
+    assert.equal(metadataOnlyReport.scoring.mapping.oursSlot, 'player1');
+});
+
+test('keeps nested metadata absent, malformed, duplicate, and conflicting identity evidence explicit', t => {
+    const frame = productionFrame(1);
+    const unknownMetadata = productionMetadata();
+    unknownMetadata.game.codes[1].user = 'user-a';
+    const unknown = workspace(t, { scoreSources: [
+        { kind: 'game-metadata', body: unknownMetadata }, { body: [frame] },
+    ] });
+    const unknownReport = analyzeReplay({ root: unknown.root, replayId,
+        scoreFingerprints: unknown.scoreRecords.map(item => item.fingerprint) });
+    assert.equal(unknownReport.scoring.metadataIdentity.status, 'unknown');
+    assert.equal(unknownReport.scoring.mapping.status, 'unknown');
+
+    const conflictingMetadata = { ...productionMetadata('user-a'), players: ['user-b', 'user-a'] };
+    const conflicting = workspace(t, { scoreSources: [
+        { kind: 'game-metadata', body: conflictingMetadata }, { body: [frame] },
+    ] });
+    const conflictReport = analyzeReplay({ root: conflicting.root, replayId,
+        scoreFingerprints: conflicting.scoreRecords.map(item => item.fingerprint) });
+    assert.equal(conflictReport.scoring.metadataIdentity.status, 'conflicting');
+    assert.equal(conflictReport.scoring.mapping.status, 'conflicting');
+    assert.ok(conflictReport.scoring.observations.every(item => item.player === 'unknown'));
+
+    const dualIdentityMetadata = productionMetadata();
+    dualIdentityMetadata.game.users[0].id = 'different-user';
+    const dualIdentity = workspace(t, { scoreSources: [
+        { kind: 'game-metadata', body: dualIdentityMetadata }, { body: [frame] },
+    ] });
+    const dualIdentityReport = analyzeReplay({ root: dualIdentity.root, replayId,
+        scoreFingerprints: dualIdentity.scoreRecords.map(item => item.fingerprint) });
+    assert.equal(dualIdentityReport.scoring.metadataIdentity.status, 'unknown');
+    assert.equal(dualIdentityReport.scoring.mapping.status, 'unknown');
+
+    const absent = workspace(t, { scoreSources: [{ kind: 'game-metadata', body: { ok: 1 } },
+        { body: [frame] }] });
+    const absentReport = analyzeReplay({ root: absent.root, replayId,
+        scoreFingerprints: absent.scoreRecords.map(item => item.fingerprint) });
+    assert.equal(absentReport.scoring.metadataIdentity.status, 'unknown');
+
+    const malformedRepresentations = [
+        value => { value.players = ['user-a']; },
+        value => { value.users = { unexpected: true }; },
+        value => { value.game.players = ['user-a', '']; },
+    ];
+    for (const mutate of malformedRepresentations) {
+        const malformedMetadata = productionMetadata('user-a');
+        mutate(malformedMetadata);
+        const malformed = workspace(t, { scoreSources: [
+            { kind: 'game-metadata', body: malformedMetadata }, { body: [frame] },
+        ] });
+        const before = snapshotBytes(malformed.directory);
+        const malformedReport = analyzeReplay({ root: malformed.root, replayId,
+            scoreFingerprints: malformed.scoreRecords.map(item => item.fingerprint) });
+        assert.deepEqual(snapshotBytes(malformed.directory), before);
+        assert.equal(malformedReport.scoring.metadataIdentity.status, 'unknown');
+        assert.equal(malformedReport.scoring.mapping.status, 'unknown');
+        assert.ok(malformedReport.scoring.comparisons.every(item => item.oursSlot === null &&
+            item.scoreDifference === null));
+    }
+
+    const consistentMetadata = productionMetadata('user-a');
+    consistentMetadata.players = ['user-a', 'user-b'];
+    const consistent = workspace(t, { scoreSources: [
+        { kind: 'game-metadata', body: consistentMetadata }, { body: [frame] },
+    ] });
+    const consistentReport = analyzeReplay({ root: consistent.root, replayId,
+        scoreFingerprints: consistent.scoreRecords.map(item => item.fingerprint) });
+    assert.equal(consistentReport.scoring.metadataIdentity.status, 'established');
+    assert.equal(consistentReport.scoring.mapping.oursSlot, 'player1');
+});
+
+test('requires coherent object and flag identity representations before dependent conclusions', t => {
+    const coherent = [productionFrame(1), productionFrame(2)];
+    for (const frame of coherent) {
+        for (const object of frame.objects) object.id = object._id;
+        frame.objects.push({ ...frame.objects[0] });
+        frame.flags = [{ id: 'flag', x: 5, y: 5, owner: 'me', scorePerTick: 3 },
+            { id: 'flag', x: 5, y: 5, owner: 'me', scorePerTick: 3 }];
+    }
+    const accepted = workspace(t, { scoreSources: [{ body: coherent }],
+        gameStates: coherent.map((frame, index) => productionGameState(index + 2, frame)) });
+    const acceptedReport = analyzeReplay({ root: accepted.root, replayId,
+        scoreFingerprints: [accepted.scoreRecords[0].fingerprint] });
+    assert.equal(acceptedReport.scoring.alignment.status, 'established');
+
+    const identityConflict = [productionFrame(1), productionFrame(2)];
+    identityConflict[0].objects[0].id = 'different-id';
+    const identityFixture = workspace(t, { scoreSources: [{ body: identityConflict }],
+        gameStates: identityConflict.map((frame, index) => productionGameState(index + 2, frame)) });
+    const identityReport = analyzeReplay({ root: identityFixture.root, replayId,
+        scoreFingerprints: [identityFixture.scoreRecords[0].fingerprint] });
+    assert.equal(identityReport.scoring.mapping.status, 'conflicting');
+    assert.equal(identityReport.scoring.alignment.status, 'unknown');
+    assert.deepEqual(identityReport.scoring.alignment.groups[0].blockedBy,
+        ['conflicting-payload-representation']);
+
+    const flagConflict = [productionFrame(1), productionFrame(2)];
+    flagConflict[0].flags = [{ id: 'flag', x: 6, y: 5, owner: 'me', scorePerTick: 3 }];
+    const flagFixture = workspace(t, { scoreSources: [{ body: flagConflict }],
+        gameStates: flagConflict.map((frame, index) => productionGameState(index + 2, frame)) });
+    const flagReport = analyzeReplay({ root: flagFixture.root, replayId,
+        scoreFingerprints: [flagFixture.scoreRecords[0].fingerprint] });
+    assert.equal(flagReport.scoring.alignment.status, 'unknown');
+    assert.deepEqual(flagReport.scoring.alignment.groups[0].blockedBy,
+        ['conflicting-payload-representation']);
+    assert.deepEqual(flagReport.scoring.events, []);
+});
+
+test('distinguishes absent, empty, malformed, and populated flag representations', t => {
+    const frames = [productionFrame(1, [10, 2, 8, 1]), productionFrame(2, [12, 2, 9, 1])];
+    const states = frames.map((frame, index) => productionGameState(index + 2, frame));
+    for (const flags of [[], { unexpected: true }]) {
+        const simultaneous = frames.map(frame => ({ ...frame, objects: frame.objects.map(item => ({ ...item })),
+            flags }));
+        const fixture = workspace(t, { scoreSources: [
+            { kind: 'game-metadata', body: productionMetadata('user-a') }, { body: simultaneous },
+        ], gameStates: states, diagnostics: actionDiagnostics(2, 'p1') });
+        const before = snapshotBytes(fixture.directory);
+        const report = analyzeReplay({ root: fixture.root, replayId,
+            fingerprints: [fixture.records[0].fingerprint],
+            scoreFingerprints: fixture.scoreRecords.map(item => item.fingerprint) });
+        assert.deepEqual(snapshotBytes(fixture.directory), before);
+        assert.equal(report.scoring.alignment.status, 'unknown');
+        assert.deepEqual(report.scoring.alignment.groups[0].blockedBy,
+            ['conflicting-payload-representation']);
+        assert.deepEqual(report.scoring.events, []);
+        assert.ok(report.scoring.observations.some(item => item.cumulativeScore !== null));
+    }
+
+    const embeddedOnly = workspace(t, { scoreSources: [{ body: frames }], gameStates: states });
+    const embeddedReport = analyzeReplay({ root: embeddedOnly.root, replayId,
+        scoreFingerprints: [embeddedOnly.scoreRecords[0].fingerprint] });
+    assert.equal(embeddedReport.scoring.alignment.status, 'established');
+
+    const topFrames = [scoreFrame(1), scoreFrame(2)];
+    const topOnly = workspace(t, { scoreSources: [{ body: topFrames }],
+        gameStates: topFrames.map((frame, index) => gameState(index + 2, frame)) });
+    const topReport = analyzeReplay({ root: topOnly.root, replayId,
+        scoreFingerprints: [topOnly.scoreRecords[0].fingerprint] });
+    assert.equal(topReport.scoring.alignment.status, 'established');
 });
 
 test('does not carry mapping across unrelated or ambiguous sequence groups', t => {

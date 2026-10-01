@@ -552,6 +552,37 @@ their original payload slot, while derived `ours` and `opponent` labels follow
 the verified mapping. Missing or conflicting mapping leaves slot-level values
 available and ours/opponent differences unknown.
 
+The bounded production compatibility extension recognizes stable `_id` only on
+the observed typed replay-object shape (`prototypeName` and `type`) and on typed
+embedded objects whose `prototypeName` is exactly `ScoreFlag`. The original
+string `id` and top-level `flags` forms remain supported. If `id` and `_id` are
+both present they must be nonempty and equal. Equal normalized duplicates are
+one observation; conflicting duplicates are explicit conflicts. When top-level
+and embedded flags coexist, their ID sets and shared position/score-rate fields
+must agree. An explicit empty top-level collection is present, not absent, and a
+malformed present representation is conflicting. The embedded flag's
+payload-slot `user` is not treated as runtime flag ownership.
+
+The corresponding metadata adapter recognizes only the observed nested `game`
+wrapper with a nonempty current `user`, exactly two uniquely `_id`-identified
+users, exactly two uniquely identified codes that each reference one of those
+users, and exactly two nested `game.usersCode` references with the observed
+`firstPlayerIndex: 0`. Resolving `usersCode[0]` and `[1]` through the code records
+establishes the users for `player1` and `player2`; equality with current `user`
+then establishes ours. It never uses usernames or the order of the `users` or
+`codes` arrays. Simultaneous `id`/`_id` fields and supported legacy identity
+arrays must agree with the resolved graph, and every present legacy identity
+field must be well formed before the graph can establish mapping. Absent,
+malformed, duplicate, unresolved, unsupported, or conflicting forms remain
+unknown or conflicting.
+
+This adapter is analyzer-only: exact bodies and stored Milestone 1 validation
+summaries remain unchanged, including a historical `metadata: partial` result
+for object-shaped metadata. Metadata mapping is scoped to a sequence group only
+when that group independently carries both slot labels, and it must agree with
+every available object-to-snapshot ownership observation for that group,
+including evidence for only one slot.
+
 ## Tick alignment and build association
 
 Alignment is replay-specific derived evidence. At minimum, compare stable object
@@ -992,8 +1023,9 @@ implementation:
    state, never global or log-triggered reconciliation.
 
 The five review findings left no further technical ambiguity at approval time.
-The Arena metadata and UI payload formats are not authoritative public APIs;
-future versions must remain unsupported/unknown until separately validated.
+The Arena metadata and UI payload formats are not authoritative public APIs.
+Only the separately verified production shapes specified above join the original
+format; future variants remain unsupported/unknown until separately validated.
 
 ## Consequences
 

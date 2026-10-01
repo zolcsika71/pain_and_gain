@@ -51,6 +51,13 @@ root. Source cache entries are provenance metadata and are not reopened.
 Reports have `reportVersion`, `replayId`, sorted selected fingerprints, sorted
 findings, and pass/fail/unknown totals. Volatile timestamps and absolute paths
 are excluded. Repeated analysis of unchanged bytes produces identical data.
+The CLI serializes the same two-space-indented JSON incrementally, so a large
+evidence-complete report does not require one process-sized string; no finding,
+candidate, observation, or provenance is omitted or compacted by that writer.
+The analysis and report are still fully materialized before serialization. Each
+submitted write must complete before the next one, output errors and premature
+closure reject the operation, and the writer neither ends nor destroys its
+caller-owned destination.
 When scoring is selected, the report additionally has sorted
 `selectedScoreFingerprints` and `scoring` with source limitations, segments,
 groups, relationships, mapping, alignment, build association, observations,
@@ -172,18 +179,45 @@ breaks that pair without proving a reset; the current observation can begin a
 later consecutive pair. Displayed gain is always direct and may differ from the
 derived change, including repeated-score terminal-style frames.
 
-Version 1 cross-evidence mapping recognizes optional replay-frame `objects`
-entries only when they carry a stable string `id` and an explicit
-`user: "player1"` or `user: "player2"`. Those IDs must agree consistently with
-the `my` field in selected trusted runtime snapshots, with both slots supported
-and opposite. Reversed mapping is valid. Mapping applies only within a local or
-accepted sequence group that independently establishes it; it is not carried
-across an ambiguous or rejected boundary. Missing or conflicting evidence keeps
+Cross-evidence mapping recognizes the original stable string `id` and the
+observed production `_id` only on typed replay objects (`prototypeName` plus
+`type`). If both fields are present, both must be nonempty and equal. Duplicate
+IDs must have identical normalized evidence. An explicit
+`user: "player1"` or `user: "player2"` links each recognized object to a payload
+slot; selected trusted runtime snapshots can then establish ownership through
+the same ID and `my` field, with both slots supported and opposite.
+
+The bounded production metadata adapter separately recognizes only the observed
+`game` wrapper whose current `user`, two `_id`-identified `users`, two uniquely
+identified `codes` with user references, and nested two-entry `game.usersCode`
+form a complete reference chain. It currently requires the observed
+`firstPlayerIndex: 0`; `usersCode[0]` and `[1]` then identify `player1` and
+`player2`. Usernames and array position in `users`/`codes` have no meaning.
+Every present legacy identity array is assessed before mapping: a malformed
+representation prevents establishment, while valid simultaneous arrays must
+exactly agree with the derived slot order. Simultaneous `id`/`_id` fields must
+agree. Absent, malformed, duplicate, unresolved, or conflicting forms remain
+unknown or conflicting.
+This analyzer result is reported as `metadataIdentity`; it neither changes nor
+replaces the retained Milestone 1 validation summary.
+
+Reversed mapping is valid. Metadata-derived mapping applies to a sequence group
+only when that group independently contains both slot labels; snapshot-derived
+and metadata-derived results must agree for every available slot observation,
+including partial snapshot evidence. Mapping is not carried across an
+ambiguous or rejected boundary. Missing or conflicting evidence keeps
 ours/opponent differences unknown.
 
-Alignment compares optional frame `objects` (`id`, position, health, fatigue)
-and flags (`id`, position, ownership, score rate) with selected snapshots. One
-offset must have at least two compared times, no conflicting frame, and no
+Alignment compares normalized frame `objects` (supported identity, position,
+health, fatigue) and flags (identity, position, ownership when present, score
+rate) with selected snapshots. A production flag is an object whose
+`prototypeName` is exactly `ScoreFlag`; its `user` is not reinterpreted as the
+runtime `owner`. Original top-level `flags` remain supported. If both flag
+representations occur, their normalized ID sets and shared fields must agree;
+an explicitly empty representation is present rather than absent, and a
+malformed present representation is conflicting. Identical duplicates
+deduplicate, while conflicts suppress alignment. One offset must have at least
+two compared times, no conflicting frame, and no
 structural frame gap across its supporting interval; zero or multiple fitting
 offsets remain unknown. Each candidate records the exact snapshots and build
 IDs that support it. Mapping and alignment are independent. Build association

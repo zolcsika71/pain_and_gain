@@ -1045,6 +1045,81 @@ export function analyzeReplay({ root = projectRoot, replayId, fingerprints, scor
     return finalReport(state, localId, selectedBuildIds);
 }
 
+function* jsonValueChunks(value, depth) {
+    if (value === null || typeof value !== 'object') {
+        yield JSON.stringify(value) ?? 'null';
+        return;
+    }
+    const indentation = '  '.repeat(depth);
+    const childIndentation = '  '.repeat(depth + 1);
+    if (Array.isArray(value)) {
+        yield '[';
+        for (const [index, item] of value.entries()) {
+            yield `${index ? ',\n' : '\n'}${childIndentation}`;
+            yield* jsonValueChunks(item, depth + 1);
+        }
+        if (value.length) yield `\n${indentation}`;
+        yield ']';
+        return;
+    }
+    const entries = Object.entries(value).filter(([, item]) =>
+        !['undefined', 'function', 'symbol'].includes(typeof item));
+    yield '{';
+    for (const [index, [key, item]] of entries.entries()) {
+        yield `${index ? ',\n' : '\n'}${childIndentation}${JSON.stringify(key)}: `;
+        yield* jsonValueChunks(item, depth + 1);
+    }
+    if (entries.length) yield `\n${indentation}`;
+    yield '}';
+}
+
+export function* jsonReportChunks(report) {
+    yield* jsonValueChunks(report, 0);
+    yield '\n';
+}
+
+function writeChunk(writable, chunk) {
+    if (writable.destroyed || writable.closed || writable.writableEnded || writable.writableFinished) {
+        return Promise.reject(new Error('Output stream is not writable'));
+    }
+    return new Promise((resolve, reject) => {
+        let settled = false;
+        const cleanup = () => {
+            writable.off('error', onError);
+            writable.off('close', onClose);
+        };
+        const finish = error => {
+            if (settled) return;
+            settled = true;
+            cleanup();
+            if (error) reject(error);
+            else resolve();
+        };
+        const onError = error => finish(error);
+        const onClose = () => finish(new Error('Output stream closed before the write completed'));
+        writable.once('error', onError);
+        writable.once('close', onClose);
+        try {
+            writable.write(chunk, error => {
+                if (!error) finish();
+            });
+        } catch (error) {
+            finish(error);
+        }
+    });
+}
+
+export async function writeJsonReport(report, writable = process.stdout) {
+    let buffered = '';
+    for (const chunk of jsonReportChunks(report)) {
+        buffered += chunk;
+        if (buffered.length < 64 * 1024) continue;
+        await writeChunk(writable, buffered);
+        buffered = '';
+    }
+    if (buffered) await writeChunk(writable, buffered);
+}
+
 async function main() {
     const [replayId, ...args] = process.argv.slice(2);
     if (!replayId) throw new Error(
@@ -1056,7 +1131,7 @@ async function main() {
     if (marker >= 0 && !scoreFingerprints.length) throw new Error('--score requires at least one fingerprint');
     const report = analyzeReplay({ root: projectRoot, replayId,
         fingerprints: fingerprints.length ? fingerprints : undefined, scoreFingerprints });
-    console.log(JSON.stringify(report, null, 2));
+    await writeJsonReport(report);
     if (report.summary.fail) process.exitCode = 1;
 }
 

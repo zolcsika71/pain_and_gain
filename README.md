@@ -192,8 +192,17 @@ and decreases remain explicit and suppress only dependent conclusions.
 Direct `cumulativeScore` and `displayedGain` remain distinct. A
 `derivedScoreChange` is emitted only for consecutive compatible observations;
 its status explains initial, gap, missing-score, conflict, decrease, or derived
-continuity. Ours/opponent labels require stable replay-object IDs whose
-`user: "player1"`/`"player2"` slots agree with selected runtime snapshots.
+continuity. Ours/opponent labels require stable replay-object identities whose
+`user: "player1"`/`"player2"` slots agree with selected runtime snapshots or
+with the separately validated production metadata reference chain. The analyzer
+accepts `_id` only on the documented typed production object/`ScoreFlag` shapes;
+simultaneous identity or flag representations must agree, including explicit
+empty collections, while malformed present representations keep dependent
+results unknown or conflicting. Nested metadata uses
+current-user, user, code, and `usersCode` references, never usernames or raw
+array position, and applies only to groups that independently contain both slot
+labels. This analyzer compatibility result does not rewrite the retained source
+or its stored validation summary.
 Tick alignment independently requires exactly one offset supported by at least
 two matching frame/snapshot pairs without a structural gap or conflicting frame
 across the supporting interval. Build association comes only from the snapshots
@@ -207,8 +216,12 @@ The analyzer reads `manifest.json` directly; it does not call `list`,
 reconcile cleanup, change claims/checkpoints, or write a report file. It supports
 file-backed and evidence-only records, revalidates raw evidence rather than
 trusting stored summaries, merges canonical overlaps, and emits stable JSON to
-stdout. Save or redirect that output separately if the review requires a report
-artifact, then use `examined` and `done` only through the documented lifecycle.
+stdout. Its incremental writer awaits each submitted write, rejects output
+errors or premature closure, and never ends a caller-owned stream. The analysis
+and report remain fully materialized in memory; only serialization avoids one
+additional process-sized JSON string. Save or redirect that output separately
+if the review requires a report artifact, then use `examined` and `done` only
+through the documented lifecycle.
 
 Every finding identifies its evidence and build provenance and uses `pass`,
 `fail`, or `unknown`. M2 closures support membership only; legacy evidence keeps

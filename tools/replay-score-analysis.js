@@ -127,6 +127,100 @@ function directForFrame(validation, frameIndex) {
     return direct;
 }
 
+function objectIdentity(value, productionShape = false) {
+    if (!plainObject(value)) return { id: null, conflict: false };
+    const hasId = Object.hasOwn(value, 'id');
+    const hasUnderscoreId = Object.hasOwn(value, '_id');
+    const id = typeof value.id === 'string' && value.id.length ? value.id : null;
+    const underscoreId = typeof value._id === 'string' && value._id.length ? value._id : null;
+    if (hasId && hasUnderscoreId) {
+        if (!id || !underscoreId || id !== underscoreId) return { id: null, conflict: true };
+        return { id, conflict: false };
+    }
+    if (hasId) return { id, conflict: !id };
+    if (hasUnderscoreId) return productionShape && underscoreId ?
+        { id: underscoreId, conflict: false } : { id: null, conflict: true };
+    return { id: null, conflict: false };
+}
+
+function normalizedCollection(values, normalize, kind) {
+    const byId = new Map();
+    const conflicts = [];
+    for (const value of values) {
+        const item = normalize(value);
+        if (item?.conflict) {
+            conflicts.push(`${kind}-identity`);
+            continue;
+        }
+        if (!item?.value) continue;
+        const prior = byId.get(item.value.id);
+        if (prior && canonical(prior) !== canonical(item.value)) conflicts.push(`${kind}-duplicate`);
+        else if (!prior) byId.set(item.value.id, item.value);
+    }
+    return { values: [...byId.values()].sort((a, b) => a.id.localeCompare(b.id)), conflicts };
+}
+
+function normalizeReplayObject(object) {
+    if (!plainObject(object) || object.prototypeName === 'ScoreFlag') return null;
+    const productionShape = typeof object.prototypeName === 'string' && object.prototypeName.length > 0 &&
+        typeof object.type === 'string' && object.type.length > 0;
+    const identity = objectIdentity(object, productionShape);
+    if (identity.conflict) return { conflict: true };
+    if (!identity.id) return null;
+    const value = { id: identity.id };
+    for (const field of ['user', 'x', 'y', 'hits', 'fatigue']) if (Object.hasOwn(object, field)) {
+        value[field] = object[field];
+    }
+    return { value };
+}
+
+function normalizeFlag(flag, embedded) {
+    if (embedded && (!plainObject(flag) || flag.prototypeName !== 'ScoreFlag')) return null;
+    if (!plainObject(flag)) return { conflict: true };
+    const productionShape = embedded && flag.prototypeName === 'ScoreFlag' &&
+        typeof flag.type === 'string' && flag.type.length > 0;
+    const identity = objectIdentity(flag, productionShape);
+    if (identity.conflict) return { conflict: true };
+    if (!identity.id) return { conflict: true };
+    const value = { id: identity.id };
+    for (const field of ['x', 'y', 'scorePerTick']) if (Object.hasOwn(flag, field)) value[field] = flag[field];
+    if (!embedded && Object.hasOwn(flag, 'owner')) value.owner = flag.owner;
+    return { value };
+}
+
+function normalizeFrameEvidence(frame) {
+    const objects = normalizedCollection(Array.isArray(frame.objects) ? frame.objects : [],
+        normalizeReplayObject, 'object');
+    const topFlagsPresent = Object.hasOwn(frame, 'flags');
+    const embeddedFlagsPresent = Array.isArray(frame.objects) && frame.objects.some(item =>
+        plainObject(item) && item.prototypeName === 'ScoreFlag');
+    const topFlags = normalizedCollection(Array.isArray(frame.flags) ? frame.flags : [],
+        value => normalizeFlag(value, false), 'flag');
+    const embeddedFlags = normalizedCollection(Array.isArray(frame.objects) ? frame.objects : [],
+        value => normalizeFlag(value, true), 'embedded-flag');
+    const conflicts = [...objects.conflicts, ...topFlags.conflicts, ...embeddedFlags.conflicts];
+    if (topFlagsPresent && !Array.isArray(frame.flags)) conflicts.push('flag-representations');
+    let flags = topFlagsPresent ? topFlags.values : embeddedFlags.values;
+    if (topFlagsPresent && embeddedFlagsPresent) {
+        const topById = new Map(topFlags.values.map(item => [item.id, item]));
+        const embeddedById = new Map(embeddedFlags.values.map(item => [item.id, item]));
+        if (canonical([...topById.keys()].sort()) !== canonical([...embeddedById.keys()].sort())) {
+            conflicts.push('flag-representations');
+        } else {
+            for (const [id, embedded] of embeddedById) {
+                const top = topById.get(id);
+                for (const field of ['x', 'y', 'scorePerTick']) if (Object.hasOwn(top, field) &&
+                    Object.hasOwn(embedded, field) && top[field] !== embedded[field]) {
+                    conflicts.push('flag-representations');
+                    break;
+                }
+            }
+        }
+        flags = topFlags.values;
+    }
+    return { objects: objects.values, flags, conflicts: [...new Set(conflicts)].sort() };
+}
+
 function makeSegments(source) {
     if (source.record.kind !== 'replay-frames' || !Array.isArray(source.value)) return [];
     const segments = [];
@@ -154,6 +248,7 @@ function makeSegments(source) {
         if (current.length && frame.gameTime < current.at(-1).gameTime) finish();
         const canonicalFrame = canonical(frame);
         current.push({ frameIndex, gameTime: frame.gameTime, frame, canonicalFrame,
+            normalized: normalizeFrameEvidence(frame),
             identity: hashParts(overlapDomain, canonicalFrame),
             direct: directForFrame(source.recomputed.validation, frameIndex),
             source: { path: `replay_logs/${source.record.outputPath}`,
@@ -395,21 +490,104 @@ function addAmbiguousSegments(groups, timelines, relationships, add) {
     }
 }
 
-function establishMapping(groups, timelines, snapshots, add, buildIds) {
+function legacyIdentityRepresentations(value) {
+    const candidates = [
+        { present: plainObject(value) && Object.hasOwn(value, 'players'), value: value?.players },
+        { present: plainObject(value) && Object.hasOwn(value, 'users'), value: value?.users },
+        { present: plainObject(value?.game) && Object.hasOwn(value.game, 'players'),
+            value: value?.game?.players },
+    ];
+    return candidates.filter(item => item.present).map(item => ({
+        status: Array.isArray(item.value) && item.value.length === 2 &&
+            item.value.every(entry => typeof entry === 'string' && entry.length) ? 'valid' : 'malformed',
+        value: item.value,
+    }));
+}
+
+function nestedMetadataIdentity(value) {
+    const wrapper = value?.game;
+    if (!plainObject(wrapper) || !Object.hasOwn(wrapper, 'user') && !Object.hasOwn(wrapper, 'users') &&
+        !Object.hasOwn(wrapper, 'codes') && !plainObject(wrapper.game)) return { status: 'absent' };
+    const currentUser = typeof wrapper.user === 'string' && wrapper.user.length ? wrapper.user : null;
+    const users = Array.isArray(wrapper.users) ? wrapper.users : [];
+    const codes = Array.isArray(wrapper.codes) ? wrapper.codes : [];
+    const usersCode = Array.isArray(wrapper.game?.usersCode) ? wrapper.game.usersCode : [];
+    if (!currentUser || users.length !== 2 || codes.length !== 2 || usersCode.length !== 2 ||
+        wrapper.game?.firstPlayerIndex !== 0) return { status: 'unknown', reason: 'unsupported-shape' };
+    const nestedId = item => {
+        if (!plainObject(item) || typeof item._id !== 'string' || !item._id.length) return null;
+        if (Object.hasOwn(item, 'id') && (typeof item.id !== 'string' || item.id !== item._id)) return null;
+        return item._id;
+    };
+    const userIds = users.map(nestedId);
+    const codeEntries = codes.map(item => {
+        const id = nestedId(item);
+        return id && typeof item.user === 'string' && item.user.length ? { id, user: item.user } : null;
+    });
+    if (userIds.includes(null) || codeEntries.includes(null) ||
+        new Set(userIds).size !== 2 || new Set(codeEntries.map(item => item.id)).size !== 2 ||
+        new Set(codeEntries.map(item => item.user)).size !== 2 || new Set(usersCode).size !== 2 ||
+        !userIds.includes(currentUser) || codeEntries.some(item => !userIds.includes(item.user))) {
+        return { status: 'unknown', reason: 'invalid-references' };
+    }
+    const codeById = new Map(codeEntries.map(item => [item.id, item.user]));
+    const slotUsers = usersCode.map(codeId => codeById.get(codeId) ?? null);
+    if (slotUsers.includes(null) || new Set(slotUsers).size !== 2) {
+        return { status: 'unknown', reason: 'invalid-slot-references' };
+    }
+    const legacy = legacyIdentityRepresentations(value);
+    if (legacy.some(item => item.status === 'malformed')) {
+        return { status: 'unknown', reason: 'malformed-identity-representation', slotUsers };
+    }
+    if (legacy.some(item => canonical(item.value) !== canonical(slotUsers))) {
+        return { status: 'conflicting', reason: 'identity-representations-disagree', slotUsers };
+    }
+    const oursSlot = slotUsers.indexOf(currentUser) === 0 ? 'player1' : 'player2';
+    return { status: 'established', oursSlot,
+        opponentSlot: oursSlot === 'player1' ? 'player2' : 'player1', slotUsers };
+}
+
+function establishMetadataIdentity(sources, add) {
+    const entries = sources.filter(source => source.record.kind === 'game-metadata').map(source => ({
+        result: nestedMetadataIdentity(source.value), source: source.outputRef,
+    }));
+    const established = entries.filter(item => item.result.status === 'established');
+    const explicitConflict = entries.some(item => item.result.status === 'conflicting');
+    const signatures = [...new Set(established.map(item => canonical({ oursSlot: item.result.oursSlot,
+        slotUsers: item.result.slotUsers })))];
+    const status = explicitConflict || signatures.length > 1 ? 'conflicting' :
+        signatures.length === 1 ? 'established' : 'unknown';
+    const selected = status === 'established' ? established[0].result : null;
+    const result = { status, oursSlot: selected?.oursSlot ?? null,
+        opponentSlot: selected?.opponentSlot ?? null, slotUsers: selected?.slotUsers ?? null,
+        sources: entries.map(item => ({ ...item.result, source: item.source })) };
+    add('score.metadata-identity', status === 'established' ? 'pass' :
+        status === 'conflicting' ? 'fail' : 'unknown', entries.length ? entries.map(item => item.source) :
+        [{ path: 'replay_logs/manifest.json' }], status === 'established' ?
+        'Validated nested metadata references establish current-user payload-slot ownership.' :
+        status === 'conflicting' ? 'Selected metadata identity representations conflict.' :
+        'Selected metadata does not establish current-user payload-slot ownership.', result, [null]);
+    return result;
+}
+
+function establishMapping(groups, timelines, snapshots, metadataIdentity, add, buildIds) {
     const groupResults = [];
     const refs = [];
     for (const group of groups) {
         const evidenceBySlot = new Map(slotNames.map(slot => [slot, []]));
+        let representationConflict = false;
         for (const item of timelines.get(group.id) ?? []) {
-            if (item.conflict || !Array.isArray(item.frame.frame.objects)) continue;
-            for (const object of item.frame.frame.objects) if (plainObject(object) &&
-                typeof object.id === 'string' && slotNames.includes(object.user)) {
+            if (item.conflict) continue;
+            if (item.frame.normalized.conflicts.some(reason => reason.startsWith('object-'))) {
+                representationConflict = true;
+            }
+            for (const object of item.frame.normalized.objects) if (slotNames.includes(object.user)) {
                 evidenceBySlot.get(object.user).push({ id: object.id, source: item.frame.source });
             }
         }
         const slotValues = new Map(slotNames.map(slot => [slot, new Set()]));
         const groupRefs = [];
-        let objectConflict = false;
+        let objectConflict = representationConflict;
         for (const slot of slotNames) {
             const byId = new Map();
             for (const item of evidenceBySlot.get(slot)) {
@@ -439,6 +617,21 @@ function establishMapping(groups, timelines, snapshots, add, buildIds) {
             status = 'established';
             oursSlot = [...first][0] ? 'player1' : 'player2';
         }
+        const hasBothLocalSlots = slotNames.every(slot => evidenceBySlot.get(slot).length > 0);
+        if (metadataIdentity.status === 'conflicting' && hasBothLocalSlots) status = 'conflicting';
+        else if (metadataIdentity.status === 'established' && hasBothLocalSlots) {
+            const metadataContradiction = slotNames.some(slot => [...slotValues.get(slot)]
+                .some(value => value !== (slot === metadataIdentity.oursSlot)));
+            if (metadataContradiction || status === 'established' &&
+                oursSlot !== metadataIdentity.oursSlot) status = 'conflicting';
+            else if (status === 'unknown') {
+                status = 'established';
+                oursSlot = metadataIdentity.oursSlot;
+            }
+            groupRefs.push(...metadataIdentity.sources.filter(item => item.status === 'established')
+                .map(item => item.source));
+        }
+        if (status === 'conflicting') oursSlot = null;
         refs.push(...groupRefs);
         groupResults.push({ groupId: group.id, status, oursSlot,
             opponentSlot: oursSlot === 'player1' ? 'player2' : oursSlot === 'player2' ? 'player1' : null });
@@ -453,7 +646,7 @@ function establishMapping(groups, timelines, snapshots, add, buildIds) {
         groups: groupResults.sort((a, b) => a.groupId.localeCompare(b.groupId)) };
     add('score.player-mapping', status === 'established' ? 'pass' : status === 'conflicting' ? 'fail' : 'unknown',
         refs.length ? refs : [{ path: 'replay_logs/manifest.json' }], status === 'established' ?
-            'Stable replay object IDs and selected snapshots establish payload-slot ownership.' :
+            'Validated metadata references and/or stable replay object IDs establish payload-slot ownership.' :
             status === 'conflicting' ? 'Selected identity evidence gives conflicting payload-slot ownership.' :
                 'Selected evidence is insufficient to map payload slots to ours/opponent.', result, buildIds);
     return result;
@@ -462,26 +655,22 @@ function establishMapping(groups, timelines, snapshots, add, buildIds) {
 function compareFrameSnapshot(frame, snapshot) {
     let comparisons = 0;
     let conflicts = 0;
-    if (Array.isArray(frame.objects)) {
-        const creeps = new Map(snapshot.creeps.map(item => [item.id, item]));
-        for (const object of frame.objects) {
-            const creep = creeps.get(object?.id);
-            if (!creep) continue;
-            for (const field of ['x', 'y', 'hits', 'fatigue']) if (Object.hasOwn(object, field)) {
-                comparisons++;
-                if (object[field] !== creep[field]) conflicts++;
-            }
+    const creeps = new Map(snapshot.creeps.map(item => [item.id, item]));
+    for (const object of frame.objects) {
+        const creep = creeps.get(object.id);
+        if (!creep) continue;
+        for (const field of ['x', 'y', 'hits', 'fatigue']) if (Object.hasOwn(object, field)) {
+            comparisons++;
+            if (object[field] !== creep[field]) conflicts++;
         }
     }
-    if (Array.isArray(frame.flags)) {
-        const flags = new Map(snapshot.flags.map(item => [item.id, item]));
-        for (const flag of frame.flags) {
-            const observed = flags.get(flag?.id);
-            if (!observed) continue;
-            for (const field of ['x', 'y', 'owner', 'scorePerTick']) if (Object.hasOwn(flag, field)) {
-                comparisons++;
-                if (flag[field] !== observed[field]) conflicts++;
-            }
+    const flags = new Map(snapshot.flags.map(item => [item.id, item]));
+    for (const flag of frame.flags) {
+        const observed = flags.get(flag.id);
+        if (!observed) continue;
+        for (const field of ['x', 'y', 'owner', 'scorePerTick']) if (Object.hasOwn(flag, field)) {
+            comparisons++;
+            if (flag[field] !== observed[field]) conflicts++;
         }
     }
     return { comparisons, conflicts };
@@ -494,18 +683,20 @@ function establishAlignment(groups, timelines, snapshots, add) {
         const timeline = timelines.get(group.id) ?? [];
         const conflicts = timeline.filter(item => item.conflict);
         const frames = timeline.filter(item => !item.conflict);
+        const representationConflicts = frames.filter(item => item.frame.normalized.conflicts.length);
         const offsets = new Set();
         for (const item of frames) for (const tick of snapshotTicks) offsets.add(tick - item.gameTime);
         const candidates = [];
         const rejectedBy = new Set();
-        for (const offset of conflicts.length ? [] : [...offsets].sort((a, b) => a - b)) {
+        for (const offset of conflicts.length || representationConflicts.length ? [] :
+            [...offsets].sort((a, b) => a - b)) {
             let comparisonCount = 0;
             let conflictCount = 0;
             const contributors = [];
             for (const item of frames) {
                 const snapshot = snapshots.get(item.gameTime + offset);
                 if (!snapshot) continue;
-                const compared = compareFrameSnapshot(item.frame.frame, snapshot.entry);
+                const compared = compareFrameSnapshot(item.frame.normalized, snapshot.entry);
                 if (!compared.comparisons) continue;
                 comparisonCount += compared.comparisons;
                 conflictCount += compared.conflicts;
@@ -534,7 +725,8 @@ function establishAlignment(groups, timelines, snapshots, add) {
                 firstGameTime, lastGameTime, contributors });
         }
         const status = candidates.length === 1 ? 'established' : 'unknown';
-        const blockedBy = conflicts.length ? ['conflicting-overlap'] : status === 'established' ? [] :
+        const blockedBy = conflicts.length ? ['conflicting-overlap'] : representationConflicts.length ?
+            ['conflicting-payload-representation'] : status === 'established' ? [] :
             candidates.length > 1 ? ['multiple-offsets'] : [...rejectedBy].sort();
         groupResults.push({ groupId: group.id, status,
             offset: status === 'established' ? candidates[0].offset : null, blockedBy, candidates });
@@ -687,7 +879,9 @@ export function analyzeScoreEvidence({ directory, manifest, replayId, scoreFinge
             [{ path: 'replay_logs/manifest.json', scoreFingerprint: fingerprint }],
             'Manifest has no scoreRecords collection; retained score support is unavailable.');
         return { selectedScoreFingerprints: [], scoring: { sources: [], segments: [], groups: [],
-            relationships: [], mapping: { status: 'unknown', oursSlot: null, opponentSlot: null },
+            relationships: [], metadataIdentity: { status: 'unknown', oursSlot: null,
+                opponentSlot: null, slotUsers: null, sources: [] },
+            mapping: { status: 'unknown', oursSlot: null, opponentSlot: null },
             alignment: { status: 'unknown', offset: null, contributors: [], groups: [] },
             buildAssociation: { status: 'unknown', logBuildId: null, scoreEmbeddedBuildId: null,
                 supportedBuildIds: [], hasUnknownBuild: false, contributingSnapshots: 0 },
@@ -711,7 +905,9 @@ export function analyzeScoreEvidence({ directory, manifest, replayId, scoreFinge
     const measured = observationsForGroups(established.groups, add);
     addAmbiguousSegments(established.groups, measured.timelines, established.relationships, add);
     established.relationships.sort((a, b) => canonical(a).localeCompare(canonical(b)));
-    const mapping = establishMapping(established.groups, measured.timelines, snapshots, add, selectedBuildIds);
+    const metadataIdentity = establishMetadataIdentity(sources, add);
+    const mapping = establishMapping(established.groups, measured.timelines, snapshots,
+        metadataIdentity, add, selectedBuildIds);
     const alignment = establishAlignment(established.groups, measured.timelines, snapshots, add);
     const association = buildAssociation(alignment, add);
     const comparisons = decorateMeasurements(measured.observations, mapping);
@@ -743,6 +939,7 @@ export function analyzeScoreEvidence({ directory, manifest, replayId, scoreFinge
                 frameCount: frames.length, frameIdentities: frames.map(item => item.identity) })),
             groups: established.groups.map(({ segments: ignored, ...group }) => group),
             relationships: established.relationships,
+            metadataIdentity,
             mapping,
             alignment,
             buildAssociation: association,

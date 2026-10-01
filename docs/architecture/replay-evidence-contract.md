@@ -511,6 +511,29 @@ score filename must match its record identity and have unique ownership. Newly
 published final paths are rechecked as regular non-symlink files with the exact
 byte count and hash before the record can enter `claim`.
 
+Milestone 2 applies a separate, read-only production compatibility adapter after
+the stored summaries have been revalidated. The adapter accepts `_id` only for
+the observed typed replay-object and embedded `ScoreFlag` shapes; the original
+`id` and top-level `flags` forms remain supported. Equal duplicate identities
+deduplicate. Conflicting duplicates, unequal simultaneous `id`/`_id`, or
+disagreeing top-level and embedded flag representations suppress dependent
+mapping or alignment. Presence is structural: an explicit empty top-level array
+must agree with any embedded flag set, and a malformed present representation is
+not treated as absent.
+
+The observed nested metadata form is supported only when the current-user ID,
+two user `_id` values, two unique code-to-user references, and the nested
+two-entry `usersCode` list form one complete graph with `firstPlayerIndex: 0`.
+The two `usersCode` entries identify `player1` and `player2` in order. Usernames
+and `users`/`codes` array positions are not identity evidence. Duplicate,
+unresolved, malformed, or conflicting references remain unknown; simultaneous
+supported identity arrays must agree exactly, and every present legacy identity
+field must be well formed before nested metadata can establish mapping. Partial
+object-to-snapshot ownership observations must also agree with metadata, even
+when the snapshots do not establish both slots. This analysis result never
+upgrades, rewrites, or invalidates the retention validator's historical
+`metadata: partial` summary for the object-shaped payload.
+
 ## M4 analyzer requirements
 
 `tools/replay-analysis.js` reads manifest version 2 directly and never invokes
