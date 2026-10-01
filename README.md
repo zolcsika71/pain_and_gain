@@ -13,7 +13,8 @@ Screeps Arena code for the Pain and Gain arena. Armed creeps approach nearby ene
 - `src/arena/execute.js` issues movement and tactical actions for each owned creep.
 - `src/tactics/` checks functioning body parts, chooses deterministic targets, selects movement, and selects compatible healing and combat actions.
 - `src/debug/game-state.js` writes one JSON game-state snapshot per tick and one map snapshot per match before actions.
-- `tools/replay-analysis.js` reads already managed replay evidence and emits a deterministic read-only JSON report without changing review lifecycle state.
+- `tools/replay-logs.js` manages map-linked console evidence and exact replay-score source retention with separate lifecycles.
+- `tools/replay-analysis.js` reads already managed replay evidence and emits a deterministic read-only JSON report without changing review lifecycle state; scoring analysis is not implemented.
 - `tests/unit/` contains local decision and action regression tests.
 - `docs/architecture/`, `docs/decisions/`, and `docs/diagrams/` hold architecture notes, ADRs, and PlantUML diagrams.
 
@@ -105,6 +106,64 @@ node tools/replay-logs.js claim <replay-id> <fingerprint> <codex-task-id>
 node tools/replay-logs.js examined <replay-id> <fingerprint> <codex-task-id>
 node tools/replay-logs.js done <replay-id> <fingerprint> <codex-task-id>
 ```
+
+### Managed replay-score sources
+
+ADR 0005 Milestone 1 adds optional manifest-version-2 `scoreRecords` and
+map-independent `retiredScoreSources`. These collections are separate from log
+`records`: score sources do not imply game-state, diagnostic, map, or runtime
+build evidence. Existing log writers round-trip the optional collections, while
+log `list`, `scan`, `watch`, reconciliation, and cleanup neither display nor
+manage them.
+
+Import one explicitly identified Chromium cache file with `score-import`. The
+only supported request keys are the exact Arena game-metadata URL and
+`/replay/<game-time>` URL. Complete version-5 gzip transport is required; the
+reader verifies the framed streams, EOF records, CRC-32 values, key hash when
+present, one coherent HTTP status/header block, and any present HTTP content
+length. The managed artifact is the exact
+decompressed response body under the ignored
+`replay_logs/replay-score-source-*.response` pattern. The record separately
+stores the complete-cache-file hash, exact-response hash, and request-qualified
+source fingerprint. Complete transport with malformed JSON, unsupported UI, or
+partial frames is still retained with layered validation and nullable or partial
+coverage. Retention alone never establishes valid scores or full replay
+coverage.
+
+Per-source coverage represents missing `gameTime` values as compact inclusive
+ranges, keeping calculation and storage bounded by observed frames. Existing
+numeric gap arrays remain readable through comparison-time normalization and
+are not rewritten. Older score-aware tooling must be upgraded before managing
+new records with nonempty compact ranges; log-only tooling continues to preserve
+the optional collections without interpreting them.
+
+Score publication uses `pending` then `claim`. Review ownership is explicit and
+score-specific. `score-done` records completion but does not remove evidence;
+only the separately invoked exact-record `score-cleanup` can persist
+`retiring`, verify/delete the managed response, publish a top-level tombstone,
+and remove the record. Retry the same exact import for pending publication or
+the same exact cleanup after interruption. Do not use log reconciliation for
+score recovery.
+
+```sh
+node tools/replay-logs.js score-import <cache-file>
+node tools/replay-logs.js score-claim <replay-id> <fingerprint> <codex-task-id>
+node tools/replay-logs.js score-verify <replay-id> <fingerprint>
+node tools/replay-logs.js score-examined <replay-id> <fingerprint> <codex-task-id>
+node tools/replay-logs.js score-done <replay-id> <fingerprint> <codex-task-id>
+node tools/replay-logs.js score-cleanup <replay-id> <fingerprint>
+```
+
+Milestone 1 does not group frame sequences, calculate score changes, map player
+slots, align replay time with runtime ticks, or associate scores with events.
+Those read-only analysis features remain deferred to ADR 0005 Milestone 2.
+
+For replay `6abd7222b72ca0c20fa0bce2`, Milestone 1 retained and hash-verified
+the inventoried metadata source and all 17 inventoried replay-frame sources
+through `gameTime` 1536. They remain claimed and examined with review
+completion unset; no score cleanup has run. The frame-zero source has complete
+frame structure but missing scoring items, so this retention result does not
+claim valid scoring observations for that source or complete analysis coverage.
 
 ### Read-only deterministic analysis
 

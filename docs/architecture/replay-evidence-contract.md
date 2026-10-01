@@ -471,6 +471,46 @@ type is reserved by a newer supported contract. Their presence does not make
 any declared closure scope complete. Existing `flag-allocation` and `healer-escort`
 entries continue through their current compatibility path.
 
+### Replay-score source retention
+
+The optional manifest-version-2 `scoreRecords` and `retiredScoreSources`
+collections implement ADR 0005 Milestone 1 without changing runtime diagnostics,
+game-state JSONL, or log-record meaning. A score record manages the exact
+decompressed body of one explicitly supplied Arena game-metadata or replay-frame
+cache response. Its request-qualified source fingerprint, response-body hash,
+and complete-cache-entry hash remain distinct. `mapId` is an optional association
+and embedded build provenance is always null.
+
+Layered transport, JSON, metadata, frame, UI, and item summaries preserve
+malformed, partial, unsupported, and unassessed states. A published raw body
+proves complete supported transport and exact bytes only; it does not prove a
+valid score observation, complete replay coverage, player mapping, tick
+alignment, or a runtime build. Item summaries retain deterministic target and
+occurrence order, use `mislabeled` as the primary status for simultaneous label
+and value defects, and preserve both ordered issue codes.
+
+Transport validation requires one coherent HTTP status/header block and rejects
+misleading status text or conflicting encoding/length fields. Metadata mapping
+structure is valid only for consistent two-element arrays of nonempty string
+identities; unsupported objects remain partial and never infer the current
+user's slot. Local coverage stores missing times as compact inclusive ranges,
+bounded by observed frames. Legacy numeric gap arrays are normalized only for
+read-time equality so existing evidence is not rewritten.
+
+Score review uses dedicated claim, examined, and done operations. Done evidence
+is retained until an exact-record cleanup first persists `retiring`, then safely
+deletes the verified managed response, and finally atomically publishes a
+map-independent tombstone while removing the current record. Missing files are
+accepted only after `retiring` was persisted. Log reconciliation and log
+scan/watch/list paths preserve these optional collections but never manage score
+records. Score sequence grouping and derived analysis remain outside this
+implemented retention milestone.
+
+Before publication completion, recovery, verification, or cleanup, a managed
+score filename must match its record identity and have unique ownership. Newly
+published final paths are rechecked as regular non-symlink files with the exact
+byte count and hash before the record can enter `claim`.
+
 ## M4 analyzer requirements
 
 `tools/replay-analysis.js` reads manifest version 2 directly and never invokes

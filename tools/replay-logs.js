@@ -5,12 +5,25 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { gunzipSync } from 'node:zlib';
+import { crc32, gunzipSync } from 'node:zlib';
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const defaultCacheDir = path.join(os.homedir(), 'Library/Application Support/screeps_arena/Cache/Cache_Data');
 const cacheMagic = Buffer.from('305c72a71b6dfbfc', 'hex');
+const cacheFinalMagic = 0xf4fa6f45970d41d8n;
+const cacheEofSize = 24;
+const cacheFlagCrc32 = 1;
+const cacheFlagKeySha256 = 2;
 const logKey = /^1\/0\/https:\/\/arena\.screeps\.com\/api\/game\/([a-f0-9]{24})\/log\/(\d+)$/;
+const scoreKey = /^1\/0\/(https:\/\/arena\.screeps\.com\/api\/game\/([a-f0-9]{24})(?:\/replay\/(0|[1-9]\d*))?)$/;
+const scoreFingerprintDomain = Buffer.from('replay-score-source-v1');
+const scoreItemTargets = [
+    { itemId: 'player1-score', label: 'Score', slot: 'player1', measurement: 'cumulativeScore' },
+    { itemId: 'player1-gain', label: 'Gained this tick', slot: 'player1', measurement: 'displayedGain' },
+    { itemId: 'player2-score', label: 'Score', slot: 'player2', measurement: 'cumulativeScore' },
+    { itemId: 'player2-gain', label: 'Gained this tick', slot: 'player2', measurement: 'displayedGain' },
+];
+const scoreItemStatuses = ['valid', 'missing', 'mislabeled', 'invalid', 'conflicting', 'unassessed'];
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 export const sha256 = value => createHash('sha256').update(value).digest('hex');
 export const canonical = value => JSON.stringify(value, (_, item) =>
@@ -357,6 +370,52 @@ function issue(kind, message) {
     return { kind, message };
 }
 
+function readCacheEof(bytes, offset, label) {
+    if (offset < 0 || offset + cacheEofSize > bytes.length ||
+        bytes.readBigUInt64LE(offset) !== cacheFinalMagic) {
+        throw new Error(`Invalid ${label} EOF record`);
+    }
+    const flags = bytes.readUInt32LE(offset + 8);
+    if ((flags & ~(cacheFlagCrc32 | cacheFlagKeySha256)) !== 0 ||
+        bytes.readUInt32LE(offset + 20) !== 0) {
+        throw new Error(`Unsupported ${label} EOF flags`);
+    }
+    return { flags, dataCrc32: bytes.readUInt32LE(offset + 12),
+        streamSize: bytes.readUInt32LE(offset + 16) };
+}
+
+function parseSimpleCacheV5(bytes, keyLength) {
+    const payloadStart = 24 + keyLength;
+    if (bytes.length < payloadStart + cacheEofSize * 2) throw new Error('Incomplete cache streams');
+    const stream0EofOffset = bytes.length - cacheEofSize;
+    const stream0Eof = readCacheEof(bytes, stream0EofOffset, 'stream-0');
+    const keyHashSize = stream0Eof.flags & cacheFlagKeySha256 ? 32 : 0;
+    const stream0End = stream0EofOffset - keyHashSize;
+    const stream0Start = stream0End - stream0Eof.streamSize;
+    const stream1EofOffset = stream0Start - cacheEofSize;
+    if (stream0Start < payloadStart + cacheEofSize) throw new Error('Invalid cache stream sizes');
+    const stream1Eof = readCacheEof(bytes, stream1EofOffset, 'stream-1');
+    if (stream1Eof.streamSize !== 0 || (stream1Eof.flags & cacheFlagKeySha256)) {
+        throw new Error('Invalid stream-1 EOF metadata');
+    }
+    const stream1 = bytes.subarray(payloadStart, stream1EofOffset);
+    const stream0 = bytes.subarray(stream0Start, stream0End);
+    if (stream1Eof.flags & cacheFlagCrc32 && (crc32(stream1) >>> 0) !== stream1Eof.dataCrc32) {
+        throw new Error('Stream-1 CRC32 mismatch');
+    }
+    if (stream0Eof.flags & cacheFlagCrc32 && (crc32(stream0) >>> 0) !== stream0Eof.dataCrc32) {
+        throw new Error('Stream-0 CRC32 mismatch');
+    }
+    if (keyHashSize) {
+        const key = bytes.subarray(24, payloadStart);
+        const expected = createHash('sha256').update(key).digest();
+        if (!bytes.subarray(stream0End, stream0EofOffset).equals(expected)) {
+            throw new Error('Cache key SHA-256 mismatch');
+        }
+    }
+    return { stream0, stream1 };
+}
+
 export function parseCacheEntry(bytes) {
     if (bytes.length < 24 || !bytes.subarray(0, 8).equals(cacheMagic)) {
         return issue('unrelated', 'Not a supported cache frame');
@@ -549,6 +608,370 @@ export function parseCacheEntry(bytes) {
     };
 }
 
+function emptyScoreItemCounts() {
+    return Object.fromEntries(scoreItemStatuses.map(status => [status, 0]));
+}
+
+function unavailableScoreItems(blockedBy = []) {
+    return { status: 'unavailable', counts: emptyScoreItemCounts(),
+        blockedBy: [...new Set(blockedBy)].sort(), assessments: [] };
+}
+
+function metadataScoreItems() {
+    return { status: 'not-applicable', counts: emptyScoreItemCounts(),
+        blockedBy: [], assessments: [] };
+}
+
+function scoreIssue(code, fingerprint, details = {}) {
+    return { code, fingerprint, ...details };
+}
+
+function scoreItemIssue(code, fingerprint, assessment) {
+    return scoreIssue(code, fingerprint, {
+        frameIndex: assessment.frameIndex, gameTime: assessment.gameTime,
+        slot: assessment.slot, itemId: assessment.itemId,
+        occurrenceIndexes: assessment.occurrenceIndexes,
+    });
+}
+
+function scoreItemsStatus(assessments) {
+    const valid = assessments.filter(item => item.status === 'valid').length;
+    const failures = assessments.filter(item => !['valid', 'unassessed'].includes(item.status)).length;
+    if (valid === assessments.length && valid > 0) return 'valid';
+    if (valid > 0) return 'partial';
+    if (failures > 0) return 'invalid';
+    return 'unavailable';
+}
+
+function summarizeScoreSegments(frames) {
+    const segments = [];
+    let current = [];
+    const finish = () => {
+        if (!current.length) return;
+        const counts = new Map();
+        for (const item of current) counts.set(item.gameTime, (counts.get(item.gameTime) ?? 0) + 1);
+        const duplicates = [...counts].filter(([, count]) => count > 1).map(([gameTime]) => gameTime)
+            .sort((a, b) => a - b);
+        const gaps = [];
+        const firstGameTime = current[0].gameTime;
+        const lastGameTime = current.at(-1).gameTime;
+        const observed = [...counts.keys()].sort((a, b) => a - b);
+        for (let index = 1; index < observed.length; index++) {
+            if (observed[index] > observed[index - 1] + 1) {
+                gaps.push({ firstGameTime: observed[index - 1] + 1,
+                    lastGameTime: observed[index] - 1 });
+            }
+        }
+        segments.push({ firstFrameIndex: current[0].frameIndex,
+            lastFrameIndex: current.at(-1).frameIndex, firstGameTime, lastGameTime,
+            duplicates, gaps });
+        current = [];
+    };
+    for (const frame of frames) {
+        if (!frame.valid) {
+            finish();
+            continue;
+        }
+        if (current.length && frame.gameTime < current.at(-1).gameTime) finish();
+        current.push(frame);
+    }
+    finish();
+    return segments;
+}
+
+function normalizeStoredScoreGaps(gaps) {
+    if (!Array.isArray(gaps) || !gaps.every(nonnegativeInteger)) return gaps;
+    if (gaps.some((value, index) => index && value <= gaps[index - 1])) return gaps;
+    const ranges = [];
+    for (const gameTime of gaps) {
+        const current = ranges.at(-1);
+        if (current && gameTime === current.lastGameTime + 1) current.lastGameTime = gameTime;
+        else ranges.push({ firstGameTime: gameTime, lastGameTime: gameTime });
+    }
+    return ranges;
+}
+
+function normalizeStoredScoreCoverage(coverage) {
+    if (!coverage || !Array.isArray(coverage.localSegments)) return coverage;
+    return { ...coverage, localSegments: coverage.localSegments.map(segment => ({ ...segment,
+        gaps: normalizeStoredScoreGaps(segment.gaps) })) };
+}
+
+function scoreCoverageMatches(stored, recomputed) {
+    return canonical(normalizeStoredScoreCoverage(stored)) === canonical(recomputed);
+}
+
+function validateScoreMetadata(value, fingerprint) {
+    const base = {
+        transport: 'complete', json: 'valid', frames: 'not-applicable',
+        ui: 'not-applicable', items: metadataScoreItems(), issues: [],
+    };
+    if (!value || typeof value !== 'object' || Array.isArray(value)) {
+        return { coverage: null, validation: { ...base, metadata: 'malformed',
+            issues: [scoreIssue('metadata-malformed', fingerprint)] } };
+    }
+    const candidates = [value.players, value.users, value.game?.players]
+        .filter(item => item !== undefined);
+    const supported = candidate => Array.isArray(candidate) && candidate.length === 2 &&
+        candidate.every(item => typeof item === 'string' && item.length > 0);
+    if (candidates.length && candidates.every(supported) &&
+        candidates.every(candidate => canonical(candidate) === canonical(candidates[0]))) {
+        return { coverage: null, validation: { ...base, metadata: 'valid' } };
+    }
+    return { coverage: null, validation: { ...base, metadata: 'partial',
+        issues: [scoreIssue('metadata-mapping-unavailable', fingerprint)] } };
+}
+
+function blockedAssessment(frameIndex, gameTime, target, reason) {
+    return { frameIndex, gameTime, slot: target.slot, itemId: target.itemId,
+        measurement: target.measurement, status: 'unassessed', occurrenceIndexes: [],
+        value: null, reason };
+}
+
+function assessScoreItem(frameIndex, gameTime, target, items, fingerprint) {
+    const occurrences = items.map((item, index) => ({ item, index }))
+        .filter(({ item }) => item && typeof item === 'object' && !Array.isArray(item) &&
+            item.id === target.itemId);
+    const occurrenceIndexes = occurrences.map(item => item.index);
+    const assessment = { frameIndex, gameTime, slot: target.slot, itemId: target.itemId,
+        measurement: target.measurement, status: null, occurrenceIndexes,
+        value: null, reason: null };
+    if (!occurrences.length) {
+        assessment.status = 'missing';
+        return { assessment, issues: [scoreItemIssue('item-missing', fingerprint, assessment)] };
+    }
+    const variants = new Set(occurrences.map(({ item }) => canonical([
+        Object.hasOwn(item, 'name'), item.name, Object.hasOwn(item, 'value'), item.value,
+    ])));
+    if (variants.size > 1) {
+        assessment.status = 'conflicting';
+        return { assessment, issues: [scoreItemIssue('item-conflict', fingerprint, assessment)] };
+    }
+    const common = occurrences[0].item;
+    const labelMismatch = common.name !== target.label;
+    const valueInvalid = !Number.isSafeInteger(common.value);
+    if (labelMismatch) assessment.status = 'mislabeled';
+    else if (valueInvalid) assessment.status = 'invalid';
+    else {
+        assessment.status = 'valid';
+        assessment.value = common.value;
+    }
+    const issues = [];
+    if (labelMismatch) issues.push(scoreItemIssue('item-label-mismatch', fingerprint, assessment));
+    if (valueInvalid) issues.push(scoreItemIssue('item-value-invalid', fingerprint, assessment));
+    return { assessment, issues };
+}
+
+function validateScoreFrames(value, fingerprint) {
+    if (!Array.isArray(value)) {
+        return { coverage: null, validation: {
+            transport: 'complete', json: 'valid', metadata: 'not-applicable',
+            frames: 'malformed', ui: 'unavailable',
+            items: unavailableScoreItems(['frames-malformed']),
+            issues: [scoreIssue('frames-malformed', fingerprint)],
+        } };
+    }
+    const frames = [];
+    const assessments = [];
+    const frameIssues = [];
+    const uiIssues = [];
+    const itemIssues = [];
+    const blockedBy = new Set();
+    const uiStates = [];
+    const uiVersions = new Set();
+    if (!value.length) blockedBy.add('no-frames');
+    for (const [frameIndex, frame] of value.entries()) {
+        const validFrame = frame && typeof frame === 'object' && !Array.isArray(frame) &&
+            nonnegativeInteger(frame.gameTime);
+        if (!validFrame) {
+            frames.push({ frameIndex, gameTime: null, valid: false });
+            frameIssues.push(scoreIssue('frame-malformed', fingerprint,
+                { frameIndex, gameTime: null }));
+            blockedBy.add('frame-malformed');
+            for (const target of scoreItemTargets) {
+                assessments.push(blockedAssessment(frameIndex, null, target, 'frame-malformed'));
+            }
+            continue;
+        }
+        const { gameTime } = frame;
+        frames.push({ frameIndex, gameTime, valid: true });
+        if (Number.isSafeInteger(frame.ui?.version)) uiVersions.add(frame.ui.version);
+        let reason = null;
+        if (!frame.ui || typeof frame.ui !== 'object' || Array.isArray(frame.ui) ||
+            !Number.isSafeInteger(frame.ui.version)) {
+            reason = 'ui-unavailable';
+            uiStates.push('unavailable');
+        } else if (frame.ui.version !== 1) {
+            reason = 'ui-unsupported';
+            uiStates.push('unsupported');
+        } else if (!Array.isArray(frame.ui.items)) {
+            reason = 'ui-unavailable';
+            uiStates.push('unavailable');
+        } else {
+            uiStates.push('supported');
+        }
+        if (reason) {
+            blockedBy.add(reason);
+            uiIssues.push(scoreIssue(reason, fingerprint, { frameIndex, gameTime }));
+            for (const target of scoreItemTargets) {
+                assessments.push(blockedAssessment(frameIndex, gameTime, target, reason));
+            }
+            continue;
+        }
+        for (const target of scoreItemTargets) {
+            const result = assessScoreItem(frameIndex, gameTime, target, frame.ui.items, fingerprint);
+            assessments.push(result.assessment);
+            itemIssues.push(...result.issues);
+        }
+    }
+    const validFrames = frames.filter(frame => frame.valid).length;
+    const invalidFrames = frames.length - validFrames;
+    const framesStatus = !frames.length || !validFrames ? 'malformed'
+        : invalidFrames ? 'partial' : 'valid';
+    let ui = 'unavailable';
+    if (uiStates.length) {
+        const distinct = new Set(uiStates);
+        ui = distinct.size > 1 ? 'partial' : uiStates[0];
+    }
+    const counts = emptyScoreItemCounts();
+    for (const assessment of assessments) counts[assessment.status]++;
+    const items = { status: scoreItemsStatus(assessments), counts,
+        blockedBy: [...blockedBy].sort(), assessments };
+    if (!value.length) {
+        frameIssues.push(scoreIssue('no-frames', fingerprint));
+        items.status = 'unavailable';
+    }
+    return {
+        coverage: {
+            status: invalidFrames || !value.length ? 'partial' : 'complete',
+            totalFrames: frames.length, validFrames, invalidFrames,
+            localSegments: summarizeScoreSegments(frames),
+            uiVersions: [...uiVersions].sort((a, b) => a - b),
+        },
+        validation: { transport: 'complete', json: 'valid', metadata: 'not-applicable',
+            frames: framesStatus, ui, items,
+            issues: [...frameIssues, ...uiIssues, ...itemIssues] },
+    };
+}
+
+export function validateScoreBody(kind, body, responseFingerprint = sha256(body)) {
+    let text;
+    let value;
+    try {
+        text = new TextDecoder('utf-8', { fatal: true }).decode(body);
+        value = JSON.parse(text);
+    } catch {
+        const metadata = kind === 'game-metadata';
+        return { coverage: null, validation: {
+            transport: 'complete', json: 'malformed',
+            metadata: metadata ? 'unavailable' : 'not-applicable',
+            frames: metadata ? 'not-applicable' : 'unavailable',
+            ui: metadata ? 'not-applicable' : 'unavailable',
+            items: metadata ? metadataScoreItems() : unavailableScoreItems(['json-malformed']),
+            issues: [scoreIssue('json-malformed', responseFingerprint)],
+        } };
+    }
+    return kind === 'game-metadata'
+        ? validateScoreMetadata(value, responseFingerprint)
+        : validateScoreFrames(value, responseFingerprint);
+}
+
+export function scoreSourceFingerprint(sourceKey, body) {
+    return sha256(Buffer.concat([scoreFingerprintDomain, Buffer.from([0]), Buffer.from(sourceKey),
+        Buffer.from([0]), Buffer.from(body)]));
+}
+
+function parseScoreHttpMetadata(stream0, key) {
+    const text = stream0.toString('latin1');
+    const statuses = [...text.matchAll(/HTTP\/1\.[01] ([0-9]{3})(?:[^\x00]*)\x00/g)];
+    if (statuses.length !== 1) {
+        return issue('unsupported', `Ambiguous HTTP response metadata for ${key}`);
+    }
+    if (statuses[0][1] !== '200') {
+        return issue('unsupported', `Unsupported HTTP response for ${key}`);
+    }
+    const tokens = text.slice(statuses[0].index).split('\x00').slice(1);
+    const headers = new Map();
+    for (const token of tokens) {
+        const match = token.match(/^([^:\s]+)\s*:\s*(.*)$/);
+        if (!match) continue;
+        const name = match[1].toLowerCase();
+        const values = headers.get(name) ?? [];
+        values.push(match[2].trim());
+        headers.set(name, values);
+    }
+    const encodings = headers.get('content-encoding');
+    if (!encodings?.length) return issue('incomplete', `Missing response encoding for ${key}`);
+    const distinctEncodings = new Set(encodings.map(value => value.toLowerCase()));
+    if (distinctEncodings.size !== 1) {
+        return issue('unsupported', `Conflicting response encodings for ${key}`);
+    }
+    if (!distinctEncodings.has('gzip')) {
+        return issue('unsupported', `Unsupported encoding ${encodings[0]} for ${key}`);
+    }
+    const lengths = headers.get('content-length') ?? [];
+    if (lengths.some(value => !/^\d+$/.test(value)) || new Set(lengths).size > 1) {
+        return issue('incomplete', `Conflicting response lengths for ${key}`);
+    }
+    return { kind: 'http-metadata', contentLength: lengths.length ? Number(lengths[0]) : null };
+}
+
+export function parseScoreCacheEntry(bytes) {
+    if (!Buffer.isBuffer(bytes)) bytes = Buffer.from(bytes);
+    if (bytes.length < 24 || !bytes.subarray(0, 8).equals(cacheMagic)) {
+        return issue('unrelated', 'Not a supported cache frame');
+    }
+    const keyLength = bytes.readUInt32LE(12);
+    if (keyLength === 0 || keyLength > 2048 || bytes.length < 24 + keyLength) {
+        if (bytes.readUInt32LE(8) !== 5) return issue('unrelated', 'No replay-score request key');
+        return issue('incomplete', 'Incomplete cache request key');
+    }
+    const key = bytes.subarray(24, 24 + keyLength).toString('utf8');
+    const match = key.match(scoreKey);
+    if (!match) return issue('unrelated', 'Not an Arena replay-score response');
+    if (bytes.readUInt32LE(8) !== 5) return issue('unsupported', `Unsupported cache version for ${key}`);
+    const requestedGameTime = match[3] === undefined ? null : Number(match[3]);
+    if (requestedGameTime !== null && !nonnegativeInteger(requestedGameTime)) {
+        return issue('unsupported', `Unsupported requested game time for ${key}`);
+    }
+    let streams;
+    try { streams = parseSimpleCacheV5(bytes, keyLength); }
+    catch (error) { return issue('incomplete', `${error.message} for ${key}`); }
+    const http = parseScoreHttpMetadata(streams.stream0, key);
+    if (http.kind !== 'http-metadata') return http;
+    if (http.contentLength !== null && http.contentLength !== streams.stream1.length) {
+        return issue('incomplete', `Declared payload length mismatch for ${key}`);
+    }
+    const length = streams.stream1.length;
+    if (length < 1 || length > 50_000_000) {
+        return issue('unsupported', `Unsupported payload length for ${key}`);
+    }
+    if (!streams.stream1.subarray(0, 3).equals(Buffer.from([0x1f, 0x8b, 0x08]))) {
+        return issue('incomplete', `Invalid gzip header for ${key}`);
+    }
+    let body;
+    try {
+        const decoded = gunzipSync(streams.stream1,
+            { maxOutputLength: 100_000_000, info: true });
+        if (decoded.engine.bytesWritten !== length) {
+            return issue('incomplete', `Declared payload length mismatch for ${key}`);
+        }
+        body = decoded.buffer;
+    } catch (error) {
+        return issue('incomplete', `Cannot decompress ${key}: ${error.message}`);
+    }
+    const responseFingerprint = sha256(body);
+    const kind = match[3] === undefined ? 'game-metadata' : 'replay-frames';
+    const summary = validateScoreBody(kind, body, responseFingerprint);
+    return {
+        kind: 'score-source', sourceKind: kind, replayId: match[2],
+        requestedGameTime,
+        key, requestUrl: match[1], body,
+        cacheEntryFingerprint: sha256(bytes), responseFingerprint,
+        fingerprint: scoreSourceFingerprint(key, body), ...summary,
+    };
+}
+
 function outputDirectory(root) {
     const directory = path.join(path.resolve(root), 'replay_logs');
     fs.mkdirSync(directory, { recursive: true });
@@ -562,6 +985,14 @@ function outputDirectory(root) {
 function managedPath(root, name) {
     if (typeof name !== 'string' || !/^[a-f0-9]{24}(?:-[a-f0-9]{12,64}(?:-\d+)?)?\.jsonl$/.test(name)) {
         throw new Error('Unsafe managed output filename');
+    }
+    return path.join(outputDirectory(root), name);
+}
+
+function scoreManagedPath(root, name) {
+    if (typeof name !== 'string' ||
+        !/^replay-score-source-[a-f0-9]{24}-[a-f0-9]{12,64}(?:-\d+)?\.response$/.test(name)) {
+        throw new Error('Unsafe managed replay-score filename');
     }
     return path.join(outputDirectory(root), name);
 }
@@ -599,6 +1030,10 @@ function readManifest(root) {
     if (manifest.version !== 2 || !Array.isArray(manifest.maps) ||
         !Array.isArray(manifest.replays) || !Array.isArray(manifest.records)) {
         throw new Error('Unsupported replay-log manifest; migrate nonempty version-1 data before importing');
+    }
+    if ((Object.hasOwn(manifest, 'scoreRecords') && !Array.isArray(manifest.scoreRecords)) ||
+        (Object.hasOwn(manifest, 'retiredScoreSources') && !Array.isArray(manifest.retiredScoreSources))) {
+        throw new Error('Invalid replay-score manifest collections');
     }
     return manifest;
 }
@@ -836,6 +1271,306 @@ function ensureOutput(root, record, lines) {
         fs.closeSync(descriptor);
     }
     try { fs.linkSync(temporary, target); } finally { fs.unlinkSync(temporary); }
+}
+
+function scoreCollections(manifest, create = false) {
+    if (create) {
+        manifest.scoreRecords ??= [];
+        manifest.retiredScoreSources ??= [];
+    }
+    return {
+        records: manifest.scoreRecords ?? [],
+        tombstones: manifest.retiredScoreSources ?? [],
+    };
+}
+
+function scoreTombstone(replayId, fingerprint) {
+    return { sourceType: 'replay-score-source', replayId, fingerprint };
+}
+
+function sameScoreTombstone(item, replayId, fingerprint) {
+    return item?.sourceType === 'replay-score-source' && item.replayId === replayId &&
+        item.fingerprint === fingerprint;
+}
+
+function scoreMapId(manifest, replayId) {
+    const association = manifest.replays.find(item => item.replayId === replayId && item.status === 'active');
+    if (!association) return null;
+    const registration = manifest.maps.find(item => item.id === association.mapId &&
+        item.status === 'validated');
+    return registration ? association.mapId : null;
+}
+
+function chooseScoreOutputName(root, manifest, replayId, fingerprint, responseFingerprint) {
+    const reserved = new Set((manifest.scoreRecords ?? []).map(record => record.outputPath).filter(Boolean));
+    const prefix = `replay-score-source-${replayId}-`;
+    const candidates = [`${prefix}${fingerprint.slice(0, 12)}.response`,
+        `${prefix}${fingerprint}.response`];
+    for (let suffix = 2; suffix < 100; suffix++) {
+        candidates.push(`${prefix}${fingerprint}-${suffix}.response`);
+    }
+    for (const name of candidates) {
+        if (reserved.has(name)) continue;
+        const file = scoreManagedPath(root, name);
+        const existing = pathOccupied(file);
+        if (!existing) return name;
+        if (existing.isFile() && !existing.isSymbolicLink() &&
+            sha256(fs.readFileSync(file)) === responseFingerprint) return name;
+    }
+    return null;
+}
+
+function validateScoreOutputOwnership(root, manifest, record) {
+    if (!/^[a-f0-9]{24}$/.test(record?.replayId ?? '') || !validSha256(record?.fingerprint)) {
+        throw new Error('Invalid replay-score output identity');
+    }
+    const prefix = `replay-score-source-${record.replayId}-`;
+    const suffix = record.outputPath?.startsWith(prefix) ? record.outputPath.slice(prefix.length) : '';
+    if (suffix !== `${record.fingerprint.slice(0, 12)}.response` &&
+        suffix !== `${record.fingerprint}.response` &&
+        !new RegExp(`^${record.fingerprint}-[2-9]\\d*\\.response$`).test(suffix)) {
+        throw new Error('Replay-score output path does not match record identity');
+    }
+    const owners = (manifest.scoreRecords ?? []).filter(item => item.outputPath === record.outputPath);
+    if (owners.length !== 1 || owners[0] !== record) {
+        throw new Error('Replay-score output path does not have unique record ownership');
+    }
+    return scoreManagedPath(root, record.outputPath);
+}
+
+function verifyScoreOutput(root, record, body) {
+    const target = scoreManagedPath(root, record.outputPath);
+    const expected = sha256(body);
+    if (expected !== record.responseFingerprint || expected !== record.outputFingerprint) {
+        throw new Error('Manifest replay-score output fingerprint mismatch');
+    }
+    const stat = fs.lstatSync(target);
+    if (!stat.isFile() || stat.isSymbolicLink() || stat.size !== body.length ||
+        sha256(fs.readFileSync(target)) !== expected) {
+        throw new Error(`Managed replay-score output failed final verification: ${target}`);
+    }
+    return target;
+}
+
+function ensureScoreOutput(root, record, body, { afterPublish } = {}) {
+    const target = scoreManagedPath(root, record.outputPath);
+    const existing = pathOccupied(target);
+    if (existing) {
+        try { return verifyScoreOutput(root, record, body); }
+        catch { throw new Error(`Managed replay-score output differs from source: ${target}`); }
+    }
+    const temporary = path.join(outputDirectory(root), `.${record.outputPath}.${randomUUID()}.tmp`);
+    const descriptor = fs.openSync(temporary, 'wx', 0o600);
+    try {
+        fs.writeFileSync(descriptor, body);
+        fs.fsyncSync(descriptor);
+    } finally {
+        fs.closeSync(descriptor);
+    }
+    try { fs.linkSync(temporary, target); } finally { fs.unlinkSync(temporary); }
+    afterPublish?.(target);
+    return verifyScoreOutput(root, record, body);
+}
+
+function validateScoreRecordIdentity(root, manifest, record, parsed) {
+    if (record?.formatVersion !== 1 || record.kind !== parsed.sourceKind ||
+        record.replayId !== parsed.replayId || record.requestedGameTime !== parsed.requestedGameTime ||
+        record.sourceKey !== parsed.key || record.requestUrl !== parsed.requestUrl ||
+        record.responseFingerprint !== parsed.responseFingerprint ||
+        record.fingerprint !== parsed.fingerprint || record.outputFingerprint !== parsed.responseFingerprint ||
+        record.embeddedBuildId !== null) {
+        throw new Error('Conflicting replay-score record identity');
+    }
+    validateScoreOutputOwnership(root, manifest, record);
+}
+
+export async function importScoreCacheFile(root, sourceFile, options = {}) {
+    const source = path.resolve(sourceFile);
+    const stat = fs.lstatSync(source);
+    if (!stat.isFile() || stat.isSymbolicLink()) throw new Error(`Unsafe replay-score cache source: ${source}`);
+    const parsed = parseScoreCacheEntry(fs.readFileSync(source));
+    if (parsed.kind !== 'score-source') return parsed;
+    return withManifestLock(root, () => {
+        const manifest = readManifest(root);
+        const collections = scoreCollections(manifest, true);
+        if (collections.tombstones.some(item =>
+            sameScoreTombstone(item, parsed.replayId, parsed.fingerprint))) {
+            return { kind: 'deduplicated', replayId: parsed.replayId,
+                fingerprint: parsed.fingerprint, retired: true };
+        }
+        let record = collections.records.find(item => item.replayId === parsed.replayId &&
+            item.fingerprint === parsed.fingerprint);
+        if (record) {
+            validateScoreRecordIdentity(root, manifest, record, parsed);
+            if (!scoreCoverageMatches(record.coverage, parsed.coverage) ||
+                canonical(record.validation) !== canonical(parsed.validation)) {
+                throw new Error('Conflicting stored replay-score derived summary');
+            }
+            if (!['pending', 'claim', 'done', 'retiring'].includes(record.status)) {
+                throw new Error(`Unsupported replay-score record status: ${record.status}`);
+            }
+            if (record.status === 'retiring') {
+                throw new Error('Replay-score source is retiring; retry exact score cleanup');
+            }
+            const target = scoreManagedPath(root, record.outputPath);
+            const existing = pathOccupied(target);
+            if (record.status === 'claim' && !existing) {
+                throw new Error('Managed replay-score source is missing after publication');
+            }
+            if (['pending', 'done'].includes(record.status) || existing) {
+                ensureScoreOutput(root, record, parsed.body, options);
+            }
+            if (record.status === 'pending') {
+                record.status = 'claim';
+                saveManifest(root, manifest);
+            }
+            return { kind: 'deduplicated', record };
+        }
+        const outputPath = chooseScoreOutputName(root, manifest, parsed.replayId,
+            parsed.fingerprint, parsed.responseFingerprint);
+        if (!outputPath) throw new Error(`No safe replay-score output filename for ${parsed.replayId}`);
+        record = {
+            formatVersion: 1, kind: parsed.sourceKind, replayId: parsed.replayId,
+            requestedGameTime: parsed.requestedGameTime, sourceEntry: source,
+            sourceKey: parsed.key, requestUrl: parsed.requestUrl,
+            cacheEntryFingerprint: parsed.cacheEntryFingerprint,
+            responseFingerprint: parsed.responseFingerprint, fingerprint: parsed.fingerprint,
+            outputPath, outputFingerprint: parsed.responseFingerprint,
+            embeddedBuildId: null, mapId: scoreMapId(manifest, parsed.replayId),
+            coverage: parsed.coverage, validation: parsed.validation,
+            importedAt: new Date().toISOString(), status: 'pending', reviews: {},
+        };
+        collections.records.push(record);
+        saveManifest(root, manifest);
+        validateScoreOutputOwnership(root, manifest, record);
+        ensureScoreOutput(root, record, parsed.body, options);
+        record.status = 'claim';
+        saveManifest(root, manifest);
+        return { kind: 'imported', record };
+    });
+}
+
+export function verifyScoreSource(root, replayId, fingerprint) {
+    if (!/^[a-f0-9]{24}$/.test(replayId) || !validSha256(fingerprint)) {
+        throw new Error('Expected replay ID and full replay-score fingerprint');
+    }
+    const manifest = readManifest(root);
+    const record = (manifest.scoreRecords ?? []).find(item => item.replayId === replayId &&
+        item.fingerprint === fingerprint);
+    if (!record) throw new Error('Managed replay-score source not found');
+    const file = validateScoreOutputOwnership(root, manifest, record);
+    const stat = fs.lstatSync(file);
+    if (!stat.isFile() || stat.isSymbolicLink()) throw new Error('Unsafe managed replay-score source');
+    const body = fs.readFileSync(file);
+    const responseFingerprint = sha256(body);
+    if (responseFingerprint !== record.responseFingerprint ||
+        responseFingerprint !== record.outputFingerprint ||
+        scoreSourceFingerprint(record.sourceKey, body) !== record.fingerprint) {
+        throw new Error('Managed replay-score source hash mismatch');
+    }
+    const summary = validateScoreBody(record.kind, body, responseFingerprint);
+    if (!scoreCoverageMatches(record.coverage, summary.coverage) ||
+        canonical(summary.validation) !== canonical(record.validation)) {
+        throw new Error('Managed replay-score derived summary mismatch');
+    }
+    return { record, bytes: body.length, responseFingerprint, verified: true };
+}
+
+export async function updateScoreReview(root, action, replayId, fingerprint, taskId) {
+    if (!['claim', 'examined', 'complete', 'done'].includes(action)) {
+        throw new Error(`Unknown replay-score review action: ${action}`);
+    }
+    validateTaskId(taskId);
+    if (!/^[a-f0-9]{24}$/.test(replayId) || !validSha256(fingerprint)) {
+        throw new Error('Expected replay ID and full replay-score fingerprint');
+    }
+    return withManifestLock(root, () => {
+        const manifest = readManifest(root);
+        const { records, tombstones } = scoreCollections(manifest);
+        const record = records.find(item => item.replayId === replayId && item.fingerprint === fingerprint);
+        if (!record) {
+            const retired = tombstones.some(item => sameScoreTombstone(item, replayId, fingerprint));
+            throw new Error(retired ? 'Replay-score source was already retired' :
+                'Managed replay-score source not found');
+        }
+        if (record.status === 'done') {
+            if (['complete', 'done'].includes(action)) return record;
+            throw new Error('Replay-score review is already done');
+        }
+        if (record.status !== 'claim') {
+            throw new Error(`Replay-score source is not ready for review: ${record.status}`);
+        }
+        const now = new Date().toISOString();
+        if (action === 'claim') {
+            if (!Object.hasOwn(record.reviews, taskId)) {
+                record.reviews[taskId] = { claimedAt: now, examinedAt: null, completedAt: null };
+            }
+        } else {
+            if (!Object.hasOwn(record.reviews, taskId)) {
+                throw new Error(`Task ${taskId} has not claimed this replay-score source`);
+            }
+            const review = record.reviews[taskId];
+            if (action === 'examined') review.examinedAt ??= now;
+            else {
+                if (!review.examinedAt) throw new Error('Replay-score source examination before completion');
+                review.completedAt ??= now;
+                if (Object.values(record.reviews).every(item => item.examinedAt && item.completedAt)) {
+                    record.status = 'done';
+                }
+            }
+        }
+        saveManifest(root, manifest);
+        return record;
+    });
+}
+
+export async function cleanupScoreSource(root, replayId, fingerprint,
+    { deleteFile = file => fs.unlinkSync(file) } = {}) {
+    if (!/^[a-f0-9]{24}$/.test(replayId) || !validSha256(fingerprint)) {
+        throw new Error('Expected replay ID and full replay-score fingerprint');
+    }
+    return withManifestLock(root, () => {
+        const manifest = readManifest(root);
+        const collections = scoreCollections(manifest, true);
+        const tombstone = collections.tombstones.find(item =>
+            sameScoreTombstone(item, replayId, fingerprint));
+        const record = collections.records.find(item => item.replayId === replayId &&
+            item.fingerprint === fingerprint);
+        if (tombstone && record) throw new Error('Replay-score tombstone conflicts with current record');
+        if (tombstone) return { kind: 'already-retired', replayId, fingerprint };
+        if (!record) throw new Error('Managed replay-score source not found');
+        const file = validateScoreOutputOwnership(root, manifest, record);
+        const reviews = Object.values(record.reviews ?? {});
+        if (!reviews.length || reviews.some(review => !review.examinedAt || !review.completedAt)) {
+            throw new Error('Replay-score source lacks completed analysis');
+        }
+        if (!['done', 'retiring'].includes(record.status)) {
+            throw new Error(`Replay-score source is not ready for cleanup: ${record.status}`);
+        }
+        let existing = pathOccupied(file);
+        if (record.status === 'done') {
+            if (!existing) throw new Error('Done replay-score source is missing before retirement intent');
+            if (!existing.isFile() || existing.isSymbolicLink() ||
+                sha256(fs.readFileSync(file)) !== record.outputFingerprint) {
+                throw new Error(`Refusing to retire changed or unsafe replay-score source: ${file}`);
+            }
+            record.status = 'retiring';
+            saveManifest(root, manifest);
+        }
+        existing = pathOccupied(file);
+        if (existing) {
+            if (!existing.isFile() || existing.isSymbolicLink() ||
+                sha256(fs.readFileSync(file)) !== record.outputFingerprint) {
+                throw new Error(`Refusing to delete changed or unsafe replay-score source: ${file}`);
+            }
+            deleteFile(file);
+        }
+        collections.tombstones.push(scoreTombstone(replayId, fingerprint));
+        collections.tombstones.sort((a, b) => canonical(a).localeCompare(canonical(b)));
+        collections.records.splice(collections.records.indexOf(record), 1);
+        saveManifest(root, manifest);
+        return { kind: 'retired', replayId, fingerprint };
+    });
 }
 
 function hasManagedOutput(record) {
@@ -1131,7 +1866,36 @@ export async function reconcileCleanup(root) {
 async function main() {
     const [command, ...args] = process.argv.slice(2);
     const root = projectRoot;
-    if (command === 'scan' || command === 'watch') {
+    if (command === 'score-import') {
+        if (args.length !== 1) throw new Error('Usage: score-import <cache-file>');
+        const result = await importScoreCacheFile(root, args[0]);
+        if (result.record) console.log(JSON.stringify({ event: result.kind,
+            kind: result.record.kind, replayId: result.record.replayId,
+            requestedGameTime: result.record.requestedGameTime,
+            fingerprint: result.record.fingerprint,
+            responseFingerprint: result.record.responseFingerprint,
+            outputPath: result.record.outputPath, mapId: result.record.mapId,
+            status: result.record.status, coverage: result.record.coverage,
+            validation: result.record.validation }));
+        else console.log(JSON.stringify(result));
+    } else if (command === 'score-verify') {
+        if (args.length !== 2) throw new Error('Usage: score-verify <replay-id> <fingerprint>');
+        const result = verifyScoreSource(root, args[0], args[1]);
+        console.log(JSON.stringify({ replayId: result.record.replayId,
+            fingerprint: result.record.fingerprint, responseFingerprint: result.responseFingerprint,
+            outputPath: result.record.outputPath, bytes: result.bytes,
+            status: result.record.status, coverage: result.record.coverage,
+            validation: result.record.validation, verified: result.verified }));
+    } else if (['score-claim', 'score-examined', 'score-done'].includes(command)) {
+        if (args.length !== 3) throw new Error(`Usage: ${command} <replay-id> <fingerprint> <task-id>`);
+        const action = command.slice('score-'.length);
+        const record = await updateScoreReview(root, action, args[0], args[1], args[2]);
+        console.log(JSON.stringify({ replayId: record.replayId, fingerprint: record.fingerprint,
+            status: record.status, outputPath: record.outputPath, reviews: record.reviews }));
+    } else if (command === 'score-cleanup') {
+        if (args.length !== 2) throw new Error('Usage: score-cleanup <replay-id> <fingerprint>');
+        console.log(JSON.stringify(await cleanupScoreSource(root, args[0], args[1])));
+    } else if (command === 'scan' || command === 'watch') {
         const cacheDir = args[0] ? path.resolve(args[0]) : defaultCacheDir;
         await reconcileCleanup(root);
         const seen = new Map();
@@ -1178,7 +1942,7 @@ async function main() {
         const record = await updateReview(root, command, args[0], args[1], args[2]);
         console.log(JSON.stringify({ replayId: record.replayId, fingerprint: record.fingerprint, status: record.status, outputPath: record.outputPath, reviews: record.reviews }));
     } else {
-        throw new Error('Usage: node tools/replay-logs.js <scan [cache-dir]|watch [cache-dir]|list|maps|migrate-status|register-local replay-id jsonl-filename|upgrade-map-checksums|other replay-id fingerprint|claim replay-id fingerprint task-id|examined replay-id fingerprint task-id|done replay-id fingerprint task-id>');
+        throw new Error('Usage: node tools/replay-logs.js <score-import cache-file|score-verify replay-id fingerprint|score-claim replay-id fingerprint task-id|score-examined replay-id fingerprint task-id|score-done replay-id fingerprint task-id|score-cleanup replay-id fingerprint|scan [cache-dir]|watch [cache-dir]|list|maps|migrate-status|register-local replay-id jsonl-filename|upgrade-map-checksums|other replay-id fingerprint|claim replay-id fingerprint task-id|examined replay-id fingerprint task-id|done replay-id fingerprint task-id>');
     }
 }
 

@@ -1,0 +1,33 @@
+@startuml
+title Managed replay-score source retention
+
+start
+:Select one exact cache file;
+:Validate request key and complete gzip transport;
+:Hash cache entry, response body,\nand request-qualified source identity;
+:Persist pending score record under manifest lock;
+:Publish exact decompressed body exclusively;
+:Verify identity-bound unique path, regular file,\nbyte count, and body hash;
+:Persist claim status;
+:Score reviewer claims exact replay/fingerprint;
+:Verify managed bytes and layered summaries;
+:Record examined checkpoint;
+:Record done only after all owners complete;
+if (Exact score cleanup authorized?) then (yes)
+  :Verify done state, reviews, safe path, and hash;
+  :Persist retiring state before deletion;
+  :Delete verified response if present;
+  :Atomically add map-independent tombstone\nand remove score record;
+else (no)
+  :Retain managed response and score record;
+endif
+stop
+
+note right
+  No log reconciliation
+  No map dependency
+  No scoring analysis
+  Missing file accepted only after retiring
+end note
+
+@enduml
