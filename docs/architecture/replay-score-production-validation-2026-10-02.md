@@ -568,3 +568,55 @@ examination entries described above. It used retained evidence only and did not
 perform cache discovery, import, capture, match launch, broad listing, global
 reconciliation, completion, cleanup, or retirement. It made no implementation,
 runtime, configuration, or gameplay change.
+
+## Compact historical-index follow-up — 2026-10-02
+
+The later score-index task reused **exactly** the 16 log and 18 score fingerprints
+in the JSON selection above, under the new managed-review ID
+`codex/historical-score-index-20261002`. It claimed both record kinds before
+body access and marked them examined afterward; completion remains unset. No
+capture, map, prior review, or retained source was changed. The one-match index
+selection added the documented opponent RICKSTALLION v22, historical
+escort-enabled/scout-allocation-off configuration, expected log build
+`cc9d4e61eaac6962dde089593d5779d094b8ec58d1ae27c07228f136bccf1f85`,
+and metadata-reported tick 1,536. These labels come from the
+[fourth-attempt record](healer-escort-injury-release-validation-2026-09-30.md#fourth-attempt--replay-6abd7222b72ca0c20fa0bce2),
+not from inferred score provenance. Given a claimed one-match version-1
+selection with those fields, reproduce the index with
+`npm run evidence:index -- <selection.json>`.
+
+Before extending the index, a compact-mode analyzer run on this exact
+selection completed within a 180-second timeout and a 2-GiB Node old-space
+limit. It took 34.45 seconds wall time (34.446 seconds inside the analyzer)
+and `/usr/bin/time -l` measured 1,827,373,056 bytes maximum resident set size.
+The compact report had 242,647 pass, zero fail, and 46 unknown findings,
+matching the documented full-report totals. These are one-run measurements, not
+a paired performance comparison with full mode or a general memory guarantee.
+
+The final-code index pass took 34.41 seconds wall time and 3,267,641,344
+bytes maximum resident set size; a repeated unchanged selection was a cache
+hit (about 0.96 seconds). An earlier intermediate-code index pass took 34.34
+seconds and 2,377,334,784 bytes RSS on the same inputs. This variation is a
+resource limitation, not evidence of a controlled memory improvement. The
+index row matched the compact report: 18 current verified score
+sources, 17 separate groups, 1,537 structurally valid source frames, 3,074
+slot observations, 3,072 available cumulative scores, 3,072 displayed gains,
+and 3,040 consecutive derived changes. Frame zero's missing score items explain
+why structural and direct-value coverage differ. The single group at the
+latest scored `gameTime` 1,536 is sourced from fingerprint
+`8d7e68f22f4b9e9077080cf1ee86ffc700680025b9b3a12b825c31a8c6d5ad38`:
+ours is cumulative 7,490 / displayed gain 5 / derived change 0; opponent is
+19,130 / 13 / 0. The index does not merge the 17 groups or present the last
+observation as a final score. Global alignment, score-to-build association,
+and score-evidence terminal status remain `unknown`; the metadata-reported
+last runtime tick 1,536 still lacks a captured runtime snapshot.
+
+The index reuses the analyzer's compact `scoring` fields. Its bounded
+`scoreSummary` retains selected/current source counts, source integrity,
+source-frame and score-value coverage, one unambiguous latest scored group's
+observations and group-source fingerprints, plus separate uncertainty statuses.
+When latest groups conflict, it reports ambiguity instead of choosing or
+combining their measurements. Missing or retired sources remain in the row's
+`unavailable` list. This is a display/index change only; it does not validate
+additional payload variants, establish causal scoring effects, or change
+gameplay or deployment.

@@ -12,6 +12,7 @@ const secondReplayId = '2'.repeat(24);
 const fingerprint = 'c'.repeat(64);
 const secondFingerprint = '3'.repeat(64);
 const retiredFingerprint = 'd'.repeat(64);
+const scoreFingerprint = '4'.repeat(64);
 const buildId = 'e'.repeat(64);
 const taskId = 'codex/historical-index-test';
 const dependencyFiles = ['tools/historical-index.js', 'tools/replay-analysis.js',
@@ -69,6 +70,37 @@ function fixture(t) {
     };
     return { root, evidenceFile, mapFile, manifestFile, manifest, saveManifest, selection,
         analyze, calls: () => calls };
+}
+
+function withScoreEvidence(f) {
+    const scoreFile = path.join(f.root, 'replay_logs', 'score.response');
+    fs.writeFileSync(scoreFile, '{"score":0}\n');
+    f.manifest.scoreRecords.push({ replayId, fingerprint: scoreFingerprint,
+        outputPath: 'score.response', outputFingerprint: sha256(fs.readFileSync(scoreFile)),
+        status: 'claim', reviews: { [taskId]: { claimedAt: 'now' } } });
+    f.saveManifest();
+    f.selection.matches[0].scoreFingerprints = [scoreFingerprint];
+    const logAnalyze = f.analyze;
+    f.analyze = args => {
+        const report = logAnalyze(args);
+        if (!args.scoreFingerprints?.length) return report;
+        assert.deepEqual(args.scoreFingerprints, [scoreFingerprint]);
+        return { ...report, selectedScoreFingerprints: args.scoreFingerprints,
+            scoring: { sources: [{ fingerprint: scoreFingerprint, integrity: 'verified',
+                coverage: { validFrames: 2 } }],
+            segments: [{ id: 'segment', sourceFingerprint: scoreFingerprint }],
+            groups: [{ id: 'group', segmentIds: ['segment'] }],
+            scoreProgression: [
+                { groupId: 'group', gameTime: 2, slot: 'player1', player: 'ours',
+                    cumulativeScore: 0, displayedGain: 0, derivedScoreChange: 0,
+                    derivedStatus: 'derived' },
+                { groupId: 'group', gameTime: 2, slot: 'player2', player: 'opponent',
+                    cumulativeScore: 9, displayedGain: null, derivedScoreChange: null,
+                    derivedStatus: 'missing-score' },
+            ], mapping: { status: 'established' }, alignment: { status: 'unknown' },
+            buildAssociation: { status: 'unknown' }, terminal: { status: 'unknown' } } };
+    };
+    return scoreFile;
 }
 
 test('explicit index caches only unchanged evidence, map, analyzer, configuration and selection', t => {
@@ -194,4 +226,109 @@ test('source lists must be explicit even when selecting score evidence', t => {
     delete f.selection.matches[0].logFingerprints;
     f.selection.matches[0].scoreFingerprints = ['4'.repeat(64)];
     assert.throws(() => buildHistoricalIndex(f), /Invalid explicit selection/);
+});
+
+test('score row preserves sourced observations, zero values and separate uncertainty', t => {
+    const f = fixture(t);
+    withScoreEvidence(f);
+    const row = buildHistoricalIndex(f).matches[0];
+    assert.equal(row.status, 'analyzed');
+    assert.equal(row.scoreSummary.status, 'observed');
+    assert.deepEqual(row.scoreSummary.coverage, {
+        frameSourcesWithCoverage: 1, sourceValidFrames: 2, observations: 2, cumulativeScoreValues: 2,
+        displayedGainValues: 1, derivedChangeValues: 1,
+        firstObservedGameTime: 2, lastObservedGameTime: 2, lastScoredGameTime: 2, groupCount: 1,
+    });
+    assert.deepEqual(row.scoreSummary.latestObservation.groupSourceFingerprints, [scoreFingerprint]);
+    assert.equal(row.scoreSummary.latestObservation.groupSourceCount, 1);
+    assert.equal(row.scoreSummary.latestObservation.groupSourcesAbbreviated, false);
+    assert.equal(row.scoreSummary.latestObservation.slots[0].cumulativeScore, 0);
+    assert.equal(row.scoreSummary.latestObservation.slots[0].displayedGain, 0);
+    assert.equal(row.scoreSummary.latestObservation.slots[0].derivedScoreChange, 0);
+    assert.equal(row.scoreSummary.latestObservation.slots[1].displayedGain, null);
+    assert.deepEqual(row.scoreSummary.uncertainty, { mapping: 'established',
+        alignment: 'unknown', buildAssociation: 'unknown', terminal: 'unknown' });
+    assert.equal(buildHistoricalIndex(f).matches[0].cache, 'hit');
+    assert.equal(f.calls(), 1);
+});
+
+test('partial and unavailable score selections never become zero observations', t => {
+    const f = fixture(t);
+    withScoreEvidence(f);
+    f.selection.matches[0].scoreFingerprints.push('5'.repeat(64));
+    const partial = buildHistoricalIndex(f).matches[0];
+    assert.equal(partial.status, 'partial');
+    assert.equal(partial.scoreSummary.status, 'observed');
+    assert.equal(partial.scoreSummary.selectedSourceCount, 2);
+    assert.equal(partial.scoreSummary.currentSourceCount, 1);
+    assert.deepEqual(partial.supportedFindings, []);
+    assert.equal(partial.unavailable[0].reason, 'missing');
+
+    f.manifest.scoreRecords = [];
+    f.saveManifest();
+    const missing = buildHistoricalIndex(f).matches[0];
+    assert.equal(missing.status, 'partial');
+    assert.equal(missing.scoreSummary.status, 'unavailable');
+    assert.equal(missing.scoreSummary.coverage, null);
+    assert.deepEqual(missing.scoreSummary.latestObservation, { status: 'unavailable' });
+    assert.equal(missing.scoreSummary.currentSourceCount, 0);
+
+    f.manifest.retiredScoreSources = [{ replayId, fingerprint: scoreFingerprint }];
+    f.saveManifest();
+    f.selection.matches[0].scoreFingerprints = [scoreFingerprint];
+    const retired = buildHistoricalIndex(f).matches[0];
+    assert.equal(retired.scoreSummary.status, 'unavailable');
+    assert.equal(retired.unavailable[0].reason, 'retired');
+});
+
+test('score bytes, score analyzer and index summary semantics invalidate score cache', t => {
+    const f = fixture(t);
+    const scoreFile = withScoreEvidence(f);
+    assert.equal(buildHistoricalIndex(f).matches[0].cache, 'miss');
+    assert.equal(buildHistoricalIndex(f).matches[0].cache, 'hit');
+    fs.writeFileSync(scoreFile, '{"score":1}\n');
+    f.manifest.scoreRecords[0].outputFingerprint = sha256(fs.readFileSync(scoreFile));
+    f.saveManifest();
+    assert.equal(buildHistoricalIndex(f).matches[0].cache, 'miss');
+    fs.writeFileSync(path.join(f.root, 'tools/replay-score-analysis.js'), 'changed score analyzer');
+    assert.equal(buildHistoricalIndex(f).matches[0].cache, 'miss');
+    fs.writeFileSync(path.join(f.root, 'tools/historical-index.js'), 'changed summary semantics');
+    assert.equal(buildHistoricalIndex(f).matches[0].cache, 'miss');
+    assert.equal(f.calls(), 4);
+});
+
+test('incompatible latest score groups do not yield a synthetic match-wide observation', t => {
+    const f = fixture(t);
+    withScoreEvidence(f);
+    const scoreAnalyze = f.analyze;
+    f.analyze = args => {
+        const report = scoreAnalyze(args);
+        report.scoring.groups.push({ id: 'other-group', segmentIds: ['other-segment'] });
+        report.scoring.segments.push({ id: 'other-segment', sourceFingerprint: scoreFingerprint });
+        report.scoring.scoreProgression.push({ groupId: 'other-group', gameTime: 2,
+            slot: 'player1', player: 'unknown', cumulativeScore: 15,
+            displayedGain: 1, derivedScoreChange: null, derivedStatus: 'initial' });
+        return report;
+    };
+    const latest = buildHistoricalIndex(f).matches[0].scoreSummary.latestObservation;
+    assert.deepEqual(latest, { status: 'ambiguous', gameTime: 2, groupCount: 2 });
+});
+
+test('a structurally observed frame with missing score values is not a zero score', t => {
+    const f = fixture(t);
+    withScoreEvidence(f);
+    const scoreAnalyze = f.analyze;
+    f.analyze = args => {
+        const report = scoreAnalyze(args);
+        report.scoring.scoreProgression = report.scoring.scoreProgression.map(item => ({ ...item,
+            cumulativeScore: null, displayedGain: null, derivedScoreChange: null,
+            derivedStatus: 'missing-score' }));
+        return report;
+    };
+    const summary = buildHistoricalIndex(f).matches[0].scoreSummary;
+    assert.equal(summary.status, 'no-score-value');
+    assert.equal(summary.coverage.observations, 2);
+    assert.equal(summary.coverage.cumulativeScoreValues, 0);
+    assert.equal(summary.coverage.lastScoredGameTime, null);
+    assert.deepEqual(summary.latestObservation, { status: 'unavailable' });
 });

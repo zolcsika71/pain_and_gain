@@ -87,6 +87,62 @@ function summarizedGroups(report, verdict) {
     }));
 }
 
+function summarizeScores(report, selected, unavailableStatus = 'unavailable') {
+    const sources = selected.filter(item => item.kind === 'score');
+    if (!sources.length) return undefined;
+    const current = sources.filter(item => item.availability === 'current');
+    const scoring = report?.scoring;
+    if (!scoring) return { status: unavailableStatus, selectedSourceCount: sources.length,
+        currentSourceCount: current.length, coverage: null,
+        latestObservation: { status: 'unavailable' }, uncertainty: null };
+
+    const observations = scoring.scoreProgression ?? [];
+    const times = observations.map(item => item.gameTime).filter(Number.isSafeInteger);
+    const scoredTimes = observations.filter(item => Number.isSafeInteger(item.cumulativeScore) ||
+        Number.isSafeInteger(item.displayedGain)).map(item => item.gameTime);
+    const lastGameTime = scoredTimes.length ? scoredTimes.reduce((a, b) => Math.max(a, b)) : null;
+    const latest = observations.filter(item => item.gameTime === lastGameTime);
+    const groupIds = [...new Set(latest.map(item => item.groupId))];
+    const group = groupIds.length === 1 ? scoring.groups?.find(item => item.id === groupIds[0]) : null;
+    const segments = new Map((scoring.segments ?? []).map(item => [item.id, item]));
+    const groupSourceFingerprints = group?.segmentIds.map(id => segments.get(id)?.sourceFingerprint);
+    const groupSources = groupSourceFingerprints ? [...new Set(groupSourceFingerprints)].sort() : [];
+    const uniqueSlots = new Set(latest.map(item => item.slot)).size === latest.length;
+    const latestObservation = lastGameTime === null ? { status: 'unavailable' } :
+        !group || !uniqueSlots || groupSourceFingerprints.some(value => !value ||
+            !current.some(item => item.fingerprint === value)) ?
+            { status: 'ambiguous', gameTime: lastGameTime, groupCount: groupIds.length } :
+            { status: 'available', gameTime: lastGameTime, groupId: group.id,
+                groupSourceCount: groupSources.length,
+                groupSourceFingerprints: groupSources.slice(0, 3),
+                groupSourcesAbbreviated: groupSources.length > 3,
+                slots: latest.map(item => ({ slot: item.slot, player: item.player,
+                    cumulativeScore: item.cumulativeScore, displayedGain: item.displayedGain,
+                    derivedScoreChange: item.derivedScoreChange, derivedStatus: item.derivedStatus }))
+                    .sort((a, b) => a.slot.localeCompare(b.slot)) };
+    return { status: scoredTimes.length ? 'observed' : 'no-score-value',
+        selectedSourceCount: sources.length, currentSourceCount: current.length,
+        sourceIntegrity: { verified: scoring.sources?.filter(item => item.integrity === 'verified').length ?? 0,
+            invalid: scoring.sources?.filter(item => item.integrity === 'invalid').length ?? 0 },
+        coverage: { frameSourcesWithCoverage: scoring.sources?.filter(item =>
+            Number.isSafeInteger(item.coverage?.validFrames)).length ?? 0,
+        sourceValidFrames: scoring.sources?.reduce((total, item) =>
+            total + (item.coverage?.validFrames ?? 0), 0) ?? 0,
+        observations: observations.length,
+        cumulativeScoreValues: observations.filter(item => Number.isSafeInteger(item.cumulativeScore)).length,
+        displayedGainValues: observations.filter(item => Number.isSafeInteger(item.displayedGain)).length,
+        derivedChangeValues: observations.filter(item => Number.isSafeInteger(item.derivedScoreChange)).length,
+        firstObservedGameTime: times.length ? times.reduce((a, b) => Math.min(a, b)) : null,
+        lastObservedGameTime: times.length ? times.reduce((a, b) => Math.max(a, b)) : null,
+        lastScoredGameTime: lastGameTime,
+        groupCount: scoring.groups?.length ?? 0 },
+        latestObservation,
+        uncertainty: { mapping: scoring.mapping?.status ?? 'unknown',
+            alignment: scoring.alignment?.status ?? 'unknown',
+            buildAssociation: scoring.buildAssociation?.status ?? 'unknown',
+            terminal: scoring.terminal?.status ?? 'unknown' } };
+}
+
 function cachedReport(root, match, key, current, analyze) {
     const name = `historical-${match.replayId}-${sha256(canonical({
         logs: match.logFingerprints, scores: match.scoreFingerprints ?? [],
@@ -147,24 +203,35 @@ export function buildHistoricalIndex({ root = projectRoot, selection, analyze = 
         if (duplicate) return { ...base, status: 'invalid', cache: 'none',
             unavailable: [...unavailable, { kind: duplicate.kind, fingerprint: duplicate.fingerprint,
                 reason: 'duplicate current records' }], coverage: null,
-            supportedFindings: [], unknowns: [] };
+            supportedFindings: [], unknowns: [],
+            ...(match.scoreFingerprints?.length ? { scoreSummary: summarizeScores(null, selected, 'invalid') } : {}) };
         if (!current.length) return { ...base, status: 'unavailable', cache: 'none',
-            coverage: null, supportedFindings: [], unknowns: [] };
+            coverage: null, supportedFindings: [], unknowns: [],
+            ...(match.scoreFingerprints?.length ? { scoreSummary: summarizeScores(null, selected) } : {}) };
         let key;
         try { key = cacheInput(root, manifest, match, selected); }
         catch (error) {
             return { ...base, status: error.code === 'ENOENT' ? 'unavailable' : 'invalid', cache: 'none',
                 unavailable: [...unavailable, { reason: error.message }], coverage: null,
-                supportedFindings: [], unknowns: [] };
+                supportedFindings: [], unknowns: [],
+                ...(match.scoreFingerprints?.length ? { scoreSummary: summarizeScores(null, selected,
+                    error.code === 'ENOENT' ? 'unavailable' : 'invalid') } : {}) };
         }
         const { report, cache } = cachedReport(root, match, key, current, analyze);
         const trusted = report.evidenceSummary?.trustedLogRecords ===
             current.filter(x => x.kind === 'log').length;
+        const currentScores = current.filter(x => x.kind === 'score').map(x => x.fingerprint);
+        const trustedScores = !match.scoreFingerprints?.length || report.scoring &&
+            canonical(report.selectedScoreFingerprints ?? []) === canonical(currentScores.slice().sort()) &&
+            canonical(report.scoring.sources?.map(x => x.fingerprint).sort() ?? []) ===
+                canonical(currentScores.slice().sort()) &&
+            report.scoring.sources.every(x => x.integrity === 'verified');
         const configurationCheck = match.configuration.expectedBuildId === null ? 'unverified' :
             buildIds.length === 1 && buildIds[0] === match.configuration.expectedBuildId ?
                 'expected-build-matched' : 'build-mismatch';
         const status = report.summary?.fail || configurationCheck === 'build-mismatch' ? 'invalid' :
-            unavailable.length || !trusted || configurationCheck === 'unverified' ? 'partial' : 'analyzed';
+            unavailable.length || !trusted || !trustedScores || configurationCheck === 'unverified' ?
+                'partial' : 'analyzed';
         const ranges = report.evidenceSummary?.snapshots?.tickRanges ?? [];
         const last = ranges.at(-1)?.last ?? null;
         return { ...base, status, cache,
@@ -177,7 +244,8 @@ export function buildHistoricalIndex({ root = projectRoot, selection, analyze = 
             configurationCheck,
             supportedFindings: status === 'analyzed' ? summarizedGroups(report, 'pass') : [],
             unknowns: summarizedGroups(report, 'unknown'),
-            failures: summarizedGroups(report, 'fail') };
+            failures: summarizedGroups(report, 'fail'),
+            ...(match.scoreFingerprints?.length ? { scoreSummary: summarizeScores(report, selected) } : {}) };
     });
     return { indexVersion: 1, selectionTaskId: selection.taskId,
         comparisonPolicy: 'No cross-match pooling: compare build, documented configuration, opponent, map, and coverage separately.',

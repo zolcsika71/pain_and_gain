@@ -349,6 +349,28 @@ checks from one match and is not a count of independent trials. Use the cited
 experiment record and bounded full-detail analysis for behavior-specific
 claims; this index does not invent a new escort-policy analyzer.
 
+Rows selecting score fingerprints also have `scoreSummary`. Its `status` says
+whether at least one direct score value was observed; it does **not** mean the
+selection is complete. Compare `selectedSourceCount` with `currentSourceCount`,
+`sourceIntegrity`, the row's `unavailable` list, and `coverage` separately.
+`sourceValidFrames` counts structurally valid frames in sources with coverage,
+not unique match frames or valid score items; `frameSourcesWithCoverage` shows
+how many sources contributed to that count. Slot observation, cumulative-score,
+displayed-gain, and consecutive derived-change counts are separate. Null or
+absent measurements stay unknown, never zero. `lastObservedGameTime` may have
+missing score items; `lastScoredGameTime` identifies the latest direct value.
+`latestObservation` reports values only if that time belongs to one compatible
+group with distinct slots. Its at most three fingerprints identify the
+*group's sources*, not exact frame references; `groupSourceCount` and
+`groupSourcesAbbreviated` disclose truncation. Use the compact report or full
+detail for every source and exact frame reference.
+Multiple incompatible latest groups are `ambiguous`, without synthesized
+match-wide values. Mapping, runtime alignment, score-to-build association, and
+terminal status are reported separately under `uncertainty`. An available last
+observation is not a final result, and score/command correlation is not proof
+of strategic benefit. The exact production selection and bounded validation
+are recorded in the [score validation record](docs/architecture/replay-score-production-validation-2026-10-02.md).
+
 The ignored `replay_logs/analysis_cache/historical-*.json` entries contain
 compact derived reports. A hit requires the exact selection, selected source
 metadata and bytes, linked map bytes, replay association, analyzer/tool bytes,
