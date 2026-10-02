@@ -107,3 +107,65 @@ controlled scenario or already retained compatible replay supplies the precise
 missing remote-injury transition; then claim it, index its exact sources,
 evaluate the criterion above, and separately assess later movement/outcomes.
 Manual action: **NONE**.
+
+## Follow-up triage: scout first-flag non-progress
+
+Starting from clean commit `901549f39a168d9491ad3d2f7d3ffabb59bffc7b`,
+this iteration reviewed the completed, explicit four-replay audit at
+`replay_logs/local_audits/2026-10-02-scout-hold/four-replay-review/` before
+considering any new capture. Its `selection.json`, `scout-results.json`,
+per-replay compact reports, and saved [scout handoff](../handoffs/2026-10-02-scout-hold.md)
+already answer the bounded command/decision question. No managed capture body
+was reopened, no analyzer was rerun, and no new review claim or lifecycle
+checkpoint was needed. The ignored local audit is not available from GitHub;
+the exact selections remain retained on this machine.
+
+The issue is repeated first-flag fallback by healthy MOVE-only scouts after
+that flag is owned. The strongest two examples share historical scout-allocation
+build `679976566a4143ddc7637d0fc7ef4c5fff4571719157466e05589e085ea9602b`
+but **not** opponent or map:
+
+| Replay and opponent | Map checksum and selected source references | Bounded observation |
+| --- | --- | --- |
+| `6abeee11d1c856288b7fcc0e`, System | `c40017bf486b12b976ff901eaacf0a00bf240b4f4878f19ee7a64f76e196f91b`; first log `49ee1232d1f47c15357fe41dd3428135f5b3ba5d5e45b55d90d029aaf8baa6c2`, last `b340952dbab86f3a4898a8d73d203720b4a30e9b46cdf980c3ca5eb6e12555e7` | Captured/closed ticks 1–1527. Scout 1 selected first-flag fallback on all 1,527 ticks and attempted movement each time; 1,483 available following-position comparisons were stationary. Scout 2 was assigned at tick 39 and completed an attack-reduction flag capture at tick 62. |
+| `6abeef13d1c8561eb97fcc13`, Rozzel v18 | `50e5de7e88afce9efd5b171f0edc60131de7722fb41f6253f24faec84e6e422d`; first log `5c1c88f8ef5832fbff977445573a660bbf4466a7704847aca21a55dca1216dde`, last `2840605ede1fa5dcc1a9c4a574e0124da5ac933d51d3e42a16e584c3e6a47ea8` | Captured/closed ticks 1–1414. No scout allocation occurred; scout 2 repeatedly approached the first flag, with the documented (47,49)/(47,50) alternation on ticks 52–1414. |
+
+All four audited allocation replays had zero reported policy problems and zero
+compact-analyzer failures. Their outcomes are not pooled: System and Rozzel
+have different opponents and maps, and the one successful capture cannot
+establish a scoring or survival benefit. An accepted `moveTo` is scheduling,
+not proof of displacement; a stationary next snapshot does not identify why
+the pathfinder failed to progress. The separate all-enabled charcock v78 hold
+screen verified on-flag holding under build
+`8528f573aa57fc000f3105d71d0315de7b159472318771edf145c6ced898e872`,
+but did not exercise hold-to-release or establish net benefit. Its different
+build/opponent/map cannot be treated as a paired comparison.
+
+**Hypothesis and criterion.** Suppressing some redundant fallback movement
+could reduce non-progressing commands, but changing scout objectives or
+promoting holding might also lose a useful response to a new threat or alter
+flag/scoring outcomes. A concrete defect would require a complete same-build
+decision/attempt trace violating the existing allocation or movement priority,
+or duplicate movement for one actor/tick. A strategic promotion would require
+comparable, build-identified enabled/disabled scenarios with first-flag
+retention, other-flag uptime, casualties, score trajectory, and threat-release
+behavior measured separately. The retained audit establishes repeated
+commands and the one diversion, but neither a policy violation nor that
+comparison. Snapshot-based selector evaluation cannot predict the trajectory
+of a changed policy.
+
+**Decision: no gameplay, logging, or tooling change.** Do not relax allocator
+safety gates or enable the holding switch from these unmatched examples.
+The smallest missing evidence for reconsideration is a reproducible scenario
+that includes both a non-progressing scout and a subsequent eligibility loss,
+with compatible build-tagged decisions/commands and a matched outcome
+comparison. No such setup or new retained evidence is established, so this
+iteration neither prepares nor requests a random match. Hold-to-release and
+remote-injury retention remain parked. Deployment switches and runtime build
+`fe78c1a86aa6127152561cf4cedc05257e7a537d7a244a183a38f7394961ef8c`
+remain unchanged. Manual action: **NONE**.
+
+Focused scout allocation/movement/hold tests passed **36/36**. The unchanged
+runtime passed `npm test` **189/189** and `npm run check` with the deployment
+build ID above. No replay analysis, gameplay, or review-lifecycle command was
+run in this follow-up. The final diff contains documentation only.

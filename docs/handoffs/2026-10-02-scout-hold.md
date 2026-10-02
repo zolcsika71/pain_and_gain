@@ -183,3 +183,28 @@ full suite passed **189/189**; `npm run check` passed with deployment build
 The documented index command reanalyzed the two current rows after the tool's
 final code change and hit both caches on repetition; the retired row had no
 cache. Manual action: **NONE**.
+
+## Scout non-progress evidence triage
+
+The next bounded review reused the retained four-replay scout audit and its
+explicit local selection without reopening managed capture bodies. Same-build
+System replay `6abeee11d1c856288b7fcc0e` records repeated first-flag
+fallback commands and one completed scout diversion; Rozzel v18 replay
+`6abeef13d1c8561eb97fcc13` records repeated first-flag approaches without
+an allocation. They have different maps and opponents. The audit reports no
+allocation policy problem or analyzer failure, and command acceptance alone
+does not establish movement or strategic value. The all-enabled charcock hold
+trial is a different build and still lacks release evidence.
+
+The [follow-up decision](../architecture/historical-evidence-cycle-2026-10-02.md#follow-up-triage-scout-first-flag-non-progress)
+is **no gameplay or logging change**: these examples do not justify changing
+the stable defaults or relaxing safety gates. Captures, caches, and all review
+claims remain untouched. The missing criterion is a reproducible threat-release
+scenario plus a comparable build-identified outcome comparison; no such setup
+is available. Keep this investigation parked until new relevant evidence, a
+feasible targeted experiment, or a distinct unanswered question arises.
+Manual action: **NONE**.
+
+Validation for this documentation-only decision: focused scout tests **36/36**,
+`npm test` **189/189**, `npm run check` at unchanged deployment build
+`fe78c1a86aa6127152561cf4cedc05257e7a537d7a244a183a38f7394961ef8c`.
