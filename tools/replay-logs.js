@@ -1739,8 +1739,9 @@ export async function registerLocalFile(root, replayId, name) {
     });
 }
 
-export async function scanCache(root, cacheDir, seen = null) {
+export async function scanCache(root, cacheDir, seen = null, onResult = null) {
     const results = [];
+    const report = result => { results.push(result); onResult?.(result); };
     const deferred = [];
     let mapMayHaveArrived = false;
     for (const name of fs.readdirSync(cacheDir).sort()) {
@@ -1764,7 +1765,7 @@ export async function scanCache(root, cacheDir, seen = null) {
         });
         if (result.kind === 'deferred') deferred.push({ file, signature, result });
         else if (result.kind !== 'unrelated' && result.kind !== 'deduplicated') {
-            results.push({ source: file, ...result });
+            report({ source: file, ...result });
             if (['mapped', 'imported'].includes(result.kind)) mapMayHaveArrived = true;
         }
     }
@@ -1776,7 +1777,7 @@ export async function scanCache(root, cacheDir, seen = null) {
             if (seen) seen.set(item.file, { signature: item.signature, attempts: 1,
                 kind: result.kind, finished: !['incomplete', 'error', 'deferred'].includes(result.kind) });
         }
-        if (result.kind !== 'deduplicated') results.push({ source: item.file, ...result });
+        if (result.kind !== 'deduplicated') report({ source: item.file, ...result });
     }
     return results;
 }
@@ -1897,18 +1898,17 @@ async function main() {
         console.log(JSON.stringify(await cleanupScoreSource(root, args[0], args[1])));
     } else if (command === 'scan' || command === 'watch') {
         const cacheDir = args[0] ? path.resolve(args[0]) : defaultCacheDir;
+        if (command === 'watch') console.log(`Starting replay-log watch: ${cacheDir} (initial reconciliation/scan in progress; Ctrl-C to stop)`);
         await reconcileCleanup(root);
         const seen = new Map();
-        const poll = async () => {
-            for (const result of await scanCache(root, cacheDir, seen)) {
-                if (result.record) console.log(JSON.stringify({ event: result.kind, replayId: result.record.replayId, fingerprint: result.record.fingerprint, outputPath: result.record.outputPath, mapId: result.record.mapId, mapFile: result.record.mapFile, buildId: result.record.buildId ?? null, status: result.record.status, coverage: result.record.coverage, diagnosticCoverage: result.record.diagnosticCoverage, otherEntries: result.record.otherEntries.length }));
-                else if (['mapped', 'deferred'].includes(result.kind)) console.log(JSON.stringify({ event: result.kind, replayId: result.replayId, mapId: result.mapId, mapFile: result.mapFile, coverage: result.coverage, diagnosticCoverage: result.diagnosticCoverage, message: result.message }));
-                else console.error(JSON.stringify({ event: result.kind, source: result.source, message: result.message }));
-            }
-        };
-        await poll();
+        const poll = () => scanCache(root, cacheDir, seen, result => {
+            if (result.record) console.log(JSON.stringify({ event: result.kind, replayId: result.record.replayId, fingerprint: result.record.fingerprint, outputPath: result.record.outputPath, mapId: result.record.mapId, mapFile: result.record.mapFile, buildId: result.record.buildId ?? null, status: result.record.status, coverage: result.record.coverage, diagnosticCoverage: result.record.diagnosticCoverage, otherEntries: result.record.otherEntries.length }));
+            else if (['mapped', 'deferred'].includes(result.kind)) console.log(JSON.stringify({ event: result.kind, replayId: result.replayId, mapId: result.mapId, mapFile: result.mapFile, coverage: result.coverage, diagnosticCoverage: result.diagnosticCoverage, message: result.message }));
+            else console.error(JSON.stringify({ event: result.kind, source: result.source, message: result.message }));
+        });
+        const initial = await poll();
         if (command === 'watch') {
-            console.log(`Watching ${cacheDir} (polling every 2 seconds; Ctrl-C to stop)`);
+            console.log(`Watching ${cacheDir} (initial scan complete: ${initial.length} reportable events; polling every 2 seconds; idle polls are silent; Ctrl-C to stop)`);
             while (true) { await sleep(2000); await poll(); }
         }
     } else if (command === 'list') {

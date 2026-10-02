@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { gzipSync } from 'node:zlib';
 import fs from 'node:fs';
@@ -878,6 +879,42 @@ test('scans existing, new, and rewritten cache files without overwriting differe
     events = await scanCache(root, cache, seen);
     assert.equal(events.length, 1);
     assert.equal(events[0].record.replayId, 'aaaaaaaaaaaaaaaaaaaaaaaa');
+});
+
+test('watch announces startup before a failed initial scan in an isolated checkout', t => {
+    const { root } = workspace(t);
+    const realRoot = fs.realpathSync(root);
+    const toolsDir = path.join(realRoot, 'tools');
+    fs.mkdirSync(toolsDir);
+    fs.copyFileSync(new URL('../../tools/replay-logs.js', import.meta.url),
+        path.join(toolsDir, 'replay-logs.js'));
+    fs.writeFileSync(path.join(realRoot, 'package.json'), '{"type":"module"}\n');
+    const missingCache = path.join(realRoot, 'missing-cache');
+    const child = spawnSync(process.execPath,
+        [path.join(toolsDir, 'replay-logs.js'), 'watch', missingCache],
+        { encoding: 'utf8', timeout: 5000 });
+    assert.equal(child.status, 1);
+    assert.match(child.stdout, /Starting replay-log watch/);
+    assert.match(child.stderr, /ENOENT/);
+    assert.match(child.stderr, /missing-cache/);
+});
+
+test('scan reports imports as they occur while preserving its result list', async t => {
+    const { root, cache } = workspace(t);
+    fs.writeFileSync(path.join(cache, 'a_0'), cacheFrame({ 1: mappedFirst() }));
+    fs.writeFileSync(path.join(cache, 'b_0'), cacheFrame({ 1: mappedFirst() },
+        { id: 'aaaaaaaaaaaaaaaaaaaaaaaa' }));
+    const observed = [];
+    const seen = new Map();
+    const results = await scanCache(root, cache, seen, event => {
+        observed.push(event.kind);
+        const manifest = JSON.parse(fs.readFileSync(path.join(root, 'replay_logs', 'manifest.json')));
+        assert.equal(manifest.records.length, observed.length);
+    });
+    assert.deepEqual(observed, ['imported', 'imported']);
+    assert.deepEqual(results.map(event => event.kind), observed);
+    assert.deepEqual(await scanCache(root, cache, seen, () => assert.fail('unchanged poll should be silent')), []);
+    assert.deepEqual(await scanCache(root, cache, new Map(), () => assert.fail('duplicates should be silent')), []);
 });
 
 test('migrates legacy waiting status without changing ownership, map links, or fingerprints', async t => {
