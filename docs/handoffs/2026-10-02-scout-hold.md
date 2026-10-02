@@ -119,3 +119,26 @@ match. Define how the scout first enters a hold and then loses eligibility
 same-build runtime observation on both sides of the transition. Keep the
 allocator's priority and first-flag safety gates intact. No additional
 gameplay change is justified by the current evidence.
+
+## Follow-up: release preparation
+
+The follow-up added `npm run scout-hold:screen -- <replay-id> <codex/task-id>
+<expected-build-id>` for claimed, same-build managed log evidence. It runs the
+existing compact analyzer, caches the derived runtime report by evidence and
+analyzer/configuration fingerprints, and reports sourced hold/release
+transitions. The charcock screen found 1,868 holds, no release transition, no
+off-flag hold, and no guard violation across 1,946 complete runtime ticks.
+The new tick-flow regression exercises enemy entry at the five-tile guard,
+fallback command, and re-hold. No gameplay or logging code changed. See the
+[updated experiment record](../architecture/scout-hold-experiment-2026-10-02.md#hold-to-release-preparation--follow-up)
+for exact command, provenance, acceptance criteria, and limits.
+Final `npm test` passed 177/177, `npm run check` passed at the unchanged
+deployment build ID, and `git diff --check` passed. The new review task claimed
+and examined all 20 log records; its completion checkpoints remain unset.
+
+There is no reproducible live enemy-entry setup in the retained material.
+Leave the deployment switches at allocation off, escort on, hold off; build
+`fe78c1a86aa6127152561cf4cedc05257e7a537d7a244a183a38f7394961ef8c`.
+Do not ask for a random match solely to exercise release. Revisit only if the
+user can arrange a controlled opponent/scenario or already has a replay with
+the required transition. The new review claims remain retained and incomplete.

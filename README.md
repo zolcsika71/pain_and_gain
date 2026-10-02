@@ -179,6 +179,26 @@ claim valid scoring observations for that source or complete analysis coverage.
 
 ### Read-only deterministic analysis
 
+For the scoped scout hold-to-release review, claim each managed log fingerprint
+with a unique review task ID, then run:
+
+```sh
+npm run scout-hold:screen -- <replay-id> <codex/task-id> <expected-build-id>
+node --test tests/unit/scout-hold.test.js tests/unit/scout-hold-flow.test.js tests/unit/scout-hold-screen.test.js
+```
+
+The screen requires every selected log record to carry the expected build and a
+claim for that task. It runs the existing compact analyzer before interpreting
+runtime decisions and snapshots. Its ignored cache at
+`replay_logs/analysis_cache/scout-hold-<replay-id>.json` is keyed by selected
+response fingerprints and bytes, diagnostic content/coverage, linked map bytes,
+analyzer/tool code, local build identity, and configuration. A changed input
+recomputes the report. It records hold decisions, off-flag holds, guard
+violations, and consecutive-tick releases with their exact log fingerprints;
+command returns and later positions remain separate observations. A missing
+transition remains unexercised. Mark records `examined` after reading the
+report; leave claims active while the experiment remains open.
+
 After using the external review workflow to claim every managed response in the
 intended scope, analyze all current records for a replay with:
 

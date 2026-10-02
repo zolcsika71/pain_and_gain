@@ -1,0 +1,191 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { analyzeReplay } from './replay-analysis.js';
+import { canonical, sha256 } from './replay-logs.js';
+
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const holdReason = 'scout-owned-flag-hold';
+const range = (a, b) => Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y));
+
+function managedBytes(name) {
+    if (typeof name !== 'string' || path.basename(name) !== name) {
+        throw new Error(`Unsafe managed evidence path: ${name}`);
+    }
+    const file = path.join(root, 'replay_logs', name);
+    if (!fs.lstatSync(file).isFile()) throw new Error(`Unsafe managed evidence file: ${name}`);
+    return fs.readFileSync(file);
+}
+
+function reportSource(snapshot, decisions) {
+    return { snapshot: snapshot?.fingerprint ?? null,
+        decision: decisions?.[0]?.fingerprint ?? null };
+}
+
+export function summarizeHoldRelease(snapshots, entries, scoutIds, completeTicks) {
+    const byTick = new Map(snapshots.map(s => [s.tick, s]));
+    const grouped = new Map();
+    for (const item of entries) {
+        const e = item.entry;
+        if (!['action-decision', 'action-attempt'].includes(e.type) || e.channel !== 'movement') continue;
+        const key = `${e.tick}:${e.actorId}:${e.type}`;
+        if (!grouped.has(key)) grouped.set(key, []);
+        grouped.get(key).push(item);
+    }
+    const get = (tick, actor, type) => grouped.get(`${tick}:${actor}:${type}`) ?? [];
+    let holds = 0, offFlagHolds = 0;
+    const transitions = [];
+    const guardViolations = [];
+    for (const actorId of scoutIds) for (const item of snapshots) {
+        const s = item.state, actor = s.creeps.find(c => c.id === actorId);
+        const decisions = get(s.tick, actorId, 'action-decision');
+        const held = decisions.length === 1 && decisions[0].entry.reason === holdReason &&
+            decisions[0].entry.outcome === 'hold';
+        if (!held || !actor) continue;
+        holds++;
+        const flag = s.flags.find(f => f.id === s.selectedFlagId);
+        if (flag && range(actor, flag) > 0) offFlagHolds++;
+        if (flag && completeTicks.has(s.tick) && decisions[0].entry.buildId === s.buildId) {
+            const threats = s.creeps.filter(c => !c.my && c.hits > 0 &&
+                (range(c, actor) <= 5 || range(c, flag) <= 5)).map(c => c.id);
+            if (threats.length) guardViolations.push({ actorId, tick: s.tick, threats,
+                source: reportSource(item, decisions) });
+        }
+        const next = byTick.get(s.tick + 1);
+        if (!next) continue;
+        const nextDecisions = get(s.tick + 1, actorId, 'action-decision');
+        if (nextDecisions.length === 1 && nextDecisions[0].entry.reason === holdReason &&
+            nextDecisions[0].entry.outcome === 'hold') continue;
+        const nextActor = next.state.creeps.find(c => c.id === actorId);
+        const nextFlag = next.state.flags.find(f => f.id === next.state.selectedFlagId);
+        const threats = nextActor && nextFlag ? next.state.creeps.filter(c => !c.my && c.hits > 0 &&
+            (range(c, nextActor) <= 5 || range(c, nextFlag) <= 5)).map(c => c.id) : [];
+        const attempts = get(s.tick + 1, actorId, 'action-attempt');
+        const decision = nextDecisions[0]?.entry;
+        const sameBuild = !!s.buildId && s.buildId === next.state.buildId &&
+            decisions[0]?.entry.buildId === s.buildId &&
+            nextDecisions.every(d => d.entry.buildId === s.buildId) &&
+            attempts.every(a => a.entry.buildId === s.buildId);
+        const covered = completeTicks.has(s.tick) && completeTicks.has(s.tick + 1);
+        const guardRelease = threats.length > 0 && nextActor && nextFlag?.owner === 'me' &&
+            nextActor.hits === nextActor.hitsMax && nextActor.fatigue === 0 &&
+            range(nextActor, nextFlag) <= 2;
+        const expected = decision?.outcome === 'selected' && decision.reason === 'flag-fallback' &&
+            decision.actions?.length === 1 && decision.actions[0].method === 'moveTo' &&
+            decision.actions[0].target?.id === nextFlag?.id && attempts.length === 1 &&
+            attempts[0].entry.method === 'moveTo' && attempts[0].entry.target?.id === nextFlag?.id &&
+            attempts[0].entry.returnCode === 0;
+        const after = byTick.get(s.tick + 2)?.state.creeps.find(c => c.id === actorId);
+        transitions.push({ actorId, holdTick: s.tick, releaseTick: s.tick + 1,
+            cause: threats.length ? 'nearby-enemy' : 'other-or-unknown', threats,
+            verdict: !covered || !sameBuild || !nextActor || !nextFlag ? 'unknown'
+                : guardRelease && nextDecisions.length !== 1 ? 'fail'
+                    : guardRelease && decision?.reason === 'flag-fallback'
+                        ? (expected ? 'pass' : 'fail') : 'unknown',
+            decision: decision ? { outcome: decision.outcome, reason: decision.reason,
+                targetId: decision.actions?.[0]?.target?.id ?? null } : null,
+            attempts: attempts.map(a => ({ method: a.entry.method,
+                targetId: a.entry.target?.id ?? null, returnCode: a.entry.returnCode })),
+            observedAfter: after ? { x: after.x, y: after.y } : null,
+            sources: { hold: reportSource(item, decisions),
+                release: reportSource(next, nextDecisions),
+                attempts: attempts.map(a => a.fingerprint) } });
+    }
+    const target = transitions.filter(t => t.cause === 'nearby-enemy');
+    return { scoutIds, holds, offFlagHolds, transitions, guardViolations,
+        enemyRelease: guardViolations.length || target.some(t => t.verdict === 'fail') ? 'fail'
+            : target.some(t => t.verdict === 'pass') ? 'pass' : 'unexercised' };
+}
+
+function selectedEvidence(replayId, taskId) {
+    const manifest = JSON.parse(fs.readFileSync(path.join(root, 'replay_logs/manifest.json')));
+    const records = manifest.records.filter(r => r.replayId === replayId)
+        .sort((a, b) => a.fingerprint.localeCompare(b.fingerprint));
+    if (!records.length) throw new Error(`No managed log records for ${replayId}`);
+    for (const record of records) if (!record.reviews?.[taskId]?.claimedAt) {
+        throw new Error(`Claim ${record.fingerprint} for ${taskId} before screening`);
+    }
+    const source = records.map(r => {
+        const bytes = r.outputPath ? managedBytes(r.outputPath) : null;
+        const mapBytes = managedBytes(r.mapFile);
+        return { fingerprint: r.fingerprint, sourceKey: r.sourceKey, buildId: r.buildId,
+            outputFingerprint: r.outputFingerprint, outputBytes: bytes ? sha256(bytes) : null,
+            mapChecksum: r.mapChecksum, mapBytes: sha256(mapBytes),
+            diagnostics: sha256(r.otherEntries.map(e => e.raw).join('\n')),
+            coverage: r.diagnosticCoverage };
+    });
+    const dependencies = ['tools/scout-hold-screen.js', 'tools/replay-analysis.js',
+        'tools/replay-logs.js', 'tools/replay-score-analysis.js', 'src/config.js',
+        'src/debug/build-id.js'].map(file => [file, sha256(fs.readFileSync(path.join(root, file)))]);
+    return { records, key: sha256(canonical({ replayId, source, dependencies })) };
+}
+
+export function screenReplay(replayId, taskId, expectedBuildId) {
+    if (!/^[a-f0-9]{24}$/.test(replayId) || !/^codex\/[a-z0-9-]+$/.test(taskId) ||
+        !/^[a-f0-9]{64}$/.test(expectedBuildId)) {
+        throw new Error('Usage: node tools/scout-hold-screen.js <replay-id> <codex/task-id> <expected-build-id>');
+    }
+    const { records, key } = selectedEvidence(replayId, taskId);
+    if (records.some(r => r.buildId !== expectedBuildId)) {
+        throw new Error(`Replay log build does not match ${expectedBuildId}`);
+    }
+    const cacheDir = path.join(root, 'replay_logs/analysis_cache');
+    const cacheFile = path.join(cacheDir, `scout-hold-${replayId}.json`);
+    if (fs.existsSync(cacheFile)) {
+        const cached = JSON.parse(fs.readFileSync(cacheFile));
+        if (cached.key === key) return { report: cached.report, cache: 'hit' };
+    }
+    const analysis = analyzeReplay({ root, replayId,
+        fingerprints: records.map(r => r.fingerprint), reportMode: 'compact' });
+    if (analysis.summary.fail || analysis.evidenceSummary.trustedLogRecords !== records.length) {
+        throw new Error('Managed evidence did not pass replay analyzer validation');
+    }
+    const states = new Map(), diagnostics = new Map(), completeTicks = new Set();
+    for (const r of records) {
+        const coveredTypes = r.diagnosticCoverage?.coveredTypes ?? [];
+        if (coveredTypes.includes('action-decision') && coveredTypes.includes('action-attempt')) {
+            for (const tick of r.diagnosticCoverage.completeTicks) completeTicks.add(tick);
+        }
+        if (r.outputPath) {
+            for (const line of managedBytes(r.outputPath).toString('utf8').trim().split('\n')) {
+                const state = JSON.parse(line), old = states.get(state.tick);
+                if (old && canonical(old.state) !== canonical(state)) throw new Error(`Conflicting tick ${state.tick}`);
+                states.set(state.tick, { tick: state.tick, state, fingerprint: r.fingerprint });
+            }
+        }
+        for (const item of r.otherEntries) {
+            if (!['membership-baseline', 'action-decision', 'action-attempt'].includes(item.type)) continue;
+            const entry = JSON.parse(item.raw), old = diagnostics.get(entry.recordId);
+            if (old && canonical(old.entry) !== canonical(entry)) throw new Error(`Conflicting record ${entry.recordId}`);
+            diagnostics.set(entry.recordId, { entry, fingerprint: r.fingerprint });
+        }
+    }
+    const entries = [...diagnostics.values()];
+    const baseline = entries.find(e => e.entry.type === 'membership-baseline' && e.entry.initialized);
+    const scoutIds = baseline?.entry.members.filter(m => m.role === 'scout' &&
+        m.originalParts.move > 0 && Object.entries(m.originalParts).every(([part, count]) =>
+            part === 'move' || count === 0)).map(m => m.id).sort() ?? [];
+    const result = summarizeHoldRelease([...states.values()].sort((a, b) => a.tick - b.tick),
+        entries, scoutIds, completeTicks);
+    const builds = [...new Set(records.map(r => r.buildId ?? null))];
+    const maps = [...new Set(records.map(r => r.mapChecksum ?? null))];
+    const report = { replayId, evidence: { fingerprints: records.map(r => r.fingerprint),
+        builds, maps, analyzer: analysis.summary, snapshotTicks: analysis.evidenceSummary.snapshots,
+        completeDiagnosticTicks: analysis.evidenceSummary.completeDiagnosticTicks }, ...result };
+    fs.mkdirSync(cacheDir, { recursive: true });
+    const temp = `${cacheFile}.${process.pid}.tmp`;
+    fs.writeFileSync(temp, `${JSON.stringify({ key, report }, null, 2)}\n`);
+    fs.renameSync(temp, cacheFile);
+    return { report, cache: 'miss' };
+}
+
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+    try {
+        const { report, cache } = screenReplay(process.argv[2], process.argv[3], process.argv[4]);
+        process.stderr.write(`scout-hold cache: ${cache}\n`);
+        process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+    } catch (error) {
+        process.stderr.write(`${error.message}\n`);
+        process.exitCode = 1;
+    }
+}

@@ -198,3 +198,49 @@ After regenerating `src/debug/build-id.js`, the deployment build ID is
 The hold implementation remains behind its disabled switch. The next task is
 to prepare a practical, reproducible live hold-to-release opportunity before
 requesting another match; this screening supports no additional gameplay change.
+
+## Hold-to-release preparation — follow-up
+
+The retained charcock log selection was claimed under
+`codex/hold-release-preparation-20261002` and screened through
+`npm run scout-hold:screen -- 6abefda2d1c8563f587fcc9c codex/hold-release-preparation-20261002 8528f573aa57fc000f3105d71d0315de7b159472318771edf145c6ced898e872`.
+The tool reuses the compact replay analyzer and keeps a derived report under the
+ignored `replay_logs/analysis_cache/` directory. Its key includes evidence
+fingerprints and bytes, diagnostic content and coverage, map bytes, analysis
+code, configuration, and local build identity; a repeated run hit the cache.
+The exact 20 managed log responses again yielded 1,946 complete runtime ticks,
+1,868 holds, zero off-flag holds, zero hold-to-release transitions, and zero
+five-tile guard violations. The analyzer reported 208,310 passes, zero fails,
+and 41 unknowns. These findings use runtime snapshots and decisions only;
+frame alignment and strategic benefit remain unknown.
+
+The focused production tick-flow test now holds an eligible scout, places a
+living enemy exactly five tiles from the owned first flag but seven from the
+scout, observes one first-flag `moveTo` returning `OK`, removes the enemy, and
+observes a new hold. This verifies the source path with controlled inputs, not
+an Arena movement outcome. No runtime code or logging schema changed, and the
+deployment switches remain allocation off, escort on, hold off at build
+`fe78c1a86aa6127152561cf4cedc05257e7a537d7a244a183a38f7394961ef8c`.
+
+For a future live screen, the required sequence is: the same healthy,
+unassigned MOVE-only scout is within two tiles of the owned first flag and
+explicitly holds on tick *t*; at tick *t+1* a living enemy enters Chebyshev
+range five of the flag or scout while the flag remains owned and the scout is
+otherwise eligible; the movement decision changes to first-flag fallback, with
+exactly one correlated `moveTo` attempt returning `OK`. Complete same-build
+runtime snapshots and diagnostic closures are required on both ticks; inspect
+tick *t+2* separately for observed displacement. A continued hold inside the
+guard, a missing or rejected fallback command, or duplicate movement is a
+failure. Absent transition, incomplete coverage, other eligibility loss, or an
+allocation override is unexercised for this hypothesis. `OK` alone does not
+prove displacement, and a single passing transition does not establish benefit.
+
+No retained match or repository setup can deliberately put an enemy into this
+guard after a scout has begun holding. Arena opponent movement is outside this
+code's control. Another ordinary match has no reliable release opportunity,
+so no temporary live configuration is prepared and no new match is requested
+for this iteration. The least costly bounded alternative is the deterministic
+tick-flow fixture above, plus screening an already played same-build replay if
+one with the required transition becomes available. Keep the live criterion
+open until such a replay is identified; do not infer a release from the long
+charcock hold interval.
