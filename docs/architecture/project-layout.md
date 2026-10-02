@@ -66,3 +66,15 @@ to a compact deterministic summary and accepts `--full-detail` for the original
 exhaustive contract; the importable API defaults to full mode for compatibility.
 Details and report semantics are in
 [deterministic replay analysis](replay-analysis.md).
+
+`tools/historical-index.js` is a bounded, local orchestration layer over that
+compact analyzer. Its version-1 selection file names exact managed sources and
+documented match context; current sources require a task-specific review claim.
+It reads the manifest without lifecycle mutations, validates expected runtime
+build IDs, and stores ignored per-replay compact reports keyed to relevant
+source/map bytes, selected metadata, analyzer/tool code, and configuration.
+Rows keep different opponents, maps, builds, partial coverage, and unavailable
+retired sources separate. It does not add gameplay logic, runtime logging, or
+counterfactual/strategic conclusions. Commands and limitations are in the
+[README](../../README.md#bounded-historical-index); the first bounded decision
+is recorded [here](historical-evidence-cycle-2026-10-02.md).

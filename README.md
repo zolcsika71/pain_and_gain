@@ -15,6 +15,7 @@ Screeps Arena code for the Pain and Gain arena. Armed creeps approach nearby ene
 - `src/debug/game-state.js` writes one JSON game-state snapshot per tick and one map snapshot per match before actions.
 - `tools/replay-logs.js` manages map-linked console evidence and exact replay-score source retention with separate lifecycles.
 - `tools/replay-analysis.js` reads explicitly selected managed log and scoring evidence and emits a deterministic read-only JSON report without changing review lifecycle state.
+- `tools/historical-index.js` indexes up to eight explicitly selected replays using compact analysis and an ignored, input-fingerprinted cache.
 - `tests/unit/` contains local decision and action regression tests;
   `tests/benchmarks/` contains bounded synthetic tooling benchmarks.
 - `docs/architecture/`, `docs/decisions/`, and `docs/diagrams/` hold architecture notes, ADRs, and PlantUML diagrams.
@@ -293,6 +294,46 @@ scheduling (`0`), rejected scheduling (nonzero), and unavailable numeric results
 snapshots only. `OK` is scheduling evidence, stationary movement is an
 observation rather than an engine failure, and health changes are not attributed
 to attacks or healing. See [deterministic replay analysis](docs/architecture/replay-analysis.md).
+
+### Bounded historical index
+
+After claiming each current selected fingerprint with the selection's unique
+review task ID (and before marking it examined), reproduce the local escort
+injury comparison with:
+
+```sh
+npm run evidence:index -- tools/selections/escort-injury-2026-10-02.json
+```
+
+The version-1 selection names 1–8 replay IDs, explicit log and optional
+score-source fingerprint lists, the opponent, documented configuration and
+expected runtime build, and optional metadata-reported final tick. The command
+requires a claim for each current source, but neither claims nor changes review
+checkpoints. After reading newly analyzed evidence, mark only the selected
+current records `examined`; leave `done` to the review's explicit conclusion.
+Retired and missing selected sources remain visible as unavailable, not zero
+events. A clone without the ignored local captures cannot reproduce the live
+findings.
+
+Each row retains its own build, configuration, opponent, map checksum, selected
+source availability, captured/closed tick coverage, generic analyzer finding
+groups with representative source references, and unknowns. Rows are not
+pooled into a match-rate or strategy verdict. Configuration labels and reported
+final ticks come from the cited experiment records; the tool checks the
+expected build against selected log records, but does not independently infer
+the opponent, switch values, or terminal state. A `pass` count can include many
+checks from one match and is not a count of independent trials. Use the cited
+experiment record and bounded full-detail analysis for behavior-specific
+claims; this index does not invent a new escort-policy analyzer.
+
+The ignored `replay_logs/analysis_cache/historical-*.json` entries contain
+compact derived reports. A hit requires the exact selection, selected source
+metadata and bytes, linked map bytes, replay association, analyzer/tool bytes,
+and configuration/build inputs. Review timestamps are excluded, so examination
+alone does not rerun analysis. An invalidated row is reanalyzed independently;
+old retained full reports without these validity keys remain historical
+references, not cache hits. The index and cache never rewrite captures or
+review lifecycle state. See the [bounded cycle record](docs/architecture/historical-evidence-cycle-2026-10-02.md).
 
 When the optional scout experiment is enabled, relevant planning ticks emit a compact
 `flag-allocation` JSON console entry with the runtime `buildId`. It records the

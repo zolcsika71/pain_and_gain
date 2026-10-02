@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "taskId": "codex/historical-cycle-escort-20261002",
+  "matches": [
+    {
+      "replayId": "6abd6917f59cc86960103f32",
+      "logFingerprints": ["7c81e752648dd681fcad7d9b6ccdfe1e5a82c35bf4d18eb9de176459e11afccd"],
+      "opponent": "dd v5",
+      "configuration": {
+        "label": "escort on; scout allocation off; scout holding not yet introduced",
+        "basis": "docs/architecture/healer-escort-injury-release-validation-2026-09-30.md",
+        "expectedBuildId": "cc9d4e61eaac6962dde089593d5779d094b8ec58d1ae27c07228f136bccf1f85"
+      },
+      "reportedFinalTick": 89
+    },
+    {
+      "replayId": "6abd6940f59cc80c91103f38",
+      "logFingerprints": ["4cc6f8c121d6d0897e3ee720785784f9e6c244f630b993617af51dc2d3ae4033"],
+      "opponent": "MetalicaX v12",
+      "configuration": {
+        "label": "escort on; scout allocation off; scout holding not yet introduced",
+        "basis": "docs/architecture/healer-escort-injury-release-validation-2026-09-30.md",
+        "expectedBuildId": "cc9d4e61eaac6962dde089593d5779d094b8ec58d1ae27c07228f136bccf1f85"
+      },
+      "reportedFinalTick": 73
+    },
+    {
+      "replayId": "6ab867aee03513115f91edc0",
+      "logFingerprints": [
+        "8d7b83bb1b3a5042dbf308835e23400006b7c366939d7a566a65477224a98217",
+        "eca5add01cd3e83dcd0d59f3795e4b1a66697791be05078840c3e5ad4001676d"
+      ],
+      "opponent": "OoPaul壞神oO v44",
+      "configuration": {
+        "label": "legacy build/configuration not established",
+        "basis": "docs/architecture/combat-positioning-validation.md",
+        "expectedBuildId": null
+      }
+    }
+  ]
+}

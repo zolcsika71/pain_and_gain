@@ -11,6 +11,7 @@ This folder holds descriptions of the bot and its integrations, plus validation 
 - [screeps-squads-and-pairing.md](screeps-squads-and-pairing.md) — reference material for squad and pairing behavior.
 - [combat-positioning-validation.md](combat-positioning-validation.md) — build-specific movement, healer, and flag-allocation validation, including unresolved live-evidence limits.
 - [scout-hold-experiment-2026-10-02.md](scout-hold-experiment-2026-10-02.md) — disabled-default scout fallback holding policy, local checks, live charcock screening, and remaining release gap.
+- [historical-evidence-cycle-2026-10-02.md](historical-evidence-cycle-2026-10-02.md) — bounded cached cross-match index and no-change escort decision.
 - [replay-review-2026-09-27.md](replay-review-2026-09-27.md) — dated analysis of map-linked replay snapshots and strategy proposals, with coverage caveats.
 
 Update the relevant design document when implementation changes. Keep validation records tied to their builds, replays, and observed coverage; distinguish observations from inferred behavior and retain unresolved limitations. Record decisions in [decisions](../decisions/README.md) and update related [diagrams](../diagrams/README.md) when their workflows change.

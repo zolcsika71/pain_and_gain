@@ -158,3 +158,28 @@ has the precise field meanings. No replay review or live trial was repeated.
 Focused summarizer tests passed 7/7; the full suite passed 181/181,
 `npm run check` passed at the unchanged deployment build ID, and
 `git diff --check` passed.
+
+## Bounded historical index follow-up
+
+`npm run evidence:index -- tools/selections/escort-injury-2026-10-02.json`
+now reproduces a three-replay, explicit-source index from retained local
+evidence. Two current healer-escort-build responses were claimed and examined
+under `codex/historical-cycle-escort-20261002` and remain incomplete; the two
+older selected fingerprints are retired and reported unavailable. The first
+run analyzed only the two current selections; a repeat used both valid compact
+report caches. Distinct opponents, maps, build provenance, incomplete final
+ticks, and analyzer unknowns remain separate. No historical win/loss or
+strategic-benefit comparison is inferred.
+
+The selected live evidence still verifies only the inclusive range-five
+unrelated-injury release, not remote-injury escort retention beyond five.
+There is no concrete defect to fix and no reproducible live scenario to request.
+No gameplay, logging, or deployment configuration changed. The complete
+[cycle record](../architecture/historical-evidence-cycle-2026-10-02.md)
+contains the exact sources, acceptance criterion, no-change decision, and
+remaining evidence limit. Focused index/escort tests passed **21/21**; the
+full suite passed **189/189**; `npm run check` passed with deployment build
+`fe78c1a86aa6127152561cf4cedc05257e7a537d7a244a183a38f7394961ef8c`.
+The documented index command reanalyzed the two current rows after the tool's
+final code change and hit both caches on repetition; the retired row had no
+cache. Manual action: **NONE**.
