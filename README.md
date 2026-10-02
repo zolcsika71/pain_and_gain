@@ -107,6 +107,12 @@ when polling is ready. An idle poll or an unchanged/already imported response
 is intentionally silent; incomplete/error entries are retried up to five times
 per unchanged file state, and a changed file is eligible again. Wait for the
 initial-scan-complete line before judging whether the watcher reached polling.
+Within a scan, the importer reuses a parsed manifest only while its file identity
+is unchanged. Each parsed log response still acquires the manifest lock; map
+and managed-output validation remain in place where applicable. A different
+writer's atomic replacement makes the next response reload it. The
+[startup measurement](docs/architecture/replay-import-performance-2026-10-02.md)
+records the bounded before/after timings and their limits.
 For a suspected missing capture, compare the exact replay ID and build tags in
 `replay_logs/manifest.json` with the Arena cache request keys; a local
 `build-id:check` does not prove what Arena ran. Preserve any error message and

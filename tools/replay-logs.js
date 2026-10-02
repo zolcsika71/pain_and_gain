@@ -1020,8 +1020,22 @@ function pathOccupied(file) {
     }
 }
 
-function readManifest(root) {
+function manifestStamp(file) {
+    try {
+        const stat = fs.statSync(file, { bigint: true });
+        return `${stat.dev}:${stat.ino}:${stat.size}:${stat.mtimeNs}:${stat.ctimeNs}`;
+    } catch (error) {
+        if (error.code === 'ENOENT') return 'missing';
+        throw error;
+    }
+}
+
+function readManifest(root, cache = null) {
     const file = path.join(outputDirectory(root), 'manifest.json');
+    // Callers sharing a cache must already hold the manifest lock. Atomic
+    // replacements by another writer change the stamp between acquisitions.
+    const stamp = cache && manifestStamp(file);
+    if (cache?.manifest && cache.stamp === stamp) return cache.manifest;
     if (!fs.existsSync(file)) return { version: 2, maps: [], replays: [], records: [] };
     const manifest = JSON.parse(fs.readFileSync(file, 'utf8'));
     if (manifest.version === 1 && Array.isArray(manifest.records) && manifest.records.length === 0) {
@@ -1035,6 +1049,7 @@ function readManifest(root) {
         (Object.hasOwn(manifest, 'retiredScoreSources') && !Array.isArray(manifest.retiredScoreSources))) {
         throw new Error('Invalid replay-score manifest collections');
     }
+    if (cache) { cache.manifest = manifest; cache.stamp = stamp; }
     return manifest;
 }
 
@@ -1172,7 +1187,7 @@ function associateBuildId(association, buildId) {
     return true;
 }
 
-async function withManifestLock(root, action) {
+async function withManifestLock(root, action, manifestCache = null) {
     const lock = path.join(outputDirectory(root), '.manifest.lock');
     const token = randomUUID();
     const ownerFile = `${lock}.${token}.tmp`;
@@ -1212,6 +1227,10 @@ async function withManifestLock(root, action) {
         }
         if (!acquired) throw new Error('Replay-log manifest is locked; retry after its owner exits');
         return await action();
+    } catch (error) {
+        // A failed action may have changed only the cached in-memory manifest.
+        if (manifestCache) { manifestCache.manifest = null; manifestCache.stamp = null; }
+        throw error;
     } finally {
         fs.unlinkSync(ownerFile);
         if (acquired) {
@@ -1589,11 +1608,11 @@ function hasManagedOutput(record) {
 const hasRetainedDiagnostics = parsed =>
     parsed.otherEntries.some(entry => retainedDiagnosticTypes.includes(entry.type));
 
-export async function importCacheFile(root, sourceFile) {
+export async function importCacheFile(root, sourceFile, manifestCache = null) {
     const parsed = parseCacheEntry(fs.readFileSync(sourceFile));
     if (parsed.kind !== 'log') return parsed;
     return withManifestLock(root, () => {
-        const manifest = readManifest(root);
+        const manifest = readManifest(root, manifestCache);
         migrateWaitingRecords(root, manifest);
         let active = activeReplayMap(root, manifest, parsed.replayId);
         if (parsed.map && active && mapChecksum(parsed.map) !== active.registration.checksum) {
@@ -1661,7 +1680,7 @@ export async function importCacheFile(root, sourceFile) {
             saveManifest(root, manifest);
         }
         return { kind: 'imported', record };
-    });
+    }, manifestCache);
 }
 
 // Adopt an explicitly identified local capture only for a replay already linked to a validated map.
@@ -1742,6 +1761,7 @@ export async function registerLocalFile(root, replayId, name) {
 export async function scanCache(root, cacheDir, seen = null, onResult = null) {
     const results = [];
     const report = result => { results.push(result); onResult?.(result); };
+    const manifestCache = {};
     const deferred = [];
     let mapMayHaveArrived = false;
     for (const name of fs.readdirSync(cacheDir).sort()) {
@@ -1758,7 +1778,7 @@ export async function scanCache(root, cacheDir, seen = null, onResult = null) {
         if (previous?.signature === signature && (previous.finished ||
             (['incomplete', 'error'].includes(previous.kind) && previous.attempts >= 5))) continue;
         let result;
-        try { result = await importCacheFile(root, file); } catch (error) { result = issue('error', `${file}: ${error.message}`); }
+        try { result = await importCacheFile(root, file, manifestCache); } catch (error) { result = issue('error', `${file}: ${error.message}`); }
         if (seen) seen.set(file, {
             signature, attempts: previous?.signature === signature ? previous.attempts + 1 : 1,
             kind: result.kind, finished: !['incomplete', 'error', 'deferred'].includes(result.kind),
@@ -1772,7 +1792,7 @@ export async function scanCache(root, cacheDir, seen = null, onResult = null) {
     for (const item of deferred) {
         let result = item.result;
         if (mapMayHaveArrived) {
-            try { result = await importCacheFile(root, item.file); }
+            try { result = await importCacheFile(root, item.file, manifestCache); }
             catch (error) { result = issue('error', `${item.file}: ${error.message}`); }
             if (seen) seen.set(item.file, { signature: item.signature, attempts: 1,
                 kind: result.kind, finished: !['incomplete', 'error', 'deferred'].includes(result.kind) });

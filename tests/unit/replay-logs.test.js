@@ -917,6 +917,85 @@ test('scan reports imports as they occur while preserving its result list', asyn
     assert.deepEqual(await scanCache(root, cache, new Map(), () => assert.fail('duplicates should be silent')), []);
 });
 
+test('scan reuses an unchanged manifest for duplicates and deferrals, including retired responses', async t => {
+    const { root, cache } = workspace(t);
+    const source = path.join(root, 'seed_0');
+    const response = cacheFrame({ 1: mappedFirst() });
+    fs.writeFileSync(source, response);
+    const record = (await importCacheFile(root, source)).record;
+    fs.writeFileSync(path.join(cache, 'a_0'), response);
+    fs.writeFileSync(path.join(cache, 'b_0'), response);
+    fs.writeFileSync(path.join(cache, 'c_0'), cacheFrame({ 1: entry(1) },
+        { id: 'aaaaaaaaaaaaaaaaaaaaaaaa', tick: 1 }));
+    const manifestPath = path.join(root, 'replay_logs', 'manifest.json');
+    const originalRead = fs.readFileSync;
+    let manifestReads = 0;
+    fs.readFileSync = function(file, ...args) {
+        if (file === manifestPath) manifestReads++;
+        return originalRead.call(this, file, ...args);
+    };
+    try {
+        assert.deepEqual((await scanCache(root, cache, new Map())).map(result => result.kind), ['deferred']);
+        assert.equal(manifestReads, 1);
+        await updateReview(root, 'claim', replayId, record.fingerprint, 'codex/cache-test');
+        await updateReview(root, 'examined', replayId, record.fingerprint, 'codex/cache-test');
+        await updateReview(root, 'done', replayId, record.fingerprint, 'codex/cache-test');
+        manifestReads = 0;
+        assert.deepEqual((await scanCache(root, cache, new Map())).map(result => result.kind), ['deferred']);
+        assert.equal(manifestReads, 1);
+    } finally {
+        fs.readFileSync = originalRead;
+    }
+    const manifest = JSON.parse(fs.readFileSync(manifestPath));
+    assert.equal(manifest.records.length, 0);
+    assert.ok(manifest.replays[0].retiredFingerprints.includes(record.fingerprint));
+});
+
+test('scan reloads manifest after another locked writer changes review state', async t => {
+    const { root, cache } = workspace(t);
+    const seed = path.join(root, 'seed_0');
+    fs.writeFileSync(seed, cacheFrame({ 1: mappedFirst() }));
+    const first = (await importCacheFile(root, seed)).record;
+    fs.writeFileSync(path.join(cache, 'a_0'), cacheFrame({ 1: mapEntry() }, { tick: 1 }));
+    fs.writeFileSync(path.join(cache, 'b_0'), cacheFrame({ 2: entry(2) }, { tick: 2 }));
+    const realRoot = fs.realpathSync(root);
+    const toolsDir = path.join(realRoot, 'tools');
+    fs.mkdirSync(toolsDir);
+    fs.copyFileSync(new URL('../../tools/replay-logs.js', import.meta.url),
+        path.join(toolsDir, 'replay-logs.js'));
+    fs.writeFileSync(path.join(realRoot, 'package.json'), '{"type":"module"}\n');
+    const events = await scanCache(root, cache, new Map(), result => {
+        if (result.kind !== 'mapped') return;
+        const child = spawnSync(process.execPath,
+            [path.join(toolsDir, 'replay-logs.js'), 'claim', replayId,
+                first.fingerprint, 'codex/concurrent-cache-test'],
+            { encoding: 'utf8', timeout: 5000 });
+        assert.equal(child.status, 0, child.stderr);
+    });
+    assert.deepEqual(events.map(result => result.kind), ['mapped', 'imported']);
+    const manifest = JSON.parse(fs.readFileSync(path.join(root, 'replay_logs', 'manifest.json')));
+    assert.equal(manifest.records.length, 2);
+    assert.ok(manifest.records[0].reviews['codex/concurrent-cache-test']?.claimedAt);
+    assert.equal(fs.readFileSync(path.join(root, 'replay_logs', events[1].record.outputPath), 'utf8'),
+        `${entry(2)}\n`);
+});
+
+test('cached manifest does not bypass saved-map validation for a later response', async t => {
+    const { root, cache } = workspace(t);
+    const seed = path.join(root, 'seed_0');
+    fs.writeFileSync(seed, cacheFrame({ 1: mappedFirst() }));
+    const first = (await importCacheFile(root, seed)).record;
+    fs.writeFileSync(path.join(cache, 'a_0'), cacheFrame({ 1: mapEntry() }, { tick: 1 }));
+    fs.writeFileSync(path.join(cache, 'b_0'), cacheFrame({ 2: entry(2) }, { tick: 2 }));
+    const mapFile = path.join(root, 'replay_logs', first.mapFile);
+    const results = await scanCache(root, cache, new Map(), result => {
+        if (result.kind === 'mapped') fs.writeFileSync(mapFile, '{}\n');
+    });
+    assert.deepEqual(results.map(result => result.kind), ['mapped', 'error']);
+    assert.match(results[1].message, /Map schema or checksum mismatch/);
+    assert.equal(JSON.parse(fs.readFileSync(path.join(root, 'replay_logs', 'manifest.json'))).records.length, 1);
+});
+
 test('migrates legacy waiting status without changing ownership, map links, or fingerprints', async t => {
     const { root, cache } = workspace(t);
     const source = path.join(cache, 'response_0');
