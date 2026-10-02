@@ -231,9 +231,36 @@ exactly one correlated `moveTo` attempt returning `OK`. Complete same-build
 runtime snapshots and diagnostic closures are required on both ticks; inspect
 tick *t+2* separately for observed displacement. A continued hold inside the
 guard, a missing or rejected fallback command, or duplicate movement is a
-failure. Absent transition, incomplete coverage, other eligibility loss, or an
-allocation override is unexercised for this hypothesis. `OK` alone does not
-prove displacement, and a single passing transition does not establish benefit.
+failure. No qualifying transition is unexercised; a candidate with a nearby
+enemy but incomplete command coverage is unknown. Other eligibility loss or an
+allocation override does not establish the guarded fallback scenario. `OK`
+alone does not prove displacement, and a single passing transition does not
+establish benefit.
+
+### Screen report status semantics
+
+`enemyReleaseCandidates` counts nearby-enemy entries after a hold separately by
+`pass`, `fail`, and `unknown`, including a continued hold inside the guard. The
+aggregate `enemyRelease` precedence is **fail >
+unknown > pass > unexercised**. A guard violation is a failure; otherwise any
+failed candidate takes precedence, then any incomplete candidate, then a
+supported command pass. `unexercised` means no qualifying enemy-entry
+transition or guard violation was established. A passing transition therefore
+cannot conceal another transition whose command evidence is incomplete.
+
+Each transition's command verdict uses the hold and release ticks. Its
+`observedAfter` coordinates are optional, independent next-snapshot evidence:
+they are populated only when tick *t+2* exists, carries a compatible build ID,
+identifies the scout, and has a source fingerprint. `followingPosition` holds
+the same optional coordinates, expected tick, source fingerprint/tick/build
+when available, and an explicit status (`observed`, `missing-snapshot`, `incompatible-tick`,
+`incompatible-build`, `missing-provenance`, or `actor-absent`). A missing or
+incompatible following snapshot does not change a supported command-only pass.
+An observed position equal to the release-tick position, including on the flag,
+is valid; it does not turn an accepted command into a failure or prove the
+command caused movement. These checks supplement the CLI's upstream managed
+evidence and expected-build validation. Isolated summarizer fixtures do not
+demonstrate a CLI validation bypass.
 
 No retained match or repository setup can deliberately put an enemy into this
 guard after a scout has begun holding. Arena opponent movement is outside this

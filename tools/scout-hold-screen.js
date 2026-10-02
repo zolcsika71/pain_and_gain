@@ -22,6 +22,31 @@ function reportSource(snapshot, decisions) {
         decision: decisions?.[0]?.fingerprint ?? null };
 }
 
+function followingObservation(byTick, hold, release, actorId) {
+    const expectedTick = hold.tick + 2;
+    const after = byTick.get(expectedTick);
+    const source = after ? { fingerprint: after.fingerprint ?? null,
+        tick: after.state?.tick ?? null, buildId: after.state?.buildId ?? null } : null;
+    let status = 'missing-snapshot', observedAfter = null;
+    if (after) {
+        if (hold.state.tick !== hold.tick || release.tick !== hold.tick + 1 ||
+            release.state.tick !== release.tick || after.tick !== expectedTick ||
+            after.state?.tick !== expectedTick) status = 'incompatible-tick';
+        else if (!hold.state.buildId || hold.state.buildId !== release.state.buildId ||
+            after.state.buildId !== hold.state.buildId) status = 'incompatible-build';
+        else if (!after.fingerprint) status = 'missing-provenance';
+        else {
+            const actor = after.state.creeps.find(c => c.id === actorId);
+            if (actor) {
+                status = 'observed';
+                observedAfter = { x: actor.x, y: actor.y };
+            } else status = 'actor-absent';
+        }
+    }
+    return { observedAfter, followingPosition: { status, expectedTick, source,
+        position: observedAfter } };
+}
+
 export function summarizeHoldRelease(snapshots, entries, scoutIds, completeTicks) {
     const byTick = new Map(snapshots.map(s => [s.tick, s]));
     const grouped = new Map();
@@ -54,12 +79,13 @@ export function summarizeHoldRelease(snapshots, entries, scoutIds, completeTicks
         const next = byTick.get(s.tick + 1);
         if (!next) continue;
         const nextDecisions = get(s.tick + 1, actorId, 'action-decision');
-        if (nextDecisions.length === 1 && nextDecisions[0].entry.reason === holdReason &&
-            nextDecisions[0].entry.outcome === 'hold') continue;
+        const continuedHold = nextDecisions.length === 1 &&
+            nextDecisions[0].entry.reason === holdReason && nextDecisions[0].entry.outcome === 'hold';
         const nextActor = next.state.creeps.find(c => c.id === actorId);
         const nextFlag = next.state.flags.find(f => f.id === next.state.selectedFlagId);
         const threats = nextActor && nextFlag ? next.state.creeps.filter(c => !c.my && c.hits > 0 &&
             (range(c, nextActor) <= 5 || range(c, nextFlag) <= 5)).map(c => c.id) : [];
+        if (continuedHold && !threats.length) continue;
         const attempts = get(s.tick + 1, actorId, 'action-attempt');
         const decision = nextDecisions[0]?.entry;
         const sameBuild = !!s.buildId && s.buildId === next.state.buildId &&
@@ -75,26 +101,37 @@ export function summarizeHoldRelease(snapshots, entries, scoutIds, completeTicks
             decision.actions[0].target?.id === nextFlag?.id && attempts.length === 1 &&
             attempts[0].entry.method === 'moveTo' && attempts[0].entry.target?.id === nextFlag?.id &&
             attempts[0].entry.returnCode === 0;
-        const after = byTick.get(s.tick + 2)?.state.creeps.find(c => c.id === actorId);
+        let verdict = 'unexercised';
+        if (threats.length) {
+            if (!sameBuild || !nextActor || !nextFlag) verdict = 'unknown';
+            else if (guardRelease) {
+                if (!covered) verdict = 'unknown';
+                else if (continuedHold || nextDecisions.length !== 1) verdict = 'fail';
+                else verdict = decision?.reason === 'flag-fallback'
+                    ? (expected ? 'pass' : 'fail') : 'unknown';
+            }
+        }
+        const following = followingObservation(byTick, item, next, actorId);
         transitions.push({ actorId, holdTick: s.tick, releaseTick: s.tick + 1,
             cause: threats.length ? 'nearby-enemy' : 'other-or-unknown', threats,
-            verdict: !covered || !sameBuild || !nextActor || !nextFlag ? 'unknown'
-                : guardRelease && nextDecisions.length !== 1 ? 'fail'
-                    : guardRelease && decision?.reason === 'flag-fallback'
-                        ? (expected ? 'pass' : 'fail') : 'unknown',
+            verdict,
             decision: decision ? { outcome: decision.outcome, reason: decision.reason,
                 targetId: decision.actions?.[0]?.target?.id ?? null } : null,
             attempts: attempts.map(a => ({ method: a.entry.method,
                 targetId: a.entry.target?.id ?? null, returnCode: a.entry.returnCode })),
-            observedAfter: after ? { x: after.x, y: after.y } : null,
+            ...following,
             sources: { hold: reportSource(item, decisions),
                 release: reportSource(next, nextDecisions),
                 attempts: attempts.map(a => a.fingerprint) } });
     }
-    const target = transitions.filter(t => t.cause === 'nearby-enemy');
+    const target = transitions.filter(t => t.cause === 'nearby-enemy' && t.verdict !== 'unexercised');
+    const enemyReleaseCandidates = { pass: 0, fail: 0, unknown: 0 };
+    for (const transition of target) enemyReleaseCandidates[transition.verdict]++;
     return { scoutIds, holds, offFlagHolds, transitions, guardViolations,
-        enemyRelease: guardViolations.length || target.some(t => t.verdict === 'fail') ? 'fail'
-            : target.some(t => t.verdict === 'pass') ? 'pass' : 'unexercised' };
+        enemyReleaseCandidates,
+        enemyRelease: guardViolations.length || enemyReleaseCandidates.fail ? 'fail'
+            : enemyReleaseCandidates.unknown ? 'unknown'
+                : enemyReleaseCandidates.pass ? 'pass' : 'unexercised' };
 }
 
 function selectedEvidence(replayId, taskId) {

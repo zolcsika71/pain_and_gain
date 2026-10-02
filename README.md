@@ -195,9 +195,14 @@ response fingerprints and bytes, diagnostic content/coverage, linked map bytes,
 analyzer/tool code, local build identity, and configuration. A changed input
 recomputes the report. It records hold decisions, off-flag holds, guard
 violations, and consecutive-tick releases with their exact log fingerprints;
-command returns and later positions remain separate observations. A missing
-transition remains unexercised. Mark records `examined` after reading the
-report; leave claims active while the experiment remains open.
+command returns and later positions remain separate observations. The aggregate
+release verdict is `fail` before `unknown` before `pass` before `unexercised`;
+candidate counts expose incomplete cases even alongside passing ones. A missing
+transition remains unexercised only when no relevant candidate is established.
+The optional following position is reported only from a sourced, consecutive,
+same-build snapshot, with an explicit availability status. Mark records
+`examined` after reading the report; leave claims active while the experiment
+remains open.
 
 After using the external review workflow to claim every managed response in the
 intended scope, analyze all current records for a replay with:

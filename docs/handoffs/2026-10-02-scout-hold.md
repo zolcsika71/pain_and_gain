@@ -142,3 +142,19 @@ Leave the deployment switches at allocation off, escort on, hold off; build
 Do not ask for a random match solely to exercise release. Revisit only if the
 user can arrange a controlled opponent/scenario or already has a replay with
 the required transition. The new review claims remain retained and incomplete.
+
+## Evidence-status correction
+
+The screen now reports a nearby-enemy candidate with incomplete command
+coverage as `unknown`, including when another candidate passes. Aggregate
+precedence is fail, unknown, pass, then unexercised; candidate counts are
+explicit. `observedAfter` is present only for a sourced, consecutive,
+same-build following snapshot, with `followingPosition` explaining any missing
+or incompatible observation. The command verdict remains independent of that
+later position, including when a scout stays on the flag. This corrects the
+reporting semantics without changing gameplay, logging, deployment switches,
+captures, or review lifecycle state. The [experiment record](../architecture/scout-hold-experiment-2026-10-02.md#screen-report-status-semantics)
+has the precise field meanings. No replay review or live trial was repeated.
+Focused summarizer tests passed 7/7; the full suite passed 181/181,
+`npm run check` passed at the unchanged deployment build ID, and
+`git diff --check` passed.
