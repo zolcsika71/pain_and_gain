@@ -211,10 +211,12 @@ Validation for this documentation-only decision: focused scout tests **36/36**,
 
 ## Prepared one-random-match holding observation
 
-The user clarified that Arena has only random matches, with no controlled
-opponent or scenario. This supersedes the earlier reproducible-setup gate for
-one bounded observational match; it does not change the historical conclusion
-or guarantee a release event. A separate detached local worktree is ready at
+At this preparation checkpoint, the user reported only random matches and no
+controlled opponent or scenario available to them. The later feasibility
+checkpoint below narrows that capability claim without providing a reproducible
+release setup. This superseded the earlier setup gate for one bounded
+observational match; it did not change the historical conclusion or guarantee
+a release event. A separate detached local worktree was prepared at
 `/Users/zoltanka/Documents/Prog/JavaScript/ScreepsArena/pain_and_gain_hold_trial_2026-10-02/`.
 Select **that worktree's `src/`**, not the stable checkout. Its switches are:
 
@@ -295,3 +297,30 @@ remains allocation off, escort on, holding off;
 the separate trial worktree remains available, and Arena's post-match source
 selection is unconfirmed. If Arena still selects the trial worktree, select
 the main repository's `src/` for stable deployment. Manual action: **NONE**.
+
+## Controlled-release feasibility checkpoint
+
+The latest [feasibility record](../architecture/scout-hold-experiment-2026-10-02.md#controlled-live-release-feasibility--follow-up)
+narrows the earlier statement that all opponents are random. Official Arena
+announcements describe Test-mode selection of a past/saved opponent version
+and self-contests with player-selected code folders, but test-game starting
+positions are randomized. This task did not verify a usable Test roster,
+self-contest/second code slot, or an opponent asset on the current account;
+the available sources do not document chosen object placement. Neither mode
+is therefore a prepared, reproducible hold-to-release scenario.
+
+Arena's description view showed main's `src/` selected at this checkpoint,
+without launching a game; this does not attest any later execution.
+
+The existing `scout-hold-flow` fixture tests the production hold-to-command
+transition with controlled inputs, but mocked `moveTo` does not establish
+live displacement. A meaningful live test must first hold a scout one or two
+tiles **off** an owned flag, then bring an enemy inside the five-tile guard
+while preserving ownership and other eligibility, correlate the release
+decision with one movement attempt/return, and inspect the next compatible
+position separately. The verified trial build
+`41db9b8e0d17113b582b05c6447d386efa655def58248287840f0ac48728ba5a`
+remains available in its separate worktree, but no controlled opponent or
+placement setup is prepared. Live release remains **pending/unexercised**;
+no match, replay reopening, gameplay edit, or test rerun is requested.
+Manual action: **NONE**.

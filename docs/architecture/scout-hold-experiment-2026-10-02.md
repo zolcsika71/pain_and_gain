@@ -274,12 +274,14 @@ charcock hold interval.
 
 ## One-random-match observational trial — preparation
 
-The user clarified that all Arena matches are random and there are no
-controlled-opponent or controlled-scenario options. This supersedes the prior
-request for a reproducible live setup, without changing the earlier evidence
-verdict. Exactly one ordinary random match is authorized for observation, not
-as a guaranteed hold-to-release exercise or a strategic comparison. No match
-or replay was operated during preparation.
+At this preparation checkpoint, the user reported only random matches and no
+controlled-opponent or controlled-scenario option available to them. The later
+feasibility check below narrows that capability claim without establishing a
+reproducible live setup. This superseded the prior setup requirement for this
+one trial without changing the earlier evidence verdict. Exactly one ordinary
+random match was authorized for observation, not as a guaranteed hold-to-release
+exercise or a strategic comparison. No match or replay was operated during
+preparation.
 
 Starting from clean `main` at
 `fd6fdf20ea62c2b663185913d52b58f83f59612a`, a separate, detached local
@@ -392,3 +394,48 @@ separately; Arena's post-match selected source directory has not been
 independently rechecked. If Arena still selects
 the trial worktree, select the main repository's `src/` for stable deployment.
 Manual action: **NONE**.
+
+## Controlled live-release feasibility — follow-up
+
+The available local harness is `tests/unit/scout-hold-flow.test.js`: it feeds
+production `runTick()` controlled snapshots, including an off-flag scout at
+(47,50), the owned first flag at (49,49), and an enemy newly within five tiles
+of the flag. It checks hold/no attempt, then the fallback `moveTo` decision and
+`OK` return, then a re-hold. Its `moveTo` is a mock that never advances a
+position. This is useful deterministic **source-path** evidence, not live Arena
+release or displacement; the recorded 16/16 focused and 189/189 trial-suite
+results were not rerun for this documentation-only feasibility check.
+
+Arena does offer limited opponent control: the developer's
+[Test Tokens announcement](https://steamcommunity.com/games/1137320/announcements/detail/537739494577669924)
+describes Test mode selection of recent or token-saved opponent code versions,
+and its [contests announcement](https://steamcommunity.com/games/1137320/announcements/detail/3493133438790397875)
+describes players selecting their code folders, including a self-contest for
+strategy comparisons. However, the developer's
+[1.0.5 changelog](https://steamcommunity.com/games/1137320/announcements/detail/597417907502188237)
+explicitly says test-game starting positions are randomized. None of these
+sources documents a way to place the scout, flag, and approaching enemy at
+chosen coordinates. A read-only view of the current Arena 1.0.14 Pain and Gain
+description showed a Test entry and main's `src/` as the selected code directory;
+the attempt to open Test mode failed at the UI-control boundary, so no roster
+or launch option was inspected and no game was started. The available Test
+opponent roster, a usable self-contest/second code slot for this account and
+arena, and a controlled opponent asset have not been verified. Merely choosing
+a past opponent or replaying the existing trial cannot force the transition.
+Product-level opponent selection therefore does not establish an **available
+reproducible live scenario** for this task.
+
+An adequate controlled setup would have to keep the existing five-tile guard
+and eligibility policy intact while producing: an owned first flag with a
+healthy, unassigned MOVE-only scout holding **one or two tiles off its cell**
+and no movement attempt at tick *t*; an enemy entering range five at *t+1*
+while the flag remains ours; the applicable fallback decision and exactly one
+correlated `moveTo` result; and a compatible *t+2* snapshot showing whether the
+scout actually moves toward the flag. An off-flag, traversable next step is
+needed to test resumption as displacement, rather than a command aimed at the
+scout's own cell. The command result and observed position remain separate
+findings. No such setup or opponent asset is prepared, and no match is
+requested. Live hold-to-release validation remains **pending/unexercised**, not
+passed or failed. Revisit only when an account-accessible two-code contest or
+equivalent scenario control and a concrete off-flag setup are verified, or a
+new build-identified replay already contains the transition.
