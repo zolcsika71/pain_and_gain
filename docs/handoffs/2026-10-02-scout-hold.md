@@ -208,3 +208,90 @@ Manual action: **NONE**.
 Validation for this documentation-only decision: focused scout tests **36/36**,
 `npm test` **189/189**, `npm run check` at unchanged deployment build
 `fe78c1a86aa6127152561cf4cedc05257e7a537d7a244a183a38f7394961ef8c`.
+
+## Prepared one-random-match holding observation
+
+The user clarified that Arena has only random matches, with no controlled
+opponent or scenario. This supersedes the earlier reproducible-setup gate for
+one bounded observational match; it does not change the historical conclusion
+or guarantee a release event. A separate detached local worktree is ready at
+`/Users/zoltanka/Documents/Prog/JavaScript/ScreepsArena/pain_and_gain_hold_trial_2026-10-02/`.
+Select **that worktree's `src/`**, not the stable checkout. Its switches are:
+
+| Switch | Trial | Stable main |
+| --- | --- | --- |
+| `oneScoutFlagExperiment` | `false` | `false` |
+| `oneHealerEscortExperiment` | `true` | `true` |
+| `scoutHoldExperiment` | `true` | `false` |
+
+The trial build ID, generated and checked after the final runtime edit, is
+`41db9b8e0d17113b582b05c6447d386efa655def58248287840f0ac48728ba5a`.
+Only its config and generated build-ID module differ from base commit
+`fd6fdf20ea62c2b663185913d52b58f83f59612a`. Trial focused tests passed
+**16/16**, full suite **189/189**, and `npm run check` passed. The untouched
+main checkout separately passed **189/189** and `npm run check`, retaining
+stable build `fe78c1a86aa6127152561cf4cedc05257e7a537d7a244a183a38f7394961ef8c`.
+
+Before playing, run `npm run build-id:check` in the trial worktree, select its
+`src/` in Arena, and leave it unchanged. Play **exactly one random match**,
+open its replay, and provide the replay ID. To retain evidence, run
+`node tools/replay-logs.js watch` from the main checkout while opening the
+replay, then stop it with Ctrl-C. The next task will verify the exact replay,
+emitted build, and managed source coverage before analysis; no match or replay
+was operated in this preparation. Captures, caches, and review claims were
+left untouched.
+
+Look for the same eligible scout holding without a movement attempt on tick
+*t*, then losing eligibility on consecutive tick *t+1* and following the
+existing movement policy. Prefer real enemy entry within five tiles of the
+scout or owned first flag. The [experiment record](../architecture/scout-hold-experiment-2026-10-02.md#one-random-match-observational-trial--preparation)
+defines the sourced command-level pass/fail, unknown for incomplete evidence,
+unexercised for no qualifying transition, and separate following-position
+observation. A stationary on-flag position is valid; one functional pass does
+not establish strategic benefit. Do not automatically repeat the random match
+if release is unexercised.
+
+After the match, select the stable main checkout's `src/` again and run
+`npm run build-id:check` there. Retain the trial worktree until replay
+evaluation; never copy or commit the enabled trial config as a stable default.
+Manual action: **NEW MATCH THEN REPLAY**, exactly one match.
+
+## Recovered random-trial replay and decision
+
+The newly opened replay is `6abf18062ea5a37141f736fe`, identified by its
+exact `/api/game/<id>/log/85` cache request key and matching game metadata
+(created `2026-10-02T02:33:42.836Z`, 85 game ticks). Unlike the preceding
+stable-build replay `6abf13a2d1c8565ef57fcd46`, this log emitted the
+prepared trial build
+`41db9b8e0d17113b582b05c6447d386efa655def58248287840f0ac48728ba5a`.
+Its one imported response has fingerprint
+`33653c969b6e359bd7806f611a7969b55306118a7da109a5b0524c603ba0ea12`
+and linked map checksum
+`5cabf4ccb222945c8652515d26a8a261dfa18741d894cab530a411bb5afedc22`.
+It covers runtime ticks 1–84 without gaps, all with complete closures and no
+reported command-correlation issues. The game metadata's tick 85 is not in
+the log. The compact analyzer reported 10,849 pass, zero fail, and 42 unknown
+findings. This exact managed record was claimed and marked examined under
+`codex/scout-hold-random-trial-review-20261002`, with completion unset; no
+cleanup or older-review change occurred.
+
+The existing scout-hold screen found **zero holds**, **zero off-flag holds**,
+and **zero hold-to-release candidates**. Enemy release is **unexercised**,
+not pass or fail; there were no candidate-specific unknowns. The first flag
+was ours on ticks 44–82, but all 37 observed owned-scout positions within
+two tiles of it also had a living enemy inside the five-tile guard. The two
+scouts produced 125 first-flag fallback decisions and 125 correlated
+`moveTo` returns of `0`; next-tick positions were changed 90 times,
+stationary 33 times, and actor-absent twice. These later positions are
+separate from command acceptance and are **not** release observations. The
+[experiment record](../architecture/scout-hold-experiment-2026-10-02.md#one-random-match-observational-trial--recovered-evidence)
+has exact source and report references, coverage, and eligibility limits.
+
+The prepared build executed, but this random match did not provide a hold or
+release opportunity. Live hold-to-release validation remains open. Do not
+promote holding or request an automatic retry. Reopening this replay cannot
+add an absent hold transition, so no replay reopening is requested. Main
+remains allocation off, escort on, holding off;
+the separate trial worktree remains available, and Arena's post-match source
+selection is unconfirmed. If Arena still selects the trial worktree, select
+the main repository's `src/` for stable deployment. Manual action: **NONE**.

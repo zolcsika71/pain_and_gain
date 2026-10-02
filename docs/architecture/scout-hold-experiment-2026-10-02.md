@@ -271,3 +271,124 @@ tick-flow fixture above, plus screening an already played same-build replay if
 one with the required transition becomes available. Keep the live criterion
 open until such a replay is identified; do not infer a release from the long
 charcock hold interval.
+
+## One-random-match observational trial — preparation
+
+The user clarified that all Arena matches are random and there are no
+controlled-opponent or controlled-scenario options. This supersedes the prior
+request for a reproducible live setup, without changing the earlier evidence
+verdict. Exactly one ordinary random match is authorized for observation, not
+as a guaranteed hold-to-release exercise or a strategic comparison. No match
+or replay was operated during preparation.
+
+Starting from clean `main` at
+`fd6fdf20ea62c2b663185913d52b58f83f59612a`, a separate, detached local
+Git worktree was prepared at
+`/Users/zoltanka/Documents/Prog/JavaScript/ScreepsArena/pain_and_gain_hold_trial_2026-10-02/`.
+Only its `src/config.js` and generated `src/debug/build-id.js` differ from
+that base. Its switches are scout allocation **false**, healer escort **true**,
+and scout holding **true**. After the final runtime edit,
+`npm run build-id:generate`, `npm run build-id:check`, and `npm run check`
+verified build
+`41db9b8e0d17113b582b05c6447d386efa655def58248287840f0ac48728ba5a`.
+The trial's focused hold/screen/build tests passed **16/16**, and its full
+suite passed **189/189** without changing deployment assertions. Separately,
+the untouched main checkout passed **189/189** and `npm run check` at stable
+build `fe78c1a86aa6127152561cf4cedc05257e7a537d7a244a183a38f7394961ef8c`
+with allocation **false**, escort **true**, and holding **false**.
+
+Before launch, re-run `npm run build-id:check` in the trial worktree and select
+its `src/` directory in Arena; do not select main's `src/` or edit trial runtime
+files during the match. Play exactly one random match, then open its replay and
+provide the replay ID. From the main checkout, use the existing
+`node tools/replay-logs.js watch` capture procedure while opening the replay,
+then stop the watcher with Ctrl-C. No automatic repeat is planned. The next
+task must identify the exact replay, verify emitted build IDs, follow managed
+claim/examined rules, and then run the existing scout-hold screen on its
+explicit evidence. The present task does not touch retained captures, caches,
+or review claims.
+
+Primary live observation: the same eligible scout explicitly holds near our
+first flag on tick *t*, with no movement attempt, then loses hold eligibility
+on consecutive tick *t+1* and follows the existing movement policy. Prefer a
+real living enemy newly within Chebyshev range five of the scout or flag while
+the flag remains ours and the scout is otherwise eligible. With complete,
+compatible build-tagged snapshots, decisions, attempts, and closures, a
+command-level **pass** requires the applicable release decision and exactly
+one correlated accepted `moveTo`; a continued hold inside the enemy guard,
+missing/rejected required command under complete coverage, or duplicate
+movement is **fail**. Incomplete relevant coverage is **unknown**; no
+qualifying transition is **unexercised**. A different eligibility loss may
+illustrate release but does not pass the enemy-entry screen. Assess any
+following compatible consecutive position separately, including a valid
+stationary on-flag position; command acceptance does not prove displacement.
+One pass would verify only that functional transition, not strategic benefit.
+
+After the match, return Arena's selected source directory to the stable main
+checkout's `src/` and run `npm run build-id:check` there. Keep the trial
+worktree available until the replay has been identified and analyzed; do not
+copy its enabled config into main or commit it as the deployment default.
+If no qualifying transition occurs, report **unexercised** and stop after
+this one match rather than automatically asking for another.
+
+## One-random-match observational trial — recovered evidence
+
+Arena's selected-directory screenshot supported the trial-path setup, but did
+not prove execution. A preceding replay, `6abf13a2d1c8565ef57fcd46`, was
+separately recovered with the stable build; it is **not** this trial. The next
+default-cache request keys identified replay `6abf18062ea5a37141f736fe`:
+`1/0/https://arena.screeps.com/api/game/6abf18062ea5a37141f736fe/log/85`
+and matching game metadata. Metadata names the same replay ID, creation at
+`2026-10-02T02:33:42.836Z`, and 85 game ticks; its validation is partial.
+The single log response fingerprint
+`33653c969b6e359bd7806f611a7969b55306118a7da109a5b0524c603ba0ea12`
+carries the **expected trial build**
+`41db9b8e0d17113b582b05c6447d386efa655def58248287840f0ac48728ba5a`.
+The exact cache source was imported through the existing importer without a
+broad scan or cleanup. Its replay-linked map is
+`replay_logs/pain_and_gain_map_2026-10-02T02-36-55-478Z.json`, checksum
+`5cabf4ccb222945c8652515d26a8a261dfa18741d894cab530a411bb5afedc22`.
+The managed log is `replay_logs/6abf18062ea5a37141f736fe.jsonl`.
+
+The imported runtime snapshots cover ticks **1–84** without gaps, with **84/84**
+complete diagnostic closures and no reported decision/attempt correlation
+issues. The metadata's game tick 85 has no runtime snapshot; it is not filled
+in or treated as a terminal behavior observation. The existing compact
+`scout-hold:screen` validated the one trusted log and map; its analyzer totals
+were **10,849 pass, zero fail, 42 unknown** findings. Its ignored derived
+report is `replay_logs/analysis_cache/scout-hold-6abf18062ea5a37141f736fe.json`
+with byte SHA-256
+`4f0815eb66a46a422fa71c176725a4a294dc2fb6b005ec3c28cab614288044a5`.
+The source was claimed and then marked examined under
+`codex/scout-hold-random-trial-review-20261002`; completion remains unset.
+Older captures, caches, and claims were not cleaned up.
+
+**Observation:** the screen found **zero holds**, **zero off-flag holds**,
+zero hold-to-release transitions, and zero guard violations. Its
+`enemyReleaseCandidates` are pass 0, fail 0, unknown 0, with aggregate
+`enemyRelease: unexercised`—not a functional pass or failure. The first flag
+was neutral on ticks 1–43, ours on 44–82, and enemy-owned on 83–84. Across
+the two owned scouts there were 37 scout-tick observations within two tiles
+while it was ours (24 for scout 1, 13 for scout 2); **every one** also had a
+living enemy within the five-tile guard. Of these, 15 scout-ticks were
+full-health and 22 injured. No captured tick established the initial
+hold-eligibility conditions, so there is no eligibility-loss transition or
+release command to judge. Each scout instead made first-flag fallback
+decisions on all its observed ticks: 67 and 58 decisions respectively, each
+with one correlated `moveTo` return code `0`. These are scheduled commands,
+not displacement. Separate consecutive snapshots show 90 changed positions,
+33 stationary positions, and two next-tick actor absences across those
+125 decisions; none is a hold-to-release following position.
+
+**Decision:** this random trial verifies that the prepared build executed and
+that observed non-holding is consistent with the nearby-enemy eligibility
+guard. It does not verify live holding or hold-to-release in this build, prove
+strategic benefit, or justify enabling holding in stable deployment. Do not
+automatically request another match. Live hold-to-release validation remains
+open. Reopening this same replay cannot create an absent hold transition; its
+terminal missing runtime tick cannot supply a prior hold, so no specific
+replay reopening is requested. Preserve the trial worktree and stable defaults
+separately; Arena's post-match selected source directory has not been
+independently rechecked. If Arena still selects
+the trial worktree, select the main repository's `src/` for stable deployment.
+Manual action: **NONE**.
