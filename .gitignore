@@ -98,6 +98,8 @@ replay_logs/manifest.json
 /replay_logs/replay-score-source-*.response
 replay_logs/.manifest.lock
 replay_logs/.*.tmp
+# Local review audits and synthetic outputs; keep exact selections off Git.
+replay_logs/local_audits/
 
 # Screeps Arena regenerates these inside the selected code directory
 src/jsconfig.json

@@ -1,4 +1,4 @@
-// Scout allocation remains disabled. Healer escort is enabled for this prepared
-// activation checkpoint; user-launched live validation is separate.
+// Scout allocation and scout holding remain disabled after their screening runs.
 export const oneScoutFlagExperiment = false;
 export const oneHealerEscortExperiment = true;
+export const scoutHoldExperiment = false;

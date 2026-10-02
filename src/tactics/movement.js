@@ -4,6 +4,17 @@ import { nearestTarget } from './targets.js';
 const engagementRange = 5;
 const healerSupportRange = 5;
 const rangedHealRange = 3;
+const scoutHoldRange = 2;
+
+function canHoldScout(creep, firstFlag, enemies) {
+    return firstFlag?.my === true && creep.my === true && creep.hits > 0 &&
+        creep.hits === creep.hitsMax && creep.fatigue === 0 &&
+        creep.body.length > 0 && creep.body.every(part => part.type === 'move') &&
+        hasFunctioningPart(creep, 'move') && creep.getRangeTo(firstFlag) <= scoutHoldRange &&
+        !enemies.some(enemy => !enemy.my && enemy.hits > 0 &&
+            (creep.getRangeTo(enemy) <= engagementRange ||
+                Math.max(Math.abs(firstFlag.x - enemy.x), Math.abs(firstFlag.y - enemy.y)) <= engagementRange));
+}
 
 function fallbackPlan(flag) {
     return flag ? { target: flag, engagement: null, outcome: 'selected',
@@ -12,7 +23,13 @@ function fallbackPlan(flag) {
             reason: 'no-movement-objective', targetKind: null };
 }
 
-export function selectMovementPlan(creep, enemies, flag, previous = null, friends = []) {
+// The caller enables holding only for the unassigned first-flag fallback.
+export function selectMovementPlan(creep, enemies, flag, previous = null, friends = [],
+    holdUnassignedScout = false) {
+    if (holdUnassignedScout && canHoldScout(creep, flag, enemies)) {
+        return { target: null, engagement: null, outcome: 'hold',
+            reason: 'scout-owned-flag-hold', targetKind: null };
+    }
     const attackRange = hasFunctioningPart(creep, 'attack') ? 1
         : hasFunctioningPart(creep, 'ranged_attack') ? 3 : null;
     if (attackRange === null) {

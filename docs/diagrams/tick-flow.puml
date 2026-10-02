@@ -35,6 +35,7 @@ Escort --> Debug : assignment/release diagnostic\nbefore actions
 Debug --> API : console.log(JSON snapshot)
 Loop --> Execute : choose and issue movement\nwith optional scout fallback / healer escort
 Execute --> Movement : combat objective or pure-healer support,\nthen first flag fallback
+note right of Movement : Optional scout hold (default off):\nunassigned, healthy MOVE-only scout\nwithin two of owned first flag, no nearby enemy.\nAllocation overrides and escort retain priority.
 Movement --> Eligibility : functioning weapons / HEAL and range
 Execute --> API : at most one creep.moveTo(target)
 Execute --> Debug : escort hold, fatigue pause, or move attempt\nwith actual return code

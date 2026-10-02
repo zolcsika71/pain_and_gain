@@ -33,7 +33,18 @@ An armed creep considers the nearest living enemy within five tiles, breaking eq
 
 The optional one-scout flag-allocation experiment is **off by default** (`oneScoutFlagExperiment = false` in `src/config.js`). To test it, set that constant to `true`, run `npm run build-id:generate` and `npm run build-id:check`, then verify Arena selects this project's `src/` before starting a match. The changed build ID distinguishes this configuration from the baseline. Only one full-health MOVE-only scout can make one bounded attempt at a neutral attack-reduction flag after the first flag is owned; combat and healer movement keep priority. The [experiment policy](docs/architecture/combat-positioning-validation.md#one-scout-flag-allocation-experiment--2026-09-28) defines safety gates and measurement. Return the switch to `false` and regenerate/check the build ID for baseline runs. Captured flags continue to score and impose their army-wide penalty after the scout leaves; a second capture is not automatically beneficial.
 
-The separate one-healer escort experiment is enabled (`oneHealerEscortExperiment = true` in `src/config.js`); the scout-allocation experiment remains disabled. One healthy pure healer can stay near one healthy pure melee creep already engaging an enemy. An injury to either partner, or to another friendly within five tiles of the healer, returns it to normal movement; a more distant unrelated injury alone no longer releases an existing pair, although any injury still blocks a new assignment. It does not change healing actions or mixed-role combat movement. The original policy's live execution was validated, but this narrower release rule has only synthetic coverage; healing effectiveness and strategic benefit remain unverified. Its [policy and evidence limits](docs/architecture/combat-positioning-validation.md#one-healer-pre-injury-escort-experiment--2026-09-28) distinguish the current configuration from earlier builds.
+The separate one-healer escort experiment is enabled (`oneHealerEscortExperiment = true` in `src/config.js`); scout allocation remains disabled in the deployment configuration. One healthy pure healer can stay near one healthy pure melee creep already engaging an enemy. An injury to either partner, or to another friendly within five tiles of the healer, returns it to normal movement; a more distant unrelated injury alone no longer releases an existing pair, although any injury still blocks a new assignment. It does not change healing actions or mixed-role combat movement. The original policy's live execution was validated, but this narrower release rule has only synthetic coverage; healing effectiveness and strategic benefit remain unverified. Its [policy and evidence limits](docs/architecture/combat-positioning-validation.md#one-healer-pre-injury-escort-experiment--2026-09-28) distinguish the current configuration from earlier builds.
+
+The separate `scoutHoldExperiment` is **disabled** in the deployment configuration. The [one-match hold trial](docs/architecture/scout-hold-experiment-2026-10-02.md)
+temporarily enabled it alongside scout allocation and healer escort; neither scout
+experiment was promoted. When enabled, eligible unassigned MOVE-only scouts
+hold within two tiles of our first flag while healthy, unfatigued, and free of
+nearby enemies. Allocation and escort movement retain priority. Existing action
+diagnostics record `hold` / `scout-owned-flag-hold` with no movement attempt;
+no diagnostic schema or instrumentation is added. The charcock v78 screening
+verified live holding and allocation priority, while hold-to-release remains
+unexercised. See the [session handoff](docs/handoffs/2026-10-02-scout-hold.md)
+for the final switches and evidence locations.
 
 ## Per-tick console output
 

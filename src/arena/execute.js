@@ -17,7 +17,7 @@ function issueAction(creep, action, decision, index, reporter) {
 }
 
 export function moveCreeps(myCreeps, enemies, flag, engagements = new Map(), fallbackById = new Map(),
-    escort = null, reportEscort = null, reporter = null) {
+    escort = null, reportEscort = null, reporter = null, scoutHoldEnabled = false) {
     const ownedIds = new Set(myCreeps.map(creep => creep.id));
     for (const id of engagements.keys()) if (!ownedIds.has(id)) engagements.delete(id);
     for (const creep of myCreeps) {
@@ -43,7 +43,8 @@ export function moveCreeps(myCreeps, enemies, flag, engagements = new Map(), fal
             continue;
         }
         const fallback = fallbackById.has(creep.id) ? fallbackById.get(creep.id) : flag;
-        const plan = selectMovementPlan(creep, enemies, fallback, engagements.get(creep.id), myCreeps);
+        const plan = selectMovementPlan(creep, enemies, fallback, engagements.get(creep.id), myCreeps,
+            scoutHoldEnabled && !fallbackById.has(creep.id));
         if (plan.engagement) engagements.set(creep.id, plan.engagement);
         else engagements.delete(creep.id);
         const action = plan.target

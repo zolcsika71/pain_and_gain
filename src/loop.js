@@ -6,7 +6,7 @@ import { searchPath } from 'game/path-finder';
 import { getCpuTime } from 'game/utils';
 import { arenaInfo } from 'game';
 import { EFF_ATTACK_MODIFIER } from 'game/constants';
-import { oneHealerEscortExperiment, oneScoutFlagExperiment } from './config.js';
+import { oneHealerEscortExperiment, oneScoutFlagExperiment, scoutHoldExperiment } from './config.js';
 import { planScoutFlagAllocation } from './strategy/flag-allocation.js';
 import { planHealerEscort } from './tactics/healer-escort.js';
 import { resetMembership, updateMembership } from './squads/membership.js';
@@ -74,7 +74,7 @@ export function runTick() {
         targetId: null, returnCode: null });
     moveCreeps(myCreeps, enemies, flag, engagements, fallbackById?.fallbackById,
         escortPlan?.escort, escortPlan?.escort ? diagnostic => logHealerEscortDiagnostic({ tick: state.tick,
-            phase: 'movement', reason: null, ...diagnostic }) : null, actionReporter);
+            phase: 'movement', reason: null, ...diagnostic }) : null, actionReporter, scoutHoldExperiment);
     executeTactics(myCreeps, enemies, damagedFriends, actionReporter);
     const limitKind = state.tick === 1 ? 'first-tick' : 'ordinary-tick';
     const limitNs = state.tick === 1 ? arenaInfo.cpuTimeLimitFirstTick : arenaInfo.cpuTimeLimit;
