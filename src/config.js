@@ -2,3 +2,4 @@
 export const oneScoutFlagExperiment = false;
 export const oneHealerEscortExperiment = true;
 export const scoutHoldExperiment = false;
+export const squadPairExperiment = false;

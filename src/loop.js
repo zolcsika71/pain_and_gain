@@ -6,10 +6,11 @@ import { searchPath } from 'game/path-finder';
 import { getCpuTime } from 'game/utils';
 import { arenaInfo } from 'game';
 import { EFF_ATTACK_MODIFIER } from 'game/constants';
-import { oneHealerEscortExperiment, oneScoutFlagExperiment, scoutHoldExperiment } from './config.js';
+import { oneHealerEscortExperiment, oneScoutFlagExperiment, scoutHoldExperiment, squadPairExperiment } from './config.js';
 import { planScoutFlagAllocation } from './strategy/flag-allocation.js';
 import { planHealerEscort } from './tactics/healer-escort.js';
 import { resetMembership, updateMembership } from './squads/membership.js';
+import { planSquadPair, resetPair } from './squads/pair.js';
 import { beginEvidenceTick, closeEvidenceTick, logActionAttempt,
     logActionDecision, logCpuEvidence, logMembershipEvidence } from './debug/replay-evidence.js';
 
@@ -19,6 +20,7 @@ let healerEscort = null;
 let lastTick = 0;
 let lastIdleDiagnostic = null;
 let membership = resetMembership();
+let squadPair = resetPair();
 const actionReporter = { decision: logActionDecision, attempt: logActionAttempt };
 
 export function getMembershipState() {
@@ -52,6 +54,7 @@ export function runTick() {
         healerEscort = null;
         lastIdleDiagnostic = null;
         membership = resetMembership();
+        squadPair = resetPair();
     }
     lastTick = state.tick;
     beginEvidenceTick(state.tick, matchReset
@@ -67,6 +70,11 @@ export function runTick() {
     const escortPlan = oneHealerEscortExperiment
         ? planHealerEscort(state, flag, healerEscort) : null;
     if (escortPlan) healerEscort = escortPlan.state;
+    const pairPlan = squadPairExperiment ? planSquadPair(state, membership, flag, squadPair, {
+        engagements, fallbackById: fallbackById?.fallbackById, escort: escortPlan?.escort,
+        nextStep: (creep, target, ignore) => creep.findPathTo(target, { maxOps: 1000, ignore })[0],
+    }) : null;
+    if (pairPlan) squadPair = pairPlan.state;
     logMapOnce(state.tick, observeMap);
     logGameState(state, flag);
     if (escortPlan?.transition) logHealerEscortDiagnostic({ tick: state.tick,
@@ -74,7 +82,8 @@ export function runTick() {
         targetId: null, returnCode: null });
     moveCreeps(myCreeps, enemies, flag, engagements, fallbackById?.fallbackById,
         escortPlan?.escort, escortPlan?.escort ? diagnostic => logHealerEscortDiagnostic({ tick: state.tick,
-            phase: 'movement', reason: null, ...diagnostic }) : null, actionReporter, scoutHoldExperiment);
+            phase: 'movement', reason: null, ...diagnostic }) : null, actionReporter, scoutHoldExperiment,
+        pairPlan);
     executeTactics(myCreeps, enemies, damagedFriends, actionReporter);
     const limitKind = state.tick === 1 ? 'first-tick' : 'ordinary-tick';
     const limitNs = state.tick === 1 ? arenaInfo.cpuTimeLimitFirstTick : arenaInfo.cpuTimeLimit;

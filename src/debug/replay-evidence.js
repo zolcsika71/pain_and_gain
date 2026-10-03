@@ -167,7 +167,7 @@ export function createReplayEvidenceLogger({ runtimeBuildId = buildId,
         previousMembership = current;
     }
 
-    function recordActionDecision({ phase, channel, actorId, outcome, reason, actions }) {
+    function recordActionDecision({ phase, channel, actorId, outcome, reason, actions, pair }) {
         const decisionId = `${tick}:${sequence}`;
         const selected = actions.map((action, index) => ({
             actionId: `${decisionId}#${index}`,
@@ -176,6 +176,7 @@ export function createReplayEvidenceLogger({ runtimeBuildId = buildId,
         }));
         const record = emitRecord('action-decision', phase, {
             decisionId, channel, actorId, outcome, reason, actions: selected,
+            ...(pair ? { pair } : {}),
         });
         counts[`${channel}-decisions`]++;
         return record;

@@ -14,7 +14,7 @@ const modules = new Map([
 ]);
 registerHooks({ resolve(specifier, context, nextResolve) {
     if (specifier === './config.js' && context.parentURL?.endsWith('/src/loop.js')) {
-        return { url: 'data:text/javascript,export const oneScoutFlagExperiment = true; export const oneHealerEscortExperiment = true; export const scoutHoldExperiment = true;', shortCircuit: true };
+            return { url: 'data:text/javascript,export const oneScoutFlagExperiment = true; export const oneHealerEscortExperiment = true; export const scoutHoldExperiment = true; export const squadPairExperiment = false;', shortCircuit: true };
     }
     if (modules.has(specifier)) return { url: `data:text/javascript,${encodeURIComponent(modules.get(specifier))}`, shortCircuit: true };
     return nextResolve(specifier, context);

@@ -16,7 +16,7 @@ const arenaModules = new Map([
 registerHooks({
     resolve(specifier, context, nextResolve) {
         if (specifier === './config.js' && context.parentURL?.endsWith('/src/loop.js')) {
-            return { url: 'data:text/javascript,export const oneScoutFlagExperiment = false; export const oneHealerEscortExperiment = false; export const scoutHoldExperiment = false;', shortCircuit: true };
+            return { url: 'data:text/javascript,export const oneScoutFlagExperiment = false; export const oneHealerEscortExperiment = false; export const scoutHoldExperiment = false; export const squadPairExperiment = false;', shortCircuit: true };
         }
         const source = arenaModules.get(specifier);
         if (source) return { url: `data:text/javascript,${encodeURIComponent(source)}`, shortCircuit: true };

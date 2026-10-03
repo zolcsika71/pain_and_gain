@@ -8,7 +8,7 @@ Screeps Arena code for the Pain and Gain arena. Armed creeps approach nearby ene
 - `src/loop.js` orchestrates each tick.
 - `src/arena/observe.js` reads flags, owned creeps, enemies, and damaged allies from the game API.
 - `src/strategy/objectives.js` selects the first flag.
-- `src/squads/membership.js` maintains match-local squad-membership bookkeeping from pre-action observations; the tick loop updates it but no gameplay selector uses it.
+- `src/squads/membership.js` maintains stable match-local squad membership; the optional `src/squads/pair.js` planner uses it for one leader–follower pair.
 - `src/debug/replay-evidence.js` emits versioned membership, action, and CPU evidence with per-tick coverage without feeding diagnostics back into gameplay.
 - `src/arena/execute.js` issues movement and tactical actions for each owned creep.
 - `src/tactics/` checks functioning body parts, chooses deterministic targets, selects movement, and selects compatible healing and combat actions.
@@ -46,6 +46,20 @@ no diagnostic schema or instrumentation is added. The charcock v78 screening
 verified live holding and allocation priority, while hold-to-release remains
 unexercised. See the [session handoff](docs/handoffs/2026-10-02-scout-hold.md)
 for the final switches and evidence locations.
+
+The `squadPairExperiment` switch is **off by default**. Its [bounded pairing
+policy](docs/architecture/squad-pair-experiment-2026-10-02.md) selects one combat
+leader and pure healer from an existing squad for early first-flag movement.
+Escort, combat, injured-ally support, and explicit objective overrides take
+priority. Separation, fatigue, and blocked movement receive at most three
+unsuccessful recovery ticks; one assignment lasts at most 24 ticks, with no
+replacement that match. Tactical actions continue. Pair context extends the
+existing movement decisions without adding record types or changing closures.
+Local checks do not establish live displacement or benefit. A separate enabled,
+build-verified trial subsequently demonstrated opening following and lifetime
+release in one match; recovery and priority handoffs remain unexercised live.
+The linked record distinguishes original capture from later recovered coverage.
+Deployment pairing remains off; no promotion or automatic retry follows.
 
 ## Per-tick console output
 

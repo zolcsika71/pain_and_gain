@@ -8,6 +8,7 @@ component "src/strategy/objectives.js" as Objectives
 component "src/squads/membership.js" as Membership
 component "src/config.js\nsrc/strategy/flag-allocation.js" as Allocation
 component "src/config.js\nsrc/tactics/healer-escort.js" as Escort
+component "src/config.js\nsrc/squads/pair.js" as Pair
 component "src/debug/game-state.js" as Debug
 component "src/debug/replay-evidence.js" as Evidence
 component "src/arena/execute.js" as Execute
@@ -21,13 +22,15 @@ Main --> Loop : runTick()
 Loop --> Observe : collect flags, owned creeps,\nenemies, damaged allies
 Observe --> API : getObjectsByPrototype() / getTicks()
 Loop --> Membership : reset on tick restart; update from\nowned pre-action creeps
-note right of Membership : Bookkeeping only; no input to\nmovement or tactical decisions
+Membership --> Pair : stable same-squad members\nonly when experiment enabled
 Loop --> Evidence : baseline or change-only membership\nevidence after update
 Membership --> Evidence : read resulting state\nwithout mutation
 Loop --> Objectives : select first flag
 Loop --> Allocation : optional one-scout fallback\n(default off; one attempt)
 Allocation --> API : searchPath() terrain-route estimates\nwhen enabled
-Loop --> Escort : optional one-healer pair\n(default off; one assignment)
+Loop --> Escort : optional one-healer pair\n(default on; one assignment)
+Loop --> Pair : optional leader/follower (default off)\nescort and ordinary movement retain priority
+Pair --> Execute : joint step / bounded wait;\nrelease restores ordinary movement
 Loop --> Observe : sample starting map once
 Observe --> API : getObjects() / getTerrainAt()
 Loop --> Debug : log map once, then tick state\nbefore actions

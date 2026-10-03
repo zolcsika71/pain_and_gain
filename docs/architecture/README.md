@@ -9,6 +9,7 @@ This folder holds descriptions of the bot and its integrations, plus validation 
 - [replay-score-production-validation-2026-10-02.md](replay-score-production-validation-2026-10-02.md) — exact retained-source selection, production scoring compatibility results, bounded output verification, and standalone reproduction procedure for ADR 0005.
 - [screeps-arena-api.md](screeps-arena-api.md) — game API reference for objects, actions, and pathfinding.
 - [screeps-squads-and-pairing.md](screeps-squads-and-pairing.md) — reference material for squad and pairing behavior.
+- [squad-pair-experiment-2026-10-02.md](squad-pair-experiment-2026-10-02.md) — disabled one-pair movement policy, precedence, bounded recovery, local validation, and limited live opening screen.
 - [combat-positioning-validation.md](combat-positioning-validation.md) — build-specific movement, healer, and flag-allocation validation, including unresolved live-evidence limits.
 - [scout-hold-experiment-2026-10-02.md](scout-hold-experiment-2026-10-02.md) — disabled-default scout fallback holding policy, local checks, live charcock screening, and remaining release gap.
 - [historical-evidence-cycle-2026-10-02.md](historical-evidence-cycle-2026-10-02.md) — bounded cached cross-match index and no-change escort decision.

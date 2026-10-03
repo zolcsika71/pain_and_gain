@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { registerHooks } from 'node:module';
-import { oneHealerEscortExperiment, oneScoutFlagExperiment } from '../../src/config.js';
+import { oneHealerEscortExperiment, oneScoutFlagExperiment, squadPairExperiment } from '../../src/config.js';
 import { buildId } from '../../src/debug/build-id.js';
 
 // Replace only Arena-provided imports; all project modules remain real.
@@ -30,6 +30,7 @@ const { ScoreFlag } = await import('arena/season_4/pain_and_gain/basic');
 test('production enables only the healer escort experiment', () => {
     assert.equal(oneScoutFlagExperiment, false);
     assert.equal(oneHealerEscortExperiment, true);
+    assert.equal(squadPairExperiment, false);
 });
 
 test('runTick chooses combat movement or first-flag fallback before compatible tactics', t => {
@@ -103,6 +104,7 @@ test('runTick chooses combat movement or first-flag fallback before compatible t
         state.type === 'action-attempt');
     assert.equal(actionEvidence.filter(record => record.type === 'action-decision').length, 18);
     assert.equal(actionEvidence.filter(record => record.type === 'action-attempt').length, 8);
+    assert.ok(actionEvidence.every(record => !Object.hasOwn(record, 'pair')));
     for (const attempt of actionEvidence.filter(record => record.type === 'action-attempt')) {
         const selection = actionEvidence.find(record => record.type === 'action-decision' &&
             record.decisionId === attempt.decisionId);

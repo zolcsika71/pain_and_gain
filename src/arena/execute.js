@@ -17,10 +17,16 @@ function issueAction(creep, action, decision, index, reporter) {
 }
 
 export function moveCreeps(myCreeps, enemies, flag, engagements = new Map(), fallbackById = new Map(),
-    escort = null, reportEscort = null, reporter = null, scoutHoldEnabled = false) {
+    escort = null, reportEscort = null, reporter = null, scoutHoldEnabled = false, pairPlan = null) {
     const ownedIds = new Set(myCreeps.map(creep => creep.id));
     for (const id of engagements.keys()) if (!ownedIds.has(id)) engagements.delete(id);
-    for (const creep of myCreeps) {
+    // Vacating leader is executed before its follower regardless of observation order.
+    const leader = pairPlan?.moves.size ? myCreeps.find(creep => creep.id === pairPlan.context.leaderId) : null;
+    const ordered = leader ? [leader, ...myCreeps.filter(creep => creep !== leader)] : myCreeps;
+    let leaderAccepted = false;
+    for (const creep of ordered) {
+        const pair = pairPlan?.context && ([pairPlan.context.leaderId, pairPlan.context.followerId].includes(creep.id) ||
+            !pairPlan.context.leaderId && creep === myCreeps[0]) ? { pair: pairPlan.context } : {};
         if (escort && escort.healerId === creep.id) {
             const action = escort.mode === 'move-attempt'
                 ? { method: 'moveTo', target: escort.ally, targetKind: 'creep' } : null;
@@ -30,7 +36,7 @@ export function moveCreeps(myCreeps, enemies, flag, engagements = new Map(), fal
                 actorId: creep.id, outcome,
                 reason: escort.mode === 'move-attempt' ? 'escort-approach'
                     : escort.mode === 'hold' ? 'escort-in-range' : 'escort-fatigue-pause',
-                actions: action ? [action] : [] });
+                actions: action ? [action] : [], ...pair });
             let returnCode = null;
             if (action) {
                 const attempted = actionAtCall(action);
@@ -42,6 +48,25 @@ export function moveCreeps(myCreeps, enemies, flag, engagements = new Map(), fal
                 returnCode });
             continue;
         }
+        const paired = pairPlan?.moves.get(creep.id);
+        if (paired) {
+            engagements.delete(creep.id);
+            const rejected = paired.followsLeader && !leaderAccepted;
+            const action = paired.target && !rejected
+                ? { method: 'moveTo', target: paired.target, targetKind: 'position' } : null;
+            const decision = reportDecision(reporter, { phase: 'movement', channel: 'movement',
+                actorId: creep.id, outcome: action ? 'selected' : 'hold',
+                reason: rejected ? 'pair-leader-command-rejected' : paired.reason,
+                actions: action ? [action] : [], ...pair });
+            if (action) {
+                const attempted = actionAtCall(action);
+                const returnCode = paired.followsLeader
+                    ? creep.moveTo(action.target, { ignore: [leader] }) : creep.moveTo(action.target);
+                if (creep === leader) leaderAccepted = returnCode === 0;
+                if (decision) reporter.attempt(decision, 0, attempted, returnCode);
+            }
+            continue;
+        }
         const fallback = fallbackById.has(creep.id) ? fallbackById.get(creep.id) : flag;
         const plan = selectMovementPlan(creep, enemies, fallback, engagements.get(creep.id), myCreeps,
             scoutHoldEnabled && !fallbackById.has(creep.id));
@@ -51,7 +76,7 @@ export function moveCreeps(myCreeps, enemies, flag, engagements = new Map(), fal
             ? { method: 'moveTo', target: plan.target, targetKind: plan.targetKind } : null;
         const decision = reportDecision(reporter, { phase: 'movement', channel: 'movement',
             actorId: creep.id, outcome: plan.outcome, reason: plan.reason,
-            actions: action ? [action] : [] });
+            actions: action ? [action] : [], ...pair });
         if (action) issueAction(creep, action, decision, 0, reporter);
     }
 }
