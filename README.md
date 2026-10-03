@@ -113,6 +113,12 @@ and managed-output validation remain in place where applicable. A different
 writer's atomic replacement makes the next response reload it. The
 [startup measurement](docs/architecture/replay-import-performance-2026-10-02.md)
 records the bounded before/after timings and their limits.
+Manifest writes use compact JSON plus a trailing newline; readers accept both
+older indented and compact files. This reduces whole-manifest string size without
+changing metadata or publication/lifecycle rules. It is bounded capacity relief,
+not unlimited storage: serialization and reading still materialize the manifest.
+The same [importer record](docs/architecture/replay-import-performance-2026-10-02.md)
+documents the diagnosed string-limit failure and targeted recovery.
 For a suspected missing capture, compare the exact replay ID and build tags in
 `replay_logs/manifest.json` with the Arena cache request keys; a local
 `build-id:check` does not prove what Arena ran. Preserve any error message and

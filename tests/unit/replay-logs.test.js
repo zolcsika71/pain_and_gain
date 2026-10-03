@@ -1204,6 +1204,101 @@ test('bounded retries defer incomplete cache entries until they change', async t
     assert.equal((await scanCache(root, cache, seen))[0].kind, 'imported');
 });
 
+test('compact manifest fits a scaled string budget and preserves pretty-input metadata', async t => {
+    const { root, cache } = workspace(t);
+    const seed = path.join(cache, 'seed_0');
+    fs.writeFileSync(seed, cacheFrame({ 1: mappedFirst() }));
+    const first = (await importCacheFile(root, seed)).record;
+    await updateReview(root, 'claim', replayId, first.fingerprint, 'codex/compact-test');
+    await updateReview(root, 'examined', replayId, first.fingerprint, 'codex/compact-test');
+    const manifestPath = path.join(root, 'replay_logs', 'manifest.json');
+    const before = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+    before.unknownMetadata = Array.from({ length: 100 }, (_, i) => ({
+        index: i, value: null, enabled: false, label: '未知 🐾', nested: { missing: null },
+    }));
+    before.records[0].unknownMetadata = { missing: null, zero: 0 };
+    before.maps[0].unknownMetadata = { retained: true };
+    before.replays[0].unknownMetadata = ['preserve', null];
+    before.scoreRecords = [{ replayId, fingerprint: 'a'.repeat(64),
+        reviews: { reviewer: { completedAt: null } }, unknownMetadata: { score: null } }];
+    before.retiredScoreSources = [{ replayId, fingerprint: 'b'.repeat(64), retained: true }];
+    fs.writeFileSync(manifestPath, `${JSON.stringify(before, null, 2)}\n`);
+    const budget = JSON.stringify(before).length + 3000;
+    assert.ok(JSON.stringify(before, null, 2).length > budget);
+    const source = path.join(cache, 'next_0');
+    fs.writeFileSync(source, cacheFrame({ 2: entry(2) }, { tick: 2 }));
+    const originalStringify = JSON.stringify;
+    let manifestWrites = 0;
+    JSON.stringify = function(value, ...args) {
+        const serialized = originalStringify(value, ...args);
+        if (value?.version === 2 && Array.isArray(value.records)) {
+            manifestWrites++;
+            if (serialized.length > budget) throw new RangeError('Invalid string length (scaled fixture budget)');
+        }
+        return serialized;
+    };
+    let result;
+    try {
+        result = await importCacheFile(root, source);
+    } finally {
+        JSON.stringify = originalStringify;
+    }
+    assert.equal(result.kind, 'imported');
+    assert.equal(manifestWrites, 2); // Pending publication, then claim publication.
+    const bytes = fs.readFileSync(manifestPath, 'utf8');
+    const after = JSON.parse(bytes);
+    assert.equal(bytes, `${JSON.stringify(after)}\n`);
+    assert.deepEqual({ ...after, records: after.records.slice(0, 1) }, before);
+    assert.equal((await importCacheFile(root, source)).kind, 'deduplicated');
+    assert.equal(fs.readFileSync(manifestPath, 'utf8'), bytes);
+});
+
+test('failed atomic manifest replacement preserves disk state and permits targeted retry', async t => {
+    for (const failedSave of [1, 2]) {
+        const { root, cache } = workspace(t);
+        const seed = path.join(cache, 'seed_0');
+        fs.writeFileSync(seed, cacheFrame({ 1: mappedFirst() }));
+        await importCacheFile(root, seed);
+        const manifestPath = path.join(root, 'replay_logs', 'manifest.json');
+        const originalBytes = fs.readFileSync(manifestPath);
+        const source = path.join(cache, 'next_0');
+        fs.writeFileSync(source, cacheFrame({ 2: entry(2) }, { tick: 2 }));
+        const originalRename = fs.renameSync;
+        let saves = 0;
+        fs.renameSync = function(from, to) {
+            if (to === manifestPath && ++saves === failedSave) {
+                throw Object.assign(new Error('injected manifest replacement failure'), { code: 'EIO' });
+            }
+            return originalRename.call(this, from, to);
+        };
+        // Failed actions must also discard their in-memory manifest mutation.
+        const manifestCache = {};
+        try {
+            await assert.rejects(importCacheFile(root, source, manifestCache), /injected manifest replacement failure/);
+        } finally {
+            fs.renameSync = originalRename;
+        }
+        assert.equal(manifestCache.manifest, null);
+        assert.equal(manifestCache.stamp, null);
+        const interrupted = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+        if (failedSave === 1) {
+            assert.deepEqual(fs.readFileSync(manifestPath), originalBytes);
+            assert.equal(interrupted.records.length, 1);
+        } else {
+            assert.equal(interrupted.records.length, 2);
+            assert.equal(interrupted.records[1].status, 'pending');
+        }
+        assert.deepEqual(fs.readdirSync(path.join(root, 'replay_logs'))
+            .filter(name => name.endsWith('.tmp') || name === '.manifest.lock'), []);
+        const retry = await importCacheFile(root, source, manifestCache);
+        assert.equal(retry.kind, failedSave === 1 ? 'imported' : 'deduplicated');
+        assert.equal(retry.record.status, 'claim');
+        assert.equal(fs.readFileSync(path.join(root, 'replay_logs', retry.record.outputPath), 'utf8'), `${entry(2)}\n`);
+        assert.equal(JSON.parse(fs.readFileSync(manifestPath, 'utf8')).records.length, 2);
+        assert.equal((await importCacheFile(root, source)).kind, 'deduplicated');
+    }
+});
+
 test('an interrupted pending import resumes from the cached response', async t => {
     const { root, cache } = workspace(t);
     const source = path.join(cache, 'response_0');

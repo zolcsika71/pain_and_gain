@@ -1071,7 +1071,8 @@ function atomicReplace(file, content) {
 }
 
 function saveManifest(root, manifest) {
-    atomicReplace(path.join(outputDirectory(root), 'manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`);
+    // Omit indentation to postpone the whole-string limit without changing data.
+    atomicReplace(path.join(outputDirectory(root), 'manifest.json'), `${JSON.stringify(manifest)}\n`);
 }
 
 function validateSavedMap(map, checksum, file, allowMissingChecksum = false) {
