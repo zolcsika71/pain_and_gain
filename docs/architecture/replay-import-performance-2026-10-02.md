@@ -173,3 +173,26 @@ comparison against intervening changes and atomic restoration of the verified
 complete manifest, not replacement with a subset or deletion of recovered
 captures. Original captures/maps remain hash-verified and available for those
 references. Manual action: **NONE**.
+
+## Durable-storage design checkpoint (2026-10-03)
+
+[ADR 0006](../decisions/0006-replay-storage-v3.md) records the accepted design
+and implementation contracts for a SQLite operational index with immutable
+per-response diagnostics/summary/extension files. It does not describe deployed
+storage: the compact version-2 manifest and current importer remain unchanged.
+
+The read-only structural profile at main commit
+`52dba8bb8216afad12615f1a2098a0dfba7733b3` measured 469,562,405 bytes of
+`otherEntries` (98.89% of the 474,810,505-byte manifest), across 957,196 entries.
+No repeated `(source key, raw entry)` pairs were found within replays; dropping
+duplicates is not a supported capacity fix. The profile streamed one collection
+element at a time with a 60-second deadline; 7.37 seconds and 410,583,040 bytes
+peak RSS include duplicate-hash bookkeeping, not a v3 performance measurement.
+
+The ADR defines bounded metadata/payload access, preservation, locking and
+file-operation journals, explicit migration/rollback, and
+[M1's isolated core-only scope](../decisions/0006-replay-storage-v3.md#first-isolated-implementation-milestone-m1).
+No storage implementation, rehearsal or production migration has run. Production
+migration needs a fresh complete verified backup: the retained pre-recovery
+backup alone lacks the subsequent recovered records. Existing evidence,
+review states, gameplay/builds and both trial worktrees remain retained.
