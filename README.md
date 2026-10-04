@@ -234,10 +234,18 @@ node --test tests/unit/scout-hold.test.js tests/unit/scout-hold-flow.test.js tes
 The screen requires every selected log record to carry the expected build and a
 claim for that task. It runs the existing compact analyzer before interpreting
 runtime decisions and snapshots. Its ignored cache at
-`replay_logs/analysis_cache/scout-hold-<replay-id>.json` is keyed by selected
-response fingerprints and bytes, diagnostic content/coverage, linked map bytes,
-analyzer/tool code, local build identity, and configuration. A changed input
-recomputes the report. It records hold decisions, off-flag holds, guard
+`replay_logs/analysis_cache/scout-hold-<replay-id>-<key>.json` is keyed by selected
+response fingerprints and bytes, diagnostic wrappers/content/coverage, validated
+record fields, the current replay associations and resolved map registration,
+linked map bytes, analyzer/tool code, local build identity, and configuration.
+Claims, expected build, manifest shape, and safe file availability are checked
+before reuse. Changed validation inputs recompute through the existing analyzer;
+invalid or missing associations/evidence cannot reuse an earlier successful report.
+Unrelated replay metadata, review checkpoints, and unused annotations do not
+invalidate the selection. Legacy replay-only cache files are retained but never
+reused; key-addressed reports retain prior cache history without cleanup. This
+does not add a transactional snapshot against concurrent external file changes.
+It records hold decisions, off-flag holds, guard
 violations, and consecutive-tick releases with their exact log fingerprints;
 command returns and later positions remain separate observations. The aggregate
 release verdict is `fail` before `unknown` before `pass` before `unexercised`;

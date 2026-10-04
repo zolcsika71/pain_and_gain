@@ -135,7 +135,18 @@ export function summarizeHoldRelease(snapshots, entries, scoutIds, completeTicks
 }
 
 function selectedEvidence(replayId, taskId) {
-    const manifest = JSON.parse(fs.readFileSync(path.join(root, 'replay_logs/manifest.json')));
+    const directory = path.join(root, 'replay_logs');
+    const manifestFile = path.join(directory, 'manifest.json');
+    if (!fs.lstatSync(directory).isDirectory() ||
+        fs.realpathSync(directory) !== path.join(fs.realpathSync(root), 'replay_logs') ||
+        !fs.lstatSync(manifestFile).isFile()) {
+        throw new Error('Unsafe managed evidence directory or manifest');
+    }
+    const manifest = JSON.parse(fs.readFileSync(manifestFile));
+    if (manifest?.version !== 2 || !Array.isArray(manifest.records) ||
+        !Array.isArray(manifest.replays) || !Array.isArray(manifest.maps)) {
+        throw new Error('Unsupported managed evidence manifest');
+    }
     const records = manifest.records.filter(r => r.replayId === replayId)
         .sort((a, b) => a.fingerprint.localeCompare(b.fingerprint));
     if (!records.length) throw new Error(`No managed log records for ${replayId}`);
@@ -145,16 +156,31 @@ function selectedEvidence(replayId, taskId) {
     const source = records.map(r => {
         const bytes = r.outputPath ? managedBytes(r.outputPath) : null;
         const mapBytes = managedBytes(r.mapFile);
+        // Mirror selected manifest validation inputs, not unrelated review/annotation data.
         return { fingerprint: r.fingerprint, sourceKey: r.sourceKey, buildId: r.buildId,
-            outputFingerprint: r.outputFingerprint, outputBytes: bytes ? sha256(bytes) : null,
-            mapChecksum: r.mapChecksum, mapBytes: sha256(mapBytes),
-            diagnostics: sha256(r.otherEntries.map(e => e.raw).join('\n')),
-            coverage: r.diagnosticCoverage };
+            requestedTick: r.requestedTick, sourceEntry: r.sourceEntry,
+            importedAt: r.importedAt, status: r.status,
+            outputPath: r.outputPath, outputFingerprint: r.outputFingerprint,
+            outputBytes: bytes ? sha256(bytes) : null,
+            mapId: r.mapId, mapFile: r.mapFile, mapChecksum: r.mapChecksum, mapBytes: sha256(mapBytes),
+            diagnostics: sha256(canonical(r.otherEntries.map(e => sha256(canonical({
+                key: e.key, type: e.type, formatVersion: e.formatVersion, raw: e.raw,
+            }))))),
+            coverage: r.coverage, diagnosticCoverage: r.diagnosticCoverage };
     });
+    // All matching associations matter (including duplicates). The analyzer resolves
+    // the first active association and the first registration matching its map ID.
+    const associations = manifest.replays.filter(r => r?.replayId === replayId);
+    const active = associations.find(r => r.status === 'active');
+    const registration = manifest.maps.find(m => m?.id === active?.mapId);
+    const linkage = { associations: associations.map(r => ({ replayId: r.replayId,
+        status: r.status, mapId: r.mapId, buildId: r.buildId })),
+    registration: registration ? { id: registration.id, status: registration.status,
+        checksum: registration.checksum, file: registration.file } : null };
     const dependencies = ['tools/scout-hold-screen.js', 'tools/replay-analysis.js',
         'tools/replay-logs.js', 'tools/replay-score-analysis.js', 'src/config.js',
         'src/debug/build-id.js'].map(file => [file, sha256(fs.readFileSync(path.join(root, file)))]);
-    return { records, key: sha256(canonical({ replayId, source, dependencies })) };
+    return { records, key: sha256(canonical({ replayId, source, linkage, dependencies })) };
 }
 
 export function screenReplay(replayId, taskId, expectedBuildId) {
@@ -167,7 +193,9 @@ export function screenReplay(replayId, taskId, expectedBuildId) {
         throw new Error(`Replay log build does not match ${expectedBuildId}`);
     }
     const cacheDir = path.join(root, 'replay_logs/analysis_cache');
-    const cacheFile = path.join(cacheDir, `scout-hold-${replayId}.json`);
+    // Legacy replay-only entries lack current validation dependencies. Retain them;
+    // key-addressed entries also preserve earlier reports when selected inputs change.
+    const cacheFile = path.join(cacheDir, `scout-hold-${replayId}-${key}.json`);
     if (fs.existsSync(cacheFile)) {
         const cached = JSON.parse(fs.readFileSync(cacheFile));
         if (cached.key === key) return { report: cached.report, cache: 'hit' };
