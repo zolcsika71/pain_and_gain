@@ -7,6 +7,7 @@ This folder holds descriptions of the bot and its integrations, plus validation 
 - [replay-analysis.md](replay-analysis.md) — deterministic read-only analyzer interface, report semantics, merging rules, and evidence limits for ADR 0004 M4.
 - [replay-import-performance-2026-10-02.md](replay-import-performance-2026-10-02.md) — measured watcher startup, compact-manifest recovery, and the link to ADR 0006's durable-storage design.
 - [replay-storage-v3-m1-2026-10-03.md](replay-storage-v3-m1-2026-10-03.md) — isolated synthetic storage core, bounded interfaces, crash/concurrency checks and streaming scale gate; no production integration or migration.
+- [ADR 0006 catalog C1](../decisions/0006-replay-storage-v3.md#separate-synthetic-milestone-c1-catalog-metadata-foundation) — proposed synthetic catalog milestone for evidence provenance, analysis runs, immutable conclusion revisions and reviews; not implemented or production-qualified.
 - [replay-validation-2026-09-30.md](replay-validation-2026-09-30.md) — retained current-build replay, deterministic report, CPU/size measurements, and remaining limits that close ADR 0004 M5.
 - [replay-score-production-validation-2026-10-02.md](replay-score-production-validation-2026-10-02.md) — exact retained-source selection, production scoring compatibility results, bounded output verification, and standalone reproduction procedure for ADR 0005.
 - [screeps-arena-api.md](screeps-arena-api.md) — game API reference for objects, actions, and pathfinding.

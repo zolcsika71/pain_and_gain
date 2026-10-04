@@ -1,8 +1,11 @@
 # ADR 0006: Replay storage v3 with an operational index and immutable payloads
 
-Status: Accepted design; isolated synthetic M1 implemented; production integration and migration not authorized.
+Status: Accepted storage and replay-catalog design; isolated synthetic storage M1 implemented; catalog C1, production integration and migration not implemented or authorized by this document.
 
 Date: 2026-10-03 (Europe/Budapest).
+
+Catalog contract added: 2026-10-04. This documentation decision defines a separate
+implementation task; it does not extend M1's qualification.
 
 ## Context
 
@@ -645,6 +648,461 @@ orchestration, storage migration/rehearsal, real-evidence analysis, watcher
 startup, configuration/build changes, and cleanup of existing files. If a budget
 or platform primitive fails, report the measured blocker; do not quietly change
 this contract or broaden into an analyzer/storage redesign.
+
+### SQLite replay catalog extension
+
+SQLite is also the central catalog for replay identity/provenance, capture
+references, analysis runs, observed findings, interpreted conclusions,
+experiments and reviews. Large immutable logs/reports remain files, referenced
+by exact path and byte hash; they are not copied into SQLite. The catalog is a
+traceability layer, not a new analyzer, evidence owner, strategic decision engine
+or automatic review-completion mechanism.
+
+Current [storage interfaces](../../tools/replay-store.js) implement schema 1
+and synthetic M1 only. Current [analysis](../architecture/replay-analysis.md)
+and [historical-index records](../architecture/historical-evidence-cycle-2026-10-02.md)
+still use v2 evidence and independent cached reports. None currently writes the
+catalog. Preserve their selection, fingerprints, claim gates, report semantics
+and deterministic cache contracts when integrating later.
+
+#### Entities, identities and relationships
+
+Natural evidence identities remain authoritative: replay ID, the full
+`[collection, replayId, fingerprint]` capture key, original uploaded-code ID
+qualified by player/account, runtime build ID and canonical map checksum.
+Catalog subjects for these identities have one unique natural key, not a new
+evidence fingerprint. New questions, runs, findings, conclusion series,
+experiments, revisions and catalog review events use caller-supplied UUIDs,
+persisted once. Retry with the same ID and identical logical fields is idempotent;
+different fields cause `IDENTITY_CONFLICT`, not replacement. UUIDs are catalog
+identifiers, never substituted into deterministic analyzer findings/cache keys.
+This checks immutable registration/event content, not mutable workflow projections.
+An exact revision/event retry is resolved before its head/state precondition:
+return the original receipt without advancing state twice, even if later events
+exist. A different revision ID with a stale expected head still conflicts.
+Use the M1 canonical JSON capture tuple, preserving collection qualification;
+UUIDs/ordinals do not replace it. Catalog IDs and counters retain M1's validation,
+BINARY comparison, safe-integer/BigInt and overflow-failure rules.
+
+Use STRICT tables, BINARY identifiers and foreign keys. The following additive
+schema contract uses `catalog_` names to avoid altering M1's operational tables:
+
+| Table / stable key | Required relationships and indexed projections |
+| --- | --- |
+| catalog_subjects / subject_id | UUID, immutable kind and unique `(kind, natural_key)` where applicable; ordinal for bounded enumeration; each subject resolves to exactly one matching typed row |
+| catalog_replays / replay_id | unique subject_id; original replay ID, no required map/build/upload association; references are supplied by provenance assertions |
+| catalog_captures / capture_key | unique subject_id and `(collection, replay_id, fingerprint)`; FK catalog_replays; log/score kind and original source domain/request identity, optional retained metadata reference |
+| catalog_uploads / `(player_key, code_id)` | subject_id; original code ID and observed version if available; no inferred next version or required runtime build |
+| catalog_builds / build_id | subject_id; full runtime build ID, not an uploaded-code ID; optional verified source/configuration assertion |
+| catalog_configs / config_id | subject_id; immutable known switch values and explicit scope/source; absent switches remain absent, explicit null remains null, false remains false |
+| catalog_artifacts / artifact_id | subject_id; unique original owner identity/field plus format version, expected hash/bytes/encoding and location revisions; non-owning reference to a single operational or catalog-owned artifact |
+| catalog_provenance / assertion_id | subject_id of replay/capture/upload/build/config, field, ordinal, bounded original value or artifact reference; origin evidence_ref or explicit user/local-source origin, validation/version and knowledge state |
+| catalog_coverage / `(capture_key, ordinal)` | FK capture; dimension (`runtime-tick`, `game-time`, `diagnostic-type`, `frame`, `terminal`), inclusive bounds if known, validation version, evidence ref and state/reason; indexed by capture/dimension/start |
+| catalog_questions / question_id | subject_id; immutable question, predefined observable criterion, required coverage/provenance and comparison policy; changed question gets a new ID with predecessor FK |
+| catalog_question_links / `(question_id, related_question_id, role)` | FKs both questions; append-only explicit comparison/predecessor relationship with policy, reason and creator task; no implicit cross-question support |
+| catalog_runs / run_id | subject_id; FK question; analyzer name/version and dependency digest, parameter value/reference, explicit selection digest/version, workflow and bounded error; optional cached-report artifact |
+| catalog_run_sources / `(run_id, ordinal)` | FK run/capture; unique capture per run; immutable selected occurrence/range, expected selected logical/evidence/map digests, provenance/availability receipt and reason |
+| catalog_evidence_refs / evidence_ref_id | FK capture; optional artifact/location revision, diagnostic key/occurrence/line, actor and inclusive tick/game-time range; build/config assertion refs where applicable |
+| catalog_findings / finding_id | subject_id; FK run, unique `(run_id, ordinal)`; observed kind/rule, exact bounded value or artifact ref, original analyzer verdict and normalized verdict with semantics version |
+| catalog_finding_evidence / `(finding_id, ordinal)` | FK finding/evidence_ref; support role (`observation`, `coverage`, `provenance`, `counterevidence`); all contributors retained, not just compact representatives |
+| catalog_conclusions / conclusion_id | subject_id; FK question; current_revision integer; one stable interpretation series, not the latest text as an overwriteable field |
+| catalog_conclusion_revisions / `(conclusion_id, revision)` | immutable revision subject_id, predecessor revision, verdict, rationale/value reference, scope/limitations, creator task and ordinal; FK same-series predecessor |
+| catalog_conclusion_support / `(conclusion_id, revision, ordinal)` | FK exact revision/finding; support or counterevidence role; no link to a mutable latest finding or report |
+| catalog_experiments / experiment_id | subject_id; current_revision; separate workflow, not a strategy-promotion flag |
+| catalog_experiment_revisions / `(experiment_id, revision)` | immutable revision subject_id, hypothesis, FK question, baseline/candidate build/config refs, acceptance/failure/unexercised criteria and limits, predecessor; no implied matched comparison |
+| catalog_experiment_runs / `(experiment_id, revision, run_id)` | FKs exact experiment revision/run; baseline/candidate/observational arm and assignment provenance; unknown arm is explicit |
+| catalog_tasks / task_id | exact existing task identifier, not normalized; stable catalog subject association, bounded task description/reference |
+| catalog_reviews / `(target_subject_id, task_id)` | FKs subject/task; separate catalog review checkpoints plus ordinal; target can be an exact conclusion/experiment revision, not only a series |
+| catalog_review_events / event_id | append-only target/task association, ordinal, event/checkpoint and original timestamp/value; retain prior assessments and rationale refs |
+| catalog_workflow_events / `(subject_id, ordinal)` | unique immutable event_id UUID; FK run/conclusion/experiment subject and creator task; append-only previous/next workflow, checkpoint and reason; current-state projection changes in the same transaction |
+| catalog_artifact_events / `(artifact_id, ordinal)` | append-only location/availability observation or authorized-retirement receipt; original path/hash retained, reason and source/task explicit |
+
+Every join is an indexed exact FK lookup or keyset page. Typed-row/subject-kind
+agreement is checked inside the writer transaction; no unresolved polymorphic
+target strings or dangling support edges are accepted. Reverse indexes cover
+run/question, capture/replay, evidence_ref/capture, finding/run, support/finding,
+experiment/run, related-question links and review/target. Selection and occurrence ordinals, not UUID
+sort order or timestamps, determine evidence order. All original extensions and
+optional collection/property presence use paginated properties or immutable
+references under the existing bounded-value contract, never a large JSON column.
+Catalog properties use an explicitly typed catalog-subject owner, not a fabricated
+capture owner. Referencing an existing artifact is non-owning and does not reserve
+its path again. C1 permits only bounded inline catalog properties; overflow bodies
+require the later publication milestone. Actor identifiers are scoped by replay,
+not assumed globally unique. Unknown player identity cannot be replaced with an
+invented upload owner: retain the observed code ID as a scoped provenance assertion
+until its player-qualified identity is established.
+Artifact registration checks its immutable original owner/field/format identity
+before allocating another anchor; changed expected hash/length is a conflict or
+invalid observation, not a new identity for the same evidence. Paths are location
+history, not artifact identity; identical hashes from different owners remain
+distinct. Catalog anchors for retained maps/artifacts resolve exact original
+operational owner keys without adding foreign keys to deletable operational rows.
+Evidence-ref capture and artifact ownership must agree; actor/range and
+build/config assertions name that capture's scope or an explicit sourced alignment
+relationship. A reference cannot substitute another capture's bytes or build tag.
+Finding evidence must belong to its sealed run selection (or the explicitly
+selected map/provenance dependencies). Cross-match conclusions link separate
+runs/findings through the question's comparison policy, not fabricated joins.
+
+Catalog captures are durable identity anchors, not duplicate operational records.
+An explicitly requested but absent capture may have an anchor and an unavailable
+selection receipt; this does not invent observed metadata or a live `claim`.
+Do not FK catalog references to deletion-sensitive `records`/`reviews` with
+CASCADE. Resolve the same natural identity against current/retired/missing
+operational state instead. Catalog review history is distinct from importer
+review ownership: it neither claims a capture nor authorizes cleanup. Copying
+an existing review for historical reference must name its original checkpoints
+and source; the operational reviewer still follows the existing lifecycle.
+
+#### Provenance, observation and interpretation
+
+Provenance assertions are append-only and scoped to their exact supporting
+evidence. Knowledge state is `observed`, `reported`, `local-verified`, `unknown`,
+`conflicting` or `invalid`, with a reason. Unknown values are not fabricated IDs
+or zero counts. SQL NULL is only a projection; preserve original property
+presence/value alongside it. Record conflicting opponent/version, player-slot
+mapping, upload, map, build and configuration assertions without choosing a
+winner. Opponent display names are not stable player IDs. A source-folder check
+proves local bytes only, not upload or execution. A captured build tag proves
+only its covered runtime evidence; a build/config association needs its own
+validated source or runtime evidence. Score-to-build association and runtime/
+frame alignment need explicit assertion sources; shared replay ID alone does
+not establish them. Terrain/checksum and relevant starting positions remain
+separate comparison inputs. Terminal state requires terminal evidence, not the
+last retained tick, metadata tick count or final observed cumulative score.
+
+Coverage is a set of sourced intervals/observations, not a single maximum tick.
+Use `covered`, `gap`, `unknown`, `conflicting`, `invalid` with exact reason/type;
+metadata-advertised extent is a provenance assertion, not covered runtime.
+Do not expand arbitrarily wide gaps into tick rows. Complete zero-event closures
+remain distinguishable from absent diagnostics. Counts name their unit: ticks,
+commands, transitions or independent matches. Conclusions may cite incomplete
+evidence while recording the resulting uncertainty, never silently merging
+incompatible builds, opponents, maps or source groups.
+
+A run freezes its question, selected source order/ranges, analyzer/dependency
+versions, parameters and relevant fingerprint projection before `running`.
+Selections are assembled in bounded pages while `planned`, then sealed in one
+transaction with at most 64 captures; over-limit selections reject rather than
+truncate. No selection/parameter edits after sealing: a rerun gets a new run ID.
+The deterministic selection digest hashes the ordered logical evidence values,
+explicit missing selections and relevant map/config/association/version inputs,
+not store UUID, catalog generation, unrelated rows or sidecar relocation.
+Reuse a report only after rechecking claims, selected availability and integrity.
+`completed` requires all declared finding/support pages and report references
+published atomically ready via a final checkpoint; it does not imply a pass.
+Sealing is mandatory before `running` and stores the bounded selection count,
+ordered digest and semantics version. Missing selected captures remain sealed
+unavailable inputs, not silently dropped rows. Declared result counts include
+finding and evidence-link ordinals, including explicit zero; absence of a result
+declaration is not zero. C1 publishes findings only with the atomic `completed`
+checkpoint; failed/cancelled runs retain execution diagnostics, not partial
+published gameplay findings. Conclusion support uses only published findings.
+
+Findings retain observations and checks: decisions, command attempts/return
+codes, subsequent positions, and observed outcomes are different kinds. A
+command `OK` never becomes displacement; a policy reproduction never becomes a
+counterfactual trajectory. Preserve analyzer `pass`/`fail`/`unknown` spelling and
+semantics version; the catalog's explicit mapping is `passed`/`failed`/`unknown`.
+Compact aggregate findings carry counts, scope and representative-only detail
+flags; do not pretend they enumerate every finding. Full supporting references
+are paginated or stored in an immutable report artifact.
+
+Conclusions interpret named findings for one question/scope. Append a contiguous
+revision with exact support links; never UPDATE/DELETE a published revision or
+its support. Use compare-and-swap `expectedRevision` on the series head under
+the writer lock. Concurrent revisions cannot silently overwrite each other;
+stale heads return `REVISION_CONFLICT`. Corrections/retractions append a revision
+with predecessor and reason. Prior revisions/support/reviews remain queryable.
+New series have head 0, no published revision; the first append expects 0,
+creates revision 1 with null predecessor, then advances the head. Later appends
+expect n and create n+1 with predecessor n. Caller-supplied revision subject IDs
+are stable retry keys. A same-question/scope support link requires matching
+criterion/units and explicit evidence references; cross-question support also
+requires a named `catalog_question_links` comparison and scoped policy. Changed
+scope or evidence is recorded in a new revision, not inferred from the head.
+A draft revision may have no verdict; recording a verdict requires a new complete
+revision, not retroactive alteration of the draft. Experiment hypothesis/criteria
+and arm definitions follow the same immutable revision/head rule. Review an exact
+revision; reviewing a series does not automatically approve its next revision.
+
+#### Verdict and workflow contracts
+
+| Verdict | Meaning for the named question and criterion |
+| --- | --- |
+| unknown | Relevant evidence is insufficient, incompatible or invalid to judge; unresolved scenario occurrence is unknown, not proof of absence |
+| unexercised | Sufficient relevant coverage establishes no qualifying opportunity in the stated scope; not pass/failure, and never inferred merely from a missing record |
+| passed | Supported observations satisfy the predefined criterion at its stated command/position/outcome level |
+| failed | Supported observations violate that criterion; an importer/analysis execution error is not a gameplay failure |
+
+Run edges are `planned -> running | cancelled` and
+`running -> completed | errored | cancelled`; no other state-changing edges.
+Terminal runs are immutable except append-only review/history. Crash leaves `running`
+with an explicit checkpoint: authorized exact retry resumes that run, never
+silently completes it. Conclusion/experiment workflow is independently
+`open`, `active`, `deferred`, `closed`, starting at open. Allowed edges are
+open -> active/deferred/closed, active -> deferred/closed,
+deferred -> active/closed, and closed -> active only with an explicit reopening
+reason and task. These are recorded as task-attributed history events;
+workflow does not rewrite revisions or choose a verdict. A completed run can
+contain unknown/unexercised results; a closed/deferred experiment can remain
+inconclusive. Catalog review checkpoints are claimed/examined/completed history,
+with completion requiring examination, not a verdict. They have no expiry or
+automatic capture-completion effect.
+Creation and every transition append a task-attributed event and update only its
+checked projection in one transaction. `expectedState` mismatch is `INVALID_STATE`;
+an exact event retry returns its receipt before this check. Same-state checkpoints
+are append-only events, not an implicit restart. Catalog review edges are
+unclaimed -> claimed -> examined -> completed; repeated exact events are idempotent,
+and a new assessment after completion targets a new task or revision. Copying a
+historical operational checkpoint preserves its source receipt and does not invoke
+an operational transition. Reopening workflow never mutates published content.
+
+Never reduce all findings to one implicit benefit verdict. If the question
+explicitly defines a homogeneous candidate aggregate, use supported `failed`
+first, then `unknown`, then `passed`, then `unexercised`, preserving counts of
+every state and total qualifying opportunities. Thus a pass cannot hide an
+incomplete candidate. Different criteria/compatibility groups get separate
+conclusions; no universal cross-match aggregation is authorized.
+
+Representative revision API value (synthetic IDs; evidence is not a real replay):
+
+~~~json
+{
+  "conclusionId": "11111111-1111-4111-8111-111111111111",
+  "revisionSubjectId": "33333333-3333-4333-8333-333333333333",
+  "expectedRevision": 1,
+  "revision": 2,
+  "predecessor": 1,
+  "verdict": "unknown",
+  "scope": {"criterion": "following-position", "ticks": [8, 9]},
+  "rationale": "Accepted command is recorded; the compatible following snapshot is missing.",
+  "support": [{"findingId": "22222222-2222-4222-8222-222222222222", "role": "support"}],
+  "taskId": "codex/synthetic-catalog-check"
+}
+~~~
+
+`support` here is one bounded input page, not an unbounded revision JSON field.
+For C1 it is the complete support set, committed atomically with that revision.
+Representative SQL expresses the revision and support integrity contracts
+(other tables/columns follow the schema table above):
+
+~~~sql
+CREATE TABLE catalog_conclusion_revisions (
+  conclusion_id TEXT NOT NULL REFERENCES catalog_conclusions(conclusion_id),
+  revision INTEGER NOT NULL CHECK(revision >= 1),
+  subject_id TEXT NOT NULL UNIQUE REFERENCES catalog_subjects(subject_id),
+  predecessor INTEGER,
+  verdict TEXT CHECK(verdict IN ('unknown','unexercised','passed','failed')),
+  PRIMARY KEY(conclusion_id, revision),
+  FOREIGN KEY(conclusion_id, predecessor)
+    REFERENCES catalog_conclusion_revisions(conclusion_id, revision),
+  CHECK((revision = 1 AND predecessor IS NULL)
+     OR (revision > 1 AND predecessor IS NOT NULL AND predecessor = revision - 1))
+) STRICT;
+CREATE TABLE catalog_conclusion_support (
+  conclusion_id TEXT NOT NULL, revision INTEGER NOT NULL,
+  ordinal INTEGER NOT NULL CHECK(ordinal >= 0),
+  finding_id TEXT NOT NULL REFERENCES catalog_findings(finding_id),
+  role TEXT NOT NULL CHECK(role IN ('support','counterevidence')),
+  PRIMARY KEY(conclusion_id, revision, ordinal),
+  FOREIGN KEY(conclusion_id, revision)
+    REFERENCES catalog_conclusion_revisions(conclusion_id, revision)
+) STRICT;
+CREATE INDEX catalog_support_finding ON catalog_conclusion_support(finding_id);
+~~~
+
+Writer checks additionally require same question/scope or an explicit comparison
+relationship, supported run membership, contiguous page ordinals, bounded values
+and revision-head CAS. Once committed, revision/support immutability is enforced
+with SQL guards as well as the public API. Drafts retain explicit unknown fields;
+SQL NULL verdict means not assessed, never a zero/pass/default unknown verdict.
+
+#### Bounded APIs, file ownership and unavailable evidence
+
+Proposed `tools/replay-catalog.js` interfaces; not existing runtime APIs:
+
+~~~text
+createCatalogFixture({root, filesystem: 'local-apfs'}) -> Promise<catalog> [C1]
+openCatalog({root, mode: 'read' | 'write'}) -> Promise<catalog>; close()
+getReplay(replayId); getCapture(captureKey); getRun(runId)
+getConclusion(conclusionId, revision?); getExperiment(experimentId, revision?)
+pageReplays(filters, cursor); pageCaptures(replayId, cursor)
+pageRunSources(runId, cursor); pageFindings(runId, filters, cursor)
+pageEvidence(findingId, cursor); pageSupport(conclusionId, revision, cursor)
+pageConclusionHistory(conclusionId, cursor); pageReviews(targetSubjectId, cursor)
+resolveEvidence(evidenceRefId) -> reference + historical receipt + current availability
+withCatalogSnapshot(explicitSelection, async view => result) [C1 metadata only]
+withCatalogEvidenceSnapshot(explicitSelection, async view => result) [deferred C2]
+withWriter(async writer => writer.transaction(tx => result))
+tx.registerIdentity(...); tx.appendProvenance(...); tx.appendCoverage(...)
+tx.createQuestion(...); tx.linkQuestions(...)
+tx.createRun(...); tx.appendRunSources(...); tx.sealRun(...)
+tx.transitionRun(...); tx.publishRunResult({runId, expectedState, declaredCounts, ...})
+tx.appendFinding(...); tx.appendFindingEvidence(...) [same result transaction only]
+tx.appendConclusionRevision({expectedRevision, ...}); tx.appendSupport(...)
+tx.appendExperimentRevision({expectedRevision, ...}); tx.linkExperimentRun(...)
+tx.appendReviewEvent(...); tx.appendArtifactEvent(...)
+tx.transitionWorkflow({eventId, subjectId, expectedState, nextState, taskId, reason})
+~~~
+
+Transaction callbacks are synchronous, nonnested and reject Promise results,
+as in M1; asynchronous work remains outside the SQLite transaction under the
+same owner lock. Lookup/write methods perform structural, selection, provenance
+scope and state checks. They do not rerun an analyzer or adjudicate whether
+caller-supplied observations are true; retain their declared validator/version.
+Verdict checks require the question's named criterion, evidence/coverage support
+and explicit uncertainty/count fields, not a new gameplay inference algorithm.
+
+Single-row results never hydrate joined histories/support lists. All relationship
+pages use the existing 128-row/8 MiB bounds and generation/query-bound keyset
+cursors. Write input pages have at most 128 rows and 8 MiB, every materialized row
+at most 64 KiB; oversized original bodies need owned immutable references or
+explicit `RESOURCE_LIMIT`, not truncation. Multi-page revisions/results stage
+under durable catalog intents and become public in one final transaction only
+after all declared ordinals/references are validated; readers reject active intents.
+Catalog metadata snapshots share the same lock/read-transaction and 8 MiB bound.
+They freeze explicit metadata/availability receipts without opening artifacts;
+the callback runs after transaction/lock release on a borrowed closed-after-use
+view, not an unrestricted graph-query connection. Active selected publication or
+cleanup intents reject snapshot setup before the callback, including operational
+records still labelled claim/done. Metadata lookup may report those intents as
+pending but cannot imply ready evidence. Snapshot setup never runs recovery.
+Evidence snapshots additionally use the same 64-capture/256-handle limits and pin
+every selected artifact/overflow dependency before releasing the lock. No recursive
+whole-graph hydration, corpus scans, OFFSET paging or implicit latest-evidence joins.
+
+`resolveEvidence` is metadata-only and reports `not-checked`, `pending`, `retired`
+or `missing` with last-known paths/hashes; it does not label files verified merely
+because a catalog row exists. Explicit bounded snapshot acquisition reports
+`verified`, `unavailable` or `invalid` for selected evidence after integrity checks.
+It never searches backups/cache automatically or adopts same-hash files. A
+relocation needs an explicit validated location revision, preserving prior paths;
+it neither changes evidence identity nor invalidates logical caches on its own.
+
+Catalog artifact references confer no ownership or retention veto. Operational
+files/sidecars retain one current owner; catalog lookup adds no second deletable
+owner. When authorized log-done or explicit score-retiring cleanup removes them,
+stable capture/artifact/reference anchors and original expectations remain. Later
+queries report unavailable evidence, not dangling success, a zero-event finding
+or automatic erasure of a conclusion. Historical verdicts remain recorded with
+their run's validation receipt; current reproducibility is separately unavailable.
+Reassessment creates a new run/revision. Operational record reviews may still
+be removed as today; their catalog historical references survive independently.
+
+New catalog-owned report/rationale/extension files, when later implemented, have
+an exact `(catalog subject, field)` owner and use the same immutable publication,
+hash validation, directory-fsync retry and pending-journal protocol. Cross-kind
+ownership checks must include them; no sharing or garbage collection by citation
+count. Catalog intents/file checkpoints are separate typed tables with FK catalog
+subjects, not fake operational capture records. Only later explicitly authorized
+catalog maintenance may retire them. Neither evidence cleanup nor deleting an
+analysis/experiment link can delete an artifact owned by another entity.
+
+#### Separate synthetic milestone C1: catalog metadata foundation
+
+C1 is the next separately implementable task, not M1 completion, M2 integration
+or authorization to run anything from this ADR. Implement the catalog tables,
+stable identities, provenance/coverage metadata, frozen runs/selections, findings
+and support links, conclusion/experiment revisions, catalog review histories and
+bounded metadata resolution on synthetic temporary fixtures only.
+
+Use fixture schemaVersion 2 and catalogVersion 1 in both descriptor/store metadata;
+payloadVersion stays 1. An M1/schema-1 binary must reject schema 2 before writes.
+C1 creates fresh marked temporary roots with the same canonical prefix/root,
+runtime/filesystem and SQLite settings; no in-place upgrade of even a schema-1
+fixture, implicit open migration or production-capable root. Schema-1 M1 creation
+and checks remain unchanged. The future M2/M3 release must explicitly qualify
+compatibility/migration for the combined schema, not silently cut over this fixture.
+
+Expected changes: `tools/replay-catalog.js`, `tests/unit/replay-catalog.test.js`,
+minimal fixture/schema/locked-query hooks in `tools/replay-store.js` if needed,
+syntax-check registration and a catalog qualification record. Reuse the core's
+owner lock, connection settings, transaction generation, bounded pages and error
+cleanup; do not build another lock/SQLite connection policy. C1 inputs are
+caller-validated synthetic facts; it does not invoke/import existing analyzers.
+
+C1 references only already registered synthetic M1 evidence artifacts, with no
+new catalog-owned payload publication, file retirement or relocation. Small
+catalog bodies are bounded inline values; oversized bodies explicitly fail with
+`RESOURCE_LIMIT` and leave caller input untouched. Catalog body spill/publication,
+multi-page large-result publication, general evidence snapshots and cleanup-event
+integration are a later C2 task. C1 rejects any operation needing those facilities;
+it must not weaken the full design or pretend such results are ready. Single
+bounded result/revision batches use one atomic metadata transaction. Run selections
+may be assembled in bounded pages, with durable planned state and exact retry.
+The complete C1 transaction input, including all findings/support/properties, is
+limited to 128 rows and 8 MiB with 64 KiB per row; exceeding it rejects before
+mutation. Support append primitives are usable only inside the transaction that
+creates their revision/finding, before publication; no post-commit support edits.
+Result publication atomically commits its full declared finding/support set and
+completed checkpoint. Larger result sets require C2, not repeated C1 completion
+batches. Fixture schema hooks are internal typed operations, not a public arbitrary
+SQL escape hatch. Historical artifact events may be appended from explicit
+synthetic receipts; C1 does not automatically write events during core cleanup.
+
+C1 acceptance gates, all synthetic:
+
+1. Reconstruct exact identities, ordinal order, unknown/absent/null/false/zero
+   values and conflicting provenance. Runtime tags, upload IDs/versions, local
+   configuration and score alignment/terminal knowledge remain independently
+   sourced. Metadata extent cannot become runtime coverage or a final score.
+2. Build a replay -> captures -> sealed run -> findings/evidence -> two conclusion
+   revisions -> experiment arms -> revision-specific reviews chain. Reject wrong
+   kind/dangling FK, cross-replay actors/ranges, incompatible unsupported provenance,
+   identity replacement and unsealed-run findings. Retain unavailable requested
+   captures visibly. Permit explicit incompatible/unknown observations without
+   promoting them to supported comparisons.
+   Reject evidence outside sealed selection and mismatched capture/artifact scope;
+   explicit cross-question support needs a stored comparison link. Validate
+   metadata-snapshot intent rejection, callback lifetime and unchanged core payload
+   pinning without adding the deferred catalog evidence-snapshot API.
+3. Exercise all four verdicts independently of completed/errored/deferred workflow,
+   draft null verdict and explicit aggregate counts/precedence. A supported pass
+   plus an unknown candidate cannot appear as complete pass. A command observation
+   is not displacement; insufficient scenario coverage cannot be unexercised.
+4. Append revision/support atomically with expected-head CAS; preserve older text,
+   support, counterevidence and reviews. Two processes race on the same expected
+   head: one succeeds and the other returns `REVISION_CONFLICT`; independent review
+   events survive concurrent writes. SQL/API attempts to mutate published history
+   fail. Inject transaction/commit/process-death faults; reopen yields the previous
+   complete revision or the new complete revision, never an orphan head/partial
+   support set. Planned-run page retries preserve exact selection without duplicates.
+   Test first-head 0, non-null contiguous predecessors, exact old-revision/event
+   retry after head advancement, and stale-head conflicts for different retry IDs.
+   Reject invalid workflow edges, unsealed running, premature review completion
+   and result publication without exact bounded declared counts; failed execution
+   cannot manufacture a failed gameplay verdict.
+5. Authorize synthetic log-done cleanup and separate score-retiring cleanup through
+   the existing core, without changing their policy. Catalog references/history
+   remain resolvable as retired/unavailable; score done alone still retains files.
+   Reads never claim/complete/reconcile, read bodies or resurrect missing evidence.
+   Catalog reviews cannot retire captures; citations cannot prevent authorized cleanup.
+6. Assert exactly 10 and 1,000 capture anchors in paired catalog fixtures; record
+   accompanying table counts separately. Distribute associated runs/revisions
+   into valid bounded batches, not one over-limit support set. Compare fixed
+   selected list/lookup/support/history/review operations, indexed plans and
+   SQL/returned-row counters: these counts depend on selected rows/pages, not
+   total anchors (one bounded lookahead row per page is permitted). Metadata operations
+   open/read/write zero payload bytes and update only selected metadata/index pages;
+   no graph/corpus rewrite. Reject row/page/source overflow and stale cursors.
+   Run a core-only worker under the unchanged 192 MiB heap, 256 MiB RSS and
+   30-second operation deadline; record operation/byte/time/RSS measurements.
+   Reuse the M1 600 MiB qualification only with unchanged-core correspondence and
+   impact assessment; rerun that streaming gate if shared storage paths change.
+7. Run focused catalog and affected M1 tests, full repository tests, syntax/build,
+   links/examples/whitespace and preservation checks. Report measured scope and
+   limits, not guarantees of power-loss durability, arbitrary OS close-failure
+   semantics or additional platforms.
+
+Excluded: production roots/evidence, existing command/analyzer/cache integration,
+automatic extraction of historical documents, full-text search, generalized graph
+engine, catalog-owned body files, backup/export/migration/rehearsal, runtime changes,
+automatic reviewer completion, strategy promotion, watcher/gameplay and M2–M4.
+No schema/API decision is intentionally left open for C1; production catalog-body
+publication (C2), reader wiring and combined-schema cutover remain separate work
+requiring their own qualified implementations and explicit authorizations.
 
 ### Later milestones and release gates
 
