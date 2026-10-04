@@ -203,10 +203,12 @@ export async function createFixtureStore({ root, filesystem, fault } = {}) {
 }
 function newMetrics() { return { sql:0, rows:0, connections:0, locks:0, payloadOpens:0, payloadReadBytes:0, payloadWriteBytes:0, fsReads:0, fsWrites:0 }; }
 
-export async function openStore({ root, mode, fault } = {}) {
+export async function openStore({ root, mode, fault, recover = false } = {}) {
     runtimeCapabilities(); root = fixtureRoot(root);
     if (!['read','write'].includes(mode)) fail('INVALID_MODE', 'Explicit read/write mode required');
-    const d = descriptor(root), metrics = newMetrics(); let closed = false, inWriter = false;
+    if (typeof recover !== 'boolean' || (recover && mode !== 'write')) fail('INVALID_MODE', 'Recovery requires explicit write mode and boolean opt-in');
+    const currentDescriptor = () => descriptor(root);
+    const d = currentDescriptor(), metrics = newMetrics(); let closed = false, inWriter = false;
     const assertOpen = () => { if (closed) fail('CLOSED', 'Store is closed'); fixtureRoot(root); };
     const stmt = (db, sql, params = [], type = 'get') => {
         metrics.sql++; const statement = db.prepare(sql); statement.setReadBigInts(true);
@@ -215,9 +217,18 @@ export async function openStore({ root, mode, fault } = {}) {
         const row = normalizeRow(statement.get(...params)); if (row) rowBudget(row); metrics.rows += row ? 1 : 0; return row;
     };
     const generation = db => stmt(db, 'SELECT generation FROM store_meta').generation;
-    const read = action => { assertOpen(); const current = descriptor(root); if(current.storeId !== d.storeId) fail('UNSUPPORTED_STORE','Store handle identity changed'); const db = connection(root, current, false, metrics); try { db.exec('BEGIN'); const result = action(db); db.exec('COMMIT'); return result; } finally { db.close(); } };
-    // Validate using a strictly read-only connection, even for a write handle.
-    read(() => null);
+    const read = action => { assertOpen(); const current = currentDescriptor(); if(current.storeId !== d.storeId) fail('UNSUPPORTED_STORE','Store handle identity changed'); const db = connection(root, current, false, metrics); try { db.exec('BEGIN'); const result = action(db); db.exec('COMMIT'); return result; } finally { db.close(); } };
+    // Normal opens remain nonmutating. A fresh process may explicitly request
+    // native journal recovery without first obtaining a read-validated handle.
+    if (recover) await locked(root,async () => {
+        fixtureRoot(root);
+        const current = currentDescriptor();
+        if (current.storeId !== d.storeId) fail('UNSUPPORTED_STORE','Store changed while acquiring recovery lock');
+        const db = connection(root,current,true,metrics);
+        try { /* connection verifies settings and identity after native recovery */ }
+        finally { db.close(); }
+    },metrics);
+    else read(() => null);
     function entity(db, owner) {
         const [kind, key] = ownerTuple(owner); let row;
         if (kind === 'root') row = key === 'root' ? stmt(db, 'SELECT store_id AS key FROM store_meta') : null;
@@ -379,6 +390,15 @@ export async function openStore({ root, mode, fault } = {}) {
                 if (operationId && (!op || op.phase !== 'publish' || op.collection !== k.collection || op.replay_id !== k.replayId || op.fingerprint !== k.fingerprint)) fail('OWNERSHIP_CONFLICT','Publication intent mismatch');
                 if (op && stmt(db,'SELECT path FROM operation_files WHERE operation_id=? AND state!=? LIMIT 1',[operationId,'verified'])) fail('INVALID_STATE','Publication is incomplete');
                 if (!op && (r.collection !== 'log' || r.output_path !== null)) fail('INVALID_STATE','Only evidence-only logs may prepublish without intent');
+                // An empty/partial intent is not proof that the record's actual
+                // output was published. Resolve its unique owner reservation,
+                // then require that exact output in this verified intent.
+                const output = stmt(db,'SELECT path,hash,bytes,state FROM outputs WHERE collection=? AND replay_id=? AND fingerprint=?',[k.collection,k.replayId,k.fingerprint]);
+                if (output || r.output_path !== null || r.output_hash !== null || r.collection === 'score') {
+                    if (!output || output.state !== 'ready' || output.path !== r.output_path || output.hash !== r.output_hash || !op) fail('INVALID_STATE','Record requires its owned ready output and publication intent');
+                    const checkpoint = stmt(db,'SELECT hash,bytes,state FROM operation_files WHERE operation_id=? AND path=?',[operationId,output.path]);
+                    if (!checkpoint || checkpoint.state !== 'verified' || checkpoint.hash !== output.hash || checkpoint.bytes !== output.bytes) fail('INVALID_STATE','Owned output needs an exact verified publication checkpoint');
+                }
                 for (const ref of payloadRefs) {
                     if (published.get(ref.path) !== inlineJson(ref)) fail('INVALID_ARTIFACT','Evidence-only reference was not verified by this writer');
                     if (ref.owner.kind !== 'record' || ref.owner.key !== r.key || ref.path !== payloadPath(d.storeId,ref.owner,ref.pointer,ref.role,ref.hash)) fail('OWNERSHIP_CONFLICT','Evidence-only reference mismatch');
@@ -386,7 +406,6 @@ export async function openStore({ root, mode, fault } = {}) {
                     if (!payload(db,ref.owner,ref.pointer)) run('INSERT INTO payloads VALUES (?,?,?,?,?,?,?,?,?,?,?,?)',[ref.owner.kind,ref.owner.key,ref.pointer,ref.parentPointer??null,ref.role,ref.path,ref.hash,ref.bytes,ref.items??null,'ready',0,ref.encoding]);
                 }
                 if (stmt(db,'SELECT pointer FROM payloads WHERE owner_kind=? AND owner_key=? AND state!=? LIMIT 1',['record',r.key,'ready'])) fail('INVALID_STATE','Pending payloads cannot be claimed');
-                if (r.collection === 'score' && !stmt(db,'SELECT path FROM outputs WHERE collection=? AND replay_id=? AND fingerprint=? AND state=?',[k.collection,k.replayId,k.fingerprint,'ready'])) fail('INVALID_STATE','Score requires owned ready output');
                 const readyStatus = r.status === 'pending' ? 'claim' : r.status;
                 if (!['claim','done'].includes(readyStatus)) fail('INVALID_STATE','Publication cannot normalize waiting/retiring state');
                 run('UPDATE records SET status=? WHERE key=?',[readyStatus,r.key]);
@@ -400,6 +419,7 @@ export async function openStore({ root, mode, fault } = {}) {
     async function writerCallback(db, callback) {
         let active = true, transactionActive = false; const ensure = () => { if (!active) fail('CLOSED','Writer callback ended'); };
         const published = new Map(), payloadPaths = new Set();
+        const outstanding = new Set(), temporaryCloses = new Set();
         const inject = boundary => fault?.(boundary);
         const writer = {
             transaction(callback) {
@@ -427,6 +447,7 @@ export async function openStore({ root, mode, fault } = {}) {
                 // keep it through failure/retry until this writer callback ends.
                 payloadPaths.add(relative);
                 await publish(relative,source,expectedBytes,expectedHash);
+                ensure();
                 const ref = {owner,pointer:p,role,encoding:role === 'diagnostics' ? 'jsonl-v1' : 'json-v1',path:relative,bytes:expectedBytes,hash:expectedHash,parentPointer,items,state:'ready'};
                 published.set(ref.path,inlineJson(ref));
                 if (saved) writer.transaction(() => { stmt(db,'UPDATE payloads SET state=? WHERE owner_kind=? AND owner_key=? AND pointer=?',['ready',owner.kind,owner.key,p],'run'); stmt(db,'UPDATE operation_files SET state=? WHERE path=?',['verified',relative],'run'); });
@@ -437,6 +458,7 @@ export async function openStore({ root, mode, fault } = {}) {
                 if (!row || row.collection !== k.collection || row.replay_id !== k.replayId || row.fingerprint !== k.fingerprint || row.hash !== expectedHash || row.bytes !== expectedBytes || !stmt(db,'SELECT path FROM operation_files JOIN operations ON id=operation_id WHERE path=? AND collection=? AND replay_id=? AND fingerprint=? AND phase=?',[p,k.collection,k.replayId,k.fingerprint,'publish'])) fail('OWNERSHIP_CONFLICT','Output lacks matching reservation/intent');
                 assertPathKind(db,p,'outputs',payloadPaths);
                 await publish(p,source,expectedBytes,expectedHash);
+                ensure();
                 writer.transaction(() => { stmt(db,'UPDATE outputs SET state=? WHERE path=?',['ready',p],'run'); stmt(db,'UPDATE operation_files SET state=? WHERE path=?',['verified',p],'run'); });
                 return {path:p,bytes:expectedBytes,hash:expectedHash};
             },
@@ -444,7 +466,7 @@ export async function openStore({ root, mode, fault } = {}) {
                 ensure(); if (transactionActive) fail('INVALID_STATE','File IO must stay outside transactions');
                 const row = stmt(db,'SELECT operation_files.*,operations.phase,records.collection,records.status FROM operation_files JOIN operations ON id=operation_id JOIN records USING(collection,replay_id,fingerprint) WHERE operation_id=? AND operation_files.ordinal=?',[operationId,ordinal]);
                 if (!row || row.phase !== 'cleanup' || row.status !== (row.collection === 'score' ? 'retiring' : 'done')) fail('INVALID_STATE','No collection-specific synthetic cleanup authorization');
-                const file = safePath(root,row.path); if (fs.existsSync(file)) { const got = await hashFile(file); if (got.hash !== row.hash || got.bytes !== row.bytes) fail('INVALID_ARTIFACT','Changed cleanup artifact'); fs.unlinkSync(file); }
+                const file = safePath(root,row.path); if (fs.existsSync(file)) { const got = await hashFile(file); ensure(); if (got.hash !== row.hash || got.bytes !== row.bytes) fail('INVALID_ARTIFACT','Changed cleanup artifact'); fs.unlinkSync(file); }
                 // An absent retry may follow unlink with an interrupted flush.
                 // Complete directory durability before recording deletion.
                 syncDir(path.dirname(file));
@@ -455,13 +477,18 @@ export async function openStore({ root, mode, fault } = {}) {
             ensure(); if (transactionActive) fail('INVALID_STATE','File IO must stay outside transactions'); checkedExpected(bytes,hash);
             const destination = safePath(root,relative,true);
             if (fs.existsSync(destination)) {
-                const current = await hashFile(destination); if (current.hash !== hash || current.bytes !== bytes) fail('INVALID_ARTIFACT','Changed publication destination');
+                const current = await hashFile(destination); ensure(); if (current.hash !== hash || current.bytes !== bytes) fail('INVALID_ARTIFACT','Changed publication destination');
                 // The initial link can survive a failure before directory
                 // fsync. Exact bytes alone do not complete its publication.
                 inject('directory-fsync'); syncDir(path.dirname(destination));
                 inject('verification'); return;
             }
             const temporary = destination + '.' + randomUUID() + '.tmp'; const fd = fs.openSync(temporary,'wx',0o600); let size = 0; const digest = createHash('sha256');
+            // Register ownership before consuming a possibly suspended source.
+            // Callback exit closes this descriptor; its late finally must not
+            // close a descriptor number already reused by a subsequent writer.
+            const close = () => { if (temporaryCloses.delete(close)) fs.closeSync(fd); };
+            temporaryCloses.add(close); let failed = false;
             try {
                 for await (const chunk of source) {
                     ensure(); if (!(chunk instanceof Uint8Array) || chunk.length > LIMITS.chunk) fail('RESOURCE_LIMIT','Publication chunk budget exceeded');
@@ -469,15 +496,43 @@ export async function openStore({ root, mode, fault } = {}) {
                     let offset = 0; while (offset < chunk.length) offset += fs.writeSync(fd,chunk,offset,chunk.length-offset);
                     metrics.fsWrites++; metrics.payloadWriteBytes += chunk.length; inject('temporary-write');
                 }
+                ensure(); // The iterator can suspend while returning done.
                 if (size !== bytes || digest.digest('hex') !== hash) fail('INVALID_ARTIFACT','Source hash/length mismatch');
                 inject('temporary-fsync'); fs.fsyncSync(fd);
-            } finally { fs.closeSync(fd); }
+            } catch (error) { failed = true; throw error; }
+            finally { try { close(); } catch (error) { if (!failed) throw error; } }
             inject('exclusive-publication'); fs.linkSync(temporary,destination); inject('directory-fsync'); syncDir(path.dirname(destination));
-            const current = await hashFile(destination); inject('verification'); if (current.hash !== hash || current.bytes !== bytes) fail('INVALID_ARTIFACT','Published bytes mismatch');
+            const current = await hashFile(destination); ensure(); inject('verification'); if (current.hash !== hash || current.bytes !== bytes) fail('INVALID_ARTIFACT','Published bytes mismatch');
             // Only this successful operation's owned temporary is removed.
             fs.unlinkSync(temporary); syncDir(path.dirname(destination));
         }
-        try { return await callback(writer); } finally { active = false; }
+        // Do not drain arbitrary caller iterators under the lock: next() can
+        // wait indefinitely. Revoke at callback exit, close owned descriptors,
+        // and guard every await-to-mutation/success continuation instead. Attach
+        // rejection handlers now so abandoned operations cannot be unhandled.
+        for (const name of ['publishPayload','publishOutput','deleteFile']) {
+            const method = writer[name];
+            writer[name] = (...args) => {
+                const operation = method(...args);
+                outstanding.add(operation);
+                operation.then(() => outstanding.delete(operation), () => outstanding.delete(operation));
+                return operation;
+            };
+        }
+        let failed = false;
+        try {
+            const result = await callback(writer);
+            if (outstanding.size) fail('INVALID_STATE','Writer callback ended with outstanding file operations');
+            return result;
+        } catch (error) { failed = true; throw error; }
+        finally {
+            active = false;
+            let cleanupFailed = false, cleanupError;
+            for (const close of temporaryCloses) {
+                try { close(); } catch (error) { if (!cleanupFailed) { cleanupFailed = true; cleanupError = error; } }
+            }
+            if (!failed && cleanupFailed) throw cleanupError;
+        }
     }
     const store = {
         root, storeId:d.storeId, metrics,
@@ -517,7 +572,7 @@ export async function openStore({ root, mode, fault } = {}) {
         pagePayloads(owner,parentPointer = null,cursor) { ownerTuple(owner); return read(db => page(db,'SELECT * FROM payloads WHERE owner_kind=? AND owner_key=? AND parent IS ?',[owner.kind,owner.key,parentPointer],'pointer',cursor,LIMITS.page,['payloads',owner,parentPointer])); },
         async withWriter(callback) {
             assertOpen(); if (mode !== 'write' || inWriter) fail('INVALID_STATE','Writable nonnested handle required'); inWriter = true;
-            try { return await locked(root,async () => { const current = descriptor(root); if (current.storeId !== d.storeId) fail('UNSUPPORTED_STORE','Store changed while acquiring lock'); const db = connection(root,current,true,metrics); try { return await writerCallback(db,callback); } finally { db.close(); } },metrics); }
+            try { return await locked(root,async () => { const current = currentDescriptor(); if (current.storeId !== d.storeId) fail('UNSUPPORTED_STORE','Store changed while acquiring lock'); const db = connection(root,current,true,metrics); try { return await writerCallback(db,callback); } finally { db.close(); } },metrics); }
             finally { inWriter = false; }
         },
         async withReadSnapshot({recordKeys = [],mapIds = [],reviewKeys = [],payloadRoles = ['diagnostics','summaries','extensions']} = {},callback) {
@@ -581,7 +636,7 @@ export async function openStore({ root, mode, fault } = {}) {
             let failed = false;
             try {
                 await locked(root,async () => {
-                    const current = descriptor(root); if (current.storeId !== d.storeId) fail('UNSUPPORTED_STORE','Snapshot store changed'); const db = connection(root,current,false,metrics);
+                    const current = currentDescriptor(); if (current.storeId !== d.storeId) fail('UNSUPPORTED_STORE','Snapshot store changed'); const db = connection(root,current,false,metrics);
                     try {
                         db.exec('BEGIN');
                         for (const k of recordKeys) { recordKey(k); const r = addMeta(record(db,k)); if (!r || !['claim','done'].includes(r.status)) fail('UNAVAILABLE','Selected record is missing/not ready');

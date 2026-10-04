@@ -5,6 +5,16 @@ This record tracks qualification of the synthetic core specified by
 It is not importer/reader integration, storage migration, or permission to use
 the core with real evidence. The deployed compact v2 manifest remains unchanged.
 
+Current status, 2026-10-04: F1–F3 corrections passed focused review. Their M1-only
+commit candidate is separated from the pending C1 adapter and schema-2 tests;
+the latter belong to the subsequent catalog candidate. Qualification counts
+below are historical combined-working-tree runs unless explicitly labeled
+isolated-candidate results. Statements that later audit findings were open or
+that a correction awaited review describe the state at that earlier checkpoint,
+not the current finding status. All F1–F5 corrections have now passed focused
+review. No staging, publication, production integration or migration follows
+automatically from this status.
+
 ## Implementation boundaries
 
 [replay-store.js](../../tools/replay-store.js) implements STRICT SQLite tables,
@@ -16,6 +26,21 @@ and a canonical direct child of the resolved OS temporary directory with the
 Creation requires an empty root and a `local-apfs` declaration. Paths, descriptors,
 versions, output ownership, indexed/original projections and dependency references
 fail closed. Normal open never creates a missing database.
+
+Explicit restart recovery uses `openStore({root, mode: 'write', recover: true})`.
+The same opt-in reaches the shared core through C1's `openCatalog`. Ordinary
+opens (including write-capable handles without the opt-in) remain read-only
+validation and report `RECOVERY_REQUIRED` for a nonempty journal. `recover` must
+be boolean; true in read mode is rejected. Recovery acquires the existing owner
+lock, rechecks the canonical temporary root and descriptor/store identity after
+acquisition, then opens a checked writable SQLite connection. Native rollback,
+connection-setting verification and database identity/version validation occur
+inside that lock; the connection closes before lock release and handle return.
+SQLite may roll back before database metadata can be read; identity rejection
+never returns a usable handle. There is no migration, status normalization,
+file-intent execution or generation increment for recovery itself. Subsequent
+operations reacquire/revalidate normally; open does not reserve the lock for the
+returned handle. This remains a synthetic-root interface, not production repair.
 
 Cross-kind ownership uses exact indexed path checks across maps, outputs and
 payloads under the writer lock, at reservation and publication. Pending rows
@@ -64,7 +89,12 @@ and `publishOutput` consume at most 64 KiB byte chunks and verify expected size
 and SHA-256. Reserved payload publication also checks role and derived destination
 path against the saved reservation before any file I/O or checkpoint changes;
 the evidence-only exception cannot bypass an existing reservation. Final readiness
-requires verified intent checkpoints. Evidence-only
+requires verified intent checkpoints. Finalization independently resolves the
+record's owned output reservation: file-backed logs and scores require its ready
+state, matching record path/hash projections, and an exact path/hash/byte-length
+verified checkpoint in the specified publication intent. An empty or partial
+intent cannot stand in for that output. These bounded metadata checks precede
+readiness writes; output-free evidence-only logs remain supported. Evidence-only
 prepublication creates no JSONL and can only be claimed with a reference verified
 by the same writer callback. Targeted retries verify existing exact bytes;
 they also complete directory fsync before committing readiness, including a
@@ -73,10 +103,20 @@ Changed or unowned files cannot be adopted. Failed operation temporaries are
 retained, not garbage-collected.
 
 Writer/transaction capabilities expire at callback completion; transactions are
-synchronous and cannot nest. Writable connections are opened only under the
+synchronous and cannot nest. Outstanding file operations are revoked, not drained:
+the callback must await them. Returning with outstanding work rejects with
+`INVALID_STATE`; an already failing callback preserves its original thrown value.
+Owned temporary descriptors close before lock release. Later source/hash
+continuations check expiry before mutation, readiness checkpoints or successful
+references, and reject with `CLOSED` when otherwise valid. Caller iterators may
+remain suspended, but cannot retain an open store-owned descriptor or writer lock.
+Their external resources remain the caller's responsibility; the store neither
+waits indefinitely for nor forcibly executes arbitrary iterator cleanup.
+Writable connections are opened only under the
 owner-checked lock. Every connection verifies DELETE/FULL/foreign-keys/mmap/cache
 and busy settings. Pure readers never recover a journal. A hot journal requires
-a separately invoked fixture writer. Snapshot setup captures selected record,
+a separately invoked fixture writer, using the explicit restart-recovery opt-in
+when no pre-crash handle survives. Snapshot setup captures selected record,
 association, map, original-property and explicit-review metadata, and opens all
 selected files/dependency sidecars under the lock. Analysis then releases the
 transaction/lock and borrows handles until callback completion. Missing files,
@@ -642,7 +682,250 @@ review; no consumer integration, real-evidence processing, migration, watcher,
 gameplay, staging, commit or push occurred. The unrelated working-tree deletion
 of `prompt/analyze_logs.md` remains untouched and unstaged.
 
+### Writer-lifetime correction: F1 qualification (2026-10-04)
+
+The project audit (F1; cross-project report accompanies the later C1 candidate)
+reproduced an EOF continuation publishing after its callback failed and another
+writer acquired the lock. Earlier passing results above did not cover that
+schedule. This follow-up corrects F1 only; the audit's publication-completeness,
+fresh-handle recovery, C1 range-domain and screening-cache findings remain open.
+
+The writer now tracks outstanding payload/output/deletion promises and owns each
+temporary descriptor from successful open. Callback exit revokes the capability
+and attempts every owned close before releasing the lock, without waiting for an
+unbounded caller source. Every await-to-mutation boundary is guarded, including
+iterator EOF, existing-file hashing, post-link verification and final reference
+or checkpoint publication. The shared deletion helper also guards its hash-to-
+unlink continuation; authorization/lifecycle rules are unchanged. Settled
+operations are removed from tracking. An internal rejection observer handles
+abandoned operations without changing the promise returned to callers.
+
+Temporary close responsibility transfers exactly once: callback cleanup removes
+it before closing, and a late operation finally cannot close a reused descriptor.
+Primary callback/source errors, including thrown `null`, are not replaced by a
+secondary temporary-close failure. A callback returning with work outstanding
+fails explicitly rather than reporting success. This is cancellation of store
+capabilities, not cancellation or rollback of caller code, already committed
+metadata, or files durably published before expiry. Pending intents and failed
+temporaries stay retained for exact retry; no orphan cleanup was introduced.
+
+Eighteen `writer lifetime:` checks now pass. Seventeen negative regressions fail
+against the saved pre-correction working module (including its unchanged C1
+hooks), then pass with the correction; the ordinary concurrent awaited
+publication/retry control passes on both. Initial regressions were executed
+before the implementation edit, and all final regression definitions were also
+run against that byte-preserved defective module in an isolated scratch copy.
+
+- Reserved payloads, reserved score outputs and evidence-only payloads suspend
+  after their last byte, before EOF. Both sibling rejection and callback return
+  release the lock with descriptors closed. A second writer acquires it before
+  source resumption; no destination or checkpoint appears, no successful
+  reference returns, and pending metadata/intents remain identical.
+- Existing-file retries cannot flush/checkpoint after synchronous callback
+  failure. Post-link verification expiry retains its temporary and pending
+  state. Final method continuations cannot return ready references after expiry.
+- The deletion verification continuation cannot unlink or checkpoint after
+  expiry; the subsequent authorized retry still retires the score correctly.
+- Two suspended publications with injected errors after native descriptor close
+  still receive all close attempts. The exact primary `Error` or `null` survives;
+  descriptors are not double-closed and later writers work.
+- Awaited publication, exact retries, concurrency within the callback, and
+  subsequent recovery/claim succeed. Byte/hash/stat and full fixture checkpoint
+  comparisons distinguish unchanged metadata from merely unchanged public status.
+
+Final-code validation on native Node **24.19.0**, SQLite **3.53.3**, darwin/arm64
+passed **18/18** targeted checks, **85/85** combined catalog/M1 tests
+(**27.486 s**, including **59** storage tests), **298/298** repository tests
+(**30.169 s**), and `npm run check`. No platform shim was used. The runtime build
+remains `fced5aed1e43b9c264cf3fbb7f437dfd4cf28d9175d4a6cd69b468ce57187933`.
+
+Resource impact is callback-local bookkeeping proportional to outstanding
+operations/descriptors and constant checks at existing await boundaries. No SQL,
+artifact reads or writes were added to valid awaited publication. Because the
+shared streaming path changed, both suites ran fresh gates rather than reusing
+earlier performance numbers. The combined-suite **600 MiB** gate generated and
+verified **629,145,600 bytes** in **1.645 s / 63.55 MiB peak RSS**; operations took
+**0.207 s / 71.52 MiB peak RSS**. Exact **10/1,000** row assertions, zero metadata
+payload access, new-import-only **12/14-byte** access and **2/1/11/25** operational
+SQL counts passed. C1's metadata gate took **1.245 s / 68.55 MiB peak RSS**, with
+fixed counts at **10/1,000** anchors and zero payload access. The unchanged
+192 MiB heap, 256 MiB RSS and 60/30-second deadlines passed. These are observations,
+not performance guarantees; instrumentation exclusions below still apply.
+
+Only the shared store, its tests, this record and the audit follow-up changed.
+ADR requirements and the pending C1 implementation were not rewritten. Existing
+qualification history remains historical; this correction does not establish
+complete M1/C1 readiness. No integration, migration, real-evidence processing,
+watcher, gameplay, staging, commit or push occurred. Power-loss durability,
+arbitrary OS close-failure semantics and additional platforms remain unqualified.
+
+The two edited documents passed **24 local links / seven anchors**; neither adds
+a JSON example. Tracked and all four nonignored untracked text-file whitespace
+checks passed. Before/after hashes of pre-existing tracked/nonignored files
+confirmed only the four authorized paths changed, with C1 hooks outside
+`writerCallback` byte-identical. Both trial worktrees and unrelated rules/images/
+prompt changes were preserved. Production evidence was not opened or processed;
+preservation is by non-access, not a fresh hash claim. HEAD remains
+`48201957e5c69060085fd7f8e1609b140b1bfc57`, and the index remains empty.
+
+### Output-completeness correction: F2 qualification (2026-10-04)
+
+The F2 audit finding (cross-project report accompanies the later C1 candidate)
+showed a log reaching `claim` with an absent pending output and an empty intent,
+then losing that intent. The earlier green suites did not cover this false
+readiness. This follow-up changes only `finishPublication` output validation;
+F1's reviewed writer-lifetime correction and the pending C1 hooks are unchanged.
+
+Finalization now looks up the unique output by its complete record owner, not
+just files supplied by an intent. Any reserved/projected output, and every score,
+requires an owned `ready` output whose path/hash match record projections. The
+already identity-checked publication intent must contain that exact path with
+`verified` state and matching hash/byte length. Missing, pending, incomplete or
+inconsistent coverage rejects with `INVALID_STATE` before payload-reference
+registration, status writes or intent removal. Existing intent-identity and
+incomplete-file checks remain. No schema, ADR requirement, file-publication,
+cleanup-policy or retry identity changed; finalization does not rehash files or
+adopt them. It relies on the existing publication protocol's verified receipt.
+
+The **27** `F2 output completeness:` tests were run before editing implementation:
+**19** exposed the defect; **eight** existing rejection/positive controls already
+passed. All **27/27** pass after correction. Both log and score fixtures cover:
+
+- Empty intents with pending/ready outputs, and a fully verified summary-only
+  intent omitting the output. Another intent's verified output is insufficient.
+- Pending output, unverified checkpoint, mismatched checkpoint path/hash/length,
+  mismatched or null record projections, missing reservation and omitted intent.
+- Two consecutive rejections preserving generation, records, reservations,
+  payloads, properties, reviews, map/replay metadata, checkpoints and intents,
+  plus every selected file's hash/stat or absence. No payload I/O occurs during
+  these metadata-only finalization attempts.
+- Correcting incomplete receipt coverage, ordinary publication and exact retry,
+  then successful finalization. A second pre-existing matching verified intent
+  can finalize the already claimed record without duplicate evidence.
+- Output-free evidence-only logs retain null output projections, repeated
+  publication/finalization, and readable pinned payloads.
+
+Projection corruption, missing reservation, independent pending/verified states
+and a falsely verified wrong-path checkpoint are seeded/restored directly only
+in synthetic fixture databases. Empty/omitted intents and checkpoint hash/length
+mismatches also exercise the public APIs. Repair happens only after unchanged-
+state assertions; it is not a production recovery command or silent normalization.
+
+Native Node **24.19.0**, SQLite **3.53.3**, darwin/arm64 validation passed:
+**56/56** affected publication/recovery checks (**10.627 s**), **112/112** combined
+catalog/M1 tests (**36.470 s**, including **86** storage tests), **325/325** repository
+tests (**39.254 s**), and `npm run check`. This includes F1 and prior ownership,
+fsync, concurrency, lifecycle and snapshot regressions. No platform shim was used.
+Runtime build remains
+`fced5aed1e43b9c264cf3fbb7f437dfd4cf28d9175d4a6cd69b468ce57187933`.
+
+Resource impact: one indexed owner lookup at publication finalization, plus one indexed
+intent/path lookup for file-backed outputs (replacing the previous score-only
+ready lookup). No corpus scan or payload I/O was added. Fresh M1 and C1 gates ran
+in both combined and repository suites; historical scale results were not reused.
+The identified combined **600 MiB** gate generated/verified **629,145,600 bytes**
+in **1.523 s / 63.63 MiB peak RSS**; operations took **0.209 s / 71.81 MiB**.
+Exact **10/1,000** starting rows and unchanged 192 MiB heap, 256 MiB RSS and
+60/30-second deadlines passed. List/lookup/review/import SQL counts were
+**2/1/11/26** at both sizes (previously import was 25). Metadata accessed zero
+payload bytes; imports accessed only new **12/14-byte** payloads. C1's gate took
+**1.600 s / 68.63 MiB**, with unchanged fixed SQL/row counts at **10/1,000** anchors
+and zero payload access. These are local observations, not performance guarantees.
+
+Historical F1 and earlier qualifications remain above. F2 is locally corrected
+and unstaged for review, not a claim of complete M1/C1 readiness. F3–F5 remain
+open; payload/review dependency coverage beyond the existing guards was not
+expanded in this output-only correction. Power-loss durability, arbitrary OS
+close-failure semantics and other platforms remain unqualified. No real evidence,
+integration, migration, watcher, gameplay, staging, commit or push was involved.
+
+Documentation checks passed **26 local links / nine anchors** and tracked plus
+four nonignored untracked text-file whitespace checks. Neither edited document
+adds JSON examples. Before/after hashes preserve all other pre-existing project
+files and both trial worktrees; the F1 implementation/tests and C1 hooks are
+byte-identical. Production evidence was not opened or processed. HEAD remains
+`48201957e5c69060085fd7f8e1609b140b1bfc57`, with an empty index; all changes remain
+unstaged. The only task paths are the store, its unit tests, this record and
+the audit's F2 follow-up.
+
+## Fresh-process hot-journal recovery F3 qualification (2026-10-04)
+
+The historical hot-journal tests above reused a pre-crash handle. They did not
+establish restart recovery: normal `openStore` validated through a read-only
+connection even in write mode, so a hot journal prevented obtaining a new
+writer handle. F1/F2 corrections remain intact; this change only adds the explicit
+locked initial-validation branch described above. ADR requirements are unchanged.
+
+Four new targeted tests failed against the saved pre-F3 module in an isolated
+copy, then passed on corrected code. The two schema restart tests previously
+returned `RECOVERY_REQUIRED` instead of entering lock acquisition; invalid
+recovery opt-ins and descriptor replacement were not checked by the old open.
+Tests use native Node **24.19.0**, SQLite **3.53.3**, darwin/arm64, with no shim:
+
+- M1 schema 1 and C1 schema 2 discard the original handle, then a child owns the
+  writer lock, spills an uncommitted SQLite transaction and dies by `SIGKILL`.
+  Database/journal hashes, sizes and modification times stay unchanged through
+  fresh-process ordinary read and write opens reporting `RECOVERY_REQUIRED`.
+- An aged live-owner lock causes explicit recovery to fail `LOCKED` within the
+  existing bounded acquisition window, without changing the hot files or owner.
+  Restoring the terminated writer's original lock and aging it in the synthetic
+  fixture exercises existing dead-owner recovery. A different, fresh process
+  recovers through the public opt-in; no previous store handle participates.
+- Recovery removes the interrupted changes and preserves every committed table
+  row, including generation, records, properties, reviews, pending output and
+  publication/cleanup intents, and C1 metadata. It performs no payload access.
+  Subsequent ordinary reads/writes succeed; a real transaction increments
+  generation once. Crash-left lock-owner temporaries remain retained; successful
+  and blocked attempts leave no new owned lock temporary.
+- Read-mode/nonboolean opt-ins, unsupported descriptor versions, mismatched
+  database identities/schema versions and unsupported WAL are rejected.
+  The runtime probe and rejected database connections close; owned locks release,
+  and subsequent valid opens succeed. Replacing a valid descriptor/store while
+  recovery waits for the lock is rejected before writable access to either DB.
+
+Final checks: **4/4** targeted (**11.735 s**), **8/8** affected recovery/locking
+(**25.089 s**), **116/116** combined storage/catalog (**48.173 s**, including **90**
+storage tests), **329/329** repository (**50.286 s**), and `npm run check` passed.
+F1/F2, busy timeout, live/stale/malformed locks, publication SIGKILL and prior
+ownership/lifecycle/snapshot regressions remain covered. Build stays
+`fced5aed1e43b9c264cf3fbb7f437dfd4cf28d9175d4a6cd69b468ce57187933`.
+
+Resource impact is restricted to explicit recovery: one locked checked writable
+connection, without catalog scans, payload I/O or a logical mutation. Ordinary
+operation paths remain unchanged. Nevertheless both suites ran fresh M1/C1
+resource gates rather than reusing historical measurements. The combined
+**600 MiB** gate generated/verified **629,145,600 bytes** in
+**1.447 s / 63.64 MiB peak RSS**; operations took **0.225 s / 71.86 MiB**.
+Exact **10/1,000** starting rows and 192 MiB heap / 256 MiB RSS limits passed.
+List/lookup/review/import retained **2/1/11/26** SQL calls at both sizes; metadata
+accessed zero payload bytes and imports accessed only new **12/14-byte** payloads.
+C1 took **1.619 s / 68.80 MiB**, with fixed SQL/row counts at 10/1,000 anchors and
+zero payload access. These measure routine fixture gates, not a bound on native
+rollback duration or arbitrary journal sizes. SQLite's existing busy timeout and
+owner-lock acquisition are bounded; native recovery has no added time guarantee.
+
+F3 is locally corrected and unstaged for review. F4–F5 remain open; this is not
+broader M1/C1 readiness, integration/migration or power-loss/platform qualification.
+No production data was accessed. Existing C1 work, gameplay/builds, dependencies,
+unrelated files and both trial worktrees are preserved. Only the store, its tests,
+this qualification record and the audit F3 entry changed for this task.
+Documentation validation passed **27 local links / ten anchors**; the changed
+documents add no JSON examples. Tracked and nonignored untracked text whitespace
+checks passed. HEAD remains `48201957e5c69060085fd7f8e1609b140b1bfc57` with an empty
+index; there was no staging, commit or push.
+
 ## Scope and remaining limits
+
+### Isolated candidate validation — 2026-10-04
+
+The M1-only export at `/tmp/pain-gain-candidates.wo4pqF/m1/` removes only pending
+C1 hooks and the schema-2 restart branch. Schema-1 assertions and F1–F3 behavior
+are retained. It passed 89 storage tests within **302/302** repository tests and
+`npm run check`, with a fresh 600 MiB gate. Generation measured 5.528s / 63.55 MiB
+peak RSS; operations 0.332s / 71.38 MiB. Exact 10/1,000-row and payload-access
+assertions passed, with 26 import SQL calls at both sizes. This is independent
+of the historical combined-working-tree counts above. The C1 candidate restores
+schema-2 coverage; neither candidate is staged or production-qualified.
 
 Metrics count instrumented operational SQL statements/rows, connections/lock
 acquisitions, artifact opens and artifact read/write calls/bytes. They exclude

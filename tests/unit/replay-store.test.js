@@ -129,6 +129,261 @@ test('output publication, score lifecycle separation, retry and owner conflicts'
     assert.equal(s.getRecord(key(2,'score')).output_path,null);
 });
 
+for(const collection of ['log','score'])for(const defect of [
+    'empty-pending','empty-ready','omitted-output','pending-output','unverified',
+    'checkpoint-path','checkpoint-hash','checkpoint-bytes',
+    'projection-path','projection-hash','projection-null','missing-reservation','missing-intent',
+])test(`F2 output completeness: ${collection} rejects ${defect} atomically`,async t=>{
+    const s=await fixture(t),k=key(1,collection),owner=recordOwner(k),output='target.response';
+    const source=()=>jsonChunks({value:0}),expected=digestChunks(source());await insert(s,k,{unknown:{keep:null}});
+    const file={ordinal:0,path:output,hash:expected.expectedHash,bytes:expected.expectedBytes};
+    const summary=payloadPath(s.storeId,owner,'/summary','summaries',expected.expectedHash);
+    const omitted=defect==='omitted-output';
+    const candidate=defect.startsWith('empty')?[]:omitted
+        ?[{ordinal:0,path:summary,hash:expected.expectedHash,bytes:expected.expectedBytes,payload:{owner,pointer:'/summary',role:'summaries'}}]
+        :[{...file,...(defect==='checkpoint-path'?{path:'wrong.response'}:{}),...(defect==='checkpoint-hash'?{hash:'f'.repeat(64)}:{}),...(defect==='checkpoint-bytes'?{bytes:file.bytes+1}:{})}];
+    await s.withWriter(async w=>{
+        w.transaction(tx=>{
+            tx.reserveOutput({recordKey:k,path:output,...expected});
+            tx.appendIntent({id:'output-publication',recordKey:k,files:[file]});
+            tx.appendIntent({id:'candidate',recordKey:k,files:candidate});
+            tx.putReview({recordKey:k,taskId:'synthetic-f2',ordinal:0,value:{examined:null,completed:null,unknown:false}});
+        });
+        if(defect!=='empty-pending')await w.publishOutput({recordKey:k,path:output,source:source(),...expected});
+        if(omitted)await w.publishPayload({owner,pointer:'/summary',role:'summaries',source:source(),...expected});
+    });
+    // The API already enforces projection consistency and normally creates
+    // verified checkpoints through publication. Seed these independent faults
+    // only in this synthetic DB to exercise each final readiness guard.
+    const seed=new DatabaseSync(dbFile(s));
+    try{
+        if(defect==='pending-output')seed.prepare("UPDATE outputs SET state='pending' WHERE path=?").run(output);
+        if(defect==='unverified')seed.prepare("UPDATE operation_files SET state='pending' WHERE operation_id='candidate'").run();
+        if(defect==='checkpoint-path')seed.prepare("UPDATE operation_files SET state='verified' WHERE operation_id='candidate'").run();
+        if(defect==='projection-path')seed.prepare('UPDATE records SET output_path=? WHERE key=?').run('wrong.response',recordKey(k));
+        if(defect==='projection-hash')seed.prepare('UPDATE records SET output_hash=? WHERE key=?').run('f'.repeat(64),recordKey(k));
+        if(defect==='projection-null')seed.prepare('UPDATE records SET output_path=NULL,output_hash=NULL WHERE key=?').run(recordKey(k));
+        if(defect==='missing-reservation')seed.prepare('DELETE FROM outputs WHERE path=?').run(output);
+    }finally{seed.close();}
+    const checkpoints=()=>{
+        const db=new DatabaseSync(dbFile(s),{readOnly:true});
+        try{return Object.fromEntries(['store_meta','records','outputs','payloads','properties','reviews','maps','replays','operations','operation_files','retired'].map(table=>[table,db.prepare(`SELECT * FROM ${table}`).all()]));}finally{db.close();}
+    };
+    const state=()=>({metadata:checkpoints(),files:[output,...(omitted?[summary]:[])].map(relative=>{
+        const name=path.join(s.root,relative);return fs.existsSync(name)?{relative,hash:digestFile(name),stat:fs.statSync(name,{bigint:true})}:{relative,missing:true};
+    })});
+    const before=state();s.resetMetrics();
+    for(let attempt=0;attempt<2;attempt++){
+        await assert.rejects(s.withWriter(w=>w.transaction(tx=>tx.finishPublication({recordKey:k,...(defect==='missing-intent'?{}:{operationId:'candidate'})}))),{code:'INVALID_STATE'});
+        assert.deepEqual(state(),before);assert.equal(s.getRecord(k).status,'pending');
+        assert.equal(s.metrics.payloadWriteBytes,0);assert.equal(s.metrics.payloadReadBytes,0);
+    }
+    // Restore only injected corruption. Do not delete/rewrite the failed intent
+    // to hide rejection: append its missing output or restore its exact receipt,
+    // then use ordinary publication/retry and finalization.
+    const repair=new DatabaseSync(dbFile(s));
+    try{
+        if(defect.startsWith('projection-'))repair.prepare('UPDATE records SET output_path=?,output_hash=? WHERE key=?').run(output,expected.expectedHash,recordKey(k));
+        if(defect==='missing-reservation')repair.prepare('INSERT INTO outputs VALUES (?,?,?,?,?,?,?)').run(output,k.collection,k.replayId,k.fingerprint,expected.expectedHash,expected.expectedBytes,'pending');
+        if(defect.startsWith('checkpoint-'))repair.prepare("UPDATE operation_files SET path=?,hash=?,bytes=?,state='pending' WHERE operation_id='candidate'").run(output,expected.expectedHash,expected.expectedBytes);
+    }finally{repair.close();}
+    await s.withWriter(async w=>{
+        if(defect.startsWith('empty')||omitted)w.transaction(tx=>tx.appendIntent({id:'candidate',recordKey:k,files:[{...file,ordinal:omitted?1:0}]}));
+        for(let retry=0;retry<2;retry++)await w.publishOutput({recordKey:k,path:output,source:source(),...expected});
+        w.transaction(tx=>tx.finishPublication({recordKey:k,operationId:'candidate'}));
+        // A second existing, matching verified intent is a legitimate finalized
+        // record retry; it preserves claim while clearing its own receipt.
+        w.transaction(tx=>tx.finishPublication({recordKey:k,operationId:'output-publication'}));
+    });
+    assert.equal(s.getRecord(k).status,'claim');assert.equal(s.pageOperations().rows.length,0);
+    assert.equal(digestFile(path.join(s.root,output)),expected.expectedHash);
+    assert.deepEqual(s.getReview(k,'synthetic-f2').value,{examined:null,completed:null,unknown:false});
+    await s.withReadSnapshot({recordKeys:[k]},async()=>{});
+});
+
+test('F2 output completeness: output-free evidence-only logs retain valid retries',async t=>{
+    const s=await fixture(t),k=key(),owner=recordOwner(k),source=()=>jsonChunks({keep:null}),expected=digestChunks(source());
+    await s.withWriter(async w=>{
+        const input={owner,pointer:'/summary',role:'summaries',evidenceOnly:true,...expected};
+        const first=await w.publishPayload({...input,source:source()}),retry=await w.publishPayload({...input,source:source()});assert.deepEqual(retry,first);
+        w.transaction(tx=>{tx.insertEntity({kind:'record',key:recordKey(k),ordinal:0,value:{mapId}});tx.finishPublication({recordKey:k,payloadRefs:[retry]});});
+        w.transaction(tx=>tx.finishPublication({recordKey:k,payloadRefs:[retry]}));
+    });
+    assert.equal(s.getRecord(k).status,'claim');assert.equal(s.getRecord(k).output_path,null);assert.equal(s.getRecord(k).output_hash,null);
+    assert.equal(s.pageOperations().rows.length,0);
+    await s.withReadSnapshot({recordKeys:[k]},async view=>{let text='';await streamOriginalValue(view,view.payload(owner,'/summary'),chunk=>text+=chunk);assert.equal(text,'{"keep":null}');});
+});
+
+// Native synthetic fixtures only. Observe all metadata, not just public status:
+// an expired operation must not advance even a recoverable file checkpoint.
+function publicationState(s) {
+    const db=new DatabaseSync(dbFile(s),{readOnly:true});
+    try{return Object.fromEntries(['store_meta','records','properties','payloads','outputs','operations','operation_files'].map(table=>[table,db.prepare(`SELECT * FROM ${table}`).all()]));}
+    finally{db.close();}
+}
+async function publicationFixture(t, mode, options = {}) {
+    const s=await fixture(t,options),k=key(1,mode==='output'?'score':'log'),owner=recordOwner(k);
+    const expected=digestChunks([Buffer.from('0')]);
+    const relative=mode==='output'?'output/target.response':payloadPath(s.storeId,owner,'/value','extensions',expected.expectedHash);
+    if(mode!=='evidence-only'){
+        await insert(s,k);
+        await s.withWriter(w=>w.transaction(tx=>{
+            if(mode==='output')tx.reserveOutput({recordKey:k,path:relative,...expected});
+            tx.appendIntent({id:'publication',recordKey:k,files:[{ordinal:0,path:relative,hash:expected.expectedHash,bytes:expected.expectedBytes,...(mode==='payload'?{payload:{owner,pointer:'/value',role:'extensions'}}:{})}]});
+        }));
+    }
+    const publish=(w,source=[Buffer.from('0')])=>mode==='output'
+        ?w.publishOutput({recordKey:k,path:relative,source,...expected})
+        :w.publishPayload({owner,pointer:'/value',role:'extensions',source,evidenceOnly:mode==='evidence-only',...expected});
+    return {s,k,owner,relative,publish};
+}
+const outcome=promise=>promise.then(value=>({ok:true,value}),error=>({ok:false,error}));
+
+for(const mode of ['payload','output','evidence-only'])for(const exit of ['sibling','return'])
+test(`writer lifetime: ${mode} suspended EOF after ${exit}`,{timeout:10000},async t=>{
+    const {s,k,relative,publish}=await publicationFixture(t,mode),destination=path.join(s.root,relative);
+    const before=publicationState(s),primary=Error('sibling failed');
+    const eof=Promise.withResolvers(),waiting=Promise.withResolvers();let result;
+    const originalOpen=fs.openSync,originalClose=fs.closeSync,descriptors=new Map(),owned=new Set();
+    fs.openSync=(file,...args)=>{const fd=originalOpen(file,...args);if(args[0]==='wx'&&String(file).startsWith(destination+'.')&&String(file).endsWith('.tmp')){descriptors.set(fd,{file,closes:0});owned.add(fd);}return fd;};
+    fs.closeSync=fd=>{if(owned.delete(fd))descriptors.get(fd).closes++;return originalClose(fd);};
+    try{
+        const ended=await outcome(s.withWriter(async w=>{
+            const publication=publish(w,(async function*(){yield Buffer.from('0');waiting.resolve();await eof.promise;})());
+            result=outcome(publication);
+            if(exit==='sibling')await Promise.all([publication,waiting.promise.then(()=>{throw primary;})]);
+            else{await waiting.promise;return 'must not succeed';}
+        }));
+        const closedBeforeResume=[...descriptors.keys()].every(fd=>{try{fs.fstatSync(fd);return false;}catch(e){return e.code==='EBADF';}});
+        assert.equal(fs.existsSync(path.join(s.root,'.manifest.lock')),false);
+        const second=await openStore({root:s.root,mode:'write'});
+        try{await second.withWriter(async()=>{
+            const bytes=s.metrics.payloadWriteBytes;eof.resolve();const late=await result;
+            assert.equal(fs.existsSync(destination),false,'expired publication must not create a destination under another writer');
+            assert.equal(late.ok,false);assert.equal(late.error.code,'CLOSED');
+            assert.equal(s.metrics.payloadWriteBytes,bytes);assert.deepEqual(publicationState(s),before);
+        });}finally{second.close();}
+        assert.equal(ended.ok,false);
+        if(exit==='sibling')assert.equal(ended.error,primary);else assert.equal(ended.error.code,'INVALID_STATE');
+        assert.equal(descriptors.size,1);assert.equal(closedBeforeResume,true,'temporary descriptor must close before releasing the lock');
+        for(const {file,closes} of descriptors.values()){assert.equal(closes,1);assert.equal(fs.readFileSync(file,'utf8'),'0');}
+    }finally{eof.resolve();if(result)await result;fs.openSync=originalOpen;fs.closeSync=originalClose;}
+    await s.withWriter(async w=>{
+        const first=await publish(w),retry=await publish(w);assert.deepEqual(retry,first);
+        w.transaction(tx=>{
+            if(mode==='evidence-only')tx.insertEntity({kind:'record',key:recordKey(k),ordinal:0,value:{mapId}});
+            tx.finishPublication({recordKey:k,...(mode==='evidence-only'?{payloadRefs:[retry]}:{operationId:'publication'})});
+        });
+    });
+    assert.equal(s.getRecord(k).status,'claim');assert.equal(s.pageOperations().rows.length,0);
+});
+
+for(const mode of ['payload','output','evidence-only'])
+test(`writer lifetime: ${mode} existing-file retry after synchronous callback failure`,async t=>{
+    const {s,relative,publish}=await publicationFixture(t,mode),destination=path.join(s.root,relative);
+    await s.withWriter(w=>publish(w));const before=publicationState(s),stat=fs.statSync(destination,{bigint:true});
+    const parent=fs.statSync(path.dirname(destination)),original=fs.fsyncSync;let directoryFlushes=0,result;
+    fs.fsyncSync=fd=>{const st=fs.fstatSync(fd);if(st.isDirectory()&&st.dev===parent.dev&&st.ino===parent.ino)directoryFlushes++;return original(fd);};
+    try{
+        // hashFile reads synchronously but returns a Promise. Throw before its
+        // awaiting publication continuation can flush or checkpoint the retry.
+        const ended=await outcome(s.withWriter(w=>{result=outcome(publish(w));throw null;}));
+        assert.deepEqual(ended,{ok:false,error:null});const late=await result;
+        assert.equal(directoryFlushes,0,'expired retry must not flush the artifact directory');
+        assert.equal(late.ok,false);assert.equal(late.error.code,'CLOSED');
+        assert.deepEqual(publicationState(s),before);assert.deepEqual(fs.statSync(destination,{bigint:true}),stat);
+    }finally{fs.fsyncSync=original;}
+    await s.withWriter(w=>publish(w));assert.equal(fs.readFileSync(destination,'utf8'),'0');
+});
+
+for(const mode of ['payload','output'])
+test(`writer lifetime: ${mode} post-link verification retains recovery state after callback exit`,async t=>{
+    const {s,relative,publish}=await publicationFixture(t,mode),destination=path.join(s.root,relative);
+    const before=publicationState(s),verified=Promise.withResolvers();let result;
+    const original=fs.readSync;fs.readSync=(fd,...args)=>{
+        const n=original(fd,...args);
+        if(n===0&&fs.existsSync(destination)&&fs.fstatSync(fd).ino===fs.statSync(destination).ino)verified.resolve();
+        return n;
+    };
+    try{
+        const ended=await outcome(s.withWriter(w=>{result=outcome(publish(w));return verified.promise;}));
+        const late=await result;
+        assert.equal(ended.ok,false);assert.equal(ended.error.code,'INVALID_STATE');
+        assert.equal(late.ok,false);assert.equal(late.error.code,'CLOSED');
+        assert.deepEqual(publicationState(s),before);assert.equal(fs.readFileSync(destination,'utf8'),'0');
+        const temporaries=fs.readdirSync(path.dirname(destination)).filter(name=>name.startsWith(path.basename(destination)+'.')&&name.endsWith('.tmp'));
+        assert.equal(temporaries.length,1,'expired verification retains its already-linked temporary for recovery');
+    }finally{fs.readSync=original;}
+    await s.withWriter(w=>publish(w));
+});
+
+for(const mode of ['payload','output','evidence-only'])
+test(`writer lifetime: ${mode} final publication continuation cannot return success after expiry`,async t=>{
+    const verified=Promise.withResolvers();let armed=true,result;
+    const {s,relative,publish}=await publicationFixture(t,mode,{fault:name=>{if(armed&&name==='verification')verified.resolve();}});
+    const before=publicationState(s);
+    const ended=await outcome(s.withWriter(w=>{result=outcome(publish(w));return verified.promise;}));
+    const late=await result;
+    assert.equal(ended.ok,false);assert.equal(ended.error.code,'INVALID_STATE');
+    assert.equal(late.ok,false);assert.equal(late.error.code,'CLOSED');
+    // Bytes were fully published while locked, but no reference/checkpoint can
+    // claim readiness after expiry. The exact next writer may verify/reuse them.
+    assert.equal(fs.readFileSync(path.join(s.root,relative),'utf8'),'0');
+    assert.deepEqual(publicationState(s),before);armed=false;
+    await s.withWriter(w=>publish(w));
+});
+
+test('writer lifetime: deletion verification cannot unlink or checkpoint after expiry',async t=>{
+    const {s,k,relative,publish}=await publicationFixture(t,'output');
+    await s.withWriter(async w=>{
+        const ref=await publish(w);
+        w.transaction(tx=>{
+            tx.finishPublication({recordKey:k,operationId:'publication'});
+            tx.setStatus({recordKey:k,status:'done'});tx.setStatus({recordKey:k,status:'retiring'});
+            tx.appendIntent({id:'cleanup',recordKey:k,phase:'cleanup',files:[{ordinal:0,path:relative,hash:ref.hash,bytes:ref.bytes}]});
+        });
+    });
+    const before=publicationState(s),file=path.join(s.root,relative),stat=fs.statSync(file,{bigint:true});let result;
+    const ended=await outcome(s.withWriter(w=>{result=outcome(w.deleteFile({operationId:'cleanup',ordinal:0}));throw null;}));
+    assert.deepEqual(ended,{ok:false,error:null});const late=await result;
+    assert.equal(fs.existsSync(file),true);assert.equal(late.ok,false);assert.equal(late.error.code,'CLOSED');
+    assert.deepEqual(publicationState(s),before);assert.deepEqual(fs.statSync(file,{bigint:true}),stat);
+    await s.withWriter(async w=>{await w.deleteFile({operationId:'cleanup',ordinal:0});w.transaction(tx=>tx.finishPublication({recordKey:k,operationId:'cleanup',retire:true}));});
+    assert.equal(s.getRecord(k).kind,'retired');
+});
+
+for(const primary of [Error('primary callback failure'),null])
+test(`writer lifetime: callback error ${primary===null?'null':'Error'} survives descriptor cleanup failures`,{timeout:10000},async t=>{
+    const s=await fixture(t),eof=Promise.withResolvers(),waiting=Promise.withResolvers(),descriptors=new Map();
+    const originalOpen=fs.openSync,originalClose=fs.closeSync;let reached=0;const results=[];
+    fs.openSync=(file,...args)=>{const fd=originalOpen(file,...args);if(String(file).includes('/extensions/')&&String(file).endsWith('.tmp'))descriptors.set(fd,{file,closes:0});return fd;};
+    fs.closeSync=fd=>{const owned=descriptors.get(fd);if(owned){owned.closes++;originalClose(fd);throw Object.assign(Error('injected after native close'),{code:'EIO'});}return originalClose(fd);};
+    try{
+        const ended=await outcome(s.withWriter(async w=>{
+            for(let i=0;i<2;i++)results.push(outcome(w.publishPayload({owner:recordOwner(key(i)),pointer:'/value',role:'extensions',evidenceOnly:true,
+                source:(async function*(){yield Buffer.from('0');if(++reached===2)waiting.resolve();await eof.promise;})(),...digestChunks([Buffer.from('0')])})));
+            await waiting.promise;throw primary;
+        }));
+        assert.equal(ended.ok,false);assert.equal(ended.error,primary);
+        assert.equal(descriptors.size,2);
+        for(const [fd,{closes}] of descriptors){assert.equal(closes,1);assert.throws(()=>fs.fstatSync(fd),{code:'EBADF'});}
+        assert.equal(fs.existsSync(path.join(s.root,'.manifest.lock')),false);
+        eof.resolve();for(const late of await Promise.all(results)){assert.equal(late.ok,false);assert.equal(late.error.code,'CLOSED');}
+        for(const {file,closes} of descriptors.values()){assert.equal(closes,1);assert.equal(fs.readFileSync(file,'utf8'),'0');}
+    }finally{eof.resolve();await Promise.all(results);fs.openSync=originalOpen;fs.closeSync=originalClose;}
+    assert.equal(await s.withWriter(()=>17),17);
+});
+
+test('writer lifetime: ordinary concurrent awaited publications and retries remain valid',async t=>{
+    const s=await fixture(t),expected=digestChunks([Buffer.from('0')]);
+    await s.withWriter(async w=>{
+        const inputs=[0,1].map(i=>({owner:recordOwner(key(i)),pointer:'/value',role:'extensions',evidenceOnly:true,...expected}));
+        const first=await Promise.all(inputs.map(input=>w.publishPayload({...input,source:[Buffer.from('0')]})));
+        const retry=await Promise.all(inputs.map(input=>w.publishPayload({...input,source:[Buffer.from('0')]})));
+        assert.deepEqual(retry,first);
+    });
+});
+
 test('M1 regression: payload publication rejects reserved role mismatches without mutation',async t=>{
     const s=await fixture(t),k=key(),owner=recordOwner(k),source=()=>jsonChunks({v:0}),expected=digestChunks(source());await insert(s,k);
     const reserved=payloadPath(s.storeId,owner,'/summary','extensions',expected.expectedHash);
@@ -464,6 +719,77 @@ test('process death leaves pending and read-only hot journal fails without recov
     const journalCrash=await child(hot,[dbFile(s)],15_000);assert.equal(journalCrash.signal,'SIGKILL');const journal=dbFile(s)+'-journal';assert.ok(fs.statSync(journal).size>0);const before=digestFile(journal);
     await assert.rejects(openStore({root:s.root,mode:'read'}),{code:'RECOVERY_REQUIRED'});assert.equal(digestFile(journal),before);
     await s.withWriter(()=>{});assert.equal(s.pageProperties({kind:'root',key:'root'}).rows.length,0);assert.equal(s.getRecord(key()).status,'pending');
+});
+
+// Restart recovery must not rely on any handle surviving the crashed writer.
+test('F3 restart recovery: schema 1 hot journal, live lock and committed state',{timeout:25000},async t=>{
+    const root=fs.mkdtempSync(rootPrefix);
+    const handle=await createFixtureStore({root,filesystem:'local-apfs'}),s=handle;
+    t.after(()=>{handle.close();fs.rmSync(root,{recursive:true,force:true});});
+    const k=key(),score=key(1,'score'),expected=digestChunks(jsonChunks({pending:true}));
+    await s.withWriter(w=>w.transaction(tx=>{
+        tx.insertEntity({kind:'map',key:mapId,ordinal:0,value:{unknown:null}});
+        tx.insertEntity({kind:'replay',key:replayId,ordinal:0,value:{mapId}});
+        for(const [i,r]of [k,score].entries()){
+            tx.insertEntity({kind:'record',key:recordKey(r),ordinal:i,value:{mapId,status:'pending',keep:{zero:0,no:false,absent:null}}});
+            tx.putReview({recordKey:r,taskId:'restart',ordinal:0,value:{examined:'retained',completed:null}});
+        }
+        tx.reserveOutput({recordKey:k,path:'pending.response',...expected});
+        tx.appendIntent({id:'publication',recordKey:k,files:[{ordinal:0,path:'pending.response',hash:expected.expectedHash,bytes:expected.expectedBytes}]});
+        tx.setStatus({recordKey:score,status:'retiring'});
+        tx.appendIntent({id:'cleanup',recordKey:score,phase:'cleanup',files:[]});
+    }));
+    const database=dbFile(s),journal=database+'-journal',lock=path.join(root,'.manifest.lock');
+    const logical=()=>{const db=new DatabaseSync(database,{readOnly:true});try{return Object.fromEntries(db.prepare("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name").all().map(({name})=>[name,db.prepare(`SELECT * FROM ${name}`).all()]));}finally{db.close();}};
+    const before=logical();handle.close();
+    const opener='openStore',url=moduleUrl;
+    const crash=`import {${opener}} from ${JSON.stringify(url)};import {DatabaseSync} from 'node:sqlite';const h=await ${opener}({root:process.argv[1],mode:'write'});const s=h.evidence??h;await s.withWriter(()=>{const db=new DatabaseSync(process.argv[2]);db.exec("PRAGMA journal_mode=DELETE;PRAGMA synchronous=FULL;PRAGMA cache_size=8;BEGIN IMMEDIATE;UPDATE store_meta SET generation=generation+100;UPDATE reviews SET value='{}';DELETE FROM operation_files;DELETE FROM operations;UPDATE properties SET value='null' WHERE value IS NOT NULL");const q=db.prepare('INSERT INTO properties VALUES (?,?,?,?,?,NULL)');for(let i=0;i<1000;i++)q.run('root','root','/interrupted'+i,i,JSON.stringify('x'.repeat(60000)));process.kill(process.pid,'SIGKILL');});`;
+    const crashed=await child(crash,[root,database]);assert.equal(crashed.signal,'SIGKILL',crashed.errors);
+    assert.ok(fs.statSync(journal).size>0);const deadOwner=fs.readFileSync(lock);
+    const retainedLockTemps=fs.readdirSync(root).filter(n=>n.startsWith('.manifest.lock.'));
+    const physical=()=>[database,journal].map(f=>({hash:digestFile(f),size:fs.statSync(f).size,mtime:fs.statSync(f).mtimeMs}));
+    const hot=physical();
+    const readAttempt=`import assert from 'node:assert/strict';import {${opener}} from ${JSON.stringify(url)};for(const mode of ['read','write'])await assert.rejects(${opener}({root:process.argv[1],mode}),{code:'RECOVERY_REQUIRED'});`;
+    const read=await child(readAttempt,[root]);assert.equal(read.code,0,read.errors);assert.deepEqual(physical(),hot);
+    // An aged but live owner cannot be stolen, even by explicit recovery.
+    fs.writeFileSync(lock,JSON.stringify({pid:process.pid,token:'live-f3'}));fs.utimesSync(lock,new Date(0),new Date(0));
+    const recoverAttempt=`import assert from 'node:assert/strict';import {${opener}} from ${JSON.stringify(url)};const start=performance.now();await assert.rejects(${opener}({root:process.argv[1],mode:'write',recover:true}),{code:'LOCKED'});assert.ok(performance.now()-start>=4500);assert.ok(performance.now()-start<10000);`;
+    const blocked=await child(recoverAttempt,[root]);assert.equal(blocked.code,0,blocked.errors);assert.deepEqual(physical(),hot);assert.equal(JSON.parse(fs.readFileSync(lock)).token,'live-f3');assert.deepEqual(fs.readdirSync(root).filter(n=>n.startsWith('.manifest.lock.')),retainedLockTemps);
+    fs.writeFileSync(lock,deadOwner);fs.utimesSync(lock,new Date(0),new Date(0));
+    const recover=`import assert from 'node:assert/strict';import fs from 'node:fs';import {${opener}} from ${JSON.stringify(url)};const h=await ${opener}({root:process.argv[1],mode:'write',recover:true});const s=h.evidence??h;assert.equal(s.metrics.locks,1);assert.equal(s.metrics.connections,1);assert.equal(s.metrics.payloadReadBytes,0);assert.equal(s.metrics.payloadWriteBytes,0);assert.equal(s.getRecord(JSON.parse(process.argv[2])).status,'pending');assert.equal(s.getReview(JSON.parse(process.argv[2]),'restart').value.completed,null);assert.equal(s.pageOperations().rows.length,2);h.close();assert.equal(fs.existsSync(process.argv[1]+'/.manifest.lock'),false);`;
+    const recovered=await child(recover,[root,JSON.stringify(k)]);assert.equal(recovered.code,0,recovered.errors);assert.equal(fs.existsSync(journal),false);assert.deepEqual(logical(),before);assert.deepEqual(fs.readdirSync(root).filter(n=>n.startsWith('.manifest.lock.')),retainedLockTemps);
+    const fresh=await openStore({root,mode:'write'}),e=fresh;
+    try{await e.withWriter(w=>w.transaction(tx=>tx.setProperty({owner:recordOwner(k),pointer:'/afterRestart',ordinal:99,value:true})));assert.equal(e.pageRecords({collection:'log'}).generation,before.store_meta[0].generation+1);assert.equal(properties(e,recordOwner(k))['/afterRestart'],true);}finally{fresh.close();}
+});
+
+test('F3 restart recovery: explicit write opt-in, version/identity/settings failures release resources',async t=>{
+    const s=await fixture(t),root=s.root,file=dbFile(s),manifest=path.join(root,'manifest.json'),saved=fs.readFileSync(manifest),hash=digestFile(file);
+    for(const options of [{mode:'read',recover:true},{mode:'write',recover:'yes'},{mode:'write',recover:null}])await assert.rejects(openStore({root,...options}),{code:'INVALID_MODE'});
+    assert.equal(digestFile(file),hash);assert.equal(fs.existsSync(path.join(root,'.manifest.lock')),false);
+    fs.writeFileSync(manifest,JSON.stringify({...JSON.parse(saved),schemaVersion:99}));await assert.rejects(openStore({root,mode:'write',recover:true}),{code:'UNSUPPORTED_STORE'});fs.writeFileSync(manifest,saved);
+    for(const corruption of ["UPDATE store_meta SET store_id='wrong'",'UPDATE store_meta SET schema_version=99','PRAGMA journal_mode=WAL']){
+        const db=new DatabaseSync(file);db.exec(corruption);db.close();
+        let opened=0,closed=0;const prepare=DatabaseSync.prototype.prepare,close=DatabaseSync.prototype.close;
+        DatabaseSync.prototype.prepare=function(...args){opened++;return prepare.apply(this,args);};
+        DatabaseSync.prototype.close=function(...args){closed++;return close.apply(this,args);};
+        try{await assert.rejects(openStore({root,mode:'write',recover:true}),{code:corruption.startsWith('PRAGMA')?'UNSUPPORTED_RUNTIME':'UNSUPPORTED_STORE'});}finally{DatabaseSync.prototype.prepare=prepare;DatabaseSync.prototype.close=close;}
+        assert.ok(opened>0);assert.equal(closed,2,'runtime probe and rejected store connection both close');
+        assert.deepEqual(fs.readdirSync(root).filter(n=>n.startsWith('.manifest.lock')),[]);
+        const repair=new DatabaseSync(file);repair.exec('PRAGMA journal_mode=DELETE');repair.prepare('UPDATE store_meta SET store_id=?,schema_version=1').run(s.storeId);repair.close();
+        const next=await openStore({root,mode:'write',recover:true});next.close();
+    }
+});
+
+test('F3 restart recovery: revalidate descriptor identity after lock acquisition',async t=>{
+    const s=await fixture(t),root=s.root,manifest=path.join(root,'manifest.json'),marker=path.join(root,'.storage-v3-fixture'),saved=fs.readFileSync(manifest),savedMarker=fs.readFileSync(marker),file=dbFile(s),hash=digestFile(file),lock=path.join(root,'.manifest.lock');
+    fs.writeFileSync(lock,JSON.stringify({pid:process.pid,token:'gate'}));
+    const attempt=openStore({root,mode:'write',recover:true});
+    const rejection=assert.rejects(attempt,{code:'UNSUPPORTED_STORE'});
+    const replacement='00000000-0000-4000-8000-000000000009',d=JSON.parse(saved);
+    const relative=`store-v3/${replacement}/index.sqlite`;fs.mkdirSync(path.dirname(path.join(root,relative)));fs.copyFileSync(file,path.join(root,relative));
+    fs.writeFileSync(marker,JSON.stringify({...JSON.parse(savedMarker),storeId:replacement}));fs.writeFileSync(manifest,JSON.stringify({...d,storeId:replacement,database:relative}));fs.unlinkSync(lock);
+    try{await rejection;assert.equal(digestFile(file),hash);assert.equal(digestFile(path.join(root,relative)),hash);assert.deepEqual(fs.readdirSync(root).filter(n=>n.startsWith('.manifest.lock')),[]);}finally{fs.writeFileSync(marker,savedMarker);fs.writeFileSync(manifest,saved);}
+    const next=await openStore({root,mode:'write',recover:true});next.close();
 });
 
 test('pinned snapshot survives a second writer cleanup, and closes on failure',async t=>{
