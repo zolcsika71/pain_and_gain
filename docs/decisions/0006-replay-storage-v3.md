@@ -1117,6 +1117,11 @@ requiring their own qualified implementations and explicit authorizations.
 
 ### Later milestones and release gates
 
+The first bounded M2 slice is specified in the
+[M2a diagnostic-reader plan](../architecture/replay-storage-v3-m2a-plan-2026-10-04.md).
+It is a planned synthetic consumer seam, not completion or relaxation of the
+full M2 gates below. Historical M1/C1 qualification records retain their scope.
+
 - M2: integrate every reader/writer behind the store; preserve lifecycle and
   CLI/report semantics, add bounded v2 read support and versioned cache keys.
   Test current maps/deferrals/local registration/log recovery versus score
