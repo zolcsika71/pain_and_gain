@@ -196,3 +196,7 @@ No storage implementation, rehearsal or production migration has run. Production
 migration needs a fresh complete verified backup: the retained pre-recovery
 backup alone lacks the subsequent recovered records. Existing evidence,
 review states, gameplay/builds and both trial worktrees remain retained.
+
+The subsequent separately authorized [M1 synthetic core qualification](replay-storage-v3-m1-2026-10-03.md)
+implements only temporary-root storage mechanics. It does not change the v2
+importer, introduce production storage, or perform migration/rehearsal.

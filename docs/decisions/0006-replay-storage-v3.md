@@ -1,6 +1,6 @@
 # ADR 0006: Replay storage v3 with an operational index and immutable payloads
 
-Status: Accepted design; implementation not started; production migration not authorized.
+Status: Accepted design; isolated synthetic M1 implemented; production integration and migration not authorized.
 
 Date: 2026-10-03 (Europe/Budapest).
 
@@ -564,7 +564,9 @@ evidence backup. Verify a restore in isolation before accepting the backup.
 
 Goal: prove the bounded storage core and per-response publication contracts on
 synthetic scratch evidence, without connecting any current consumer or touching
-production. This ADR authorizes documentation only; M1 is the next separate task.
+production. M1 was separately authorized and implemented; its
+[local qualification record](../architecture/replay-storage-v3-m1-2026-10-03.md)
+does not authorize consumer integration or production migration.
 
 Expected files for M1:
 
