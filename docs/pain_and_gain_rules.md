@@ -8,6 +8,14 @@ Seven neutral `ScoreFlags` are scattered across the map. They start unowned. A f
 
 **Objective: score more points than your opponent, or destroy all their creeps.**
 
+![Pain and Gain map](./images/map.png)
+
+![Red army starting positions](./images/red_creeps.png)
+
+![Blue army starting positions](./images/blue_creeps.png)
+
+![Map obstacle](./images/obstacle.png)
+
 ## Capturing Flags and Their Effects
 
 A creep captures a flag by standing on its cell. Each controlled flag grants the listed score per tick and applies its effect to every creep in the owner's army. Effects of the same type stack; different types are independent.
