@@ -174,8 +174,11 @@ export async function* iterateJson(view, ref, selector = '') {
     yield* value([]); if (token.type !== 'eof') fail('INVALID_JSON', 'Trailing JSON');
 }
 
-export async function* iterateDiagnostics(view, recordKey) {
-    const ref = view.diagnostics(recordKey); await verifyPayload(view, ref, true);
+export async function* iterateDiagnostics(view, recordKey, {pointer} = {}) {
+    const owner = {kind: 'record', key: JSON.stringify([recordKey.collection, recordKey.replayId, recordKey.fingerprint])};
+    const ref = pointer === undefined ? view.diagnostics(recordKey) : view.payload(owner, pointer);
+    if (ref.owner.kind !== owner.kind || ref.owner.key !== owner.key || ref.parentPointer !== null || ref.role !== 'diagnostics') fail('INVALID_REFERENCE', 'Expected owned diagnostic root');
+    await verifyPayload(view, ref, true);
     let parts = [], size = 0, ordinal = 0;
     for await (const chunk of payloadChunks(view, ref)) {
         let start = 0;

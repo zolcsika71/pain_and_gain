@@ -2,6 +2,9 @@
 
 Status: implementation plan only. No integration or new qualification is performed
 by this document. Inspected main: `c3ac85eb7b3c5463aa7c67a88bed6bd62ab3734f`.
+Subsequent implementation and measured results are recorded separately in the
+[M2a qualification](replay-storage-v3-m2a-2026-10-04.md); the gates below retain
+their original limits.
 M1 fixes, F5 and C1 are now committed as `2a2a40ac`, `406b42c8` and `0a80e545`.
 “Pending/unstaged” statements in earlier records describe their historical
 checkpoints. Their test results and qualification boundaries remain unchanged.

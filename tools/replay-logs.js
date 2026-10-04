@@ -1957,7 +1957,8 @@ async function main() {
         if (args.length !== 2 || !/^[a-f0-9]{24}$/.test(args[0]) || !/^[a-f0-9]{64}$/.test(args[1])) throw new Error('Usage: other <replay-id> <fingerprint>');
         const record = readManifest(root).records.find(item => item.replayId === args[0] && item.fingerprint === args[1]);
         if (!record) throw new Error('Replay-log response not found');
-        for (const entry of record.otherEntries) console.log(JSON.stringify(entry));
+        const { writeOtherToStream } = await import('./replay-other.js');
+        await writeOtherToStream(record.otherEntries, process.stdout);
     } else if (['claim', 'examined', 'complete', 'done'].includes(command)) {
         if (args.length !== 3) throw new Error(`Usage: ${command} <replay-id> <fingerprint> <task-id>`);
         const record = await updateReview(root, command, args[0], args[1], args[2]);

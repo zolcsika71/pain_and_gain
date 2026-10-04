@@ -163,6 +163,13 @@ node tools/replay-logs.js examined <replay-id> <fingerprint> <codex-task-id>
 node tools/replay-logs.js done <replay-id> <fingerprint> <codex-task-id>
 ```
 
+`other` preserves native per-entry JSON serialization and occurrence order, awaits
+stdout writes, and reports output failures. It remains a v2 command with no
+lifecycle updates or SQLite requirement. The shared consumer also supports an
+explicit temporary-fixture-only v3 API; see the
+[M2a qualification](docs/architecture/replay-storage-v3-m2a-2026-10-04.md).
+This does not enable production v3 dispatch or bound the legacy manifest loader.
+
 ### Managed replay-score sources
 
 ADR 0005 Milestone 1 adds optional manifest-version-2 `scoreRecords` and

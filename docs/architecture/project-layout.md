@@ -44,6 +44,12 @@ The explicit `upgrade-map-checksums` command locks the manifest, verifies legacy
 
 ## Read-only replay analysis
 
+`tools/replay-other.js` supplies the legacy `other` command's native JSONL
+serializer and a separately invoked synthetic v3 diagnostic reader. Only the
+fixture entrypoint dynamically loads SQLite storage. Its pinned preflight,
+bounded output and limitations are documented in the
+[M2a record](replay-storage-v3-m2a-2026-10-04.md).
+
 `tools/replay-analysis.js` implements the deterministic M4 analyzer outside the
 Arena runtime. Its importable
 `analyzeReplay({ root, replayId, fingerprints?, scoreFingerprints?, reportMode? })`
