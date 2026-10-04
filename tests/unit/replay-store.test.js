@@ -6,6 +6,7 @@ import { createHash } from 'node:crypto';
 import { spawn } from 'node:child_process';
 import test from 'node:test';
 import { DatabaseSync } from 'node:sqlite';
+import { createCatalogFixture, openCatalog } from '../../tools/replay-catalog.js';
 import { createFixtureStore, openStore, recordKey, recordOwner, runtimeCapabilities } from '../../tools/replay-store.js';
 import { digestChunks, jsonChunks, payloadPath, streamOriginalValue } from '../../tools/replay-store-payloads.js';
 
@@ -722,9 +723,9 @@ test('process death leaves pending and read-only hot journal fails without recov
 });
 
 // Restart recovery must not rely on any handle surviving the crashed writer.
-test('F3 restart recovery: schema 1 hot journal, live lock and committed state',{timeout:25000},async t=>{
-    const root=fs.mkdtempSync(rootPrefix);
-    const handle=await createFixtureStore({root,filesystem:'local-apfs'}),s=handle;
+for(const schema of [1,2])test(`F3 restart recovery: schema ${schema} hot journal, live lock and committed state`,{timeout:25000},async t=>{
+    const root=fs.mkdtempSync(rootPrefix),catalog=schema===2;
+    const handle=await (catalog?createCatalogFixture:createFixtureStore)({root,filesystem:'local-apfs'}),s=catalog?handle.evidence:handle;
     t.after(()=>{handle.close();fs.rmSync(root,{recursive:true,force:true});});
     const k=key(),score=key(1,'score'),expected=digestChunks(jsonChunks({pending:true}));
     await s.withWriter(w=>w.transaction(tx=>{
@@ -739,10 +740,11 @@ test('F3 restart recovery: schema 1 hot journal, live lock and committed state',
         tx.setStatus({recordKey:score,status:'retiring'});
         tx.appendIntent({id:'cleanup',recordKey:score,phase:'cleanup',files:[]});
     }));
+    if(catalog)await handle.withWriter(w=>w.transaction(tx=>tx.registerIdentity({kind:'replay',id:replayId,subjectId:'00000000-0000-4000-8000-000000000001',unknown:{keep:false}})));
     const database=dbFile(s),journal=database+'-journal',lock=path.join(root,'.manifest.lock');
     const logical=()=>{const db=new DatabaseSync(database,{readOnly:true});try{return Object.fromEntries(db.prepare("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name").all().map(({name})=>[name,db.prepare(`SELECT * FROM ${name}`).all()]));}finally{db.close();}};
     const before=logical();handle.close();
-    const opener='openStore',url=moduleUrl;
+    const opener=catalog?'openCatalog':'openStore',url=catalog?new URL('../../tools/replay-catalog.js',import.meta.url).href:moduleUrl;
     const crash=`import {${opener}} from ${JSON.stringify(url)};import {DatabaseSync} from 'node:sqlite';const h=await ${opener}({root:process.argv[1],mode:'write'});const s=h.evidence??h;await s.withWriter(()=>{const db=new DatabaseSync(process.argv[2]);db.exec("PRAGMA journal_mode=DELETE;PRAGMA synchronous=FULL;PRAGMA cache_size=8;BEGIN IMMEDIATE;UPDATE store_meta SET generation=generation+100;UPDATE reviews SET value='{}';DELETE FROM operation_files;DELETE FROM operations;UPDATE properties SET value='null' WHERE value IS NOT NULL");const q=db.prepare('INSERT INTO properties VALUES (?,?,?,?,?,NULL)');for(let i=0;i<1000;i++)q.run('root','root','/interrupted'+i,i,JSON.stringify('x'.repeat(60000)));process.kill(process.pid,'SIGKILL');});`;
     const crashed=await child(crash,[root,database]);assert.equal(crashed.signal,'SIGKILL',crashed.errors);
     assert.ok(fs.statSync(journal).size>0);const deadOwner=fs.readFileSync(lock);
@@ -758,7 +760,7 @@ test('F3 restart recovery: schema 1 hot journal, live lock and committed state',
     fs.writeFileSync(lock,deadOwner);fs.utimesSync(lock,new Date(0),new Date(0));
     const recover=`import assert from 'node:assert/strict';import fs from 'node:fs';import {${opener}} from ${JSON.stringify(url)};const h=await ${opener}({root:process.argv[1],mode:'write',recover:true});const s=h.evidence??h;assert.equal(s.metrics.locks,1);assert.equal(s.metrics.connections,1);assert.equal(s.metrics.payloadReadBytes,0);assert.equal(s.metrics.payloadWriteBytes,0);assert.equal(s.getRecord(JSON.parse(process.argv[2])).status,'pending');assert.equal(s.getReview(JSON.parse(process.argv[2]),'restart').value.completed,null);assert.equal(s.pageOperations().rows.length,2);h.close();assert.equal(fs.existsSync(process.argv[1]+'/.manifest.lock'),false);`;
     const recovered=await child(recover,[root,JSON.stringify(k)]);assert.equal(recovered.code,0,recovered.errors);assert.equal(fs.existsSync(journal),false);assert.deepEqual(logical(),before);assert.deepEqual(fs.readdirSync(root).filter(n=>n.startsWith('.manifest.lock.')),retainedLockTemps);
-    const fresh=await openStore({root,mode:'write'}),e=fresh;
+    const fresh=await (catalog?openCatalog:openStore)({root,mode:'write'}),e=fresh.evidence??fresh;
     try{await e.withWriter(w=>w.transaction(tx=>tx.setProperty({owner:recordOwner(k),pointer:'/afterRestart',ordinal:99,value:true})));assert.equal(e.pageRecords({collection:'log'}).generation,before.store_meta[0].generation+1);assert.equal(properties(e,recordOwner(k))['/afterRestart'],true);}finally{fresh.close();}
 });
 

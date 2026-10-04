@@ -684,7 +684,7 @@ of `prompt/analyze_logs.md` remains untouched and unstaged.
 
 ### Writer-lifetime correction: F1 qualification (2026-10-04)
 
-The project audit (F1; cross-project report accompanies the later C1 candidate)
+The [project audit](project-audit-2026-10-04.md#f1--p1-asynchronous-publication-outlives-its-writer-lock)
 reproduced an EOF continuation publishing after its callback failed and another
 writer acquired the lock. Earlier passing results above did not cover that
 schedule. This follow-up corrects F1 only; the audit's publication-completeness,
@@ -770,7 +770,7 @@ preservation is by non-access, not a fresh hash claim. HEAD remains
 
 ### Output-completeness correction: F2 qualification (2026-10-04)
 
-The F2 audit finding (cross-project report accompanies the later C1 candidate)
+The [F2 audit finding](project-audit-2026-10-04.md#f2--p1-a-log-can-be-claimed-with-an-unpublished-reserved-output)
 showed a log reaching `claim` with an absent pending output and an empty intent,
 then losing that intent. The earlier green suites did not cover this false
 readiness. This follow-up changes only `finishPublication` output validation;

@@ -6,6 +6,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import { DatabaseSync, backup } from 'node:sqlite';
 import { setTimeout as sleep } from 'node:timers/promises';
 import { LIMITS, fail, inlineJson, payloadPath } from './replay-store-payloads.js';
+import { catalogDefinition } from './replay-catalog.js';
 
 const MARKER = '.storage-v3-fixture';
 const MAX_INTEGER = 9_223_372_036_854_775_807n;
@@ -86,11 +87,11 @@ function boundedFile(root, relative, budget) {
     try { const st = fs.fstatSync(fd); if (!st.isFile() || st.size > budget) fail('RESOURCE_LIMIT', `${relative} exceeds budget`); return fs.readFileSync(fd, 'utf8'); }
     finally { fs.closeSync(fd); }
 }
-function descriptor(root) {
+function descriptor(root, schemaVersion = 1) {
     const marker = JSON.parse(boundedFile(root, MARKER, 16_384));
     if (marker.root !== root || marker.filesystem !== 'local-apfs' || !UUID.test(marker.storeId)) fail('UNSAFE_PATH', 'Fixture marker mismatch');
     const d = JSON.parse(boundedFile(root, 'manifest.json', 16_384));
-    if (d.version !== 3 || d.schemaVersion !== 1 || d.payloadVersion !== 1 || d.storage !== 'sqlite-sidecars' || d.storeId !== marker.storeId || d.database !== `store-v3/${d.storeId}/index.sqlite`) fail('UNSUPPORTED_STORE', 'Descriptor/store identity mismatch');
+    if (d.version !== 3 || d.schemaVersion !== schemaVersion || (schemaVersion === 2 && d.catalogVersion !== 1) || d.payloadVersion !== 1 || d.storage !== 'sqlite-sidecars' || d.storeId !== marker.storeId || d.database !== `store-v3/${d.storeId}/index.sqlite`) fail('UNSUPPORTED_STORE', 'Descriptor/store identity mismatch');
     const database = safePath(root, d.database);
     if (!fs.existsSync(database)) fail('UNAVAILABLE', 'Missing database; open never creates it');
     for (const suffix of ['-journal','-wal','-shm']) {
@@ -174,13 +175,18 @@ function connection(root, d, write, metrics, create = false) {
         }
         if (!create) {
             const meta = db.prepare('SELECT store_id,schema_version,payload_version FROM store_meta').get();
-            if (!meta || meta.store_id !== d.storeId || meta.schema_version !== 1 || meta.payload_version !== 1) fail('UNSUPPORTED_STORE', 'Database identity/version mismatch');
+            if (!meta || meta.store_id !== d.storeId || meta.schema_version !== d.schemaVersion || meta.payload_version !== 1) fail('UNSUPPORTED_STORE', 'Database identity/version mismatch');
+            if (d.schemaVersion === 2 && db.prepare('SELECT catalog_version FROM store_meta').get().catalog_version !== 1) fail('UNSUPPORTED_STORE','Catalog version mismatch');
         }
         return db;
     } catch (e) { db.close(); throw e; }
 }
 
-export async function createFixtureStore({ root, filesystem, fault } = {}) {
+export const createFixtureStore = options => createVersionedFixture(options, 1);
+// Typed schema-2 entry points; no caller-supplied schema or raw SQL hook.
+export const createCatalogFoundation = options => createVersionedFixture(options, 2);
+export const openCatalogFoundation = options => openVersionedStore(options, 2);
+async function createVersionedFixture({ root, filesystem, fault } = {}, schemaVersion) {
     runtimeCapabilities(); root = fixtureRoot(root);
     if (filesystem !== 'local-apfs' || fs.readdirSync(root).length) fail('UNSAFE_PATH', 'Empty local-apfs fixture root required');
     // Exercise the declared primitives in this fixture, not elsewhere.
@@ -189,25 +195,31 @@ export async function createFixtureStore({ root, filesystem, fault } = {}) {
     fs.linkSync(probe, probe + '.link'); fs.renameSync(probe + '.link', probe + '.renamed'); syncDir(root);
     const fd = fs.openSync(probe, 'r'); fs.unlinkSync(probe); try { if (fs.readFileSync(fd, 'utf8') !== 'fixture') fail('UNSUPPORTED_FILESYSTEM', 'Open-after-unlink failed'); } finally { fs.closeSync(fd); }
     fs.unlinkSync(probe + '.renamed'); syncDir(root);
-    const d = { version:3, storage:'sqlite-sidecars', schemaVersion:1, payloadVersion:1, storeId, database:`store-v3/${storeId}/index.sqlite` };
+    const d = { version:3, storage:'sqlite-sidecars', schemaVersion, payloadVersion:1, storeId, database:`store-v3/${storeId}/index.sqlite`, ...(schemaVersion === 2 ? {catalogVersion:1} : {}) };
     const file = safePath(root, d.database, true); writeExclusive(file, Buffer.alloc(0));
     const metrics = newMetrics();
     await locked(root, async () => {
         const db = connection(root, d, true, metrics, true);
-        try { db.exec(`BEGIN IMMEDIATE; ${SCHEMA}`); db.prepare('INSERT INTO store_meta VALUES (?,1,1,0,NULL)').run(storeId); db.exec('COMMIT'); }
+        try {
+            db.exec(`BEGIN IMMEDIATE; ${SCHEMA}`);
+            db.prepare('INSERT INTO store_meta VALUES (?,?,1,0,NULL)').run(storeId,schemaVersion);
+            if (schemaVersion === 2) db.exec('ALTER TABLE store_meta ADD COLUMN catalog_version INTEGER NOT NULL DEFAULT 1;'+catalogDefinition.schema);
+            db.exec('COMMIT');
+        }
         catch (error) { if (db.isTransaction) db.exec('ROLLBACK'); throw error; } finally { db.close(); }
         syncDir(path.dirname(file));
         writeExclusive(path.join(root, 'manifest.json.tmp'), JSON.stringify(d)); fs.renameSync(path.join(root, 'manifest.json.tmp'), path.join(root, 'manifest.json')); syncDir(root);
     }, metrics);
-    return openStore({ root, mode:'write', fault });
+    return openVersionedStore({ root, mode:'write', fault },schemaVersion);
 }
 function newMetrics() { return { sql:0, rows:0, connections:0, locks:0, payloadOpens:0, payloadReadBytes:0, payloadWriteBytes:0, fsReads:0, fsWrites:0 }; }
 
-export async function openStore({ root, mode, fault, recover = false } = {}) {
+export const openStore = options => openVersionedStore(options,1);
+async function openVersionedStore({ root, mode, fault, recover = false } = {},schemaVersion) {
     runtimeCapabilities(); root = fixtureRoot(root);
     if (!['read','write'].includes(mode)) fail('INVALID_MODE', 'Explicit read/write mode required');
     if (typeof recover !== 'boolean' || (recover && mode !== 'write')) fail('INVALID_MODE', 'Recovery requires explicit write mode and boolean opt-in');
-    const currentDescriptor = () => descriptor(root);
+    const currentDescriptor = () => descriptor(root,schemaVersion);
     const d = currentDescriptor(), metrics = newMetrics(); let closed = false, inWriter = false;
     const assertOpen = () => { if (closed) fail('CLOSED', 'Store is closed'); fixtureRoot(root); };
     const stmt = (db, sql, params = [], type = 'get') => {
@@ -572,7 +584,7 @@ export async function openStore({ root, mode, fault, recover = false } = {}) {
         pagePayloads(owner,parentPointer = null,cursor) { ownerTuple(owner); return read(db => page(db,'SELECT * FROM payloads WHERE owner_kind=? AND owner_key=? AND parent IS ?',[owner.kind,owner.key,parentPointer],'pointer',cursor,LIMITS.page,['payloads',owner,parentPointer])); },
         async withWriter(callback) {
             assertOpen(); if (mode !== 'write' || inWriter) fail('INVALID_STATE','Writable nonnested handle required'); inWriter = true;
-            try { return await locked(root,async () => { const current = currentDescriptor(); if (current.storeId !== d.storeId) fail('UNSUPPORTED_STORE','Store changed while acquiring lock'); const db = connection(root,current,true,metrics); try { return await writerCallback(db,callback); } finally { db.close(); } },metrics); }
+            try { return await locked(root,async () => { const current = currentDescriptor(); if (current.storeId !== d.storeId) fail('UNSUPPORTED_STORE','Store changed while acquiring lock'); const db = connection(root,current,true,metrics); try { return await writerCallback(db,w => callback(catalogCallback ? catalogDefinition.writer({db,stmt,writer:w,root,store}) : w)); } finally { db.close(); } },metrics); }
             finally { inWriter = false; }
         },
         async withReadSnapshot({recordKeys = [],mapIds = [],reviewKeys = [],payloadRoles = ['diagnostics','summaries','extensions']} = {},callback) {
@@ -665,5 +677,22 @@ export async function openStore({ root, mode, fault, recover = false } = {}) {
             }
         },
     };
-    return store;
+    let catalogCallback = false;
+    if (schemaVersion === 1) return store;
+    return catalogDefinition.attach({root,store,stmt,read,generation,
+        write: async callback => {
+            // Flag cannot span an await before acquisition: prevent a second
+            // caller from changing this handle's adapter while a writer runs.
+            if (catalogCallback || inWriter) fail('INVALID_STATE','Nonnested writer required');
+            catalogCallback = true;
+            try { return await store.withWriter(callback); } finally { catalogCallback = false; }
+        },
+        snapshot: async action => {
+            assertOpen(); return locked(root,async () => {
+                const current = currentDescriptor(); if(current.storeId !== d.storeId) fail('UNSUPPORTED_STORE','Snapshot store changed');
+                const db=connection(root,current,false,metrics);
+                try { db.exec('BEGIN'); const result=action(db); db.exec('COMMIT'); return result; }
+                finally { db.close(); }
+            },metrics);
+        }});
 }

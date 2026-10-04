@@ -1,6 +1,9 @@
 # ADR 0006: Replay storage v3 with an operational index and immutable payloads
 
-Status: Accepted storage and replay-catalog design; isolated synthetic storage M1 implemented; catalog C1, production integration and migration not implemented or authorized by this document.
+Status: Accepted storage and replay-catalog design; isolated synthetic M1 implemented; pending M1/C1 corrections and F5 passed their focused reviews, with separate candidate preparation recorded below; production integration and migration not implemented or authorized by this document.
+
+C1 implementation/qualification: [isolated catalog record](../architecture/replay-catalog-c1-2026-10-04.md).
+Dependency-separated candidate scope: [audit consolidation](../architecture/audit-candidates-2026-10-04.md).
 
 Date: 2026-10-03 (Europe/Budapest).
 
@@ -876,6 +879,13 @@ Representative revision API value (synthetic IDs; evidence is not a real replay)
   "revision": 2,
   "predecessor": 1,
   "verdict": "unknown",
+  "semanticsVersion": "synthetic-v1",
+  "criterion": "following-position",
+  "unit": "transitions",
+  "counts": {"passed": 0, "failed": 0, "unknown": 1, "unexercised": 0},
+  "opportunities": null,
+  "coverageSufficient": false,
+  "provenanceState": "unknown",
   "scope": {"criterion": "following-position", "ticks": [8, 9]},
   "rationale": "Accepted command is recorded; the compatible following snapshot is missing.",
   "support": [{"findingId": "22222222-2222-4222-8222-222222222222", "role": "support"}],
@@ -921,7 +931,8 @@ SQL NULL verdict means not assessed, never a zero/pass/default unknown verdict.
 
 #### Bounded APIs, file ownership and unavailable evidence
 
-Proposed `tools/replay-catalog.js` interfaces; not existing runtime APIs:
+`tools/replay-catalog.js` tooling interfaces (C1 implemented on synthetic fixtures,
+C2 deferred); not Arena runtime APIs:
 
 ~~~text
 createCatalogFixture({root, filesystem: 'local-apfs'}) -> Promise<catalog> [C1]
@@ -1002,7 +1013,7 @@ analysis/experiment link can delete an artifact owned by another entity.
 
 #### Separate synthetic milestone C1: catalog metadata foundation
 
-C1 is the next separately implementable task, not M1 completion, M2 integration
+C1 is a separate synthetic milestone, not M1 completion, M2 integration
 or authorization to run anything from this ADR. Implement the catalog tables,
 stable identities, provenance/coverage metadata, frozen runs/selections, findings
 and support links, conclusion/experiment revisions, catalog review histories and
