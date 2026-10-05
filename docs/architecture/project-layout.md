@@ -50,6 +50,13 @@ fixture entrypoint dynamically loads SQLite storage. Its pinned preflight,
 bounded output and limitations are documented in the
 [M2a record](replay-storage-v3-m2a-2026-10-04.md).
 
+`tools/replay-legacy-reader.js` exposes the separate fixture-only M2b v2
+adapter. Its private `tools/replay-legacy-json.js` scanner validates a pinned
+manifest and selects one diagnostic array without materializing the corpus.
+It feeds the same native serializer, imports no SQLite, and changes no existing
+command or lifecycle behavior. See the
+[M2b record](replay-storage-v3-m2b-2026-10-04.md).
+
 `tools/replay-analysis.js` implements the deterministic M4 analyzer outside the
 Arena runtime. Its importable
 `analyzeReplay({ root, replayId, fingerprints?, scoreFingerprints?, reportMode? })`

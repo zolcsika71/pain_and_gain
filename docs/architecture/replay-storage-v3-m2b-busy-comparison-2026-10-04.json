@@ -1,0 +1,65 @@
+{
+  "date": "2026-10-04",
+  "purpose": "Controlled clean-HEAD versus unstaged-M2b SQLite busy-time diagnosis",
+  "head": "c8fe029b8c3bd3a6a8197cd9ad4ae8441c4fff16",
+  "environment": {
+    "node": "v24.19.0",
+    "platform": "darwin",
+    "arch": "arm64",
+    "filesystem": "APFS",
+    "logicalCpuCount": 10,
+    "NODE_OPTIONS": null,
+    "UV_THREADPOOL_SIZE": null
+  },
+  "correspondence": {
+    "replayStoreSha256": "84a435a0563e974321ac16bf06a1aae8cbe9e876592d026fb51c1b8e16e65039",
+    "replayStoreTestSha256": "947deb5a5e40749245d9fd4565145f98d6c04c82a8bae524099dcef1fdb32b89",
+    "sameInHeadCandidateAndMain": true,
+    "candidate": "clean HEAD plus all ten unstaged M2b candidate paths as recorded before this diagnosis"
+  },
+  "contract": {
+    "sqliteBusyTimeoutMs": 5000,
+    "sqliteBusyTimeoutReadBack": 5000,
+    "ownerLockAttempts": 50,
+    "ownerLockDelayMs": 100,
+    "staleOwnerCheckAfterMs": 30000,
+    "testTimeoutMs": 15000,
+    "assertion": "elapsed >= 4500 && elapsed < 10000",
+    "sqliteContract": "https://sqlite.org/c3ref/busy_timeout.html: accumulated sleep reaches at least the configured milliseconds; no hard wall-clock upper bound is promised"
+  },
+  "exactTestCommand": "node --test --test-name-pattern=SQLite busy exhaustion tests/unit/replay-store.test.js",
+  "exactTestRuns": [
+    {"pair":1,"order":1,"variant":"baseline","status":1,"signal":null,"wallMs":11665.673,"testMs":11117.933,"load1m":11.450},
+    {"pair":1,"order":2,"variant":"candidate","status":1,"signal":null,"wallMs":11509.485,"testMs":10918.617,"load1m":9.134},
+    {"pair":2,"order":1,"variant":"candidate","status":1,"signal":null,"wallMs":11651.826,"testMs":10925.769,"load1m":8.424},
+    {"pair":2,"order":2,"variant":"baseline","status":1,"signal":null,"wallMs":12199.179,"testMs":11276.232,"load1m":7.202},
+    {"pair":3,"order":1,"variant":"baseline","status":1,"signal":null,"wallMs":12456.028,"testMs":11105.862,"load1m":7.783},
+    {"pair":3,"order":2,"variant":"candidate","status":1,"signal":null,"wallMs":11736.388,"testMs":10929.655,"load1m":9.055},
+    {"pair":4,"order":1,"variant":"candidate","status":1,"signal":null,"wallMs":13065.716,"testMs":11115.739,"load1m":8.499},
+    {"pair":4,"order":2,"variant":"baseline","status":1,"signal":null,"wallMs":12002.081,"testMs":10992.949,"load1m":7.385},
+    {"pair":5,"order":1,"variant":"baseline","status":1,"signal":null,"wallMs":11928.670,"testMs":10956.240,"load1m":6.556},
+    {"pair":5,"order":2,"variant":"candidate","status":1,"signal":null,"wallMs":13433.657,"testMs":11985.596,"load1m":8.500}
+  ],
+  "exactTestSummary": {
+    "baseline": {"runs":5,"passed":0,"minTestMs":10956.240,"medianTestMs":11105.862,"maxTestMs":11276.232,"meanTestMs":11089.843},
+    "candidate": {"runs":5,"passed":0,"minTestMs":10918.617,"medianTestMs":10929.655,"maxTestMs":11985.596,"meanTestMs":11175.075}
+  },
+  "instrumentedPublicApiProbe": {
+    "description": "The probe recreates the public fixture/write sequence and times native DatabaseSync calls without changing store or test files.",
+    "runs": [
+      {"pair":1,"order":1,"variant":"baseline","status":0,"signal":null,"probeMs":11973.811,"beginImmediateMs":11811.236,"load1m":12.108},
+      {"pair":1,"order":2,"variant":"candidate","status":0,"signal":null,"probeMs":11433.466,"beginImmediateMs":11336.285,"load1m":13.787},
+      {"pair":2,"order":1,"variant":"candidate","status":0,"signal":null,"probeMs":11540.623,"beginImmediateMs":11450.535,"load1m":17.751},
+      {"pair":2,"order":2,"variant":"baseline","status":0,"signal":null,"probeMs":10873.516,"beginImmediateMs":10802.371,"load1m":17.080},
+      {"pair":3,"order":1,"variant":"baseline","status":0,"signal":null,"probeMs":10767.380,"beginImmediateMs":10750.041,"load1m":14.515},
+      {"pair":3,"order":2,"variant":"candidate","status":0,"signal":null,"probeMs":10749.556,"beginImmediateMs":10730.315,"load1m":15.108}
+    ],
+    "result": "Every BEGIN IMMEDIATE threw ERR_SQLITE_ERROR database is locked. PRAGMA setup, readback, identity checks and close were individually below one millisecond in the first probe pair; the long operation was BEGIN IMMEDIATE."
+  },
+  "classification": {
+    "candidateSpecific": false,
+    "observedCause": "The wall-clock upper-bound assertion is exceeded inside native DatabaseSync BEGIN IMMEDIATE while another connection holds a reserved write lock, even though busy_timeout reads back as 5000 ms. SQLite specifies a minimum accumulated sleep before SQLITE_BUSY, not a hard wall-clock maximum.",
+    "unresolvedLowerLevelCause": "The comparison does not establish why the native SQLite busy wait exceeds its configured value on this host. Scheduler/load interaction and Node/SQLite busy-handler behavior remain hypotheses.",
+    "qualification": "M2b-specific gates pass, but full qualification remains blocked until a complete prescribed suite passes."
+  }
+}

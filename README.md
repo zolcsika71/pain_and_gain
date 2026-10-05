@@ -170,6 +170,12 @@ explicit temporary-fixture-only v3 API; see the
 [M2a qualification](docs/architecture/replay-storage-v3-m2a-2026-10-04.md).
 This does not enable production v3 dispatch or bound the legacy manifest loader.
 
+An independent fixture-only `writeFixtureV2Other` adapter now exercises bounded
+legacy manifest selection through that same consumer. It is not connected to
+the CLI: deployed commands still use their existing loaders. See the
+[M2b qualification](docs/architecture/replay-storage-v3-m2b-2026-10-04.md) for
+synthetic compatibility, full-file scanning costs and resource limits.
+
 ### Managed replay-score sources
 
 ADR 0005 Milestone 1 adds optional manifest-version-2 `scoreRecords` and

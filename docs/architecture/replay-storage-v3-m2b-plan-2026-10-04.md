@@ -3,6 +3,12 @@
 Date: 2026-10-04. Status: planning only; implementation requires a separate task.
 Inspected HEAD: `839de85a4afe2c8ea489164b9e90ac37ac2296ea`.
 
+Implementation checkpoint: the separately authorized local candidate and its
+synthetic measurements are recorded in the
+[M2b qualification](replay-storage-v3-m2b-2026-10-04.md). The planning status and
+proposed-budget wording below describe the original approval; the requirements
+remain unchanged. This does not activate the CLI or complete M2.
+
 Authority: [ADR 0006](../decisions/0006-replay-storage-v3.md), the
 [completion plan](project-audit-2026-10-04.md#dependency-ordered-completion-plan),
 [M2a plan](replay-storage-v3-m2a-plan-2026-10-04.md) and

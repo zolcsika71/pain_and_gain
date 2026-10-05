@@ -1123,10 +1123,12 @@ Its [implementation/qualification record](../architecture/replay-storage-v3-m2a-
 covers only that synthetic consumer seam, not completion or relaxation of the
 full M2 gates below. Historical M1/C1 qualification records retain their scope.
 
-The next proposed slice is [M2b bounded legacy diagnostic selection](../architecture/replay-storage-v3-m2b-plan-2026-10-04.md):
+The next bounded slice is [M2b bounded legacy diagnostic selection](../architecture/replay-storage-v3-m2b-plan-2026-10-04.md):
 one fixture-only v2 response feeding the same consumer, with streaming structural
-validation and a pinned manifest handle. Its budgets are unmeasured acceptance
-limits; it does not activate a production adapter or complete bounded v2 support.
+validation and a pinned manifest handle. Its
+[implementation/qualification record](../architecture/replay-storage-v3-m2b-2026-10-04.md)
+records measurements against the plan's unchanged acceptance limits; it does not
+activate a production adapter or complete bounded v2 support.
 
 - M2: integrate every reader/writer behind the store; preserve lifecycle and
   CLI/report semantics, add bounded v2 read support and versioned cache keys.

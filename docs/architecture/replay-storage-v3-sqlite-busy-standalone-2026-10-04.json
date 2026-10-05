@@ -1,0 +1,1093 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-04",
+  "purpose": "Standalone node:sqlite busy-time investigation; no project imports; temporary databases only",
+  "head": "c8fe029b8c3bd3a6a8197cd9ad4ae8441c4fff16",
+  "environment": {
+    "executable": "/Users/zoltanka/Library/Caches/JetBrains/WebStorm2026.2/acp-agents/.runtimes/node/24.19.0/bin/node",
+    "node": "v24.19.0",
+    "sqlite": "3.53.3",
+    "platform": "darwin",
+    "arch": "arm64",
+    "macOS": "26.7.1 (25G241)",
+    "logicalCpuCount": 10,
+    "NODE_OPTIONS": null,
+    "UV_THREADPOOL_SIZE": null,
+    "tempParent": "/private/var/folders/dy/9msg37jj549dkw5k__ct1kv00000gn/T",
+    "tempFilesystem": {
+      "type": 26,
+      "bsize": 4096,
+      "mount": "local APFS on /System/Volumes/Data"
+    },
+    "alternateComparison": "No second Node executable or distinct supported writable local filesystem was already available; none was installed or configured."
+  },
+  "artifacts": {
+    "probe": {
+      "path": "docs/architecture/diagnostics/replay-storage-v3-sqlite-busy-probe.mjs",
+      "sha256": "0ec8d0cf917385128706feed54529233a163f443c0a67b5016b359ba3ad4ddb5"
+    },
+    "rawScratch": {
+      "path": "/tmp/pain-gain-sqlite-probe.7kJX1V/results.json",
+      "sha256": "9e9aa0ec50e728a41eaf45bc2c451af77b22b2cf762e3c4e2b93cc35cf7a4365"
+    },
+    "nodeTestScratch": {
+      "path": "/tmp/pain-gain-sqlite-busy-node-test.mjs",
+      "log": "/tmp/pain-gain-sqlite-probe.7kJX1V/node-test-controls.log",
+      "sha256": "7f2f778fcad53bc61742b07a36d940a4a5cc42c86b822c9fee0847393db02524"
+    },
+    "loadScratch": {
+      "path": "/tmp/pain-gain-sqlite-busy-load-control.mjs",
+      "log": "/tmp/pain-gain-sqlite-probe.7kJX1V/load-control.json",
+      "sha256": "a25d67d04c0d1752abf60cde538c1dd654e44804e32777aecf97d4334fb854d2"
+    },
+    "projectControl": {
+      "log": "/tmp/pain-gain-sqlite-current-control.log",
+      "sha256": "87ef900ab2adebb0dbc82df0c254cd1e02ee58d2f49625495b2f136c3f66c3a5"
+    }
+  },
+  "matchedSetup": {
+    "journalMode": "delete",
+    "synchronous": 2,
+    "foreignKeys": 1,
+    "mmapSize": 0,
+    "cacheSize": -8192,
+    "lock": "holder BEGIN IMMEDIATE; contender BEGIN IMMEDIATE",
+    "timing": "after explicit holder locked/in-transaction handshake",
+    "cleanup": "rollback, close, post-release write, remove temporary root"
+  },
+  "command": "PROBE_DIR=$(mktemp -d /tmp/pain-gain-sqlite-probe.XXXXXX) && node docs/architecture/diagnostics/replay-storage-v3-sqlite-busy-probe.mjs --output \"$PROBE_DIR/results.json\" --repeats 3 --timeouts 0,100,1000,5000",
+  "runs": [
+    {
+      "timeoutMs": 0,
+      "repeat": 1,
+      "mode": "same-process",
+      "startedAt": "2026-10-04T18:10:54.822Z",
+      "tempRoot": "/private/var/folders/dy/9msg37jj549dkw5k__ct1kv00000gn/T/pain-gain-sqlite-busy-probe-Q35gBT",
+      "timeoutReadBackMs": 0,
+      "journalMode": "delete",
+      "holderLocked": true,
+      "holderInTransaction": true,
+      "elapsedMs": 0.04724999999999824,
+      "cpuUserMs": 0.547,
+      "cpuSystemMs": 0.066,
+      "voluntaryContextSwitches": 0,
+      "involuntaryContextSwitches": 0,
+      "errorCode": "ERR_SQLITE_ERROR",
+      "errorMessage": "database is locked",
+      "runnerStatus": 0,
+      "runnerSignal": null,
+      "holderStatus": 0,
+      "holderSignal": null,
+      "postReleaseWrite": true,
+      "controllerWallMs": 39.898041000000006,
+      "loadBefore": [
+        6.15673828125,
+        4.71435546875,
+        6.021484375
+      ],
+      "loadAfter": [
+        6.15673828125,
+        4.71435546875,
+        6.021484375
+      ]
+    },
+    {
+      "timeoutMs": 0,
+      "repeat": 1,
+      "mode": "cross-process",
+      "startedAt": "2026-10-04T18:10:54.904Z",
+      "tempRoot": "/private/var/folders/dy/9msg37jj549dkw5k__ct1kv00000gn/T/pain-gain-sqlite-busy-probe-TcD2QM",
+      "timeoutReadBackMs": 0,
+      "journalMode": "delete",
+      "holderLocked": true,
+      "holderInTransaction": true,
+      "elapsedMs": 0.1681249999999963,
+      "cpuUserMs": 0.936,
+      "cpuSystemMs": 0.446,
+      "voluntaryContextSwitches": 0,
+      "involuntaryContextSwitches": 5,
+      "errorCode": "ERR_SQLITE_ERROR",
+      "errorMessage": "database is locked",
+      "runnerStatus": 0,
+      "runnerSignal": null,
+      "holderStatus": 0,
+      "holderSignal": null,
+      "postReleaseWrite": true,
+      "controllerWallMs": 85.28116700000001,
+      "loadBefore": [
+        6.15673828125,
+        4.71435546875,
+        6.021484375
+      ],
+      "loadAfter": [
+        6.15673828125,
+        4.71435546875,
+        6.021484375
+      ]
+    },
+    {
+      "timeoutMs": 0,
+      "repeat": 2,
+      "mode": "cross-process",
+      "startedAt": "2026-10-04T18:10:54.989Z",
+      "tempRoot": "/private/var/folders/dy/9msg37jj549dkw5k__ct1kv00000gn/T/pain-gain-sqlite-busy-probe-0m5onS",
+      "timeoutReadBackMs": 0,
+      "journalMode": "delete",
+      "holderLocked": true,
+      "holderInTransaction": true,
+      "elapsedMs": 0.053207999999997924,
+      "cpuUserMs": 0.868,
+      "cpuSystemMs": 0.325,
+      "voluntaryContextSwitches": 0,
+      "involuntaryContextSwitches": 3,
+      "errorCode": "ERR_SQLITE_ERROR",
+      "errorMessage": "database is locked",
+      "runnerStatus": 0,
+      "runnerSignal": null,
+      "holderStatus": 0,
+      "holderSignal": null,
+      "postReleaseWrite": true,
+      "controllerWallMs": 83.637,
+      "loadBefore": [
+        6.15673828125,
+        4.71435546875,
+        6.021484375
+      ],
+      "loadAfter": [
+        6.15673828125,
+        4.71435546875,
+        6.021484375
+      ]
+    },
+    {
+      "timeoutMs": 0,
+      "repeat": 2,
+      "mode": "same-process",
+      "startedAt": "2026-10-04T18:10:55.031Z",
+      "tempRoot": "/private/var/folders/dy/9msg37jj549dkw5k__ct1kv00000gn/T/pain-gain-sqlite-busy-probe-hacVAZ",
+      "timeoutReadBackMs": 0,
+      "journalMode": "delete",
+      "holderLocked": true,
+      "holderInTransaction": true,
+      "elapsedMs": 0.046624999999998806,
+      "cpuUserMs": 0.456,
+      "cpuSystemMs": 0.054,
+      "voluntaryContextSwitches": 0,
+      "involuntaryContextSwitches": 0,
+      "errorCode": "ERR_SQLITE_ERROR",
+      "errorMessage": "database is locked",
+      "runnerStatus": 0,
+      "runnerSignal": null,
+      "holderStatus": 0,
+      "holderSignal": null,
+      "postReleaseWrite": true,
+      "controllerWallMs": 38.54162500000001,
+      "loadBefore": [
+        6.15673828125,
+        4.71435546875,
+        6.021484375
+      ],
+      "loadAfter": [
+        6.15673828125,
+        4.71435546875,
+        6.021484375
+      ]
+    },
+    {
+      "timeoutMs": 0,
+      "repeat": 3,
+      "mode": "same-process",
+      "startedAt": "2026-10-04T18:10:55.073Z",
+      "tempRoot": "/private/var/folders/dy/9msg37jj549dkw5k__ct1kv00000gn/T/pain-gain-sqlite-busy-probe-tkm3cG",
+      "timeoutReadBackMs": 0,
+      "journalMode": "delete",
+      "holderLocked": true,
+      "holderInTransaction": true,
+      "elapsedMs": 0.054750000000002075,
+      "cpuUserMs": 0.54,
+      "cpuSystemMs": 0.059,
+      "voluntaryContextSwitches": 0,
+      "involuntaryContextSwitches": 0,
+      "errorCode": "ERR_SQLITE_ERROR",
+      "errorMessage": "database is locked",
+      "runnerStatus": 0,
+      "runnerSignal": null,
+      "holderStatus": 0,
+      "holderSignal": null,
+      "postReleaseWrite": true,
+      "controllerWallMs": 41.61333400000001,
+      "loadBefore": [
+        6.15673828125,
+        4.71435546875,
+        6.021484375
+      ],
+      "loadAfter": [
+        6.15673828125,
+        4.71435546875,
+        6.021484375
+      ]
+    },
+    {
+      "timeoutMs": 0,
+      "repeat": 3,
+      "mode": "cross-process",
+      "startedAt": "2026-10-04T18:10:55.146Z",
+      "tempRoot": "/private/var/folders/dy/9msg37jj549dkw5k__ct1kv00000gn/T/pain-gain-sqlite-busy-probe-XrQbxb",
+      "timeoutReadBackMs": 0,
+      "journalMode": "delete",
+      "holderLocked": true,
+      "holderInTransaction": true,
+      "elapsedMs": 0.05083300000000435,
+      "cpuUserMs": 0.876,
+      "cpuSystemMs": 0.368,
+      "voluntaryContextSwitches": 0,
+      "involuntaryContextSwitches": 5,
+      "errorCode": "ERR_SQLITE_ERROR",
+      "errorMessage": "database is locked",
+      "runnerStatus": 0,
+      "runnerSignal": null,
+      "holderStatus": 0,
+      "holderSignal": null,
+      "postReleaseWrite": true,
+      "controllerWallMs": 77.00845800000002,
+      "loadBefore": [
+        6.15673828125,
+        4.71435546875,
+        6.021484375
+      ],
+      "loadAfter": [
+        6.15673828125,
+        4.71435546875,
+        6.021484375
+      ]
+    },
+    {
+      "timeoutMs": 100,
+      "repeat": 1,
+      "mode": "same-process",
+      "startedAt": "2026-10-04T18:10:55.189Z",
+      "tempRoot": "/private/var/folders/dy/9msg37jj549dkw5k__ct1kv00000gn/T/pain-gain-sqlite-busy-probe-pbFBhu",
+      "timeoutReadBackMs": 100,
+      "journalMode": "delete",
+      "holderLocked": true,
+      "holderInTransaction": true,
+      "elapsedMs": 116.624417,
+      "cpuUserMs": 0.692,
+      "cpuSystemMs": 0.205,
+      "voluntaryContextSwitches": 0,
+      "involuntaryContextSwitches": 8,
+      "errorCode": "ERR_SQLITE_ERROR",
+      "errorMessage": "database is locked",
+      "runnerStatus": 0,
+      "runnerSignal": null,
+      "holderStatus": 0,
+      "holderSignal": null,
+      "postReleaseWrite": true,
+      "controllerWallMs": 156.87541700000003,
+      "loadBefore": [
+        6.15673828125,
+        4.71435546875,
+        6.021484375
+      ],
+      "loadAfter": [
+        6.15673828125,
+        4.71435546875,
+        6.021484375
+      ]
+    },
+    {
+      "timeoutMs": 100,
+      "repeat": 1,
+      "mode": "cross-process",
+      "startedAt": "2026-10-04T18:10:55.383Z",
+      "tempRoot": "/private/var/folders/dy/9msg37jj549dkw5k__ct1kv00000gn/T/pain-gain-sqlite-busy-probe-bImVXL",
+      "timeoutReadBackMs": 100,
+      "journalMode": "delete",
+      "holderLocked": true,
+      "holderInTransaction": true,
+      "elapsedMs": 123.5405,
+      "cpuUserMs": 0.975,
+      "cpuSystemMs": 0.503,
+      "voluntaryContextSwitches": 0,
+      "involuntaryContextSwitches": 11,
+      "errorCode": "ERR_SQLITE_ERROR",
+      "errorMessage": "database is locked",
+      "runnerStatus": 0,
+      "runnerSignal": null,
+      "holderStatus": 0,
+      "holderSignal": null,
+      "postReleaseWrite": true,
+      "controllerWallMs": 204.035166,
+      "loadBefore": [
+        6.15673828125,
+        4.71435546875,
+        6.021484375
+      ],
+      "loadAfter": [
+        6.15673828125,
+        4.71435546875,
+        6.021484375
+      ]
+    },
+    {
+      "timeoutMs": 100,
+      "repeat": 2,
+      "mode": "cross-process",
+      "startedAt": "2026-10-04T18:10:55.585Z",
+      "tempRoot": "/private/var/folders/dy/9msg37jj549dkw5k__ct1kv00000gn/T/pain-gain-sqlite-busy-probe-AqoVvD",
+      "timeoutReadBackMs": 100,
+      "journalMode": "delete",
+      "holderLocked": true,
+      "holderInTransaction": true,
+      "elapsedMs": 123.570292,
+      "cpuUserMs": 0.899,
+      "cpuSystemMs": 0.481,
+      "voluntaryContextSwitches": 0,
+      "involuntaryContextSwitches": 11,
+      "errorCode": "ERR_SQLITE_ERROR",
+      "errorMessage": "database is locked",
+      "runnerStatus": 0,
+      "runnerSignal": null,
+      "holderStatus": 0,
+      "holderSignal": null,
+      "postReleaseWrite": true,
+      "controllerWallMs": 202.1015000000001,
+      "loadBefore": [
+        6.15673828125,
+        4.71435546875,
+        6.021484375
+      ],
+      "loadAfter": [
+        6.15673828125,
+        4.71435546875,
+        6.021484375
+      ]
+    },
+    {
+      "timeoutMs": 100,
+      "repeat": 2,
+      "mode": "same-process",
+      "startedAt": "2026-10-04T18:10:55.757Z",
+      "tempRoot": "/private/var/folders/dy/9msg37jj549dkw5k__ct1kv00000gn/T/pain-gain-sqlite-busy-probe-FSYtw4",
+      "timeoutReadBackMs": 100,
+      "journalMode": "delete",
+      "holderLocked": true,
+      "holderInTransaction": true,
+      "elapsedMs": 118.123667,
+      "cpuUserMs": 0.613,
+      "cpuSystemMs": 0.283,
+      "voluntaryContextSwitches": 0,
+      "involuntaryContextSwitches": 9,
+      "errorCode": "ERR_SQLITE_ERROR",
+      "errorMessage": "database is locked",
+      "runnerStatus": 0,
+      "runnerSignal": null,
+      "holderStatus": 0,
+      "holderSignal": null,
+      "postReleaseWrite": true,
+      "controllerWallMs": 161.47479099999998,
+      "loadBefore": [
+        6.15673828125,
+        4.71435546875,
+        6.021484375
+      ],
+      "loadAfter": [
+        6.15673828125,
+        4.71435546875,
+        6.021484375
+      ]
+    },
+    {
+      "timeoutMs": 100,
+      "repeat": 3,
+      "mode": "same-process",
+      "startedAt": "2026-10-04T18:10:55.914Z",
+      "tempRoot": "/private/var/folders/dy/9msg37jj549dkw5k__ct1kv00000gn/T/pain-gain-sqlite-busy-probe-DvPAc7",
+      "timeoutReadBackMs": 100,
+      "journalMode": "delete",
+      "holderLocked": true,
+      "holderInTransaction": true,
+      "elapsedMs": 112.38745800000001,
+      "cpuUserMs": 0.558,
+      "cpuSystemMs": 0.197,
+      "voluntaryContextSwitches": 0,
+      "involuntaryContextSwitches": 8,
+      "errorCode": "ERR_SQLITE_ERROR",
+      "errorMessage": "database is locked",
+      "runnerStatus": 0,
+      "runnerSignal": null,
+      "holderStatus": 0,
+      "holderSignal": null,
+      "postReleaseWrite": true,
+      "controllerWallMs": 152.58500000000004,
+      "loadBefore": [
+        6.15673828125,
+        4.71435546875,
+        6.021484375
+      ],
+      "loadAfter": [
+        6.15673828125,
+        4.71435546875,
+        6.021484375
+      ]
+    },
+    {
+      "timeoutMs": 100,
+      "repeat": 3,
+      "mode": "cross-process",
+      "startedAt": "2026-10-04T18:10:56.110Z",
+      "tempRoot": "/private/var/folders/dy/9msg37jj549dkw5k__ct1kv00000gn/T/pain-gain-sqlite-busy-probe-m6YL8u",
+      "timeoutReadBackMs": 100,
+      "journalMode": "delete",
+      "holderLocked": true,
+      "holderInTransaction": true,
+      "elapsedMs": 119.48283400000001,
+      "cpuUserMs": 1.039,
+      "cpuSystemMs": 0.58,
+      "voluntaryContextSwitches": 0,
+      "involuntaryContextSwitches": 11,
+      "errorCode": "ERR_SQLITE_ERROR",
+      "errorMessage": "database is locked",
+      "runnerStatus": 0,
+      "runnerSignal": null,
+      "holderStatus": 0,
+      "holderSignal": null,
+      "postReleaseWrite": true,
+      "controllerWallMs": 207.22204199999987,
+      "loadBefore": [
+        6.15673828125,
+        4.71435546875,
+        6.021484375
+      ],
+      "loadAfter": [
+        6.22412109375,
+        4.751953125,
+        6.02685546875
+      ]
+    },
+    {
+      "timeoutMs": 1000,
+      "repeat": 1,
+      "mode": "same-process",
+      "startedAt": "2026-10-04T18:10:56.276Z",
+      "tempRoot": "/private/var/folders/dy/9msg37jj549dkw5k__ct1kv00000gn/T/pain-gain-sqlite-busy-probe-yvgBgG",
+      "timeoutReadBackMs": 1000,
+      "journalMode": "delete",
+      "holderLocked": true,
+      "holderInTransaction": true,
+      "elapsedMs": 1067.927209,
+      "cpuUserMs": 0.969,
+      "cpuSystemMs": 1.054,
+      "voluntaryContextSwitches": 0,
+      "involuntaryContextSwitches": 26,
+      "errorCode": "ERR_SQLITE_ERROR",
+      "errorMessage": "database is locked",
+      "runnerStatus": 0,
+      "runnerSignal": null,
+      "holderStatus": 0,
+      "holderSignal": null,
+      "postReleaseWrite": true,
+      "controllerWallMs": 1113.4322499999998,
+      "loadBefore": [
+        6.22412109375,
+        4.751953125,
+        6.02685546875
+      ],
+      "loadAfter": [
+        6.22412109375,
+        4.751953125,
+        6.02685546875
+      ]
+    },
+    {
+      "timeoutMs": 1000,
+      "repeat": 1,
+      "mode": "cross-process",
+      "startedAt": "2026-10-04T18:10:57.430Z",
+      "tempRoot": "/private/var/folders/dy/9msg37jj549dkw5k__ct1kv00000gn/T/pain-gain-sqlite-busy-probe-ytkN6s",
+      "timeoutReadBackMs": 1000,
+      "journalMode": "delete",
+      "holderLocked": true,
+      "holderInTransaction": true,
+      "elapsedMs": 1071.963125,
+      "cpuUserMs": 1.352,
+      "cpuSystemMs": 1.745,
+      "voluntaryContextSwitches": 0,
+      "involuntaryContextSwitches": 26,
+      "errorCode": "ERR_SQLITE_ERROR",
+      "errorMessage": "database is locked",
+      "runnerStatus": 0,
+      "runnerSignal": null,
+      "holderStatus": 0,
+      "holderSignal": null,
+      "postReleaseWrite": true,
+      "controllerWallMs": 1162.003208,
+      "loadBefore": [
+        6.22412109375,
+        4.751953125,
+        6.02685546875
+      ],
+      "loadAfter": [
+        6.22412109375,
+        4.751953125,
+        6.02685546875
+      ]
+    },
+    {
+      "timeoutMs": 1000,
+      "repeat": 2,
+      "mode": "cross-process",
+      "startedAt": "2026-10-04T18:10:58.590Z",
+      "tempRoot": "/private/var/folders/dy/9msg37jj549dkw5k__ct1kv00000gn/T/pain-gain-sqlite-busy-probe-8zzS5p",
+      "timeoutReadBackMs": 1000,
+      "journalMode": "delete",
+      "holderLocked": true,
+      "holderInTransaction": true,
+      "elapsedMs": 1066.995292,
+      "cpuUserMs": 1.246,
+      "cpuSystemMs": 1.47,
+      "voluntaryContextSwitches": 0,
+      "involuntaryContextSwitches": 27,
+      "errorCode": "ERR_SQLITE_ERROR",
+      "errorMessage": "database is locked",
+      "runnerStatus": 0,
+      "runnerSignal": null,
+      "holderStatus": 0,
+      "holderSignal": null,
+      "postReleaseWrite": true,
+      "controllerWallMs": 1152.0252919999998,
+      "loadBefore": [
+        6.22412109375,
+        4.751953125,
+        6.02685546875
+      ],
+      "loadAfter": [
+        6.22412109375,
+        4.751953125,
+        6.02685546875
+      ]
+    },
+    {
+      "timeoutMs": 1000,
+      "repeat": 2,
+      "mode": "same-process",
+      "startedAt": "2026-10-04T18:10:59.706Z",
+      "tempRoot": "/private/var/folders/dy/9msg37jj549dkw5k__ct1kv00000gn/T/pain-gain-sqlite-busy-probe-hPAhhT",
+      "timeoutReadBackMs": 1000,
+      "journalMode": "delete",
+      "holderLocked": true,
+      "holderInTransaction": true,
+      "elapsedMs": 1061.55575,
+      "cpuUserMs": 1.004,
+      "cpuSystemMs": 1.42,
+      "voluntaryContextSwitches": 0,
+      "involuntaryContextSwitches": 27,
+      "errorCode": "ERR_SQLITE_ERROR",
+      "errorMessage": "database is locked",
+      "runnerStatus": 0,
+      "runnerSignal": null,
+      "holderStatus": 0,
+      "holderSignal": null,
+      "postReleaseWrite": true,
+      "controllerWallMs": 1109.5246670000006,
+      "loadBefore": [
+        6.22412109375,
+        4.751953125,
+        6.02685546875
+      ],
+      "loadAfter": [
+        6.22412109375,
+        4.751953125,
+        6.02685546875
+      ]
+    },
+    {
+      "timeoutMs": 1000,
+      "repeat": 3,
+      "mode": "same-process",
+      "startedAt": "2026-10-04T18:11:00.821Z",
+      "tempRoot": "/private/var/folders/dy/9msg37jj549dkw5k__ct1kv00000gn/T/pain-gain-sqlite-busy-probe-5CK56z",
+      "timeoutReadBackMs": 1000,
+      "journalMode": "delete",
+      "holderLocked": true,
+      "holderInTransaction": true,
+      "elapsedMs": 1067.6719580000001,
+      "cpuUserMs": 0.954,
+      "cpuSystemMs": 1.167,
+      "voluntaryContextSwitches": 0,
+      "involuntaryContextSwitches": 24,
+      "errorCode": "ERR_SQLITE_ERROR",
+      "errorMessage": "database is locked",
+      "runnerStatus": 0,
+      "runnerSignal": null,
+      "holderStatus": 0,
+      "holderSignal": null,
+      "postReleaseWrite": true,
+      "controllerWallMs": 1118.0037080000002,
+      "loadBefore": [
+        6.22412109375,
+        4.751953125,
+        6.02685546875
+      ],
+      "loadAfter": [
+        6.1259765625,
+        4.755859375,
+        6.0205078125
+      ]
+    },
+    {
+      "timeoutMs": 1000,
+      "repeat": 3,
+      "mode": "cross-process",
+      "startedAt": "2026-10-04T18:11:01.970Z",
+      "tempRoot": "/private/var/folders/dy/9msg37jj549dkw5k__ct1kv00000gn/T/pain-gain-sqlite-busy-probe-NHBBxM",
+      "timeoutReadBackMs": 1000,
+      "journalMode": "delete",
+      "holderLocked": true,
+      "holderInTransaction": true,
+      "elapsedMs": 1058.222375,
+      "cpuUserMs": 1.133,
+      "cpuSystemMs": 1.398,
+      "voluntaryContextSwitches": 0,
+      "involuntaryContextSwitches": 27,
+      "errorCode": "ERR_SQLITE_ERROR",
+      "errorMessage": "database is locked",
+      "runnerStatus": 0,
+      "runnerSignal": null,
+      "holderStatus": 0,
+      "holderSignal": null,
+      "postReleaseWrite": true,
+      "controllerWallMs": 1142.1228329999994,
+      "loadBefore": [
+        6.1259765625,
+        4.755859375,
+        6.0205078125
+      ],
+      "loadAfter": [
+        6.1259765625,
+        4.755859375,
+        6.0205078125
+      ]
+    },
+    {
+      "timeoutMs": 5000,
+      "repeat": 1,
+      "mode": "same-process",
+      "startedAt": "2026-10-04T18:11:03.077Z",
+      "tempRoot": "/private/var/folders/dy/9msg37jj549dkw5k__ct1kv00000gn/T/pain-gain-sqlite-busy-probe-Wcb0Lx",
+      "timeoutReadBackMs": 5000,
+      "journalMode": "delete",
+      "holderLocked": true,
+      "holderInTransaction": true,
+      "elapsedMs": 5215.701375000001,
+      "cpuUserMs": 1.684,
+      "cpuSystemMs": 4.391,
+      "voluntaryContextSwitches": 0,
+      "involuntaryContextSwitches": 87,
+      "errorCode": "ERR_SQLITE_ERROR",
+      "errorMessage": "database is locked",
+      "runnerStatus": 0,
+      "runnerSignal": null,
+      "holderStatus": 0,
+      "holderSignal": null,
+      "postReleaseWrite": true,
+      "controllerWallMs": 5262.376458000001,
+      "loadBefore": [
+        6.1259765625,
+        4.755859375,
+        6.0205078125
+      ],
+      "loadAfter": [
+        6.19580078125,
+        4.79296875,
+        6.02587890625
+      ]
+    },
+    {
+      "timeoutMs": 5000,
+      "repeat": 1,
+      "mode": "cross-process",
+      "startedAt": "2026-10-04T18:11:08.380Z",
+      "tempRoot": "/private/var/folders/dy/9msg37jj549dkw5k__ct1kv00000gn/T/pain-gain-sqlite-busy-probe-AW4sDW",
+      "timeoutReadBackMs": 5000,
+      "journalMode": "delete",
+      "holderLocked": true,
+      "holderInTransaction": true,
+      "elapsedMs": 5216.3309580000005,
+      "cpuUserMs": 2.114,
+      "cpuSystemMs": 4.866,
+      "voluntaryContextSwitches": 0,
+      "involuntaryContextSwitches": 79,
+      "errorCode": "ERR_SQLITE_ERROR",
+      "errorMessage": "database is locked",
+      "runnerStatus": 0,
+      "runnerSignal": null,
+      "holderStatus": 0,
+      "holderSignal": null,
+      "postReleaseWrite": true,
+      "controllerWallMs": 5306.934792000002,
+      "loadBefore": [
+        6.19580078125,
+        4.79296875,
+        6.02587890625
+      ],
+      "loadAfter": [
+        6.01953125,
+        4.77978515625,
+        6.013671875
+      ]
+    },
+    {
+      "timeoutMs": 5000,
+      "repeat": 2,
+      "mode": "cross-process",
+      "startedAt": "2026-10-04T18:11:13.687Z",
+      "tempRoot": "/private/var/folders/dy/9msg37jj549dkw5k__ct1kv00000gn/T/pain-gain-sqlite-busy-probe-Fc7vs2",
+      "timeoutReadBackMs": 5000,
+      "journalMode": "delete",
+      "holderLocked": true,
+      "holderInTransaction": true,
+      "elapsedMs": 5201.998208,
+      "cpuUserMs": 2.087,
+      "cpuSystemMs": 4.989,
+      "voluntaryContextSwitches": 0,
+      "involuntaryContextSwitches": 81,
+      "errorCode": "ERR_SQLITE_ERROR",
+      "errorMessage": "database is locked",
+      "runnerStatus": 0,
+      "runnerSignal": null,
+      "holderStatus": 0,
+      "holderSignal": null,
+      "postReleaseWrite": true,
+      "controllerWallMs": 5295.911833000002,
+      "loadBefore": [
+        6.01953125,
+        4.77978515625,
+        6.013671875
+      ],
+      "loadAfter": [
+        6.09765625,
+        4.81640625,
+        6.01904296875
+      ]
+    },
+    {
+      "timeoutMs": 5000,
+      "repeat": 2,
+      "mode": "same-process",
+      "startedAt": "2026-10-04T18:11:18.944Z",
+      "tempRoot": "/private/var/folders/dy/9msg37jj549dkw5k__ct1kv00000gn/T/pain-gain-sqlite-busy-probe-GUeWKf",
+      "timeoutReadBackMs": 5000,
+      "journalMode": "delete",
+      "holderLocked": true,
+      "holderInTransaction": true,
+      "elapsedMs": 5203.513167,
+      "cpuUserMs": 1.421,
+      "cpuSystemMs": 3.318,
+      "voluntaryContextSwitches": 0,
+      "involuntaryContextSwitches": 74,
+      "errorCode": "ERR_SQLITE_ERROR",
+      "errorMessage": "database is locked",
+      "runnerStatus": 0,
+      "runnerSignal": null,
+      "holderStatus": 0,
+      "holderSignal": null,
+      "postReleaseWrite": true,
+      "controllerWallMs": 5254.210875000001,
+      "loadBefore": [
+        6.09765625,
+        4.81640625,
+        6.01904296875
+      ],
+      "loadAfter": [
+        5.92919921875,
+        4.802734375,
+        6.0068359375
+      ]
+    },
+    {
+      "timeoutMs": 5000,
+      "repeat": 3,
+      "mode": "same-process",
+      "startedAt": "2026-10-04T18:11:24.195Z",
+      "tempRoot": "/private/var/folders/dy/9msg37jj549dkw5k__ct1kv00000gn/T/pain-gain-sqlite-busy-probe-A6Ky62",
+      "timeoutReadBackMs": 5000,
+      "journalMode": "delete",
+      "holderLocked": true,
+      "holderInTransaction": true,
+      "elapsedMs": 5213.92525,
+      "cpuUserMs": 1.473,
+      "cpuSystemMs": 3.773,
+      "voluntaryContextSwitches": 0,
+      "involuntaryContextSwitches": 80,
+      "errorCode": "ERR_SQLITE_ERROR",
+      "errorMessage": "database is locked",
+      "runnerStatus": 0,
+      "runnerSignal": null,
+      "holderStatus": 0,
+      "holderSignal": null,
+      "postReleaseWrite": true,
+      "controllerWallMs": 5257.221624999998,
+      "loadBefore": [
+        5.92919921875,
+        4.802734375,
+        6.0068359375
+      ],
+      "loadAfter": [
+        5.6943359375,
+        4.7724609375,
+        5.98876953125
+      ]
+    },
+    {
+      "timeoutMs": 5000,
+      "repeat": 3,
+      "mode": "cross-process",
+      "startedAt": "2026-10-04T18:11:29.491Z",
+      "tempRoot": "/private/var/folders/dy/9msg37jj549dkw5k__ct1kv00000gn/T/pain-gain-sqlite-busy-probe-HahI4o",
+      "timeoutReadBackMs": 5000,
+      "journalMode": "delete",
+      "holderLocked": true,
+      "holderInTransaction": true,
+      "elapsedMs": 5204.822417,
+      "cpuUserMs": 1.985,
+      "cpuSystemMs": 5.19,
+      "voluntaryContextSwitches": 0,
+      "involuntaryContextSwitches": 86,
+      "errorCode": "ERR_SQLITE_ERROR",
+      "errorMessage": "database is locked",
+      "runnerStatus": 0,
+      "runnerSignal": null,
+      "holderStatus": 0,
+      "holderSignal": null,
+      "postReleaseWrite": true,
+      "controllerWallMs": 5291.863833999996,
+      "loadBefore": [
+        5.6943359375,
+        4.7724609375,
+        5.98876953125
+      ],
+      "loadAfter": [
+        5.478515625,
+        4.74267578125,
+        5.97119140625
+      ]
+    }
+  ],
+  "summaries": [
+    {
+      "timeoutMs": 0,
+      "mode": "same-process",
+      "runs": 3,
+      "minElapsedMs": 0.046624999999998806,
+      "medianElapsedMs": 0.04724999999999824,
+      "maxElapsedMs": 0.054750000000002075,
+      "allExpectedLocked": true,
+      "allTimeoutReadbacksExact": true,
+      "allHolderHandshakes": true,
+      "allPostReleaseWrites": true,
+      "allProcessesExitedNormally": true
+    },
+    {
+      "timeoutMs": 0,
+      "mode": "cross-process",
+      "runs": 3,
+      "minElapsedMs": 0.05083300000000435,
+      "medianElapsedMs": 0.053207999999997924,
+      "maxElapsedMs": 0.1681249999999963,
+      "allExpectedLocked": true,
+      "allTimeoutReadbacksExact": true,
+      "allHolderHandshakes": true,
+      "allPostReleaseWrites": true,
+      "allProcessesExitedNormally": true
+    },
+    {
+      "timeoutMs": 100,
+      "mode": "same-process",
+      "runs": 3,
+      "minElapsedMs": 112.38745800000001,
+      "medianElapsedMs": 116.624417,
+      "maxElapsedMs": 118.123667,
+      "allExpectedLocked": true,
+      "allTimeoutReadbacksExact": true,
+      "allHolderHandshakes": true,
+      "allPostReleaseWrites": true,
+      "allProcessesExitedNormally": true
+    },
+    {
+      "timeoutMs": 100,
+      "mode": "cross-process",
+      "runs": 3,
+      "minElapsedMs": 119.48283400000001,
+      "medianElapsedMs": 123.5405,
+      "maxElapsedMs": 123.570292,
+      "allExpectedLocked": true,
+      "allTimeoutReadbacksExact": true,
+      "allHolderHandshakes": true,
+      "allPostReleaseWrites": true,
+      "allProcessesExitedNormally": true
+    },
+    {
+      "timeoutMs": 1000,
+      "mode": "same-process",
+      "runs": 3,
+      "minElapsedMs": 1061.55575,
+      "medianElapsedMs": 1067.6719580000001,
+      "maxElapsedMs": 1067.927209,
+      "allExpectedLocked": true,
+      "allTimeoutReadbacksExact": true,
+      "allHolderHandshakes": true,
+      "allPostReleaseWrites": true,
+      "allProcessesExitedNormally": true
+    },
+    {
+      "timeoutMs": 1000,
+      "mode": "cross-process",
+      "runs": 3,
+      "minElapsedMs": 1058.222375,
+      "medianElapsedMs": 1066.995292,
+      "maxElapsedMs": 1071.963125,
+      "allExpectedLocked": true,
+      "allTimeoutReadbacksExact": true,
+      "allHolderHandshakes": true,
+      "allPostReleaseWrites": true,
+      "allProcessesExitedNormally": true
+    },
+    {
+      "timeoutMs": 5000,
+      "mode": "same-process",
+      "runs": 3,
+      "minElapsedMs": 5203.513167,
+      "medianElapsedMs": 5213.92525,
+      "maxElapsedMs": 5215.701375000001,
+      "allExpectedLocked": true,
+      "allTimeoutReadbacksExact": true,
+      "allHolderHandshakes": true,
+      "allPostReleaseWrites": true,
+      "allProcessesExitedNormally": true
+    },
+    {
+      "timeoutMs": 5000,
+      "mode": "cross-process",
+      "runs": 3,
+      "minElapsedMs": 5201.998208,
+      "medianElapsedMs": 5204.822417,
+      "maxElapsedMs": 5216.3309580000005,
+      "allExpectedLocked": true,
+      "allTimeoutReadbacksExact": true,
+      "allHolderHandshakes": true,
+      "allPostReleaseWrites": true,
+      "allProcessesExitedNormally": true
+    }
+  ],
+  "nodeTestHarnessControl": {
+    "command": "for i in 1 2 3; do node --test /tmp/pain-gain-sqlite-busy-node-test.mjs; done",
+    "runs": [
+      {
+        "handshake": {
+          "locked": true,
+          "at": "2026-10-04T18:14:23.102Z"
+        },
+        "readback": 5000,
+        "elapsedMs": 5205.456791,
+        "cpuUserMs": 1.382,
+        "cpuSystemMs": 3.188,
+        "error": {
+          "code": "ERR_SQLITE_ERROR",
+          "message": "database is locked"
+        },
+        "load": [
+          18.23583984375,
+          9.0869140625,
+          7.4111328125
+        ]
+      },
+      {
+        "handshake": {
+          "locked": true,
+          "at": "2026-10-04T18:14:28.402Z"
+        },
+        "readback": 5000,
+        "elapsedMs": 5201.582125,
+        "cpuUserMs": 1.306,
+        "cpuSystemMs": 3.01,
+        "error": {
+          "code": "ERR_SQLITE_ERROR",
+          "message": "database is locked"
+        },
+        "load": [
+          18.056640625,
+          9.20166015625,
+          7.46142578125
+        ]
+      },
+      {
+        "handshake": {
+          "locked": true,
+          "at": "2026-10-04T18:14:33.706Z"
+        },
+        "readback": 5000,
+        "elapsedMs": 5216.305167,
+        "cpuUserMs": 1.399,
+        "cpuSystemMs": 3.212,
+        "error": {
+          "code": "ERR_SQLITE_ERROR",
+          "message": "database is locked"
+        },
+        "load": [
+          17.8115234375,
+          9.2978515625,
+          7.50537109375
+        ]
+      }
+    ],
+    "allPassed": true
+  },
+  "currentProjectControl": {
+    "command": "node --test --test-name-pattern='SQLite busy exhaustion' tests/unit/replay-store.test.js",
+    "testMs": 5349.744375,
+    "processDurationMs": 5413.414792,
+    "passed": true
+  },
+  "cpuSaturationControl": {
+    "workers": 10,
+    "loadBefore": [
+      10.2744140625,
+      6.4501953125,
+      6.43505859375
+    ],
+    "loadAfter": [
+      20.90234375,
+      8.716796875,
+      7.23486328125
+    ],
+    "controllerWallMs": 5601.317416,
+    "runnerStatus": 0,
+    "runnerSignal": null,
+    "timeoutReadBackMs": 5000,
+    "elapsedMs": 5486.026792,
+    "cpuUserMs": 1.287,
+    "cpuSystemMs": 3.117,
+    "error": {
+      "name": "Error",
+      "code": "ERR_SQLITE_ERROR",
+      "message": "database is locked"
+    },
+    "postReleaseWrite": true
+  },
+  "classification": {
+    "standaloneDoubledDelayReproduced": false,
+    "projectSpecific": false,
+    "m2bSpecific": false,
+    "causeEstablished": false,
+    "supported": "Earlier 10.73-11.81 second native waits are intermittent, not invariant to this Node/node:sqlite/APFS lock pattern. node:test and one 10-worker CPU saturation control did not reproduce doubling.",
+    "unresolved": "No native trace exists for a doubled wait; scheduler, QoS, power/thermal, VFS, and busy-handler interactions remain unseparated hypotheses.",
+    "qualification": "M2b-specific gates pass; full qualification remains blocked by retained 395/396 full-suite runs."
+  },
+  "nextExperiment": "On recurrence, interleave standalone and project probes in the same time window and capture native syscall/VFS sleep tracing plus process QoS, power, thermal, App Nap, timer and load state.",
+  "proposedSeparateCorrection": {
+    "scope": "Test robustness only",
+    "proposal": "Run the blocking contender in a child process and enforce any project hard upper bound with a parent watchdog; retain timeout readback, handshake, expected lock error, lower-bound and no-publication checks.",
+    "validation": "Repeated idle/controlled-load native runs, clean full suite, child cleanup, retained diagnostics. Treat the watchdog as a project limit, not an SQLite guarantee."
+  }
+}
