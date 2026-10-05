@@ -262,7 +262,7 @@ function gameCoverage(lines) {
         duplicates: [...counts].filter(([, count]) => count > 1).map(([tick]) => tick), gaps };
 }
 
-function validateManifestRecord(state, record, directory, manifestPath, active, registration) {
+function validateManifestRecord(state, record, manifestPath, active, registration, outputEvidence) {
     const ref = evidence(manifestPath, { fingerprint: record?.fingerprint ?? null });
     let trusted = true;
     const fieldsValid = plainObject(record) && record.replayId === state.replayId &&
@@ -310,7 +310,7 @@ function validateManifestRecord(state, record, directory, manifestPath, active, 
         addFinding(state, 'capture.output-metadata', 'pass', [ref],
             'Evidence-only record correctly has no JSONL output.', { evidenceOnly: true }, [record.buildId]);
     } else {
-        const loaded = safeRegularFile(directory, record.outputPath, outputNamePattern);
+        const loaded = outputEvidence;
         const outputRef = evidence(`replay_logs/${record.outputPath}`, { fingerprint: record.fingerprint });
         if (loaded.error) {
             addFinding(state, 'capture.output-file', 'fail', [outputRef], loaded.error, null, [record.buildId]);
@@ -433,7 +433,7 @@ function validateManifestRecord(state, record, directory, manifestPath, active, 
     return { trusted, outputValid, diagnosticsValid, gameLines, diagnostics, record };
 }
 
-function validateMapEvidence(state, directory, manifestPath, manifest, selected) {
+function validateMapEvidence(state, manifestPath, manifest, selected, mapEvidence) {
     const associations = manifest.replays.filter(item => item?.replayId === state.replayId);
     const active = associations.find(item => item.status === 'active') ?? null;
     const ref = evidence(manifestPath, { replayId: state.replayId });
@@ -459,7 +459,7 @@ function validateMapEvidence(state, directory, manifestPath, manifest, selected)
         addFinding(state, 'map.registration', 'fail', [ref], 'Active map registration is invalid.');
         return { active, registration, map: null };
     }
-    const loaded = safeRegularFile(directory, registration.file, mapNamePattern);
+    const loaded = mapEvidence[registration.file];
     const mapRef = evidence(`replay_logs/${registration.file}`, { mapId: registration.id });
     if (loaded.error) {
         addFinding(state, 'map.saved-file', 'fail', [mapRef], loaded.error);
@@ -1050,6 +1050,86 @@ function analyzeObservedChanges(state, snapshots, movement) {
     }
 }
 
+function analysisSession({replayId, fingerprints, reportMode = 'full', localBuildId: localId, logicalManifest: manifest, mapEvidence}) {
+    const manifestPath = 'replay_logs/manifest.json';
+    const state = {replayId, reportMode, localId, selectedBuildIds: [],
+        selectedFingerprints: fingerprints ?? [], findings: [], compactFindings: new Map(),
+        summary: {pass: 0, fail: 0, unknown: 0}};
+    addFinding(state, 'manifest.schema', 'pass', [evidence(manifestPath)], 'Manifest version 2 schema is readable.');
+    const requested = fingerprints ? new Set(fingerprints) : null;
+    const selected = manifest.records.filter(item => item?.replayId === replayId &&
+        (!requested || requested.has(item.fingerprint)));
+    state.selectedFingerprints = selected.map(item => item.fingerprint);
+    if (requested) for (const fingerprint of requested) if (!selected.some(item => item.fingerprint === fingerprint)) {
+        addFinding(state, 'manifest.record-selection', 'unknown',
+            [evidence(manifestPath, { fingerprint })], 'Requested fingerprint is not present for this replay.',
+            null, [null]);
+    }
+    if (!selected.length) {
+        addFinding(state, 'manifest.record-selection', 'unknown', [evidence(manifestPath)],
+            'No current manifest records were selected for this replay.');
+    }
+    const selectedBuildIds = selected.map(item => item.buildId ?? null);
+    state.selectedBuildIds = selectedBuildIds;
+    const tagged = [...new Set(selectedBuildIds.filter(validBuildId))];
+    if (selected.length) addFinding(state, 'build.replay-consistency', tagged.length > 1 ? 'fail' :
+        tagged.length ? 'pass' : 'unknown',
+        selected.map(item => evidence(manifestPath, { fingerprint: item.fingerprint })),
+        tagged.length > 1 ? 'Selected records contain conflicting build IDs.' : tagged.length ?
+            'Selected tagged records use one build ID; legacy records remain independently unknown.' :
+            'Selected records have legacy unknown build provenance.', { buildIds: tagged }, selectedBuildIds);
+
+    const mapResult = selected.length ? validateMapEvidence(state, manifestPath, manifest, selected, mapEvidence) :
+        {active: null, registration: null, map: null};
+    const contexts = []; let ended = false;
+    function acceptRecord(record, outputEvidence) {
+        if (ended || selected[contexts.length] !== record) throw new Error('Analysis records must match the complete ordered selection');
+        contexts.push(validateManifestRecord(state, record, manifestPath, mapResult.active, mapResult.registration, outputEvidence));
+    }
+    function finishForScores() {
+        if (ended || contexts.length !== selected.length) throw new Error('Analysis session is ended or incomplete');
+        ended = true;
+        const trusted = contexts.filter(item => item.trusted);
+        const snapshotLines = trusted.filter(item => item.outputValid).flatMap(item => item.gameLines);
+        const diagnosticLines = trusted.filter(item => item.diagnosticsValid).flatMap(item => item.diagnostics);
+        const snapshots = mergeSnapshots(state, snapshotLines);
+        const merged = mergeDiagnostics(state, diagnosticLines, [...snapshots.values()]);
+        if (reportMode === 'compact') state.evidenceSummary = {
+            selectedLogRecords: selected.length,
+            trustedLogRecords: trusted.length,
+            buildProvenance: provenance(selectedBuildIds, localId),
+            snapshots: { count: snapshots.size, tickRanges: inclusiveRanges([...snapshots.keys()]) },
+            completeDiagnosticTicks: { count: merged.complete.size,
+                tickRanges: inclusiveRanges([...merged.complete]) },
+        };
+        if (selected.length) {
+            mapFlagChecks(state, mapResult.map, snapshots);
+            analyzeCpuMeasurements(state, merged, snapshots);
+            analyzeMembership(state, merged, snapshots);
+            const movement = analyzeActions(state, merged, snapshots);
+            analyzeObservedChanges(state, snapshots, movement);
+        }
+
+        return {state, snapshots, merged, selectedBuildIds};
+    }
+    return {acceptRecord, finishForScores, finish() {
+        // Log-only v2 returns selection findings without deriving coverage
+        // when nothing was selected. Score-only calls still use finishForScores.
+        if (!selected.length && !ended) {
+            ended = true;
+            return finalReport(state, localId, [null]);
+        }
+        const {selectedBuildIds} = finishForScores();
+        return finalReport(state, localId, selectedBuildIds);
+    }};
+}
+
+// Storage-neutral synchronous boundary. No filesystem/SQLite capability enters it.
+export function createReplayAnalysisSession(options) {
+    const {acceptRecord, finish} = analysisSession(options);
+    return {acceptRecord, finish};
+}
+
 export function analyzeReplay({ root = projectRoot, replayId, fingerprints, scoreFingerprints,
     reportMode = 'full' } = {}) {
     if (!replayIdPattern.test(replayId ?? '')) throw new Error('Expected a verified 24-character replay ID');
@@ -1098,64 +1178,32 @@ export function analyzeReplay({ root = projectRoot, replayId, fingerprints, scor
             'Only manifest version 2 with maps, replays, and records arrays is supported.');
         return finalReport(state, localId, [null]);
     }
-    addFinding(state, 'manifest.schema', 'pass', [evidence(manifestPath)], 'Manifest version 2 schema is readable.');
     const requested = fingerprints ? new Set(fingerprints) : null;
-    const selected = manifest.records.filter(item => item?.replayId === replayId &&
-        (!requested || requested.has(item.fingerprint)));
-    state.selectedFingerprints = selected.map(item => item.fingerprint);
-    if (requested) for (const fingerprint of requested) if (!selected.some(item => item.fingerprint === fingerprint)) {
-        addFinding(state, 'manifest.record-selection', 'unknown',
-            [evidence(manifestPath, { fingerprint })], 'Requested fingerprint is not present for this replay.',
-            null, [null]);
+    const selected = manifest.records.filter(item => item?.replayId === replayId && (!requested || requested.has(item.fingerprint)));
+    const associations = manifest.replays.filter(item => item?.replayId === replayId);
+    const association = associations.find(item => item.status === 'active');
+    const registration = manifest.maps.find(item => item?.id === association?.mapId);
+    const mapEvidence = Object.create(null);
+    if (selected.length && associations.length === 1 && association && fingerprintPattern.test(association.mapId ?? '') &&
+        registration?.status === 'validated' && registration.id === registration.checksum && fingerprintPattern.test(registration.checksum ?? '')) {
+        mapEvidence[registration.file] = safeRegularFile(directory, registration.file, mapNamePattern);
     }
-    if (!selected.length) {
-        addFinding(state, 'manifest.record-selection', 'unknown', [evidence(manifestPath)],
-            'No current manifest records were selected for this replay.');
-        if (scoreFingerprints === undefined) return finalReport(state, localId, [null]);
+    const session = analysisSession({replayId, fingerprints, reportMode, localBuildId: localId, logicalManifest: manifest, mapEvidence});
+    if (!selected.length && scoreFingerprints === undefined) return session.finish();
+    for (const record of selected) {
+        session.acceptRecord(record, record.outputPath === null || record.outputFingerprint === null ? null :
+            safeRegularFile(directory, record.outputPath, outputNamePattern));
     }
-    const selectedBuildIds = selected.map(item => item.buildId ?? null);
-    state.selectedBuildIds = selectedBuildIds;
-    const tagged = [...new Set(selectedBuildIds.filter(validBuildId))];
-    if (selected.length) addFinding(state, 'build.replay-consistency', tagged.length > 1 ? 'fail' :
-        tagged.length ? 'pass' : 'unknown',
-        selected.map(item => evidence(manifestPath, { fingerprint: item.fingerprint })),
-        tagged.length > 1 ? 'Selected records contain conflicting build IDs.' : tagged.length ?
-            'Selected tagged records use one build ID; legacy records remain independently unknown.' :
-            'Selected records have legacy unknown build provenance.', { buildIds: tagged }, selectedBuildIds);
-
-    const mapResult = selected.length ? validateMapEvidence(state, directory, manifestPath, manifest, selected) :
-        { active: null, registration: null, map: null };
-    const contexts = selected.map(record => validateManifestRecord(state, record, directory,
-        manifestPath, mapResult.active, mapResult.registration));
-    const trusted = contexts.filter(item => item.trusted);
-    const snapshotLines = trusted.filter(item => item.outputValid).flatMap(item => item.gameLines);
-    const diagnosticLines = trusted.filter(item => item.diagnosticsValid).flatMap(item => item.diagnostics);
-    const snapshots = mergeSnapshots(state, snapshotLines);
-    const merged = mergeDiagnostics(state, diagnosticLines, [...snapshots.values()]);
-    if (reportMode === 'compact') state.evidenceSummary = {
-        selectedLogRecords: selected.length,
-        trustedLogRecords: trusted.length,
-        buildProvenance: provenance(selectedBuildIds, localId),
-        snapshots: { count: snapshots.size, tickRanges: inclusiveRanges([...snapshots.keys()]) },
-        completeDiagnosticTicks: { count: merged.complete.size,
-            tickRanges: inclusiveRanges([...merged.complete]) },
-    };
-    if (selected.length) {
-        mapFlagChecks(state, mapResult.map, snapshots);
-        analyzeCpuMeasurements(state, merged, snapshots);
-        analyzeMembership(state, merged, snapshots);
-        const movement = analyzeActions(state, merged, snapshots);
-        analyzeObservedChanges(state, snapshots, movement);
-    }
+    const {state: analyzed, snapshots, merged, selectedBuildIds} = session.finishForScores();
     if (scoreFingerprints !== undefined) {
         const result = analyzeScoreEvidence({ directory, manifest, replayId, scoreFingerprints,
             snapshots, merged, selectedBuildIds, reportMode,
             addFinding: (rule, verdict, refs, message, observed = null, buildIds = [null]) =>
-                addFinding(state, rule, verdict, refs, message, observed, buildIds) });
-        state.selectedScoreFingerprints = result.selectedScoreFingerprints;
-        state.scoring = result.scoring;
+                addFinding(analyzed, rule, verdict, refs, message, observed, buildIds) });
+        analyzed.selectedScoreFingerprints = result.selectedScoreFingerprints;
+        analyzed.scoring = result.scoring;
     }
-    return finalReport(state, localId, selectedBuildIds);
+    return finalReport(analyzed, localId, selectedBuildIds);
 }
 
 function* jsonValueChunks(value, depth) {

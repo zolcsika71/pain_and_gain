@@ -597,9 +597,12 @@ async function openVersionedStore({ root, mode, fault, recover = false } = {},sc
             const handles = new Map(), refs = new Map(); let open = true, metadataBytes = 0;
             const addMeta = row => { if (row) { metadataBytes += Buffer.byteLength(rowJson(row)); if (metadataBytes > LIMITS.pageBytes) fail('RESOURCE_LIMIT','Snapshot metadata budget exceeded'); } return row; };
             const records = new Map(), maps = new Map(), replays = new Map(), reviews = new Map(), properties = new Map();
+            const outputRefs = new Map(), mapRefs = new Map();
             const collectProperties = (db,owner) => {
                 metrics.sql++; const rows = [];
-                for (const raw of db.prepare('SELECT * FROM properties WHERE owner_kind=? AND owner_key=? ORDER BY ordinal,pointer').iterate(owner.kind,owner.key)) {
+                const statement = db.prepare('SELECT * FROM properties WHERE owner_kind=? AND owner_key=? ORDER BY ordinal,pointer');
+                statement.setReadBigInts(true);
+                for (const raw of statement.iterate(owner.kind,owner.key)) {
                     metrics.rows++; rows.push(addMeta(normalizeRow(raw)));
                 }
                 properties.set(inlineJson(owner),rows);
@@ -628,7 +631,9 @@ async function openVersionedStore({ root, mode, fault, recover = false } = {},sc
                 const roles = parent === null ? [...new Set(payloadRoles)] : [null];
                 for (const role of roles) {
                     metrics.sql++;
-                    const rows = db.prepare(`SELECT * FROM payloads WHERE owner_kind=? AND owner_key=? AND parent IS ?${role === null ? '' : ' AND role=?'} ORDER BY ordinal,pointer LIMIT 257`).iterate(owner.kind,owner.key,parent,...(role === null ? [] : [role]));
+                    const statement = db.prepare(`SELECT * FROM payloads WHERE owner_kind=? AND owner_key=? AND parent IS ?${role === null ? '' : ' AND role=?'} ORDER BY ordinal,pointer LIMIT 257`);
+                    statement.setReadBigInts(true);
+                    const rows = statement.iterate(owner.kind,owner.key,parent,...(role === null ? [] : [role]));
                     for (const raw of rows) {
                         metrics.rows++; const row = addMeta(normalizeRow(raw)); const ref = refRow(row);
                         if (ref.state !== 'ready') fail('UNAVAILABLE','Selected payload pending');
@@ -641,6 +646,8 @@ async function openVersionedStore({ root, mode, fault, recover = false } = {},sc
                 assertOpen() { if (!open) fail('CLOSED','Snapshot callback ended'); },
                 artifact(ref) { this.assertOpen(); const h = handles.get(ref.path); if (!h || h.ref.hash !== ref.hash || h.ref.bytes !== ref.bytes) fail('INVALID_REFERENCE','Unpinned artifact reference'); return h; },
                 read(artifact,buffer,offset) { this.assertOpen(); const n = fs.readSync(artifact.fd,buffer,0,buffer.length,offset); metrics.fsReads++; metrics.payloadReadBytes += n; return n; },
+                output(k) { this.assertOpen(); const key = recordKey(k); if (!outputRefs.has(key)) fail('INVALID_REFERENCE','Output record is not selected'); return outputRefs.get(key); },
+                mapArtifact(id) { this.assertOpen(); if (!mapRefs.has(id)) fail('INVALID_REFERENCE','Map is not selected'); return mapRefs.get(id); },
                 diagnostics(k) { this.assertOpen(); const owner = recordOwner(k); const found = [...refs.values()].find(ref => ref.owner.key === owner.key && ref.role === 'diagnostics' && ref.parentPointer === null); if (!found) fail('UNAVAILABLE','No selected diagnostics'); return found; },
                 payload(owner,p) { this.assertOpen(); const ref = refs.get(inlineJson([owner,p])); if (!ref) fail('INVALID_REFERENCE','Unpinned payload'); return ref; },
                 child(parent,p) { this.assertOpen(); const ref = this.payload(parent.owner,p); if (ref.parentPointer !== parent.pointer) fail('INVALID_REFERENCE','Overflow dependency is not registered to parent'); return ref; },
@@ -649,6 +656,7 @@ async function openVersionedStore({ root, mode, fault, recover = false } = {},sc
             try {
                 await locked(root,async () => {
                     const current = currentDescriptor(); if (current.storeId !== d.storeId) fail('UNSUPPORTED_STORE','Snapshot store changed'); const db = connection(root,current,false,metrics);
+                    let setupFailed = false;
                     try {
                         db.exec('BEGIN');
                         for (const k of recordKeys) { recordKey(k); const r = addMeta(record(db,k)); if (!r || !['claim','done'].includes(r.status)) fail('UNAVAILABLE','Selected record is missing/not ready');
@@ -656,12 +664,51 @@ async function openVersionedStore({ root, mode, fault, recover = false } = {},sc
                             records.set(recordKey(k),r); collectProperties(db,recordOwner(k)); collect(db,recordOwner(k));
                             if (!replays.has(k.replayId)) { const replay = addMeta(stmt(db,'SELECT * FROM replays WHERE key=?',[k.replayId])); if(!replay) fail('UNAVAILABLE','Replay association absent'); replays.set(k.replayId,replay); collectProperties(db,{kind:'replay',key:k.replayId}); }
                             if (r.map_id && !mapIds.includes(r.map_id)) mapIds = [...mapIds,r.map_id];
-                            if (r.output_path) { const o = addMeta(stmt(db,'SELECT * FROM outputs WHERE path=?',[r.output_path])); if (!o || o.state !== 'ready') fail('UNAVAILABLE','Selected output pending'); addFile({path:o.path,hash:o.hash,bytes:o.bytes}); }
+                            // Resolve by unique owner, not only projected path: a
+                            // null projection must not conceal a reservation.
+                            const o = addMeta(stmt(db,'SELECT * FROM outputs WHERE collection=? AND replay_id=? AND fingerprint=?',[k.collection,k.replayId,k.fingerprint]));
+                            for (const [pointer,expected] of [['/outputPath',r.output_path],['/outputFingerprint',r.output_hash]]) {
+                                const original = properties.get(inlineJson(recordOwner(k))).find(p=>p.pointer === pointer);
+                                if (original && (original.payload_pointer !== null || JSON.parse(original.value) !== expected)) fail('INVALID_REFERENCE','Output original/projection mismatch');
+                            }
+                            if (o || r.output_path !== null || r.output_hash !== null) {
+                                if (!o || o.state !== 'ready') fail('UNAVAILABLE','Selected output pending');
+                                if (o.path !== r.output_path || o.hash !== r.output_hash) fail('INVALID_REFERENCE','Selected output owner/projection mismatch');
+                                const ref = Object.freeze(addMeta({path:o.path,hash:o.hash,bytes:o.bytes})); addFile(ref); outputRefs.set(r.key,ref);
+                            } else outputRefs.set(r.key,null);
                         }
-                        for (const id of mapIds) { const m = addMeta(stmt(db,'SELECT * FROM maps WHERE key=?',[id])); if (!m) fail('UNAVAILABLE','Selected map absent'); maps.set(id,m); collectProperties(db,{kind:'map',key:id}); if(m.path) { const file = safePath(root,m.path); addFile({path:m.path,hash:m.hash,bytes:fs.statSync(file).size}); } }
+                        for (const id of mapIds) {
+                            const m = addMeta(stmt(db,'SELECT * FROM maps WHERE key=?',[id]));
+                            if (!m) fail('UNAVAILABLE','Selected map absent');
+                            maps.set(id,m); collectProperties(db,{kind:'map',key:id});
+                            if (m.path) {
+                                const file = safePath(root,m.path); let size;
+                                try { size = fs.statSync(file).size; } catch (error) { if (error.code === 'ENOENT') fail('UNAVAILABLE','Missing selected map artifact'); throw error; }
+                                const ref = Object.freeze(addMeta({path:m.path,hash:m.hash,bytes:size}));
+                                addFile(ref); mapRefs.set(id,ref);
+                            } else mapRefs.set(id,null);
+                        }
                         for (const {recordKey:k,taskId} of reviewKeys) { recordKey(k); const row = addMeta(stmt(db,'SELECT * FROM reviews WHERE collection=? AND replay_id=? AND fingerprint=? AND task=?',[k.collection,k.replayId,k.fingerprint,taskId])); if(!row) fail('UNAVAILABLE','Selected review absent'); reviews.set(inlineJson([k,taskId]),row); const owner={kind:'review',key:inlineJson([recordKey(k),taskId])}; collectProperties(db,owner); collect(db,owner); }
+                        // Check represented identity/link projections while the
+                        // same metadata transaction and owner lock are held.
+                        const originals = (owner,row,fields) => {
+                            for (const p of properties.get(inlineJson(owner)) ?? []) {
+                                const column = fields[p.pointer]; if (!column) continue;
+                                if (p.payload_pointer !== null || JSON.parse(p.value) !== row[column]) fail('INVALID_REFERENCE','Snapshot original/projection mismatch');
+                            }
+                        };
+                        for (const r of records.values()) {
+                            originals({kind:'record',key:r.key},r,{'/collection':'collection','/replayId':'replay_id','/fingerprint':'fingerprint','/mapId':'map_id','/buildId':'build_id','/status':'status'});
+                            if (r.collection === 'log' && (!r.map_id || r.map_id !== replays.get(r.replay_id)?.map_id || !maps.has(r.map_id))) fail('INVALID_REFERENCE','Snapshot log/map association mismatch');
+                        }
+                        for (const r of replays.values()) originals({kind:'replay',key:r.key},r,{'/replayId':'key','/mapId':'map_id','/buildId':'build_id','/status':'status'});
+                        for (const m of maps.values()) originals({kind:'map',key:m.key},m,{'/mapId':'key','/path':'path','/hash':'hash','/status':'status'});
                         db.exec('COMMIT');
-                    } finally { db.close(); }
+                    } catch (error) { setupFailed = true; throw error; }
+                    finally {
+                        try { db.close(); }
+                        catch (error) { if (!setupFailed) throw error; }
+                    }
                 },metrics);
                 return await callback(view);
             } catch (error) { failed = true; throw error; }

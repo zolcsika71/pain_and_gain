@@ -176,6 +176,15 @@ the CLI: deployed commands still use their existing loaders. See the
 [M2b qualification](docs/architecture/replay-storage-v3-m2b-2026-10-04.md) for
 synthetic compatibility, full-file scanning costs and resource limits.
 
+`tools/replay-analysis-fixture.js` adds M2c's explicit asynchronous
+`analyzeFixtureReplay({root, schemaVersion, replayId, fingerprints, reportMode})`
+for marked temporary v3 fixtures only. It pins the selected metadata, map, logs
+and diagnostic dependencies before invoking the shared analyzer. The synchronous
+v2 analyzer/CLI and scoring path remain unchanged and SQLite-free. See the
+[M2c qualification record](docs/architecture/replay-storage-v3-m2c-2026-10-05.md)
+for measured results, transport-error boundaries and exclusions; this is not
+production dispatch or completion of M2.
+
 ### Managed replay-score sources
 
 ADR 0005 Milestone 1 adds optional manifest-version-2 `scoreRecords` and

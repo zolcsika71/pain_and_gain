@@ -1,0 +1,1137 @@
+{
+  "scope": "Corrected bounded synthetic M2c; awaiting independent review; no production readiness",
+  "base": "846d2a458d5776f974853aaad530ef4b71d25f6d",
+  "retainedRunDirectory": "/private/tmp/pain-gain-m2c-corrections.Hmr9Kj",
+  "historicalReceipt": "replay-storage-v3-m2c-qualification-run-2026-10-05.json",
+  "oracle": {
+    "base": "846d2a458d5776f974853aaad530ef4b71d25f6d",
+    "exportFilesVerified": 32,
+    "generator": "freeze-empty.mjs",
+    "generatorSha256": "710d4a9a0e90e5d5bae1b0b69e083bdf88e2d9a066e24a5b9425e2e5ec0de770",
+    "recipeSha256": "04ef92f70cd06b89d52ef06abaeb98200956588920ca7372928042965a13163d",
+    "addedOracleSha256": "fff906304bc566a728befa71b1f1e4fefc8087d519ed92d445b25904c3be5ab9",
+    "originalOracleSha256": "6aea8f2269d7b8fcd917177b658a0b422e6dfd4d7f3926d43c03109092fe0964"
+  },
+  "preCorrectionSourceHashes": {
+    "tools/replay-analysis.js": "fd5c25c5e62a1b253113adf9d85460db312832491d5febd049471a5d6680567a",
+    "tools/replay-analysis-fixture.js": "cb55b34cfe813ee558f12dfd2ce5b3ad6fe9869b8f58c9b3540f1e3a862ba80b",
+    "tools/replay-store.js": "f501d9e18d8d7da3ddade3bf6a0d52cb8fc46781993d47e2a525acef1dbc6cee"
+  },
+  "regressions": {
+    "command": [
+      "node",
+      "--test",
+      "--test-name-pattern=M2c correction:",
+      "tests/unit/replay-analysis-fixture.test.js"
+    ],
+    "before": {
+      "tests": 18,
+      "passed": 4,
+      "failed": 14
+    },
+    "after": {
+      "tests": 18,
+      "passed": 18,
+      "failed": 0
+    },
+    "logs": {
+      "pre-fix": {
+        "sha256": "9fe55fc53ef7ba7c5bebb0041e3f28f44e7527fda7c216f88701e17fc79131a0",
+        "summary": [
+          "ℹ tests 18",
+          "ℹ pass 4",
+          "ℹ fail 14",
+          "ℹ duration_ms 8904.983542"
+        ]
+      },
+      "post-fix": {
+        "sha256": "d76ea4b76cb3adc4139f380fa8b6ba979ea58699e1da6a4ff6ec2e36c893f6c6",
+        "summary": [
+          "ℹ tests 18",
+          "ℹ pass 18",
+          "ℹ fail 0",
+          "ℹ duration_ms 9990.16175"
+        ]
+      }
+    },
+    "classification": {
+      "emptySelection": "candidate-introduced",
+      "ordinalSort": "candidate-introduced",
+      "setupClosePrecedence": "inherited core defect"
+    }
+  },
+  "runs": {
+    "focused": {
+      "command": [
+        "node",
+        "--test",
+        "tests/unit/replay-analysis-fixture.test.js",
+        "tests/unit/replay-analysis.test.js",
+        "tests/unit/replay-score-analysis.test.js"
+      ],
+      "cwd": "/Users/zoltanka/Documents/Prog/JavaScript/ScreepsArena/pain_and_gain",
+      "head": "846d2a458d5776f974853aaad530ef4b71d25f6d",
+      "start": "2026-10-05T11:28:01.362Z",
+      "node": "v24.19.0",
+      "executable": "/Users/zoltanka/Library/Caches/JetBrains/WebStorm2026.2/acp-agents/.runtimes/node/24.19.0/bin/node",
+      "platform": "darwin",
+      "arch": "arm64",
+      "sqlite": "3.53.3",
+      "hashes": {
+        "tools/replay-analysis.js": "a53d6205ece61d9f4a8f8ab0131722ab5a852871bc303e0919acafd514a84ab9",
+        "tools/replay-analysis-fixture.js": "f3441d1b8c9725cfa3bdab9bf2a383608637674d0e0dc421cff9fb0ce3c40aa7",
+        "tools/replay-store.js": "054d5bd2996e4f66cbf3dc0a7628b573dbb9eaad1644ac0cb682ba24c79b3f6e",
+        "tests/unit/replay-analysis-fixture.test.js": "fab70749fbb15d95def19fe8e0c89fa52db9941301160185684a3f2a5d1d64e5",
+        "tests/fixtures/replay-analysis-m2c-recipe.js": "04ef92f70cd06b89d52ef06abaeb98200956588920ca7372928042965a13163d",
+        "tests/fixtures/replay-analysis-m2c-store.js": "5f2a03afc3907225c5171ccd1bfe6880ef52e7adc891540cd98b673b7186975c",
+        "tests/fixtures/replay-analysis-m2c-worker.js": "bd730aa5cc45d01b4a18f3bdc26bb35d1fbe7a40192f33ad06770afff359ead4",
+        "tests/fixtures/replay-analysis-m2c-oracle.json": "6aea8f2269d7b8fcd917177b658a0b422e6dfd4d7f3926d43c03109092fe0964",
+        "tests/fixtures/replay-analysis-m2c-empty-oracle.json": "fff906304bc566a728befa71b1f1e4fefc8087d519ed92d445b25904c3be5ab9",
+        "package.json": "e1e061ff89c62ebc497d187eec40c9b1032cf0db08e40d0714a02583c670513f"
+      },
+      "exitCode": 0,
+      "signal": null,
+      "end": "2026-10-05T11:29:10.539Z",
+      "elapsedMs": 69173.14237500001,
+      "unchanged": true,
+      "logHash": "bd17bd5aa5953d3d9ec85b3b22a6f0fe5490abaf8b7c51699e744dc23e59e777",
+      "summary": [
+        "ℹ tests 119",
+        "ℹ pass 119",
+        "ℹ fail 0",
+        "ℹ cancelled 0",
+        "ℹ skipped 0",
+        "ℹ duration_ms 69128.062541"
+      ]
+    },
+    "core": {
+      "command": [
+        "node",
+        "--test",
+        "tests/unit/replay-store.test.js",
+        "tests/unit/replay-store-payloads.test.js",
+        "tests/unit/replay-catalog.test.js",
+        "tests/unit/replay-other.test.js"
+      ],
+      "cwd": "/Users/zoltanka/Documents/Prog/JavaScript/ScreepsArena/pain_and_gain",
+      "head": "846d2a458d5776f974853aaad530ef4b71d25f6d",
+      "start": "2026-10-05T11:29:15.009Z",
+      "node": "v24.19.0",
+      "executable": "/Users/zoltanka/Library/Caches/JetBrains/WebStorm2026.2/acp-agents/.runtimes/node/24.19.0/bin/node",
+      "platform": "darwin",
+      "arch": "arm64",
+      "sqlite": "3.53.3",
+      "hashes": {
+        "tools/replay-analysis.js": "a53d6205ece61d9f4a8f8ab0131722ab5a852871bc303e0919acafd514a84ab9",
+        "tools/replay-analysis-fixture.js": "f3441d1b8c9725cfa3bdab9bf2a383608637674d0e0dc421cff9fb0ce3c40aa7",
+        "tools/replay-store.js": "054d5bd2996e4f66cbf3dc0a7628b573dbb9eaad1644ac0cb682ba24c79b3f6e",
+        "tests/unit/replay-analysis-fixture.test.js": "fab70749fbb15d95def19fe8e0c89fa52db9941301160185684a3f2a5d1d64e5",
+        "tests/fixtures/replay-analysis-m2c-recipe.js": "04ef92f70cd06b89d52ef06abaeb98200956588920ca7372928042965a13163d",
+        "tests/fixtures/replay-analysis-m2c-store.js": "5f2a03afc3907225c5171ccd1bfe6880ef52e7adc891540cd98b673b7186975c",
+        "tests/fixtures/replay-analysis-m2c-worker.js": "bd730aa5cc45d01b4a18f3bdc26bb35d1fbe7a40192f33ad06770afff359ead4",
+        "tests/fixtures/replay-analysis-m2c-oracle.json": "6aea8f2269d7b8fcd917177b658a0b422e6dfd4d7f3926d43c03109092fe0964",
+        "tests/fixtures/replay-analysis-m2c-empty-oracle.json": "fff906304bc566a728befa71b1f1e4fefc8087d519ed92d445b25904c3be5ab9",
+        "package.json": "e1e061ff89c62ebc497d187eec40c9b1032cf0db08e40d0714a02583c670513f"
+      },
+      "exitCode": 0,
+      "signal": null,
+      "end": "2026-10-05T11:30:13.091Z",
+      "elapsedMs": 58079.162291,
+      "unchanged": true,
+      "logHash": "24f6ea141ea9c6777acddc70a3d98fb5030d73e0a3d516d6c70d727685cd8479",
+      "summary": [
+        "ℹ tests 153",
+        "ℹ pass 153",
+        "ℹ fail 0",
+        "ℹ cancelled 0",
+        "ℹ skipped 0",
+        "ℹ duration_ms 58033.247209"
+      ]
+    },
+    "repository": {
+      "command": [
+        "npm",
+        "test"
+      ],
+      "cwd": "/Users/zoltanka/Documents/Prog/JavaScript/ScreepsArena/pain_and_gain",
+      "head": "846d2a458d5776f974853aaad530ef4b71d25f6d",
+      "start": "2026-10-05T11:30:23.321Z",
+      "node": "v24.19.0",
+      "executable": "/Users/zoltanka/Library/Caches/JetBrains/WebStorm2026.2/acp-agents/.runtimes/node/24.19.0/bin/node",
+      "platform": "darwin",
+      "arch": "arm64",
+      "sqlite": "3.53.3",
+      "hashes": {
+        "tools/replay-analysis.js": "a53d6205ece61d9f4a8f8ab0131722ab5a852871bc303e0919acafd514a84ab9",
+        "tools/replay-analysis-fixture.js": "f3441d1b8c9725cfa3bdab9bf2a383608637674d0e0dc421cff9fb0ce3c40aa7",
+        "tools/replay-store.js": "054d5bd2996e4f66cbf3dc0a7628b573dbb9eaad1644ac0cb682ba24c79b3f6e",
+        "tests/unit/replay-analysis-fixture.test.js": "fab70749fbb15d95def19fe8e0c89fa52db9941301160185684a3f2a5d1d64e5",
+        "tests/fixtures/replay-analysis-m2c-recipe.js": "04ef92f70cd06b89d52ef06abaeb98200956588920ca7372928042965a13163d",
+        "tests/fixtures/replay-analysis-m2c-store.js": "5f2a03afc3907225c5171ccd1bfe6880ef52e7adc891540cd98b673b7186975c",
+        "tests/fixtures/replay-analysis-m2c-worker.js": "bd730aa5cc45d01b4a18f3bdc26bb35d1fbe7a40192f33ad06770afff359ead4",
+        "tests/fixtures/replay-analysis-m2c-oracle.json": "6aea8f2269d7b8fcd917177b658a0b422e6dfd4d7f3926d43c03109092fe0964",
+        "tests/fixtures/replay-analysis-m2c-empty-oracle.json": "fff906304bc566a728befa71b1f1e4fefc8087d519ed92d445b25904c3be5ab9",
+        "package.json": "e1e061ff89c62ebc497d187eec40c9b1032cf0db08e40d0714a02583c670513f"
+      },
+      "exitCode": 0,
+      "signal": null,
+      "end": "2026-10-05T11:32:08.798Z",
+      "elapsedMs": 105474.05125,
+      "unchanged": true,
+      "logHash": "88aea0da83a470488fff7d038a22a67a77024eefe9e43ec7c64772fcd2459b01",
+      "summary": [
+        "ℹ tests 482",
+        "ℹ pass 482",
+        "ℹ fail 0",
+        "ℹ cancelled 0",
+        "ℹ skipped 0",
+        "ℹ duration_ms 105283.3925"
+      ]
+    },
+    "check": {
+      "command": [
+        "npm",
+        "run",
+        "check"
+      ],
+      "cwd": "/Users/zoltanka/Documents/Prog/JavaScript/ScreepsArena/pain_and_gain",
+      "head": "846d2a458d5776f974853aaad530ef4b71d25f6d",
+      "start": "2026-10-05T11:32:20.096Z",
+      "node": "v24.19.0",
+      "executable": "/Users/zoltanka/Library/Caches/JetBrains/WebStorm2026.2/acp-agents/.runtimes/node/24.19.0/bin/node",
+      "platform": "darwin",
+      "arch": "arm64",
+      "sqlite": "3.53.3",
+      "hashes": {
+        "tools/replay-analysis.js": "a53d6205ece61d9f4a8f8ab0131722ab5a852871bc303e0919acafd514a84ab9",
+        "tools/replay-analysis-fixture.js": "f3441d1b8c9725cfa3bdab9bf2a383608637674d0e0dc421cff9fb0ce3c40aa7",
+        "tools/replay-store.js": "054d5bd2996e4f66cbf3dc0a7628b573dbb9eaad1644ac0cb682ba24c79b3f6e",
+        "tests/unit/replay-analysis-fixture.test.js": "fab70749fbb15d95def19fe8e0c89fa52db9941301160185684a3f2a5d1d64e5",
+        "tests/fixtures/replay-analysis-m2c-recipe.js": "04ef92f70cd06b89d52ef06abaeb98200956588920ca7372928042965a13163d",
+        "tests/fixtures/replay-analysis-m2c-store.js": "5f2a03afc3907225c5171ccd1bfe6880ef52e7adc891540cd98b673b7186975c",
+        "tests/fixtures/replay-analysis-m2c-worker.js": "bd730aa5cc45d01b4a18f3bdc26bb35d1fbe7a40192f33ad06770afff359ead4",
+        "tests/fixtures/replay-analysis-m2c-oracle.json": "6aea8f2269d7b8fcd917177b658a0b422e6dfd4d7f3926d43c03109092fe0964",
+        "tests/fixtures/replay-analysis-m2c-empty-oracle.json": "fff906304bc566a728befa71b1f1e4fefc8087d519ed92d445b25904c3be5ab9",
+        "package.json": "e1e061ff89c62ebc497d187eec40c9b1032cf0db08e40d0714a02583c670513f"
+      },
+      "exitCode": 0,
+      "signal": null,
+      "end": "2026-10-05T11:32:21.289Z",
+      "elapsedMs": 1190.379292,
+      "unchanged": true,
+      "logHash": "9aea0682dee8974e8346cf8bdc6ff114b115dff90ce782a84408be58795b8252",
+      "summary": []
+    }
+  },
+  "resourceGates": [
+    {
+      "schema": 1,
+      "runs": [
+        {
+          "result": {
+            "phase": "generate",
+            "schema": 1,
+            "stores": [
+              {
+                "count": 10,
+                "unrelatedBytes": 629145600,
+                "inventoryHash": "86994e6af2422f8c16669ad44f11bf29adbd9365e23303c357a446e0ca4a38e8"
+              },
+              {
+                "count": 1000,
+                "unrelatedBytes": 629145600,
+                "inventoryHash": "2cc809a7d4224ff82fc455b6caa55a860fc92d15a5bf5b5ff5b7a82d67a84bfb"
+              }
+            ],
+            "elapsedMs": 4482.384875,
+            "maxRssBytes": 102252544
+          },
+          "elapsedMs": 4539.254415999996,
+          "code": 0,
+          "signal": null
+        },
+        {
+          "result": {
+            "phase": "operations",
+            "schema": 1,
+            "runs": [
+              {
+                "count": 10,
+                "reportMode": "full",
+                "reportHash": "d7a800bd0dbeafd2034a5e692766bb288f0149c1f90b0782d63233125e2f536b",
+                "selectedArtifactBytes": 806799,
+                "elapsedMs": 126.099917,
+                "sql": 47,
+                "pragmas": 14,
+                "rows": 113,
+                "opens": 12,
+                "reads": 40,
+                "bytes": 1593311,
+                "maxChunk": 65536,
+                "writes": 0,
+                "metadataOpens": 9
+              },
+              {
+                "count": 10,
+                "reportMode": "compact",
+                "reportHash": "d3cfc53e5fb6932aa79a9261481d760976e288afd9c4e6c94b78f52daf7f2e19",
+                "selectedArtifactBytes": 806799,
+                "elapsedMs": 72.035125,
+                "sql": 47,
+                "pragmas": 14,
+                "rows": 113,
+                "opens": 12,
+                "reads": 40,
+                "bytes": 1593311,
+                "maxChunk": 65536,
+                "writes": 0,
+                "metadataOpens": 9
+              },
+              {
+                "count": 1000,
+                "reportMode": "full",
+                "reportHash": "d7a800bd0dbeafd2034a5e692766bb288f0149c1f90b0782d63233125e2f536b",
+                "selectedArtifactBytes": 806799,
+                "elapsedMs": 101.38408399999997,
+                "sql": 47,
+                "pragmas": 14,
+                "rows": 113,
+                "opens": 12,
+                "reads": 40,
+                "bytes": 1593311,
+                "maxChunk": 65536,
+                "writes": 0,
+                "metadataOpens": 9
+              },
+              {
+                "count": 1000,
+                "reportMode": "compact",
+                "reportHash": "d3cfc53e5fb6932aa79a9261481d760976e288afd9c4e6c94b78f52daf7f2e19",
+                "selectedArtifactBytes": 806799,
+                "elapsedMs": 61.72104099999996,
+                "sql": 47,
+                "pragmas": 14,
+                "rows": 113,
+                "opens": 12,
+                "reads": 40,
+                "bytes": 1593311,
+                "maxChunk": 65536,
+                "writes": 0,
+                "metadataOpens": 9
+              }
+            ],
+            "elapsedMs": 366.610291,
+            "maxRssBytes": 105922560
+          },
+          "elapsedMs": 426.5774589999928,
+          "code": 0,
+          "signal": null
+        },
+        {
+          "result": {
+            "phase": "preservation",
+            "schema": 1,
+            "inventoryHashes": [
+              "86994e6af2422f8c16669ad44f11bf29adbd9365e23303c357a446e0ca4a38e8",
+              "2cc809a7d4224ff82fc455b6caa55a860fc92d15a5bf5b5ff5b7a82d67a84bfb"
+            ],
+            "elapsedMs": 637.616042,
+            "maxRssBytes": 71172096
+          },
+          "elapsedMs": 692.3719580000034,
+          "code": 0,
+          "signal": null
+        }
+      ]
+    },
+    {
+      "schema": 2,
+      "runs": [
+        {
+          "result": {
+            "phase": "generate",
+            "schema": 2,
+            "stores": [
+              {
+                "count": 10,
+                "unrelatedBytes": 629145600,
+                "inventoryHash": "fea224c15b919aa07f58c03505bb2cf4973858f7e567b7cdd513167b335f68c6"
+              },
+              {
+                "count": 1000,
+                "unrelatedBytes": 629145600,
+                "inventoryHash": "141fe82092baa88c684756285a43e5484190a19efe9dc7e09730a23a08104e10"
+              }
+            ],
+            "elapsedMs": 4602.374375,
+            "maxRssBytes": 102563840
+          },
+          "elapsedMs": 4654.732791000002,
+          "code": 0,
+          "signal": null
+        },
+        {
+          "result": {
+            "phase": "operations",
+            "schema": 2,
+            "runs": [
+              {
+                "count": 10,
+                "reportMode": "full",
+                "reportHash": "d7a800bd0dbeafd2034a5e692766bb288f0149c1f90b0782d63233125e2f536b",
+                "selectedArtifactBytes": 806799,
+                "elapsedMs": 125.816542,
+                "sql": 49,
+                "pragmas": 14,
+                "rows": 115,
+                "opens": 12,
+                "reads": 40,
+                "bytes": 1593311,
+                "maxChunk": 65536,
+                "writes": 0,
+                "metadataOpens": 9
+              },
+              {
+                "count": 10,
+                "reportMode": "compact",
+                "reportHash": "d3cfc53e5fb6932aa79a9261481d760976e288afd9c4e6c94b78f52daf7f2e19",
+                "selectedArtifactBytes": 806799,
+                "elapsedMs": 69.66770799999998,
+                "sql": 49,
+                "pragmas": 14,
+                "rows": 115,
+                "opens": 12,
+                "reads": 40,
+                "bytes": 1593311,
+                "maxChunk": 65536,
+                "writes": 0,
+                "metadataOpens": 9
+              },
+              {
+                "count": 1000,
+                "reportMode": "full",
+                "reportHash": "d7a800bd0dbeafd2034a5e692766bb288f0149c1f90b0782d63233125e2f536b",
+                "selectedArtifactBytes": 806799,
+                "elapsedMs": 102.353125,
+                "sql": 49,
+                "pragmas": 14,
+                "rows": 115,
+                "opens": 12,
+                "reads": 40,
+                "bytes": 1593311,
+                "maxChunk": 65536,
+                "writes": 0,
+                "metadataOpens": 9
+              },
+              {
+                "count": 1000,
+                "reportMode": "compact",
+                "reportHash": "d3cfc53e5fb6932aa79a9261481d760976e288afd9c4e6c94b78f52daf7f2e19",
+                "selectedArtifactBytes": 806799,
+                "elapsedMs": 62.60325,
+                "sql": 49,
+                "pragmas": 14,
+                "rows": 115,
+                "opens": 12,
+                "reads": 40,
+                "bytes": 1593311,
+                "maxChunk": 65536,
+                "writes": 0,
+                "metadataOpens": 9
+              }
+            ],
+            "elapsedMs": 368.046833,
+            "maxRssBytes": 107266048
+          },
+          "elapsedMs": 421.9782919999998,
+          "code": 0,
+          "signal": null
+        },
+        {
+          "result": {
+            "phase": "preservation",
+            "schema": 2,
+            "inventoryHashes": [
+              "fea224c15b919aa07f58c03505bb2cf4973858f7e567b7cdd513167b335f68c6",
+              "141fe82092baa88c684756285a43e5484190a19efe9dc7e09730a23a08104e10"
+            ],
+            "elapsedMs": 635.82025,
+            "maxRssBytes": 71319552
+          },
+          "elapsedMs": 684.3367920000019,
+          "code": 0,
+          "signal": null
+        }
+      ]
+    },
+    {
+      "elapsedMs": 2175.510375,
+      "maxRssBytes": 71909376,
+      "fixtureCounts": [
+        {
+          "count": 10,
+          "tableCounts": {
+            "catalog_artifact_events": 0,
+            "catalog_artifacts": 0,
+            "catalog_builds": 0,
+            "catalog_captures": 10,
+            "catalog_conclusion_revisions": 1,
+            "catalog_conclusion_support": 1,
+            "catalog_conclusions": 1,
+            "catalog_configs": 0,
+            "catalog_coverage": 0,
+            "catalog_evidence_refs": 1,
+            "catalog_experiment_revisions": 0,
+            "catalog_experiment_runs": 0,
+            "catalog_experiments": 0,
+            "catalog_finding_evidence": 1,
+            "catalog_findings": 1,
+            "catalog_properties": 0,
+            "catalog_provenance": 0,
+            "catalog_question_links": 0,
+            "catalog_questions": 1,
+            "catalog_replays": 1,
+            "catalog_review_events": 1,
+            "catalog_reviews": 1,
+            "catalog_run_sources": 1,
+            "catalog_runs": 1,
+            "catalog_subjects": 18,
+            "catalog_tasks": 2,
+            "catalog_uploads": 0,
+            "catalog_workflow_events": 4
+          }
+        },
+        {
+          "count": 1000,
+          "tableCounts": {
+            "catalog_artifact_events": 0,
+            "catalog_artifacts": 0,
+            "catalog_builds": 0,
+            "catalog_captures": 1000,
+            "catalog_conclusion_revisions": 1,
+            "catalog_conclusion_support": 1,
+            "catalog_conclusions": 1,
+            "catalog_configs": 0,
+            "catalog_coverage": 0,
+            "catalog_evidence_refs": 1,
+            "catalog_experiment_revisions": 0,
+            "catalog_experiment_runs": 0,
+            "catalog_experiments": 0,
+            "catalog_finding_evidence": 1,
+            "catalog_findings": 1,
+            "catalog_properties": 0,
+            "catalog_provenance": 0,
+            "catalog_question_links": 0,
+            "catalog_questions": 1,
+            "catalog_replays": 1,
+            "catalog_review_events": 1,
+            "catalog_reviews": 1,
+            "catalog_run_sources": 1,
+            "catalog_runs": 1,
+            "catalog_subjects": 1008,
+            "catalog_tasks": 2,
+            "catalog_uploads": 0,
+            "catalog_workflow_events": 4
+          }
+        }
+      ],
+      "measurements": [
+        {
+          "count": 10,
+          "op": "list",
+          "ms": 1.769125000000031,
+          "metrics": {
+            "sql": 2,
+            "rows": 11,
+            "connections": 1,
+            "locks": 0,
+            "payloadOpens": 0,
+            "payloadReadBytes": 0,
+            "payloadWriteBytes": 0,
+            "fsReads": 0,
+            "fsWrites": 0
+          }
+        },
+        {
+          "count": 10,
+          "op": "lookup",
+          "ms": 1.0132090000000176,
+          "metrics": {
+            "sql": 5,
+            "rows": 2,
+            "connections": 1,
+            "locks": 0,
+            "payloadOpens": 0,
+            "payloadReadBytes": 0,
+            "payloadWriteBytes": 0,
+            "fsReads": 0,
+            "fsWrites": 0
+          }
+        },
+        {
+          "count": 10,
+          "op": "support",
+          "ms": 0.8999590000000239,
+          "metrics": {
+            "sql": 2,
+            "rows": 2,
+            "connections": 1,
+            "locks": 0,
+            "payloadOpens": 0,
+            "payloadReadBytes": 0,
+            "payloadWriteBytes": 0,
+            "fsReads": 0,
+            "fsWrites": 0
+          }
+        },
+        {
+          "count": 10,
+          "op": "history",
+          "ms": 0.9250830000000292,
+          "metrics": {
+            "sql": 2,
+            "rows": 2,
+            "connections": 1,
+            "locks": 0,
+            "payloadOpens": 0,
+            "payloadReadBytes": 0,
+            "payloadWriteBytes": 0,
+            "fsReads": 0,
+            "fsWrites": 0
+          }
+        },
+        {
+          "count": 10,
+          "op": "review",
+          "ms": 35.08245800000003,
+          "metrics": {
+            "sql": 11,
+            "rows": 4,
+            "connections": 1,
+            "locks": 1,
+            "payloadOpens": 0,
+            "payloadReadBytes": 0,
+            "payloadWriteBytes": 0,
+            "fsReads": 0,
+            "fsWrites": 0
+          }
+        },
+        {
+          "count": 1000,
+          "op": "list",
+          "ms": 2.389083000000028,
+          "metrics": {
+            "sql": 2,
+            "rows": 11,
+            "connections": 1,
+            "locks": 0,
+            "payloadOpens": 0,
+            "payloadReadBytes": 0,
+            "payloadWriteBytes": 0,
+            "fsReads": 0,
+            "fsWrites": 0
+          }
+        },
+        {
+          "count": 1000,
+          "op": "lookup",
+          "ms": 1.5431249999996908,
+          "metrics": {
+            "sql": 5,
+            "rows": 2,
+            "connections": 1,
+            "locks": 0,
+            "payloadOpens": 0,
+            "payloadReadBytes": 0,
+            "payloadWriteBytes": 0,
+            "fsReads": 0,
+            "fsWrites": 0
+          }
+        },
+        {
+          "count": 1000,
+          "op": "support",
+          "ms": 1.8058340000002318,
+          "metrics": {
+            "sql": 2,
+            "rows": 2,
+            "connections": 1,
+            "locks": 0,
+            "payloadOpens": 0,
+            "payloadReadBytes": 0,
+            "payloadWriteBytes": 0,
+            "fsReads": 0,
+            "fsWrites": 0
+          }
+        },
+        {
+          "count": 1000,
+          "op": "history",
+          "ms": 1.7447090000000571,
+          "metrics": {
+            "sql": 2,
+            "rows": 2,
+            "connections": 1,
+            "locks": 0,
+            "payloadOpens": 0,
+            "payloadReadBytes": 0,
+            "payloadWriteBytes": 0,
+            "fsReads": 0,
+            "fsWrites": 0
+          }
+        },
+        {
+          "count": 1000,
+          "op": "review",
+          "ms": 47.064166000000114,
+          "metrics": {
+            "sql": 11,
+            "rows": 4,
+            "connections": 1,
+            "locks": 1,
+            "payloadOpens": 0,
+            "payloadReadBytes": 0,
+            "payloadWriteBytes": 0,
+            "fsReads": 0,
+            "fsWrites": 0
+          }
+        }
+      ]
+    },
+    {
+      "generated": {
+        "phase": "generate",
+        "bytes": 629145600,
+        "elapsedMs": 3197.82475,
+        "maxRssBytes": 66682880,
+        "metrics": {
+          "sql": 267,
+          "rows": 93,
+          "connections": 12,
+          "locks": 11,
+          "payloadOpens": 0,
+          "payloadReadBytes": 629145600,
+          "payloadWriteBytes": 629145600,
+          "fsReads": 10,
+          "fsWrites": 9620
+        }
+      },
+      "operations": {
+        "phase": "operations",
+        "elapsedMs": 357.44970800000004,
+        "maxRssBytes": 75169792,
+        "runs": [
+          {
+            "count": 10,
+            "operation": "list",
+            "elapsedMs": 1.8909170000000017,
+            "metrics": {
+              "sql": 2,
+              "rows": 11,
+              "connections": 1,
+              "locks": 0,
+              "payloadOpens": 0,
+              "payloadReadBytes": 0,
+              "payloadWriteBytes": 0,
+              "fsReads": 0,
+              "fsWrites": 0
+            }
+          },
+          {
+            "count": 10,
+            "operation": "lookup",
+            "elapsedMs": 0.7091250000000002,
+            "metrics": {
+              "sql": 1,
+              "rows": 1,
+              "connections": 1,
+              "locks": 0,
+              "payloadOpens": 0,
+              "payloadReadBytes": 0,
+              "payloadWriteBytes": 0,
+              "fsReads": 0,
+              "fsWrites": 0
+            }
+          },
+          {
+            "count": 10,
+            "operation": "review",
+            "elapsedMs": 17.717792000000003,
+            "metrics": {
+              "sql": 11,
+              "rows": 3,
+              "connections": 1,
+              "locks": 1,
+              "payloadOpens": 0,
+              "payloadReadBytes": 0,
+              "payloadWriteBytes": 0,
+              "fsReads": 0,
+              "fsWrites": 0
+            }
+          },
+          {
+            "count": 10,
+            "operation": "import",
+            "elapsedMs": 98.38262499999999,
+            "metrics": {
+              "sql": 26,
+              "rows": 9,
+              "connections": 1,
+              "locks": 1,
+              "payloadOpens": 0,
+              "payloadReadBytes": 12,
+              "payloadWriteBytes": 12,
+              "fsReads": 1,
+              "fsWrites": 7
+            }
+          },
+          {
+            "count": 1000,
+            "operation": "list",
+            "elapsedMs": 0.7665420000000154,
+            "metrics": {
+              "sql": 2,
+              "rows": 11,
+              "connections": 1,
+              "locks": 0,
+              "payloadOpens": 0,
+              "payloadReadBytes": 0,
+              "payloadWriteBytes": 0,
+              "fsReads": 0,
+              "fsWrites": 0
+            }
+          },
+          {
+            "count": 1000,
+            "operation": "lookup",
+            "elapsedMs": 0.4078339999999798,
+            "metrics": {
+              "sql": 1,
+              "rows": 1,
+              "connections": 1,
+              "locks": 0,
+              "payloadOpens": 0,
+              "payloadReadBytes": 0,
+              "payloadWriteBytes": 0,
+              "fsReads": 0,
+              "fsWrites": 0
+            }
+          },
+          {
+            "count": 1000,
+            "operation": "review",
+            "elapsedMs": 13.528458,
+            "metrics": {
+              "sql": 11,
+              "rows": 3,
+              "connections": 1,
+              "locks": 1,
+              "payloadOpens": 0,
+              "payloadReadBytes": 0,
+              "payloadWriteBytes": 0,
+              "fsReads": 0,
+              "fsWrites": 0
+            }
+          },
+          {
+            "count": 1000,
+            "operation": "import",
+            "elapsedMs": 62.206624999999974,
+            "metrics": {
+              "sql": 26,
+              "rows": 9,
+              "connections": 1,
+              "locks": 1,
+              "payloadOpens": 0,
+              "payloadReadBytes": 14,
+              "payloadWriteBytes": 14,
+              "fsReads": 1,
+              "fsWrites": 7
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "additionalResourceGates": [
+    [
+      {
+        "phase": "generate",
+        "pretty": false,
+        "elapsedMs": 7112.406917,
+        "maxRssBytes": 73990144,
+        "results": [
+          {
+            "count": 10,
+            "unrelatedBytes": 629145600,
+            "manifestBytes": 629830083
+          },
+          {
+            "count": 1000,
+            "unrelatedBytes": 629145600,
+            "manifestBytes": 629967693
+          }
+        ]
+      },
+      {
+        "phase": "operations",
+        "pretty": false,
+        "elapsedMs": 4792.636916,
+        "maxRssBytes": 182714368,
+        "results": [
+          {
+            "opens": 2,
+            "closes": 2,
+            "peakHandles": 1,
+            "reads": 19245,
+            "manifestBytes": 1261025921,
+            "markerBytes": 68,
+            "peakElement": 166,
+            "records": 10,
+            "elapsedMs": 1764.057792,
+            "outputBytes": 682922,
+            "calls": 8192,
+            "maxChunk": 166,
+            "selectedBytes": 682923
+          },
+          {
+            "opens": 2,
+            "closes": 2,
+            "peakHandles": 1,
+            "reads": 19249,
+            "manifestBytes": 1261301141,
+            "markerBytes": 68,
+            "peakElement": 166,
+            "records": 1000,
+            "elapsedMs": 1722.0575830000002,
+            "outputBytes": 682922,
+            "calls": 8192,
+            "maxChunk": 166,
+            "selectedBytes": 682923
+          }
+        ]
+      }
+    ],
+    [
+      {
+        "phase": "generate",
+        "pretty": true,
+        "elapsedMs": 7667.038125,
+        "maxRssBytes": 75988992,
+        "results": [
+          {
+            "count": 10,
+            "unrelatedBytes": 629145600,
+            "manifestBytes": 630051938
+          },
+          {
+            "count": 1000,
+            "unrelatedBytes": 629145600,
+            "manifestBytes": 630223208
+          }
+        ]
+      },
+      {
+        "phase": "operations",
+        "pretty": true,
+        "elapsedMs": 4703.1831250000005,
+        "maxRssBytes": 160464896,
+        "results": [
+          {
+            "opens": 2,
+            "closes": 2,
+            "peakHandles": 1,
+            "reads": 19257,
+            "manifestBytes": 1261911988,
+            "markerBytes": 68,
+            "peakElement": 211,
+            "records": 10,
+            "elapsedMs": 1720.0386250000001,
+            "outputBytes": 682922,
+            "calls": 8192,
+            "maxChunk": 166,
+            "selectedBytes": 904114
+          },
+          {
+            "opens": 2,
+            "closes": 2,
+            "peakHandles": 1,
+            "reads": 19263,
+            "manifestBytes": 1262254528,
+            "markerBytes": 68,
+            "peakElement": 211,
+            "records": 1000,
+            "elapsedMs": 1726.4465,
+            "outputBytes": 682922,
+            "calls": 8192,
+            "maxChunk": 166,
+            "selectedBytes": 904114
+          }
+        ]
+      }
+    ],
+    [
+      {
+        "phase": "generate",
+        "schema": 1,
+        "unrelatedBytes": 629145600,
+        "elapsedMs": 10245.201792,
+        "maxRssBytes": 73777152
+      },
+      {
+        "phase": "operations",
+        "schema": 1,
+        "elapsedMs": 366.047958,
+        "maxRssBytes": 82771968,
+        "runs": [
+          {
+            "count": 10,
+            "elapsedMs": 76.04683299999999,
+            "maxChunk": 166,
+            "sinkCalls": 8192,
+            "outputBytes": 682922,
+            "core": {
+              "sql": 11,
+              "rows": 11,
+              "connections": 2,
+              "locks": 1,
+              "payloadOpens": 3,
+              "payloadReadBytes": 3170056,
+              "payloadWriteBytes": 0,
+              "fsReads": 58,
+              "fsWrites": 0
+            },
+            "sql": 26,
+            "rows": 26,
+            "opens": 3,
+            "reads": 58,
+            "bytes": 3170056,
+            "readPaths": {
+              "/private/var/folders/dy/9msg37jj549dkw5k__ct1kv00000gn/T/pain-gain-store-v3-fixture-xcz6mB/store-v3/d42f5a3a-81c9-4885-9fed-e3407f8669cd/diagnostics/c7/fbbb3d73cbf14b2ddf177e35468691b9c304adb1ac1a3b9eb12522214d56dccd/c72d53bf498d4bd7fa39366269f90aae2307600a8d78b81db99c439976d87ab1.jsonl": 3169060,
+              "/private/var/folders/dy/9msg37jj549dkw5k__ct1kv00000gn/T/pain-gain-store-v3-fixture-xcz6mB/store-v3/d42f5a3a-81c9-4885-9fed-e3407f8669cd/extensions/b7/3799f1ef5feeece925964ca7742d1509cd490a9d0d68fdae0c44324eb17a5351/b794c848fb7e24f3a82603e029d9ef4c37eab7a9888b1117cab1e8a04bb61d30.json": 996
+            },
+            "openPaths": {
+              "/private/var/folders/dy/9msg37jj549dkw5k__ct1kv00000gn/T/pain-gain-store-v3-fixture-xcz6mB/store-v3/d42f5a3a-81c9-4885-9fed-e3407f8669cd/diagnostics/c7/fbbb3d73cbf14b2ddf177e35468691b9c304adb1ac1a3b9eb12522214d56dccd/c72d53bf498d4bd7fa39366269f90aae2307600a8d78b81db99c439976d87ab1.jsonl": 1,
+              "/private/var/folders/dy/9msg37jj549dkw5k__ct1kv00000gn/T/pain-gain-store-v3-fixture-xcz6mB/store-v3/d42f5a3a-81c9-4885-9fed-e3407f8669cd/extensions/b7/3799f1ef5feeece925964ca7742d1509cd490a9d0d68fdae0c44324eb17a5351/b794c848fb7e24f3a82603e029d9ef4c37eab7a9888b1117cab1e8a04bb61d30.json": 1,
+              "/private/var/folders/dy/9msg37jj549dkw5k__ct1kv00000gn/T/pain-gain-store-v3-fixture-xcz6mB/map.json": 1
+            }
+          },
+          {
+            "count": 1000,
+            "elapsedMs": 71.27016700000001,
+            "maxChunk": 166,
+            "sinkCalls": 8192,
+            "outputBytes": 682922,
+            "core": {
+              "sql": 11,
+              "rows": 11,
+              "connections": 2,
+              "locks": 1,
+              "payloadOpens": 3,
+              "payloadReadBytes": 3170056,
+              "payloadWriteBytes": 0,
+              "fsReads": 58,
+              "fsWrites": 0
+            },
+            "sql": 26,
+            "rows": 26,
+            "opens": 3,
+            "reads": 58,
+            "bytes": 3170056,
+            "readPaths": {
+              "/private/var/folders/dy/9msg37jj549dkw5k__ct1kv00000gn/T/pain-gain-store-v3-fixture-xcz6mB/store-v3/d42f5a3a-81c9-4885-9fed-e3407f8669cd/diagnostics/c7/fbbb3d73cbf14b2ddf177e35468691b9c304adb1ac1a3b9eb12522214d56dccd/c72d53bf498d4bd7fa39366269f90aae2307600a8d78b81db99c439976d87ab1.jsonl": 3169060,
+              "/private/var/folders/dy/9msg37jj549dkw5k__ct1kv00000gn/T/pain-gain-store-v3-fixture-xcz6mB/store-v3/d42f5a3a-81c9-4885-9fed-e3407f8669cd/extensions/b7/3799f1ef5feeece925964ca7742d1509cd490a9d0d68fdae0c44324eb17a5351/b794c848fb7e24f3a82603e029d9ef4c37eab7a9888b1117cab1e8a04bb61d30.json": 996
+            },
+            "openPaths": {
+              "/private/var/folders/dy/9msg37jj549dkw5k__ct1kv00000gn/T/pain-gain-store-v3-fixture-xcz6mB/store-v3/d42f5a3a-81c9-4885-9fed-e3407f8669cd/diagnostics/c7/fbbb3d73cbf14b2ddf177e35468691b9c304adb1ac1a3b9eb12522214d56dccd/c72d53bf498d4bd7fa39366269f90aae2307600a8d78b81db99c439976d87ab1.jsonl": 1,
+              "/private/var/folders/dy/9msg37jj549dkw5k__ct1kv00000gn/T/pain-gain-store-v3-fixture-xcz6mB/store-v3/d42f5a3a-81c9-4885-9fed-e3407f8669cd/extensions/b7/3799f1ef5feeece925964ca7742d1509cd490a9d0d68fdae0c44324eb17a5351/b794c848fb7e24f3a82603e029d9ef4c37eab7a9888b1117cab1e8a04bb61d30.json": 1,
+              "/private/var/folders/dy/9msg37jj549dkw5k__ct1kv00000gn/T/pain-gain-store-v3-fixture-xcz6mB/map.json": 1
+            }
+          }
+        ]
+      }
+    ],
+    [
+      {
+        "phase": "generate",
+        "schema": 2,
+        "unrelatedBytes": 629145600,
+        "elapsedMs": 6334.094792000001,
+        "maxRssBytes": 74825728
+      },
+      {
+        "phase": "operations",
+        "schema": 2,
+        "elapsedMs": 297.00562499999995,
+        "maxRssBytes": 83951616,
+        "runs": [
+          {
+            "count": 10,
+            "elapsedMs": 70.160917,
+            "maxChunk": 166,
+            "sinkCalls": 8192,
+            "outputBytes": 682922,
+            "core": {
+              "sql": 11,
+              "rows": 11,
+              "connections": 2,
+              "locks": 1,
+              "payloadOpens": 3,
+              "payloadReadBytes": 3170056,
+              "payloadWriteBytes": 0,
+              "fsReads": 58,
+              "fsWrites": 0
+            },
+            "sql": 28,
+            "rows": 28,
+            "opens": 3,
+            "reads": 58,
+            "bytes": 3170056,
+            "readPaths": {
+              "/private/var/folders/dy/9msg37jj549dkw5k__ct1kv00000gn/T/pain-gain-store-v3-fixture-dBXhh8/store-v3/cd5bc02d-3519-4f70-9dd1-f4fdb285384d/diagnostics/c7/fbbb3d73cbf14b2ddf177e35468691b9c304adb1ac1a3b9eb12522214d56dccd/c72d53bf498d4bd7fa39366269f90aae2307600a8d78b81db99c439976d87ab1.jsonl": 3169060,
+              "/private/var/folders/dy/9msg37jj549dkw5k__ct1kv00000gn/T/pain-gain-store-v3-fixture-dBXhh8/store-v3/cd5bc02d-3519-4f70-9dd1-f4fdb285384d/extensions/b7/3799f1ef5feeece925964ca7742d1509cd490a9d0d68fdae0c44324eb17a5351/b794c848fb7e24f3a82603e029d9ef4c37eab7a9888b1117cab1e8a04bb61d30.json": 996
+            },
+            "openPaths": {
+              "/private/var/folders/dy/9msg37jj549dkw5k__ct1kv00000gn/T/pain-gain-store-v3-fixture-dBXhh8/store-v3/cd5bc02d-3519-4f70-9dd1-f4fdb285384d/diagnostics/c7/fbbb3d73cbf14b2ddf177e35468691b9c304adb1ac1a3b9eb12522214d56dccd/c72d53bf498d4bd7fa39366269f90aae2307600a8d78b81db99c439976d87ab1.jsonl": 1,
+              "/private/var/folders/dy/9msg37jj549dkw5k__ct1kv00000gn/T/pain-gain-store-v3-fixture-dBXhh8/store-v3/cd5bc02d-3519-4f70-9dd1-f4fdb285384d/extensions/b7/3799f1ef5feeece925964ca7742d1509cd490a9d0d68fdae0c44324eb17a5351/b794c848fb7e24f3a82603e029d9ef4c37eab7a9888b1117cab1e8a04bb61d30.json": 1,
+              "/private/var/folders/dy/9msg37jj549dkw5k__ct1kv00000gn/T/pain-gain-store-v3-fixture-dBXhh8/map.json": 1
+            }
+          },
+          {
+            "count": 1000,
+            "elapsedMs": 58.44483300000002,
+            "maxChunk": 166,
+            "sinkCalls": 8192,
+            "outputBytes": 682922,
+            "core": {
+              "sql": 11,
+              "rows": 11,
+              "connections": 2,
+              "locks": 1,
+              "payloadOpens": 3,
+              "payloadReadBytes": 3170056,
+              "payloadWriteBytes": 0,
+              "fsReads": 58,
+              "fsWrites": 0
+            },
+            "sql": 28,
+            "rows": 28,
+            "opens": 3,
+            "reads": 58,
+            "bytes": 3170056,
+            "readPaths": {
+              "/private/var/folders/dy/9msg37jj549dkw5k__ct1kv00000gn/T/pain-gain-store-v3-fixture-dBXhh8/store-v3/cd5bc02d-3519-4f70-9dd1-f4fdb285384d/diagnostics/c7/fbbb3d73cbf14b2ddf177e35468691b9c304adb1ac1a3b9eb12522214d56dccd/c72d53bf498d4bd7fa39366269f90aae2307600a8d78b81db99c439976d87ab1.jsonl": 3169060,
+              "/private/var/folders/dy/9msg37jj549dkw5k__ct1kv00000gn/T/pain-gain-store-v3-fixture-dBXhh8/store-v3/cd5bc02d-3519-4f70-9dd1-f4fdb285384d/extensions/b7/3799f1ef5feeece925964ca7742d1509cd490a9d0d68fdae0c44324eb17a5351/b794c848fb7e24f3a82603e029d9ef4c37eab7a9888b1117cab1e8a04bb61d30.json": 996
+            },
+            "openPaths": {
+              "/private/var/folders/dy/9msg37jj549dkw5k__ct1kv00000gn/T/pain-gain-store-v3-fixture-dBXhh8/store-v3/cd5bc02d-3519-4f70-9dd1-f4fdb285384d/diagnostics/c7/fbbb3d73cbf14b2ddf177e35468691b9c304adb1ac1a3b9eb12522214d56dccd/c72d53bf498d4bd7fa39366269f90aae2307600a8d78b81db99c439976d87ab1.jsonl": 1,
+              "/private/var/folders/dy/9msg37jj549dkw5k__ct1kv00000gn/T/pain-gain-store-v3-fixture-dBXhh8/store-v3/cd5bc02d-3519-4f70-9dd1-f4fdb285384d/extensions/b7/3799f1ef5feeece925964ca7742d1509cd490a9d0d68fdae0c44324eb17a5351/b794c848fb7e24f3a82603e029d9ef4c37eab7a9888b1117cab1e8a04bb61d30.json": 1,
+              "/private/var/folders/dy/9msg37jj549dkw5k__ct1kv00000gn/T/pain-gain-store-v3-fixture-dBXhh8/map.json": 1
+            }
+          }
+        ]
+      }
+    ]
+  ],
+  "limits": "Unchanged synthetic limits; intermittent SQLite delay, general analyzer memory, production integration, power-loss, arbitrary OS close-failure semantics and other platforms remain unqualified"
+}

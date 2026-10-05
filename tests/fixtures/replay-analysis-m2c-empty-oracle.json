@@ -1,0 +1,746 @@
+{
+  "oracleCommit": "846d2a458d5776f974853aaad530ef4b71d25f6d",
+  "purpose": "Independent empty-selection and score-only controls; original M2c oracle remains unchanged",
+  "scenarios": {
+    "empty-manifest": {
+      "selection": {},
+      "reports": {
+        "full": {
+          "reportVersion": 1,
+          "replayId": "bbbbbbbbbbbbbbbbbbbbbbbb",
+          "selectedFingerprints": [],
+          "findings": [
+            {
+              "rule": "manifest.record-selection",
+              "verdict": "unknown",
+              "replayId": "bbbbbbbbbbbbbbbbbbbbbbbb",
+              "evidence": [
+                {
+                  "path": "replay_logs/manifest.json"
+                }
+              ],
+              "message": "No current manifest records were selected for this replay.",
+              "provenance": {
+                "status": "legacy-unknown",
+                "buildId": null
+              }
+            },
+            {
+              "rule": "manifest.schema",
+              "verdict": "pass",
+              "replayId": "bbbbbbbbbbbbbbbbbbbbbbbb",
+              "evidence": [
+                {
+                  "path": "replay_logs/manifest.json"
+                }
+              ],
+              "message": "Manifest version 2 schema is readable.",
+              "provenance": {
+                "status": "legacy-unknown",
+                "buildId": null
+              }
+            }
+          ],
+          "summary": {
+            "pass": 1,
+            "fail": 0,
+            "unknown": 1
+          }
+        },
+        "compact": {
+          "reportVersion": 1,
+          "reportMode": "compact",
+          "replayId": "bbbbbbbbbbbbbbbbbbbbbbbb",
+          "selectedFingerprints": [],
+          "evidenceSummary": {
+            "selectedLogRecords": 0,
+            "trustedLogRecords": 0,
+            "buildProvenance": {
+              "status": "legacy-unknown",
+              "buildId": null
+            },
+            "snapshots": {
+              "count": 0,
+              "tickRanges": []
+            },
+            "completeDiagnosticTicks": {
+              "count": 0,
+              "tickRanges": []
+            }
+          },
+          "findingSummary": [
+            {
+              "rule": "manifest.record-selection",
+              "verdict": "unknown",
+              "provenance": {
+                "status": "legacy-unknown",
+                "buildId": null
+              },
+              "count": 1,
+              "evidenceReferenceCount": 1,
+              "representativeEvidence": [
+                {
+                  "path": "replay_logs/manifest.json"
+                }
+              ],
+              "representativeMessages": [
+                "No current manifest records were selected for this replay."
+              ],
+              "representativeObserved": [],
+              "abbreviated": true
+            },
+            {
+              "rule": "manifest.schema",
+              "verdict": "pass",
+              "provenance": {
+                "status": "legacy-unknown",
+                "buildId": null
+              },
+              "count": 1,
+              "evidenceReferenceCount": 1,
+              "representativeEvidence": [
+                {
+                  "path": "replay_logs/manifest.json"
+                }
+              ],
+              "representativeMessages": [
+                "Manifest version 2 schema is readable."
+              ],
+              "representativeObserved": [],
+              "abbreviated": true
+            }
+          ],
+          "summary": {
+            "pass": 1,
+            "fail": 0,
+            "unknown": 1
+          },
+          "detail": {
+            "exhaustive": false,
+            "abbreviatedFields": [
+              "findingSummary",
+              "scoring.relationshipSummary",
+              "scoring.alignment",
+              "scoring.events"
+            ],
+            "fullDetailOption": "--full-detail",
+            "note": "Use full-detail mode with the same explicit selections for exhaustive findings and evidence."
+          }
+        }
+      },
+      "hashes": {
+        "full": "7e02e0e2430569028e872ef3b22de72855d48492cd217ca73ccc9f3ed62d9c4e",
+        "compact": "eea59b584463740a3236e80298af27a0277fd561b3682680c408352a65a9359a"
+      }
+    },
+    "empty-selection": {
+      "selection": {
+        "fingerprints": []
+      },
+      "reports": {
+        "full": {
+          "reportVersion": 1,
+          "replayId": "bbbbbbbbbbbbbbbbbbbbbbbb",
+          "selectedFingerprints": [],
+          "findings": [
+            {
+              "rule": "manifest.record-selection",
+              "verdict": "unknown",
+              "replayId": "bbbbbbbbbbbbbbbbbbbbbbbb",
+              "evidence": [
+                {
+                  "path": "replay_logs/manifest.json"
+                }
+              ],
+              "message": "No current manifest records were selected for this replay.",
+              "provenance": {
+                "status": "legacy-unknown",
+                "buildId": null
+              }
+            },
+            {
+              "rule": "manifest.schema",
+              "verdict": "pass",
+              "replayId": "bbbbbbbbbbbbbbbbbbbbbbbb",
+              "evidence": [
+                {
+                  "path": "replay_logs/manifest.json"
+                }
+              ],
+              "message": "Manifest version 2 schema is readable.",
+              "provenance": {
+                "status": "legacy-unknown",
+                "buildId": null
+              }
+            }
+          ],
+          "summary": {
+            "pass": 1,
+            "fail": 0,
+            "unknown": 1
+          }
+        },
+        "compact": {
+          "reportVersion": 1,
+          "reportMode": "compact",
+          "replayId": "bbbbbbbbbbbbbbbbbbbbbbbb",
+          "selectedFingerprints": [],
+          "evidenceSummary": {
+            "selectedLogRecords": 0,
+            "trustedLogRecords": 0,
+            "buildProvenance": {
+              "status": "legacy-unknown",
+              "buildId": null
+            },
+            "snapshots": {
+              "count": 0,
+              "tickRanges": []
+            },
+            "completeDiagnosticTicks": {
+              "count": 0,
+              "tickRanges": []
+            }
+          },
+          "findingSummary": [
+            {
+              "rule": "manifest.record-selection",
+              "verdict": "unknown",
+              "provenance": {
+                "status": "legacy-unknown",
+                "buildId": null
+              },
+              "count": 1,
+              "evidenceReferenceCount": 1,
+              "representativeEvidence": [
+                {
+                  "path": "replay_logs/manifest.json"
+                }
+              ],
+              "representativeMessages": [
+                "No current manifest records were selected for this replay."
+              ],
+              "representativeObserved": [],
+              "abbreviated": true
+            },
+            {
+              "rule": "manifest.schema",
+              "verdict": "pass",
+              "provenance": {
+                "status": "legacy-unknown",
+                "buildId": null
+              },
+              "count": 1,
+              "evidenceReferenceCount": 1,
+              "representativeEvidence": [
+                {
+                  "path": "replay_logs/manifest.json"
+                }
+              ],
+              "representativeMessages": [
+                "Manifest version 2 schema is readable."
+              ],
+              "representativeObserved": [],
+              "abbreviated": true
+            }
+          ],
+          "summary": {
+            "pass": 1,
+            "fail": 0,
+            "unknown": 1
+          },
+          "detail": {
+            "exhaustive": false,
+            "abbreviatedFields": [
+              "findingSummary",
+              "scoring.relationshipSummary",
+              "scoring.alignment",
+              "scoring.events"
+            ],
+            "fullDetailOption": "--full-detail",
+            "note": "Use full-detail mode with the same explicit selections for exhaustive findings and evidence."
+          }
+        }
+      },
+      "hashes": {
+        "full": "7e02e0e2430569028e872ef3b22de72855d48492cd217ca73ccc9f3ed62d9c4e",
+        "compact": "eea59b584463740a3236e80298af27a0277fd561b3682680c408352a65a9359a"
+      }
+    },
+    "missing-selection": {
+      "selection": {
+        "fingerprints": [
+          "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+        ]
+      },
+      "reports": {
+        "full": {
+          "reportVersion": 1,
+          "replayId": "bbbbbbbbbbbbbbbbbbbbbbbb",
+          "selectedFingerprints": [],
+          "findings": [
+            {
+              "rule": "manifest.record-selection",
+              "verdict": "unknown",
+              "replayId": "bbbbbbbbbbbbbbbbbbbbbbbb",
+              "evidence": [
+                {
+                  "path": "replay_logs/manifest.json",
+                  "fingerprint": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+                }
+              ],
+              "message": "Requested fingerprint is not present for this replay.",
+              "provenance": {
+                "status": "legacy-unknown",
+                "buildId": null
+              }
+            },
+            {
+              "rule": "manifest.record-selection",
+              "verdict": "unknown",
+              "replayId": "bbbbbbbbbbbbbbbbbbbbbbbb",
+              "evidence": [
+                {
+                  "path": "replay_logs/manifest.json"
+                }
+              ],
+              "message": "No current manifest records were selected for this replay.",
+              "provenance": {
+                "status": "legacy-unknown",
+                "buildId": null
+              }
+            },
+            {
+              "rule": "manifest.schema",
+              "verdict": "pass",
+              "replayId": "bbbbbbbbbbbbbbbbbbbbbbbb",
+              "evidence": [
+                {
+                  "path": "replay_logs/manifest.json"
+                }
+              ],
+              "message": "Manifest version 2 schema is readable.",
+              "provenance": {
+                "status": "legacy-unknown",
+                "buildId": null
+              }
+            }
+          ],
+          "summary": {
+            "pass": 1,
+            "fail": 0,
+            "unknown": 2
+          }
+        },
+        "compact": {
+          "reportVersion": 1,
+          "reportMode": "compact",
+          "replayId": "bbbbbbbbbbbbbbbbbbbbbbbb",
+          "selectedFingerprints": [],
+          "evidenceSummary": {
+            "selectedLogRecords": 0,
+            "trustedLogRecords": 0,
+            "buildProvenance": {
+              "status": "legacy-unknown",
+              "buildId": null
+            },
+            "snapshots": {
+              "count": 0,
+              "tickRanges": []
+            },
+            "completeDiagnosticTicks": {
+              "count": 0,
+              "tickRanges": []
+            }
+          },
+          "findingSummary": [
+            {
+              "rule": "manifest.record-selection",
+              "verdict": "unknown",
+              "provenance": {
+                "status": "legacy-unknown",
+                "buildId": null
+              },
+              "count": 2,
+              "evidenceReferenceCount": 2,
+              "representativeEvidence": [
+                {
+                  "path": "replay_logs/manifest.json",
+                  "fingerprint": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+                },
+                {
+                  "path": "replay_logs/manifest.json"
+                }
+              ],
+              "representativeMessages": [
+                "No current manifest records were selected for this replay.",
+                "Requested fingerprint is not present for this replay."
+              ],
+              "representativeObserved": [],
+              "abbreviated": true
+            },
+            {
+              "rule": "manifest.schema",
+              "verdict": "pass",
+              "provenance": {
+                "status": "legacy-unknown",
+                "buildId": null
+              },
+              "count": 1,
+              "evidenceReferenceCount": 1,
+              "representativeEvidence": [
+                {
+                  "path": "replay_logs/manifest.json"
+                }
+              ],
+              "representativeMessages": [
+                "Manifest version 2 schema is readable."
+              ],
+              "representativeObserved": [],
+              "abbreviated": true
+            }
+          ],
+          "summary": {
+            "pass": 1,
+            "fail": 0,
+            "unknown": 2
+          },
+          "detail": {
+            "exhaustive": false,
+            "abbreviatedFields": [
+              "findingSummary",
+              "scoring.relationshipSummary",
+              "scoring.alignment",
+              "scoring.events"
+            ],
+            "fullDetailOption": "--full-detail",
+            "note": "Use full-detail mode with the same explicit selections for exhaustive findings and evidence."
+          }
+        }
+      },
+      "hashes": {
+        "full": "28ca7020c13c990e0bcd1aec1fe573d1319dc29abacc82148818a1adb8dd606d",
+        "compact": "cd7fac477aa5a69217ba8faf6b77f0e82a710cab58bc1586151430eb2a9c94a4"
+      }
+    },
+    "score-only": {
+      "selection": {
+        "fingerprints": [],
+        "scoreFingerprints": [
+          "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        ]
+      },
+      "reports": {
+        "full": {
+          "reportVersion": 1,
+          "replayId": "bbbbbbbbbbbbbbbbbbbbbbbb",
+          "selectedFingerprints": [],
+          "selectedScoreFingerprints": [],
+          "scoring": {
+            "sources": [],
+            "segments": [],
+            "groups": [],
+            "relationships": [],
+            "metadataIdentity": {
+              "status": "unknown",
+              "oursSlot": null,
+              "opponentSlot": null,
+              "slotUsers": null,
+              "sources": []
+            },
+            "mapping": {
+              "status": "unknown",
+              "oursSlot": null,
+              "opponentSlot": null
+            },
+            "alignment": {
+              "status": "unknown",
+              "offset": null,
+              "contributors": [],
+              "groups": []
+            },
+            "buildAssociation": {
+              "status": "unknown",
+              "logBuildId": null,
+              "scoreEmbeddedBuildId": null,
+              "supportedBuildIds": [],
+              "hasUnknownBuild": false,
+              "contributingSnapshots": 0
+            },
+            "observations": [],
+            "comparisons": [],
+            "events": [],
+            "terminal": {
+              "status": "unknown",
+              "gameTime": null,
+              "reason": "Selected replay-frame sources do not by themselves establish terminal match state."
+            }
+          },
+          "findings": [
+            {
+              "rule": "manifest.record-selection",
+              "verdict": "unknown",
+              "replayId": "bbbbbbbbbbbbbbbbbbbbbbbb",
+              "evidence": [
+                {
+                  "path": "replay_logs/manifest.json"
+                }
+              ],
+              "message": "No current manifest records were selected for this replay.",
+              "provenance": {
+                "status": "legacy-unknown",
+                "buildId": null
+              }
+            },
+            {
+              "rule": "manifest.schema",
+              "verdict": "pass",
+              "replayId": "bbbbbbbbbbbbbbbbbbbbbbbb",
+              "evidence": [
+                {
+                  "path": "replay_logs/manifest.json"
+                }
+              ],
+              "message": "Manifest version 2 schema is readable.",
+              "provenance": {
+                "status": "legacy-unknown",
+                "buildId": null
+              }
+            },
+            {
+              "rule": "score.record-selection",
+              "verdict": "unknown",
+              "replayId": "bbbbbbbbbbbbbbbbbbbbbbbb",
+              "evidence": [
+                {
+                  "path": "replay_logs/manifest.json",
+                  "scoreFingerprint": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+                }
+              ],
+              "message": "Manifest has no scoreRecords collection; retained score support is unavailable.",
+              "provenance": {
+                "status": "legacy-unknown",
+                "buildId": null
+              }
+            },
+            {
+              "rule": "snapshot.replay-coverage",
+              "verdict": "unknown",
+              "replayId": "bbbbbbbbbbbbbbbbbbbbbbbb",
+              "evidence": [
+                {
+                  "path": "replay_logs/manifest.json"
+                }
+              ],
+              "message": "No valid game-state snapshots are available.",
+              "observed": {
+                "firstTick": null,
+                "lastTick": null,
+                "count": 0,
+                "gaps": []
+              },
+              "provenance": {
+                "status": "legacy-unknown",
+                "buildId": null
+              }
+            }
+          ],
+          "summary": {
+            "pass": 1,
+            "fail": 0,
+            "unknown": 3
+          }
+        },
+        "compact": {
+          "reportVersion": 1,
+          "reportMode": "compact",
+          "replayId": "bbbbbbbbbbbbbbbbbbbbbbbb",
+          "selectedFingerprints": [],
+          "selectedScoreFingerprints": [],
+          "scoring": {
+            "sources": [],
+            "segments": [],
+            "groups": [],
+            "relationshipSummary": [],
+            "metadataIdentity": {
+              "status": "unknown",
+              "oursSlot": null,
+              "opponentSlot": null,
+              "slotUsers": null,
+              "sources": []
+            },
+            "mapping": {
+              "status": "unknown",
+              "oursSlot": null,
+              "opponentSlot": null
+            },
+            "alignment": {
+              "status": "unknown",
+              "offset": null,
+              "contributorSummary": {
+                "count": 0,
+                "gameTimeRanges": [],
+                "runtimeTickRanges": [],
+                "buildIds": [],
+                "representatives": [],
+                "abbreviated": true
+              },
+              "groups": []
+            },
+            "buildAssociation": {
+              "status": "unknown",
+              "logBuildId": null,
+              "scoreEmbeddedBuildId": null,
+              "supportedBuildIds": [],
+              "hasUnknownBuild": false,
+              "contributingSnapshots": 0
+            },
+            "scoreProgression": [],
+            "comparisons": [],
+            "events": {
+              "count": 0,
+              "gameTimeRanges": [],
+              "runtimeTickRanges": [],
+              "representatives": [],
+              "abbreviated": true
+            },
+            "terminal": {
+              "status": "unknown",
+              "gameTime": null,
+              "reason": "Selected replay-frame sources do not by themselves establish terminal match state."
+            }
+          },
+          "evidenceSummary": {
+            "selectedLogRecords": 0,
+            "trustedLogRecords": 0,
+            "buildProvenance": {
+              "status": "legacy-unknown",
+              "buildId": null
+            },
+            "snapshots": {
+              "count": 0,
+              "tickRanges": []
+            },
+            "completeDiagnosticTicks": {
+              "count": 0,
+              "tickRanges": []
+            }
+          },
+          "findingSummary": [
+            {
+              "rule": "manifest.record-selection",
+              "verdict": "unknown",
+              "provenance": {
+                "status": "legacy-unknown",
+                "buildId": null
+              },
+              "count": 1,
+              "evidenceReferenceCount": 1,
+              "representativeEvidence": [
+                {
+                  "path": "replay_logs/manifest.json"
+                }
+              ],
+              "representativeMessages": [
+                "No current manifest records were selected for this replay."
+              ],
+              "representativeObserved": [],
+              "abbreviated": true
+            },
+            {
+              "rule": "manifest.schema",
+              "verdict": "pass",
+              "provenance": {
+                "status": "legacy-unknown",
+                "buildId": null
+              },
+              "count": 1,
+              "evidenceReferenceCount": 1,
+              "representativeEvidence": [
+                {
+                  "path": "replay_logs/manifest.json"
+                }
+              ],
+              "representativeMessages": [
+                "Manifest version 2 schema is readable."
+              ],
+              "representativeObserved": [],
+              "abbreviated": true
+            },
+            {
+              "rule": "score.record-selection",
+              "verdict": "unknown",
+              "provenance": {
+                "status": "legacy-unknown",
+                "buildId": null
+              },
+              "count": 1,
+              "evidenceReferenceCount": 1,
+              "representativeEvidence": [
+                {
+                  "path": "replay_logs/manifest.json",
+                  "scoreFingerprint": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+                }
+              ],
+              "representativeMessages": [
+                "Manifest has no scoreRecords collection; retained score support is unavailable."
+              ],
+              "representativeObserved": [],
+              "abbreviated": true
+            },
+            {
+              "rule": "snapshot.replay-coverage",
+              "verdict": "unknown",
+              "provenance": {
+                "status": "legacy-unknown",
+                "buildId": null
+              },
+              "count": 1,
+              "evidenceReferenceCount": 1,
+              "representativeEvidence": [
+                {
+                  "path": "replay_logs/manifest.json"
+                }
+              ],
+              "representativeMessages": [
+                "No valid game-state snapshots are available."
+              ],
+              "representativeObserved": [
+                {
+                  "count": 0,
+                  "firstTick": null,
+                  "gaps": {
+                    "count": 0,
+                    "representatives": [],
+                    "abbreviated": false
+                  },
+                  "lastTick": null
+                }
+              ],
+              "abbreviated": true
+            }
+          ],
+          "summary": {
+            "pass": 1,
+            "fail": 0,
+            "unknown": 3
+          },
+          "detail": {
+            "exhaustive": false,
+            "abbreviatedFields": [
+              "findingSummary",
+              "scoring.relationshipSummary",
+              "scoring.alignment",
+              "scoring.events"
+            ],
+            "fullDetailOption": "--full-detail",
+            "note": "Use full-detail mode with the same explicit selections for exhaustive findings and evidence."
+          }
+        }
+      },
+      "hashes": {
+        "full": "3674077da74c0be6479f1cbb98c848cff51901a2f61b117833892628029ad5ec",
+        "compact": "4884e5b678ca2454ca04712b14c6e09a3399df0077ee50ab30674429f83ea883"
+      }
+    }
+  }
+}

@@ -1,0 +1,967 @@
+{
+  "command": "npm test",
+  "cwd": "/Users/zoltanka/Documents/Prog/JavaScript/ScreepsArena/pain_and_gain",
+  "head": "846d2a458d5776f974853aaad530ef4b71d25f6d",
+  "start": "2026-10-05T11:00:03.958Z",
+  "node": "v24.19.0",
+  "executable": "/Users/zoltanka/Library/Caches/JetBrains/WebStorm2026.2/acp-agents/.runtimes/node/24.19.0/bin/node",
+  "platform": "darwin",
+  "arch": "arm64",
+  "sqlite": "3.53.3",
+  "hashes": {
+    "tools/replay-analysis.js": "fd5c25c5e62a1b253113adf9d85460db312832491d5febd049471a5d6680567a",
+    "tools/replay-analysis-fixture.js": "cb55b34cfe813ee558f12dfd2ce5b3ad6fe9869b8f58c9b3540f1e3a862ba80b",
+    "tools/replay-store.js": "f501d9e18d8d7da3ddade3bf6a0d52cb8fc46781993d47e2a525acef1dbc6cee",
+    "tests/unit/replay-analysis-fixture.test.js": "56ea1befce933180b18c786d5c62c459d08af12521288fa103e4bcf21e0556c7",
+    "tests/fixtures/replay-analysis-m2c-recipe.js": "04ef92f70cd06b89d52ef06abaeb98200956588920ca7372928042965a13163d",
+    "tests/fixtures/replay-analysis-m2c-store.js": "5f2a03afc3907225c5171ccd1bfe6880ef52e7adc891540cd98b673b7186975c",
+    "tests/fixtures/replay-analysis-m2c-worker.js": "3b52c7ba19e6e6683ac3c0d451345434cabeff46016dfc46071fd30870e88900",
+    "tests/fixtures/replay-analysis-m2c-oracle.json": "6aea8f2269d7b8fcd917177b658a0b422e6dfd4d7f3926d43c03109092fe0964",
+    "package.json": "e1e061ff89c62ebc497d187eec40c9b1032cf0db08e40d0714a02583c670513f"
+  },
+  "exitCode": 0,
+  "signal": null,
+  "end": "2026-10-05T11:01:35.595Z",
+  "elapsedMs": 91635.64899999999,
+  "unchanged": true,
+  "logHash": "979d7dbefcfcbd28b6547da235739ffd4afcdd8eb896b1ecabe640402535eef5",
+  "tests": {
+    "total": 464,
+    "passed": 464,
+    "failed": 0
+  },
+  "scope": "bounded synthetic M2c; not full M2 or production",
+  "metrics": [
+    {
+      "schema": 1,
+      "runs": [
+        {
+          "result": {
+            "phase": "generate",
+            "schema": 1,
+            "stores": [
+              {
+                "count": 10,
+                "unrelatedBytes": 629145600,
+                "inventoryHash": "47d3faf58c6d9d04007c1ec7645543f8dc747972307ff3d92581098566e1208e"
+              },
+              {
+                "count": 1000,
+                "unrelatedBytes": 629145600,
+                "inventoryHash": "bdee3dbbffae168f6641e2f561d0d149914d6bdf107027221592c00c457ae617"
+              }
+            ],
+            "elapsedMs": 4270.242292,
+            "maxRssBytes": 100614144
+          },
+          "elapsedMs": 4320.194292,
+          "code": 0,
+          "signal": null
+        },
+        {
+          "result": {
+            "phase": "operations",
+            "schema": 1,
+            "runs": [
+              {
+                "count": 10,
+                "reportMode": "full",
+                "reportHash": "d7a800bd0dbeafd2034a5e692766bb288f0149c1f90b0782d63233125e2f536b",
+                "selectedArtifactBytes": 806799,
+                "elapsedMs": 124.546625,
+                "sql": 47,
+                "pragmas": 14,
+                "rows": 113,
+                "opens": 12,
+                "reads": 40,
+                "bytes": 1593311,
+                "maxChunk": 65536,
+                "writes": 0,
+                "metadataOpens": 9
+              },
+              {
+                "count": 10,
+                "reportMode": "compact",
+                "reportHash": "d3cfc53e5fb6932aa79a9261481d760976e288afd9c4e6c94b78f52daf7f2e19",
+                "selectedArtifactBytes": 806799,
+                "elapsedMs": 68.33866599999999,
+                "sql": 47,
+                "pragmas": 14,
+                "rows": 113,
+                "opens": 12,
+                "reads": 40,
+                "bytes": 1593311,
+                "maxChunk": 65536,
+                "writes": 0,
+                "metadataOpens": 9
+              },
+              {
+                "count": 1000,
+                "reportMode": "full",
+                "reportHash": "d7a800bd0dbeafd2034a5e692766bb288f0149c1f90b0782d63233125e2f536b",
+                "selectedArtifactBytes": 806799,
+                "elapsedMs": 100.219709,
+                "sql": 47,
+                "pragmas": 14,
+                "rows": 113,
+                "opens": 12,
+                "reads": 40,
+                "bytes": 1593311,
+                "maxChunk": 65536,
+                "writes": 0,
+                "metadataOpens": 9
+              },
+              {
+                "count": 1000,
+                "reportMode": "compact",
+                "reportHash": "d3cfc53e5fb6932aa79a9261481d760976e288afd9c4e6c94b78f52daf7f2e19",
+                "selectedArtifactBytes": 806799,
+                "elapsedMs": 59.63225,
+                "sql": 47,
+                "pragmas": 14,
+                "rows": 113,
+                "opens": 12,
+                "reads": 40,
+                "bytes": 1593311,
+                "maxChunk": 65536,
+                "writes": 0,
+                "metadataOpens": 9
+              }
+            ],
+            "elapsedMs": 357.929209,
+            "maxRssBytes": 103464960
+          },
+          "elapsedMs": 406.55229099999997,
+          "code": 0,
+          "signal": null
+        },
+        {
+          "result": {
+            "phase": "preservation",
+            "schema": 1,
+            "inventoryHashes": [
+              "47d3faf58c6d9d04007c1ec7645543f8dc747972307ff3d92581098566e1208e",
+              "bdee3dbbffae168f6641e2f561d0d149914d6bdf107027221592c00c457ae617"
+            ],
+            "elapsedMs": 625.035708,
+            "maxRssBytes": 71319552
+          },
+          "elapsedMs": 673.692916999993,
+          "code": 0,
+          "signal": null
+        }
+      ]
+    },
+    {
+      "schema": 2,
+      "runs": [
+        {
+          "result": {
+            "phase": "generate",
+            "schema": 2,
+            "stores": [
+              {
+                "count": 10,
+                "unrelatedBytes": 629145600,
+                "inventoryHash": "69cdfbad11cd1b41dbbc2ed49b8ca97f4509f5813ecf5d8ddc50059348dcae4d"
+              },
+              {
+                "count": 1000,
+                "unrelatedBytes": 629145600,
+                "inventoryHash": "6b79f763abc792668d8e0929d949fbf3bbd10fa796dc88ace1c59daa0d781c5c"
+              }
+            ],
+            "elapsedMs": 4339.675958,
+            "maxRssBytes": 101564416
+          },
+          "elapsedMs": 4390.284041000006,
+          "code": 0,
+          "signal": null
+        },
+        {
+          "result": {
+            "phase": "operations",
+            "schema": 2,
+            "runs": [
+              {
+                "count": 10,
+                "reportMode": "full",
+                "reportHash": "d7a800bd0dbeafd2034a5e692766bb288f0149c1f90b0782d63233125e2f536b",
+                "selectedArtifactBytes": 806799,
+                "elapsedMs": 126.963292,
+                "sql": 49,
+                "pragmas": 14,
+                "rows": 115,
+                "opens": 12,
+                "reads": 40,
+                "bytes": 1593311,
+                "maxChunk": 65536,
+                "writes": 0,
+                "metadataOpens": 9
+              },
+              {
+                "count": 10,
+                "reportMode": "compact",
+                "reportHash": "d3cfc53e5fb6932aa79a9261481d760976e288afd9c4e6c94b78f52daf7f2e19",
+                "selectedArtifactBytes": 806799,
+                "elapsedMs": 67.63845799999999,
+                "sql": 49,
+                "pragmas": 14,
+                "rows": 115,
+                "opens": 12,
+                "reads": 40,
+                "bytes": 1593311,
+                "maxChunk": 65536,
+                "writes": 0,
+                "metadataOpens": 9
+              },
+              {
+                "count": 1000,
+                "reportMode": "full",
+                "reportHash": "d7a800bd0dbeafd2034a5e692766bb288f0149c1f90b0782d63233125e2f536b",
+                "selectedArtifactBytes": 806799,
+                "elapsedMs": 100.504708,
+                "sql": 49,
+                "pragmas": 14,
+                "rows": 115,
+                "opens": 12,
+                "reads": 40,
+                "bytes": 1593311,
+                "maxChunk": 65536,
+                "writes": 0,
+                "metadataOpens": 9
+              },
+              {
+                "count": 1000,
+                "reportMode": "compact",
+                "reportHash": "d3cfc53e5fb6932aa79a9261481d760976e288afd9c4e6c94b78f52daf7f2e19",
+                "selectedArtifactBytes": 806799,
+                "elapsedMs": 62.08283399999999,
+                "sql": 49,
+                "pragmas": 14,
+                "rows": 115,
+                "opens": 12,
+                "reads": 40,
+                "bytes": 1593311,
+                "maxChunk": 65536,
+                "writes": 0,
+                "metadataOpens": 9
+              }
+            ],
+            "elapsedMs": 364.685208,
+            "maxRssBytes": 106233856
+          },
+          "elapsedMs": 413.62837500000023,
+          "code": 0,
+          "signal": null
+        },
+        {
+          "result": {
+            "phase": "preservation",
+            "schema": 2,
+            "inventoryHashes": [
+              "69cdfbad11cd1b41dbbc2ed49b8ca97f4509f5813ecf5d8ddc50059348dcae4d",
+              "6b79f763abc792668d8e0929d949fbf3bbd10fa796dc88ace1c59daa0d781c5c"
+            ],
+            "elapsedMs": 623.346375,
+            "maxRssBytes": 71254016
+          },
+          "elapsedMs": 671.8612080000021,
+          "code": 0,
+          "signal": null
+        }
+      ]
+    },
+    {
+      "elapsedMs": 2028.344291,
+      "maxRssBytes": 71794688,
+      "fixtureCounts": [
+        {
+          "count": 10,
+          "tableCounts": {
+            "catalog_artifact_events": 0,
+            "catalog_artifacts": 0,
+            "catalog_builds": 0,
+            "catalog_captures": 10,
+            "catalog_conclusion_revisions": 1,
+            "catalog_conclusion_support": 1,
+            "catalog_conclusions": 1,
+            "catalog_configs": 0,
+            "catalog_coverage": 0,
+            "catalog_evidence_refs": 1,
+            "catalog_experiment_revisions": 0,
+            "catalog_experiment_runs": 0,
+            "catalog_experiments": 0,
+            "catalog_finding_evidence": 1,
+            "catalog_findings": 1,
+            "catalog_properties": 0,
+            "catalog_provenance": 0,
+            "catalog_question_links": 0,
+            "catalog_questions": 1,
+            "catalog_replays": 1,
+            "catalog_review_events": 1,
+            "catalog_reviews": 1,
+            "catalog_run_sources": 1,
+            "catalog_runs": 1,
+            "catalog_subjects": 18,
+            "catalog_tasks": 2,
+            "catalog_uploads": 0,
+            "catalog_workflow_events": 4
+          }
+        },
+        {
+          "count": 1000,
+          "tableCounts": {
+            "catalog_artifact_events": 0,
+            "catalog_artifacts": 0,
+            "catalog_builds": 0,
+            "catalog_captures": 1000,
+            "catalog_conclusion_revisions": 1,
+            "catalog_conclusion_support": 1,
+            "catalog_conclusions": 1,
+            "catalog_configs": 0,
+            "catalog_coverage": 0,
+            "catalog_evidence_refs": 1,
+            "catalog_experiment_revisions": 0,
+            "catalog_experiment_runs": 0,
+            "catalog_experiments": 0,
+            "catalog_finding_evidence": 1,
+            "catalog_findings": 1,
+            "catalog_properties": 0,
+            "catalog_provenance": 0,
+            "catalog_question_links": 0,
+            "catalog_questions": 1,
+            "catalog_replays": 1,
+            "catalog_review_events": 1,
+            "catalog_reviews": 1,
+            "catalog_run_sources": 1,
+            "catalog_runs": 1,
+            "catalog_subjects": 1008,
+            "catalog_tasks": 2,
+            "catalog_uploads": 0,
+            "catalog_workflow_events": 4
+          }
+        }
+      ],
+      "measurements": [
+        {
+          "count": 10,
+          "op": "list",
+          "ms": 1.5434999999999945,
+          "metrics": {
+            "sql": 2,
+            "rows": 11,
+            "connections": 1,
+            "locks": 0,
+            "payloadOpens": 0,
+            "payloadReadBytes": 0,
+            "payloadWriteBytes": 0,
+            "fsReads": 0,
+            "fsWrites": 0
+          }
+        },
+        {
+          "count": 10,
+          "op": "lookup",
+          "ms": 0.9058340000000271,
+          "metrics": {
+            "sql": 5,
+            "rows": 2,
+            "connections": 1,
+            "locks": 0,
+            "payloadOpens": 0,
+            "payloadReadBytes": 0,
+            "payloadWriteBytes": 0,
+            "fsReads": 0,
+            "fsWrites": 0
+          }
+        },
+        {
+          "count": 10,
+          "op": "support",
+          "ms": 0.7999590000000012,
+          "metrics": {
+            "sql": 2,
+            "rows": 2,
+            "connections": 1,
+            "locks": 0,
+            "payloadOpens": 0,
+            "payloadReadBytes": 0,
+            "payloadWriteBytes": 0,
+            "fsReads": 0,
+            "fsWrites": 0
+          }
+        },
+        {
+          "count": 10,
+          "op": "history",
+          "ms": 0.9191250000000082,
+          "metrics": {
+            "sql": 2,
+            "rows": 2,
+            "connections": 1,
+            "locks": 0,
+            "payloadOpens": 0,
+            "payloadReadBytes": 0,
+            "payloadWriteBytes": 0,
+            "fsReads": 0,
+            "fsWrites": 0
+          }
+        },
+        {
+          "count": 10,
+          "op": "review",
+          "ms": 41.36091700000003,
+          "metrics": {
+            "sql": 11,
+            "rows": 4,
+            "connections": 1,
+            "locks": 1,
+            "payloadOpens": 0,
+            "payloadReadBytes": 0,
+            "payloadWriteBytes": 0,
+            "fsReads": 0,
+            "fsWrites": 0
+          }
+        },
+        {
+          "count": 1000,
+          "op": "list",
+          "ms": 2.550666999999976,
+          "metrics": {
+            "sql": 2,
+            "rows": 11,
+            "connections": 1,
+            "locks": 0,
+            "payloadOpens": 0,
+            "payloadReadBytes": 0,
+            "payloadWriteBytes": 0,
+            "fsReads": 0,
+            "fsWrites": 0
+          }
+        },
+        {
+          "count": 1000,
+          "op": "lookup",
+          "ms": 1.4983750000001237,
+          "metrics": {
+            "sql": 5,
+            "rows": 2,
+            "connections": 1,
+            "locks": 0,
+            "payloadOpens": 0,
+            "payloadReadBytes": 0,
+            "payloadWriteBytes": 0,
+            "fsReads": 0,
+            "fsWrites": 0
+          }
+        },
+        {
+          "count": 1000,
+          "op": "support",
+          "ms": 1.3394169999999122,
+          "metrics": {
+            "sql": 2,
+            "rows": 2,
+            "connections": 1,
+            "locks": 0,
+            "payloadOpens": 0,
+            "payloadReadBytes": 0,
+            "payloadWriteBytes": 0,
+            "fsReads": 0,
+            "fsWrites": 0
+          }
+        },
+        {
+          "count": 1000,
+          "op": "history",
+          "ms": 1.6532920000001923,
+          "metrics": {
+            "sql": 2,
+            "rows": 2,
+            "connections": 1,
+            "locks": 0,
+            "payloadOpens": 0,
+            "payloadReadBytes": 0,
+            "payloadWriteBytes": 0,
+            "fsReads": 0,
+            "fsWrites": 0
+          }
+        },
+        {
+          "count": 1000,
+          "op": "review",
+          "ms": 43.88820899999996,
+          "metrics": {
+            "sql": 11,
+            "rows": 4,
+            "connections": 1,
+            "locks": 1,
+            "payloadOpens": 0,
+            "payloadReadBytes": 0,
+            "payloadWriteBytes": 0,
+            "fsReads": 0,
+            "fsWrites": 0
+          }
+        }
+      ]
+    },
+    [
+      {
+        "phase": "generate",
+        "pretty": false,
+        "elapsedMs": 7070.292,
+        "maxRssBytes": 73170944,
+        "results": [
+          {
+            "count": 10,
+            "unrelatedBytes": 629145600,
+            "manifestBytes": 629830083
+          },
+          {
+            "count": 1000,
+            "unrelatedBytes": 629145600,
+            "manifestBytes": 629967693
+          }
+        ]
+      },
+      {
+        "phase": "operations",
+        "pretty": false,
+        "elapsedMs": 4886.4695,
+        "maxRssBytes": 181190656,
+        "results": [
+          {
+            "opens": 2,
+            "closes": 2,
+            "peakHandles": 1,
+            "reads": 19245,
+            "manifestBytes": 1261025921,
+            "markerBytes": 68,
+            "peakElement": 166,
+            "records": 10,
+            "elapsedMs": 1766.345542,
+            "outputBytes": 682922,
+            "calls": 8192,
+            "maxChunk": 166,
+            "selectedBytes": 682923
+          },
+          {
+            "opens": 2,
+            "closes": 2,
+            "peakHandles": 1,
+            "reads": 19249,
+            "manifestBytes": 1261301141,
+            "markerBytes": 68,
+            "peakElement": 166,
+            "records": 1000,
+            "elapsedMs": 1744.134333,
+            "outputBytes": 682922,
+            "calls": 8192,
+            "maxChunk": 166,
+            "selectedBytes": 682923
+          }
+        ]
+      }
+    ],
+    [
+      {
+        "phase": "generate",
+        "pretty": true,
+        "elapsedMs": 7864.106042,
+        "maxRssBytes": 76267520,
+        "results": [
+          {
+            "count": 10,
+            "unrelatedBytes": 629145600,
+            "manifestBytes": 630051938
+          },
+          {
+            "count": 1000,
+            "unrelatedBytes": 629145600,
+            "manifestBytes": 630223208
+          }
+        ]
+      },
+      {
+        "phase": "operations",
+        "pretty": true,
+        "elapsedMs": 5145.922167000001,
+        "maxRssBytes": 173539328,
+        "results": [
+          {
+            "opens": 2,
+            "closes": 2,
+            "peakHandles": 1,
+            "reads": 19257,
+            "manifestBytes": 1261911988,
+            "markerBytes": 68,
+            "peakElement": 211,
+            "records": 10,
+            "elapsedMs": 1737.8194170000002,
+            "outputBytes": 682922,
+            "calls": 8192,
+            "maxChunk": 166,
+            "selectedBytes": 904114
+          },
+          {
+            "opens": 2,
+            "closes": 2,
+            "peakHandles": 1,
+            "reads": 19263,
+            "manifestBytes": 1262254528,
+            "markerBytes": 68,
+            "peakElement": 211,
+            "records": 1000,
+            "elapsedMs": 2123.3557080000005,
+            "outputBytes": 682922,
+            "calls": 8192,
+            "maxChunk": 166,
+            "selectedBytes": 904114
+          }
+        ]
+      }
+    ],
+    [
+      {
+        "phase": "generate",
+        "schema": 1,
+        "unrelatedBytes": 629145600,
+        "elapsedMs": 10273.309874999999,
+        "maxRssBytes": 73940992
+      },
+      {
+        "phase": "operations",
+        "schema": 1,
+        "elapsedMs": 342.489459,
+        "maxRssBytes": 82952192,
+        "runs": [
+          {
+            "count": 10,
+            "elapsedMs": 72.76191600000001,
+            "maxChunk": 166,
+            "sinkCalls": 8192,
+            "outputBytes": 682922,
+            "core": {
+              "sql": 11,
+              "rows": 11,
+              "connections": 2,
+              "locks": 1,
+              "payloadOpens": 3,
+              "payloadReadBytes": 3170056,
+              "payloadWriteBytes": 0,
+              "fsReads": 58,
+              "fsWrites": 0
+            },
+            "sql": 26,
+            "rows": 26,
+            "opens": 3,
+            "reads": 58,
+            "bytes": 3170056
+          },
+          {
+            "count": 1000,
+            "elapsedMs": 104.63058299999994,
+            "maxChunk": 166,
+            "sinkCalls": 8192,
+            "outputBytes": 682922,
+            "core": {
+              "sql": 11,
+              "rows": 11,
+              "connections": 2,
+              "locks": 1,
+              "payloadOpens": 3,
+              "payloadReadBytes": 3170056,
+              "payloadWriteBytes": 0,
+              "fsReads": 58,
+              "fsWrites": 0
+            },
+            "sql": 26,
+            "rows": 26,
+            "opens": 3,
+            "reads": 58,
+            "bytes": 3170056
+          }
+        ]
+      }
+    ],
+    [
+      {
+        "phase": "generate",
+        "schema": 2,
+        "unrelatedBytes": 629145600,
+        "elapsedMs": 5919.844833,
+        "maxRssBytes": 74530816
+      },
+      {
+        "phase": "operations",
+        "schema": 2,
+        "elapsedMs": 320.857042,
+        "maxRssBytes": 83132416,
+        "runs": [
+          {
+            "count": 10,
+            "elapsedMs": 73.781292,
+            "maxChunk": 166,
+            "sinkCalls": 8192,
+            "outputBytes": 682922,
+            "core": {
+              "sql": 11,
+              "rows": 11,
+              "connections": 2,
+              "locks": 1,
+              "payloadOpens": 3,
+              "payloadReadBytes": 3170056,
+              "payloadWriteBytes": 0,
+              "fsReads": 58,
+              "fsWrites": 0
+            },
+            "sql": 28,
+            "rows": 28,
+            "opens": 3,
+            "reads": 58,
+            "bytes": 3170056
+          },
+          {
+            "count": 1000,
+            "elapsedMs": 67.06141600000001,
+            "maxChunk": 166,
+            "sinkCalls": 8192,
+            "outputBytes": 682922,
+            "core": {
+              "sql": 11,
+              "rows": 11,
+              "connections": 2,
+              "locks": 1,
+              "payloadOpens": 3,
+              "payloadReadBytes": 3170056,
+              "payloadWriteBytes": 0,
+              "fsReads": 58,
+              "fsWrites": 0
+            },
+            "sql": 28,
+            "rows": 28,
+            "opens": 3,
+            "reads": 58,
+            "bytes": 3170056
+          }
+        ]
+      }
+    ],
+    {
+      "generated": {
+        "phase": "generate",
+        "bytes": 629145600,
+        "elapsedMs": 3124.668375,
+        "maxRssBytes": 66797568,
+        "metrics": {
+          "sql": 267,
+          "rows": 93,
+          "connections": 12,
+          "locks": 11,
+          "payloadOpens": 0,
+          "payloadReadBytes": 629145600,
+          "payloadWriteBytes": 629145600,
+          "fsReads": 10,
+          "fsWrites": 9620
+        }
+      },
+      "operations": {
+        "phase": "operations",
+        "elapsedMs": 301.91695799999997,
+        "maxRssBytes": 74924032,
+        "runs": [
+          {
+            "count": 10,
+            "operation": "list",
+            "elapsedMs": 1.8823329999999991,
+            "metrics": {
+              "sql": 2,
+              "rows": 11,
+              "connections": 1,
+              "locks": 0,
+              "payloadOpens": 0,
+              "payloadReadBytes": 0,
+              "payloadWriteBytes": 0,
+              "fsReads": 0,
+              "fsWrites": 0
+            }
+          },
+          {
+            "count": 10,
+            "operation": "lookup",
+            "elapsedMs": 0.7426670000000009,
+            "metrics": {
+              "sql": 1,
+              "rows": 1,
+              "connections": 1,
+              "locks": 0,
+              "payloadOpens": 0,
+              "payloadReadBytes": 0,
+              "payloadWriteBytes": 0,
+              "fsReads": 0,
+              "fsWrites": 0
+            }
+          },
+          {
+            "count": 10,
+            "operation": "review",
+            "elapsedMs": 21.856792,
+            "metrics": {
+              "sql": 11,
+              "rows": 3,
+              "connections": 1,
+              "locks": 1,
+              "payloadOpens": 0,
+              "payloadReadBytes": 0,
+              "payloadWriteBytes": 0,
+              "fsReads": 0,
+              "fsWrites": 0
+            }
+          },
+          {
+            "count": 10,
+            "operation": "import",
+            "elapsedMs": 54.802209000000005,
+            "metrics": {
+              "sql": 26,
+              "rows": 9,
+              "connections": 1,
+              "locks": 1,
+              "payloadOpens": 0,
+              "payloadReadBytes": 12,
+              "payloadWriteBytes": 12,
+              "fsReads": 1,
+              "fsWrites": 7
+            }
+          },
+          {
+            "count": 1000,
+            "operation": "list",
+            "elapsedMs": 0.8037080000000003,
+            "metrics": {
+              "sql": 2,
+              "rows": 11,
+              "connections": 1,
+              "locks": 0,
+              "payloadOpens": 0,
+              "payloadReadBytes": 0,
+              "payloadWriteBytes": 0,
+              "fsReads": 0,
+              "fsWrites": 0
+            }
+          },
+          {
+            "count": 1000,
+            "operation": "lookup",
+            "elapsedMs": 0.39654200000001083,
+            "metrics": {
+              "sql": 1,
+              "rows": 1,
+              "connections": 1,
+              "locks": 0,
+              "payloadOpens": 0,
+              "payloadReadBytes": 0,
+              "payloadWriteBytes": 0,
+              "fsReads": 0,
+              "fsWrites": 0
+            }
+          },
+          {
+            "count": 1000,
+            "operation": "review",
+            "elapsedMs": 13.674499999999995,
+            "metrics": {
+              "sql": 11,
+              "rows": 3,
+              "connections": 1,
+              "locks": 1,
+              "payloadOpens": 0,
+              "payloadReadBytes": 0,
+              "payloadWriteBytes": 0,
+              "fsReads": 0,
+              "fsWrites": 0
+            }
+          },
+          {
+            "count": 1000,
+            "operation": "import",
+            "elapsedMs": 67.14266700000002,
+            "metrics": {
+              "sql": 26,
+              "rows": 9,
+              "connections": 1,
+              "locks": 1,
+              "payloadOpens": 0,
+              "payloadReadBytes": 14,
+              "payloadWriteBytes": 14,
+              "fsReads": 1,
+              "fsWrites": 7
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "historicalLogs": {
+    "focused-1.log": {
+      "sha256": "54cbd77235a59752c481f55c543d944d91cb894147f3b7598f807af1b8ee91a1",
+      "summary": [
+        "ℹ tests 57",
+        "ℹ pass 56",
+        "ℹ fail 1",
+        "ℹ duration_ms 54851.965709"
+      ]
+    },
+    "targeted-2.log": {
+      "sha256": "c3fb2bdf386f64344100929854141eea44c2bd07bdd70ce854dd25d83252b38e",
+      "summary": [
+        "ℹ tests 3",
+        "ℹ pass 3",
+        "ℹ fail 0",
+        "ℹ duration_ms 1707.484625"
+      ]
+    },
+    "focused-2.log": {
+      "sha256": "995818545d19a014618db582cd66bfb0aa116234e474335bccb6133b403b09cf",
+      "summary": [
+        "ℹ tests 66",
+        "ℹ pass 66",
+        "ℹ fail 0",
+        "ℹ duration_ms 58830.920541"
+      ]
+    },
+    "focused-final.log": {
+      "sha256": "eb961f6cd5488f40c74d20f5f4df16686e11e6baaa7d8dc2cf1c9d2c6606e677",
+      "summary": [
+        "ℹ tests 101",
+        "ℹ pass 101",
+        "ℹ fail 0",
+        "ℹ duration_ms 55943.156334"
+      ]
+    },
+    "core-1.log": {
+      "sha256": "55cd7976499ddfe34d8277dd20c5e832b745d370b235d509e55d052e4539bcc7",
+      "summary": [
+        "ℹ tests 153",
+        "ℹ pass 153",
+        "ℹ fail 0",
+        "ℹ duration_ms 61251.135708"
+      ]
+    },
+    "repository-final.log": {
+      "sha256": "979d7dbefcfcbd28b6547da235739ffd4afcdd8eb896b1ecabe640402535eef5",
+      "summary": [
+        "ℹ tests 464",
+        "ℹ pass 464",
+        "ℹ fail 0",
+        "ℹ duration_ms 91449.007333"
+      ]
+    },
+    "check-final.log": {
+      "sha256": "9aea0682dee8974e8346cf8bdc6ff114b115dff90ce782a84408be58795b8252",
+      "summary": []
+    }
+  },
+  "retainedRunDirectory": "/tmp/pain-gain-m2c.YGkAd5/"
+}

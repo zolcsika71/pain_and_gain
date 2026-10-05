@@ -57,6 +57,13 @@ It feeds the same native serializer, imports no SQLite, and changes no existing
 command or lifecycle behavior. See the
 [M2b record](replay-storage-v3-m2b-2026-10-04.md).
 
+`tools/replay-analysis-fixture.js` is the separate M2c asynchronous v3 input
+adapter for explicitly selected logs in marked temporary schema-1/2 roots.
+It borrows one coherent pinned snapshot and reconstructs bounded original input
+before calling the shared synchronous analysis session. It neither writes
+catalog findings nor changes lifecycle state. It is not used by existing
+commands. See the [M2c record](replay-storage-v3-m2c-2026-10-05.md).
+
 `tools/replay-analysis.js` implements the deterministic M4 analyzer outside the
 Arena runtime. Its importable
 `analyzeReplay({ root, replayId, fingerprints?, scoreFingerprints?, reportMode? })`

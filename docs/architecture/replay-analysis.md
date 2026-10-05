@@ -7,6 +7,14 @@ version 2 evidence and writes one deterministic JSON report to stdout. It does
 not import captures, acquire review ownership, migrate statuses, reconcile
 cleanup, or write report files.
 
+The separate [M2c fixture adapter](replay-storage-v3-m2c-2026-10-05.md) exercises
+v3 input through `createReplayAnalysisSession`, the same synchronous validators,
+merge logic and report finalization used below. Its asynchronous fixture-only
+API does not replace `analyzeReplay`, enable CLI dispatch or add SQLite to the
+v2 dependency path. Strict v3 transport errors reject; admitted semantic evidence
+problems retain the analyzer's fail/unknown findings. Qualification is scoped
+to synthetic fixtures, not production integration or general analyzer memory.
+
 ## Interface and input selection
 
 The library interface is:
