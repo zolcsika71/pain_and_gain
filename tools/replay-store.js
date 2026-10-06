@@ -587,7 +587,18 @@ async function openVersionedStore({ root, mode, fault, recover = false } = {},sc
             try { return await locked(root,async () => { const current = currentDescriptor(); if (current.storeId !== d.storeId) fail('UNSUPPORTED_STORE','Store changed while acquiring lock'); const db = connection(root,current,true,metrics); try { return await writerCallback(db,w => callback(catalogCallback ? catalogDefinition.writer({db,stmt,writer:w,root,store}) : w)); } finally { db.close(); } },metrics); }
             finally { inWriter = false; }
         },
-        async withReadSnapshot({recordKeys = [],mapIds = [],reviewKeys = [],payloadRoles = ['diagnostics','summaries','extensions']} = {},callback) {
+        async withReadSnapshot(options = {},callback) {
+            let {recordKeys = [],mapIds = [],reviewKeys = [],payloadRoles = ['diagnostics','summaries','extensions'],scoreSelection} = options;
+            let scoreFacts;
+            if (scoreSelection !== undefined) {
+                if (['recordKeys','mapIds','reviewKeys','payloadRoles'].some(k=>Object.hasOwn(options,k))) fail('INVALID_REFERENCE','Score snapshot mode is exclusive');
+                if (Array.isArray(scoreSelection?.fingerprints) && scoreSelection.fingerprints.length > LIMITS.sources) fail('RESOURCE_LIMIT','Snapshot source budget exceeded');
+                if (!scoreSelection || !ID.test(scoreSelection.replayId) || !Array.isArray(scoreSelection.fingerprints) ||
+                    !scoreSelection.fingerprints.length || scoreSelection.fingerprints.some(f=>typeof f !== 'string' || !HEX.test(f)) ||
+                    new Set(scoreSelection.fingerprints).size !== scoreSelection.fingerprints.length) fail('INVALID_IDENTITY','Explicit score selection required');
+                scoreSelection = {replayId:scoreSelection.replayId,fingerprints:[...scoreSelection.fingerprints]};
+                recordKeys = scoreSelection.fingerprints.map(fingerprint=>({collection:'score',replayId:scoreSelection.replayId,fingerprint}));
+            }
             assertOpen(); if (recordKeys.length > LIMITS.sources) fail('RESOURCE_LIMIT','Snapshot source budget exceeded');
             const selected = new Map(recordKeys.map(k => [recordKey(k),k]));
             for (const review of reviewKeys) selected.set(recordKey(review.recordKey),review.recordKey);
@@ -644,6 +655,7 @@ async function openVersionedStore({ root, mode, fault, recover = false } = {},sc
             const view = {
                 records,maps,replays,reviews,properties,
                 assertOpen() { if (!open) fail('CLOSED','Snapshot callback ended'); },
+                scoreSelection() { this.assertOpen(); if (!scoreFacts) fail('INVALID_REFERENCE','Not a score-selection snapshot'); return scoreFacts; },
                 artifact(ref) { this.assertOpen(); const h = handles.get(ref.path); if (!h || h.ref.hash !== ref.hash || h.ref.bytes !== ref.bytes) fail('INVALID_REFERENCE','Unpinned artifact reference'); return h; },
                 read(artifact,buffer,offset) { this.assertOpen(); const n = fs.readSync(artifact.fd,buffer,0,buffer.length,offset); metrics.fsReads++; metrics.payloadReadBytes += n; return n; },
                 output(k) { this.assertOpen(); const key = recordKey(k); if (!outputRefs.has(key)) fail('INVALID_REFERENCE','Output record is not selected'); return outputRefs.get(key); },
@@ -659,14 +671,41 @@ async function openVersionedStore({ root, mode, fault, recover = false } = {},sc
                     let setupFailed = false;
                     try {
                         db.exec('BEGIN');
+                        if (scoreSelection) {
+                            const collections = {};
+                            for (const [name,table] of [['scoreRecords','records'],['retiredScoreSources','retired']]) {
+                                const row=addMeta(stmt(db,'SELECT * FROM collections WHERE key=?',[name]));
+                                if (!row) fail('UNSUPPORTED_REPRESENTATION','Explicit score collection presence required');
+                                const original=addMeta(stmt(db,'SELECT value,payload_pointer FROM properties WHERE owner_kind=? AND owner_key=? AND pointer=?',['collection',name,'/present']));
+                                if (original && (original.payload_pointer !== null || JSON.parse(original.value) !== Boolean(row.present))) fail('INVALID_REFERENCE','Collection presence projection mismatch');
+                                const hasRows=Boolean(stmt(db,`SELECT key FROM ${table} WHERE collection=? LIMIT 1`,['score']));
+                                if (!row.present && hasRows) fail('INVALID_REFERENCE','Absent collection has rows');
+                                collections[name]=Object.freeze({present:Boolean(row.present),hasRows});
+                            }
+                            const currentKeys=[],missingFingerprints=[],retiredFingerprints=[];
+                            for (const k of recordKeys) {
+                                const current=record(db,k),retired=stmt(db,'SELECT key FROM retired WHERE collection=? AND replay_id=? AND fingerprint=?',[k.collection,k.replayId,k.fingerprint]);
+                                if (current && retired) fail('INVALID_REFERENCE','Current and retired score identity conflict');
+                                if (current) currentKeys.push(Object.freeze(k));
+                                else (retired?retiredFingerprints:missingFingerprints).push(k.fingerprint);
+                            }
+                            recordKeys=currentKeys;
+                            scoreFacts=Object.freeze({collections:Object.freeze(collections),currentKeys:Object.freeze(currentKeys),missingFingerprints:Object.freeze(missingFingerprints),retiredFingerprints:Object.freeze(retiredFingerprints)});
+                        }
                         for (const k of recordKeys) { recordKey(k); const r = addMeta(record(db,k)); if (!r || !['claim','done'].includes(r.status)) fail('UNAVAILABLE','Selected record is missing/not ready');
                             if (stmt(db,'SELECT id FROM operations WHERE collection=? AND replay_id=? AND fingerprint=? LIMIT 1',[k.collection,k.replayId,k.fingerprint])) fail('UNAVAILABLE','Selected record has an unresolved file intent');
                             records.set(recordKey(k),r); collectProperties(db,recordOwner(k)); collect(db,recordOwner(k));
-                            if (!replays.has(k.replayId)) { const replay = addMeta(stmt(db,'SELECT * FROM replays WHERE key=?',[k.replayId])); if(!replay) fail('UNAVAILABLE','Replay association absent'); replays.set(k.replayId,replay); collectProperties(db,{kind:'replay',key:k.replayId}); }
-                            if (r.map_id && !mapIds.includes(r.map_id)) mapIds = [...mapIds,r.map_id];
+                            if (!replays.has(k.replayId)) { const replay = addMeta(stmt(db,'SELECT * FROM replays WHERE key=?',[k.replayId])); if(!replay) fail('UNAVAILABLE','Replay association absent'); replays.set(k.replayId,replay); if (!scoreSelection) collectProperties(db,{kind:'replay',key:k.replayId}); }
+                            if (!scoreSelection && r.map_id && !mapIds.includes(r.map_id)) mapIds = [...mapIds,r.map_id];
                             // Resolve by unique owner, not only projected path: a
                             // null projection must not conceal a reservation.
                             const o = addMeta(stmt(db,'SELECT * FROM outputs WHERE collection=? AND replay_id=? AND fingerprint=?',[k.collection,k.replayId,k.fingerprint]));
+                            if (scoreSelection) {
+                                if (!o) fail('UNAVAILABLE','Score output reservation absent');
+                                const prefix=`replay-score-source-${k.replayId}-`,suffix=o.path.slice(prefix.length);
+                                if (!o.path.startsWith(prefix) || !(suffix === k.fingerprint.slice(0,12)+'.response' || suffix === k.fingerprint+'.response' || new RegExp(`^${k.fingerprint}-[2-9]\\d*\\.response$`).test(suffix))) fail('INVALID_REFERENCE','Score output filename identity mismatch');
+                                assertPathKind(db,o.path,'outputs',new Set());
+                            }
                             for (const [pointer,expected] of [['/outputPath',r.output_path],['/outputFingerprint',r.output_hash]]) {
                                 const original = properties.get(inlineJson(recordOwner(k))).find(p=>p.pointer === pointer);
                                 if (original && (original.payload_pointer !== null || JSON.parse(original.value) !== expected)) fail('INVALID_REFERENCE','Output original/projection mismatch');

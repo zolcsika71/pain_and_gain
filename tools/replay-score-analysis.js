@@ -95,7 +95,7 @@ function scoreRecordProblem(record, replayId) {
     return null;
 }
 
-function validateSource(record, directory, allRecords, add) {
+function validateSource(record, sourceEvidence, add) {
     const ref = { path: 'replay_logs/manifest.json', scoreFingerprint: record?.fingerprint ?? null };
     const problem = scoreRecordProblem(record, record?.replayId);
     if (problem) {
@@ -103,7 +103,8 @@ function validateSource(record, directory, allRecords, add) {
         return null;
     }
     add('score.manifest-record', 'pass', [ref], 'Score record schema and request provenance are valid.');
-    const loaded = safeScoreFile(directory, record, allRecords);
+    const loaded = sourceEvidence.get(record);
+    if (!loaded) throw new Error('Selected score source evidence is missing');
     const outputRef = { path: `replay_logs/${record.outputPath}`, scoreFingerprint: record.fingerprint };
     if (loaded.error) {
         add('score.output-file', 'fail', [outputRef], `Managed score source is invalid: ${loaded.error}.`);
@@ -1034,6 +1035,26 @@ export function analyzeScoreEvidence({ directory, manifest, replayId, scoreFinge
         scoreFingerprints.some(item => !fingerprintPattern.test(item))) {
         throw new Error('Score fingerprints must be a nonempty array of full SHA-256 strings');
     }
+    const sourceEvidence = new Map();
+    // Keep invalid-record and absent-collection behavior in the shared validator.
+    if (Array.isArray(manifest.scoreRecords) && Array.isArray(scoreFingerprints)) {
+        for (const record of manifest.scoreRecords.filter(r=>r?.replayId===replayId &&
+            scoreFingerprints.includes(r.fingerprint)).sort((a,b)=>a.fingerprint.localeCompare(b.fingerprint))) if (!scoreRecordProblem(record, replayId)) {
+            sourceEvidence.set(record, safeScoreFile(directory, record, manifest.scoreRecords));
+        }
+    }
+    return analyzeLoadedScoreEvidence({manifest,replayId,scoreFingerprints,snapshots,merged,
+        selectedBuildIds,reportMode,addFinding,sourceEvidence});
+}
+
+export function analyzeLoadedScoreEvidence({manifest,replayId,scoreFingerprints,
+    snapshots = new Map(), merged = {byTick:new Map(),complete:new Set()},
+    selectedBuildIds = [], reportMode = 'full', addFinding, sourceEvidence}) {
+    if (!replayIdPattern.test(replayId ?? '')) throw new Error('Expected a verified 24-character replay ID');
+    if (!Array.isArray(scoreFingerprints) || !scoreFingerprints.length ||
+        scoreFingerprints.some(item => !fingerprintPattern.test(item))) {
+        throw new Error('Score fingerprints must be a nonempty array of full SHA-256 strings');
+    }
     const add = (rule, verdict, refs, message, observed = null, buildIds = [null]) =>
         addFinding(rule, verdict, refs, message, observed, buildIds);
     const requested = [...new Set(scoreFingerprints)].sort();
@@ -1063,7 +1084,7 @@ export function analyzeScoreEvidence({ directory, manifest, replayId, scoreFinge
     if (selectedRecords.length) add('score.record-selection', 'pass', selectedRecords.map(record =>
         ({ path: 'replay_logs/manifest.json', scoreFingerprint: record.fingerprint })),
     'Explicit score fingerprints selected current managed sources.', { count: selectedRecords.length });
-    const sources = selectedRecords.map(record => validateSource(record, directory, manifest.scoreRecords, add))
+    const sources = selectedRecords.map(record => validateSource(record, sourceEvidence, add))
         .filter(Boolean);
     const segments = sources.flatMap(makeSegments).sort((a, b) => a.id.localeCompare(b.id));
     const established = establishGroups(segments, add);

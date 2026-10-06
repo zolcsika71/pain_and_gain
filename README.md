@@ -185,6 +185,13 @@ v2 analyzer/CLI and scoring path remain unchanged and SQLite-free. See the
 for measured results, transport-error boundaries and exclusions; this is not
 production dispatch or completion of M2.
 
+`tools/replay-score-analysis-fixture.js` provides M2d's separate asynchronous
+`analyzeFixtureScoreReplay({root, schemaVersion, replayId, scoreFingerprints, reportMode})`.
+Only explicit score selections in marked temporary schema-1/2 fixtures are
+accepted. It never selects logs or reads optional maps, changes lifecycle state,
+or enables v3 CLI dispatch. See the [M2d qualification record](docs/architecture/replay-storage-v3-m2d-2026-10-05.md)
+for exact scope, independent score-only oracles and retained limitations.
+
 ### Managed replay-score sources
 
 ADR 0005 Milestone 1 adds optional manifest-version-2 `scoreRecords` and

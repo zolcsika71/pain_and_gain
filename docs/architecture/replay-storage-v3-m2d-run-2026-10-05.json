@@ -1,0 +1,1155 @@
+{
+  "scope": "M2d bounded synthetic qualification passed; local unstaged candidate awaiting independent review",
+  "documentationChecks": {"localLinks":77,"anchors":8,"jsonFiles":3,"trackedAndNewWhitespace":"passed","oracleSourceAndReportHashes":"verified","allRetainedLogAndReceiptHashes":"verified"},
+  "base": "651ddb7068eb8905188c3158e9cf84b7e0878c1e",
+  "candidatePaths": [
+    "README.md",
+    "docs/architecture/README.md",
+    "docs/architecture/project-layout.md",
+    "docs/architecture/replay-storage-v3-m2d-2026-10-05.md",
+    "docs/architecture/replay-storage-v3-m2d-run-2026-10-05.json",
+    "package.json",
+    "tools/replay-analysis.js",
+    "tools/replay-score-analysis.js",
+    "tools/replay-store.js",
+    "tools/replay-score-analysis-fixture.js",
+    "tests/unit/replay-score-analysis-fixture.test.js",
+    "tests/fixtures/replay-score-analysis-m2d-recipe.js",
+    "tests/fixtures/replay-score-analysis-m2d-oracle.json",
+    "tests/fixtures/replay-score-analysis-m2d-store.js",
+    "tests/fixtures/replay-score-analysis-m2d-worker.js",
+    "tests/fixtures/replay-score-analysis-m2d-process.js"
+  ],
+  "publicationDependency": {
+    "path": "docs/architecture/replay-storage-v3-m2d-plan-2026-10-05.md",
+    "sha256": "867bd456fa7f853dfa77cea3278f3a56ca2f04da54e421d042b06e21b6fcefa6",
+    "unchanged": true,
+    "includedInChangedCandidate": false
+  },
+  "retainedRunDirectory": "/tmp/pain-gain-m2d.QXda0F",
+  "initialInterruptedRun": {
+    "command": "node --test tests/unit/replay-score-analysis-fixture.test.js",
+    "terminalSummary": "tests 1; pass 0; fail 1; cancelled 0; skipped 0; duration_ms 528403.317208; test file failed after explicit SIGTERM",
+    "interpretation": "Interrupted preliminary development run, not a completed qualification suite; full terminal summary was in tool output."
+  },
+  "oracle": {
+    "path": "tests/fixtures/replay-score-analysis-m2d-oracle.json",
+    "generator": "/tmp/pain-gain-m2d.QXda0F/freeze.mjs",
+    "unmodifiedExport": "/tmp/pain-gain-m2d.QXda0F/published",
+    "frozenBeforeImplementation": true
+  },
+  "runs": {
+    "parity-scale": {
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=frozen scale",
+        "tests/unit/replay-score-analysis-fixture.test.js"
+      ],
+      "startedAt": "2026-10-05T16:04:49.534Z",
+      "endedAt": "2026-10-05T16:06:42.302Z",
+      "elapsedMs": 112757.519625,
+      "code": 1,
+      "signal": null,
+      "runtime": {
+        "execPath": "/Users/zoltanka/Library/Caches/JetBrains/WebStorm2026.2/acp-agents/.runtimes/node/24.19.0/bin/node",
+        "node": "v24.19.0",
+        "sqlite": "3.53.3",
+        "platform": "darwin",
+        "arch": "arm64"
+      },
+      "log": "/tmp/pain-gain-m2d.QXda0F/parity-scale.log",
+      "logHash": "15c256fafd8e2587ffee64221d2e08c1db5d879c2ba0dbd3bac7e9b204d9b1db",
+      "retainedReceipt": "/tmp/pain-gain-m2d.QXda0F/parity-scale.json",
+      "retainedReceiptHash": "feb4a83384ecf7029865bb60c46d039793a94b5af5bfe2b364bff310954101f1",
+      "unchanged": true,
+      "totals": {
+        "tests": 1,
+        "pass": 0,
+        "fail": 1,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0
+      },
+      "busyTest": null
+    },
+    "targeted-second": {
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=^(?!.*corpus gate)",
+        "tests/unit/replay-score-analysis-fixture.test.js"
+      ],
+      "startedAt": "2026-10-05T16:06:49.621Z",
+      "endedAt": "2026-10-05T16:12:19.133Z",
+      "elapsedMs": 329489.37825,
+      "code": 1,
+      "signal": null,
+      "runtime": {
+        "execPath": "/Users/zoltanka/Library/Caches/JetBrains/WebStorm2026.2/acp-agents/.runtimes/node/24.19.0/bin/node",
+        "node": "v24.19.0",
+        "sqlite": "3.53.3",
+        "platform": "darwin",
+        "arch": "arm64"
+      },
+      "log": "/tmp/pain-gain-m2d.QXda0F/targeted-second.log",
+      "logHash": "e6a239682b0839d123b13691886a10fb150ae705c2ea3abaa4a3f22039fab19d",
+      "retainedReceipt": "/tmp/pain-gain-m2d.QXda0F/targeted-second.json",
+      "retainedReceiptHash": "168938fde4473075378d4f58ce2b151e40d9dbfe8b782064ee13ad6ffbaaf3cb",
+      "unchanged": false,
+      "totals": {
+        "tests": 72,
+        "pass": 70,
+        "fail": 2,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0
+      },
+      "busyTest": null
+    },
+    "gate-first": {
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=corpus gate",
+        "tests/unit/replay-score-analysis-fixture.test.js"
+      ],
+      "startedAt": "2026-10-05T16:03:09.660Z",
+      "endedAt": "2026-10-05T16:03:57.995Z",
+      "elapsedMs": 48291.248042,
+      "code": 0,
+      "signal": null,
+      "runtime": {
+        "execPath": "/Users/zoltanka/Library/Caches/JetBrains/WebStorm2026.2/acp-agents/.runtimes/node/24.19.0/bin/node",
+        "node": "v24.19.0",
+        "sqlite": "3.53.3",
+        "platform": "darwin",
+        "arch": "arm64"
+      },
+      "log": "/tmp/pain-gain-m2d.QXda0F/gate-first.log",
+      "logHash": "e17dd4884f48d850cd61bf979585982e997f440673128d89888462e592a63229",
+      "retainedReceipt": "/tmp/pain-gain-m2d.QXda0F/gate-first.json",
+      "retainedReceiptHash": "5229c2ce2ede0a25a281e2a6c3578eae83a4f8d0924e17f44bb145d1336e940e",
+      "unchanged": true,
+      "totals": {
+        "tests": 2,
+        "pass": 2,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0
+      },
+      "busyTest": null
+    },
+    "bounds-first": {
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=raw caps|value cap|mode exclusivity",
+        "tests/unit/replay-score-analysis-fixture.test.js"
+      ],
+      "startedAt": "2026-10-05T16:09:37.851Z",
+      "endedAt": "2026-10-05T16:10:46.119Z",
+      "elapsedMs": 68254.318166,
+      "code": 0,
+      "signal": null,
+      "runtime": {
+        "execPath": "/Users/zoltanka/Library/Caches/JetBrains/WebStorm2026.2/acp-agents/.runtimes/node/24.19.0/bin/node",
+        "node": "v24.19.0",
+        "sqlite": "3.53.3",
+        "platform": "darwin",
+        "arch": "arm64"
+      },
+      "log": "/tmp/pain-gain-m2d.QXda0F/bounds-first.log",
+      "logHash": "13411c24334ebd9181545e19abe8d422f8159576d8e3add0a6ca42df512cb387",
+      "retainedReceipt": "/tmp/pain-gain-m2d.QXda0F/bounds-first.json",
+      "retainedReceiptHash": "0de5f61bfedc141998ff2400fdf180e5687016639c2940c6840d8de2b7da5678",
+      "unchanged": false,
+      "totals": {
+        "tests": 6,
+        "pass": 6,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0
+      },
+      "busyTest": null
+    },
+    "targeted-third": {
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=^(?!.*corpus gate)",
+        "tests/unit/replay-score-analysis-fixture.test.js"
+      ],
+      "startedAt": "2026-10-05T16:12:19.152Z",
+      "endedAt": "2026-10-05T16:13:36.436Z",
+      "elapsedMs": 77281.077834,
+      "code": 1,
+      "signal": null,
+      "runtime": {
+        "execPath": "/Users/zoltanka/Library/Caches/JetBrains/WebStorm2026.2/acp-agents/.runtimes/node/24.19.0/bin/node",
+        "node": "v24.19.0",
+        "sqlite": "3.53.3",
+        "platform": "darwin",
+        "arch": "arm64"
+      },
+      "log": "/tmp/pain-gain-m2d.QXda0F/targeted-third.log",
+      "logHash": "fda1c4e82b1eeccaa7b99c343bf70d3da30abe9f7ef9dfc4f751667e128b32b0",
+      "retainedReceipt": "/tmp/pain-gain-m2d.QXda0F/targeted-third.json",
+      "retainedReceiptHash": "264c5ac9b1a58c8a1aa9c7c860e914a4986abc7c81c13b35e1309cfec22b3990",
+      "unchanged": true,
+      "totals": {
+        "tests": 80,
+        "pass": 78,
+        "fail": 2,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0
+      },
+      "busyTest": null
+    },
+    "faults-corrected": {
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=callback/analysis faults",
+        "tests/unit/replay-score-analysis-fixture.test.js"
+      ],
+      "startedAt": "2026-10-05T16:13:53.310Z",
+      "endedAt": "2026-10-05T16:13:55.658Z",
+      "elapsedMs": 2345.455833,
+      "code": 0,
+      "signal": null,
+      "runtime": {
+        "execPath": "/Users/zoltanka/Library/Caches/JetBrains/WebStorm2026.2/acp-agents/.runtimes/node/24.19.0/bin/node",
+        "node": "v24.19.0",
+        "sqlite": "3.53.3",
+        "platform": "darwin",
+        "arch": "arm64"
+      },
+      "log": "/tmp/pain-gain-m2d.QXda0F/faults-corrected.log",
+      "logHash": "7a42064f4f96a5bad9abad00ad39eb404682ae599785a0fda36a15248fd3c163",
+      "retainedReceipt": "/tmp/pain-gain-m2d.QXda0F/faults-corrected.json",
+      "retainedReceiptHash": "fcd9328117ca7b6d95e6cce29944f9349ae8e54ebf6ed59ae3273209bfc921d7",
+      "unchanged": true,
+      "totals": {
+        "tests": 2,
+        "pass": 2,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0
+      },
+      "busyTest": null
+    },
+    "metadata-cap": {
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=expanded metadata",
+        "tests/unit/replay-score-analysis-fixture.test.js"
+      ],
+      "startedAt": "2026-10-05T16:14:52.210Z",
+      "endedAt": "2026-10-05T16:14:55.882Z",
+      "elapsedMs": 3669.919042,
+      "code": 0,
+      "signal": null,
+      "runtime": {
+        "execPath": "/Users/zoltanka/Library/Caches/JetBrains/WebStorm2026.2/acp-agents/.runtimes/node/24.19.0/bin/node",
+        "node": "v24.19.0",
+        "sqlite": "3.53.3",
+        "platform": "darwin",
+        "arch": "arm64"
+      },
+      "log": "/tmp/pain-gain-m2d.QXda0F/metadata-cap.log",
+      "logHash": "3c4dbff22dfac844fb4739597930ca48a3fa4f4942917a4decc859ff1ac0f38b",
+      "retainedReceipt": "/tmp/pain-gain-m2d.QXda0F/metadata-cap.json",
+      "retainedReceiptHash": "42a5ed3f5f1966d8aa266ce5ebd3ff8a434f9cf92c734fbfc0e99c8a12ba7e50",
+      "unchanged": true,
+      "totals": {
+        "tests": 2,
+        "pass": 2,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0
+      },
+      "busyTest": null
+    },
+    "focused-final": {
+      "command": [
+        "node",
+        "--test",
+        "tests/unit/replay-score-analysis-fixture.test.js",
+        "tests/unit/replay-score-analysis.test.js",
+        "tests/unit/replay-analysis.test.js"
+      ],
+      "startedAt": "2026-10-05T16:16:14.382Z",
+      "endedAt": "2026-10-05T16:17:34.066Z",
+      "elapsedMs": 79682.134666,
+      "code": 0,
+      "signal": null,
+      "runtime": {
+        "execPath": "/Users/zoltanka/Library/Caches/JetBrains/WebStorm2026.2/acp-agents/.runtimes/node/24.19.0/bin/node",
+        "node": "v24.19.0",
+        "sqlite": "3.53.3",
+        "platform": "darwin",
+        "arch": "arm64"
+      },
+      "log": "/tmp/pain-gain-m2d.QXda0F/focused-final.log",
+      "logHash": "1189f0e0e535b81a07b120810d832410a48941033a0e96607b1c0d36f678981e",
+      "retainedReceipt": "/tmp/pain-gain-m2d.QXda0F/focused-final.json",
+      "retainedReceiptHash": "77bfc01bb96e8c64c0bbe1c15b25cff62eb7e70fe52734dc230b5d3b52a79de8",
+      "unchanged": true,
+      "totals": {
+        "tests": 115,
+        "pass": 115,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0
+      },
+      "busyTest": null
+    },
+    "affected-final": {
+      "command": [
+        "node",
+        "--test",
+        "tests/unit/replay-store.test.js",
+        "tests/unit/replay-store-payloads.test.js",
+        "tests/unit/replay-catalog.test.js",
+        "tests/unit/replay-other.test.js",
+        "tests/unit/replay-analysis-fixture.test.js",
+        "tests/unit/replay-legacy-reader.test.js"
+      ],
+      "startedAt": "2026-10-05T16:17:55.094Z",
+      "endedAt": "2026-10-05T16:19:49.477Z",
+      "elapsedMs": 114379.551084,
+      "code": 0,
+      "signal": null,
+      "runtime": {
+        "execPath": "/Users/zoltanka/Library/Caches/JetBrains/WebStorm2026.2/acp-agents/.runtimes/node/24.19.0/bin/node",
+        "node": "v24.19.0",
+        "sqlite": "3.53.3",
+        "platform": "darwin",
+        "arch": "arm64"
+      },
+      "log": "/tmp/pain-gain-m2d.QXda0F/affected-final.log",
+      "logHash": "1b017e210f9c51f14ef77b62ac4a99978f1d02a32061d01e433e9eff3c9ee522",
+      "retainedReceipt": "/tmp/pain-gain-m2d.QXda0F/affected-final.json",
+      "retainedReceiptHash": "b88ad708eeaae8622b297a0b1ff0976dee943450a8d047579cf6d940a33f10a1",
+      "unchanged": true,
+      "totals": {
+        "tests": 260,
+        "pass": 260,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0
+      },
+      "busyTest": "✔ SQLite busy exhaustion is bounded and cannot publish ready evidence (5655.70325ms)"
+    },
+    "repository-final": {
+      "command": [
+        "npm",
+        "test"
+      ],
+      "startedAt": "2026-10-05T16:20:12.393Z",
+      "endedAt": "2026-10-05T16:22:47.538Z",
+      "elapsedMs": 155142.179583,
+      "code": 0,
+      "signal": null,
+      "runtime": {
+        "execPath": "/Users/zoltanka/Library/Caches/JetBrains/WebStorm2026.2/acp-agents/.runtimes/node/24.19.0/bin/node",
+        "node": "v24.19.0",
+        "sqlite": "3.53.3",
+        "platform": "darwin",
+        "arch": "arm64"
+      },
+      "log": "/tmp/pain-gain-m2d.QXda0F/repository-final.log",
+      "logHash": "32715a1ec8f3b7a2035765b499f68a8db973266316318e784aacefa7c5b5cca5",
+      "retainedReceipt": "/tmp/pain-gain-m2d.QXda0F/repository-final.json",
+      "retainedReceiptHash": "cab701f78758d5e455cc10049640cd4c7b283a2f1868ce1a3012406a3a6ba6c7",
+      "unchanged": true,
+      "totals": {
+        "tests": 572,
+        "pass": 572,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0
+      },
+      "busyTest": "✔ SQLite busy exhaustion is bounded and cannot publish ready evidence (5739.108375ms)"
+    },
+    "focused-delivered": {
+      "command": [
+        "node",
+        "--test",
+        "tests/unit/replay-score-analysis-fixture.test.js",
+        "tests/unit/replay-score-analysis.test.js",
+        "tests/unit/replay-analysis.test.js"
+      ],
+      "startedAt": "2026-10-05T16:23:33.787Z",
+      "endedAt": "2026-10-05T16:24:51.511Z",
+      "elapsedMs": 77721.125334,
+      "code": 0,
+      "signal": null,
+      "runtime": {
+        "execPath": "/Users/zoltanka/Library/Caches/JetBrains/WebStorm2026.2/acp-agents/.runtimes/node/24.19.0/bin/node",
+        "node": "v24.19.0",
+        "sqlite": "3.53.3",
+        "platform": "darwin",
+        "arch": "arm64"
+      },
+      "log": "/tmp/pain-gain-m2d.QXda0F/focused-delivered.log",
+      "logHash": "5114e0d16656af199a7aefea53fa5278c858eb0d450d343b553dd853b16323c5",
+      "retainedReceipt": "/tmp/pain-gain-m2d.QXda0F/focused-delivered.json",
+      "retainedReceiptHash": "4eefefcf8a55380ffeb3bcb8e60a067675c2009fa71aea3d8b3208546dba175a",
+      "unchanged": true,
+      "totals": {
+        "tests": 116,
+        "pass": 116,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0
+      },
+      "busyTest": null
+    },
+    "focused-qualified": {
+      "command": [
+        "node",
+        "--test",
+        "tests/unit/replay-score-analysis-fixture.test.js",
+        "tests/unit/replay-score-analysis.test.js",
+        "tests/unit/replay-analysis.test.js"
+      ],
+      "startedAt": "2026-10-05T16:25:23.607Z",
+      "endedAt": "2026-10-05T16:26:39.611Z",
+      "elapsedMs": 76002.320209,
+      "code": 0,
+      "signal": null,
+      "runtime": {
+        "execPath": "/Users/zoltanka/Library/Caches/JetBrains/WebStorm2026.2/acp-agents/.runtimes/node/24.19.0/bin/node",
+        "node": "v24.19.0",
+        "sqlite": "3.53.3",
+        "platform": "darwin",
+        "arch": "arm64"
+      },
+      "log": "/tmp/pain-gain-m2d.QXda0F/focused-qualified.log",
+      "logHash": "d29188d4a2c76a9d956c41f2323e7b1a3468a89e773797526aa95c04311f5b5a",
+      "retainedReceipt": "/tmp/pain-gain-m2d.QXda0F/focused-qualified.json",
+      "retainedReceiptHash": "fb6cc09202bc26433ff5cc528f21086e0c8212ae2f984abb2803d6f2715886b2",
+      "unchanged": true,
+      "before": {
+        "tools/replay-store.js": "30663a4567a6933f5c14b841d64c0703c3a76cac705b45d2cafbd94788fba252",
+        "tools/replay-score-analysis.js": "42afb9e83682dc303d6c6cb258992d6505be9905745f0dfdd74c236a0ea10ff6",
+        "tools/replay-analysis.js": "75558600647beea2f985532809388018d82af06525d29b8762db00479792d556",
+        "tools/replay-score-analysis-fixture.js": "356cb479754192b549a33824f77ce4860af1924d0e5edecd47c0c76976565516",
+        "tests/unit/replay-score-analysis-fixture.test.js": "e515c07177fb617f78b2e4cfde513525324acc97df9473a18aadda07f8579e81",
+        "tests/fixtures/replay-score-analysis-m2d-oracle.json": "07e152deb5cf7dae86eba27d06a1f1dfe503304fc09aafc1342070d232394047",
+        "tests/fixtures/replay-score-analysis-m2d-process.js": "dcfa913ee7286e9f51ab3c11fdeaa9eb20dde45f87f55e615248c4dc6ceeb521",
+        "tests/fixtures/replay-score-analysis-m2d-recipe.js": "1a0045c8bbe703f9262020a91f986c8834f3650ceeaafd62682f32a4c9b68176",
+        "tests/fixtures/replay-score-analysis-m2d-store.js": "d674c83a7c626513dfb61085b7a0bac8fef3ddd33a8fa3c9920d4b86924f1847",
+        "tests/fixtures/replay-score-analysis-m2d-worker.js": "1c7994a96da9c500e97cd87a4d8e0801286ff568229d26f594c07ef2e121b7c5",
+        "package.json": "09b25812e48a5749f9fc07c34bf80a3e9ca83fd4cce4f811e80f6b7461e42dee"
+      },
+      "after": {
+        "tools/replay-store.js": "30663a4567a6933f5c14b841d64c0703c3a76cac705b45d2cafbd94788fba252",
+        "tools/replay-score-analysis.js": "42afb9e83682dc303d6c6cb258992d6505be9905745f0dfdd74c236a0ea10ff6",
+        "tools/replay-analysis.js": "75558600647beea2f985532809388018d82af06525d29b8762db00479792d556",
+        "tools/replay-score-analysis-fixture.js": "356cb479754192b549a33824f77ce4860af1924d0e5edecd47c0c76976565516",
+        "tests/unit/replay-score-analysis-fixture.test.js": "e515c07177fb617f78b2e4cfde513525324acc97df9473a18aadda07f8579e81",
+        "tests/fixtures/replay-score-analysis-m2d-oracle.json": "07e152deb5cf7dae86eba27d06a1f1dfe503304fc09aafc1342070d232394047",
+        "tests/fixtures/replay-score-analysis-m2d-process.js": "dcfa913ee7286e9f51ab3c11fdeaa9eb20dde45f87f55e615248c4dc6ceeb521",
+        "tests/fixtures/replay-score-analysis-m2d-recipe.js": "1a0045c8bbe703f9262020a91f986c8834f3650ceeaafd62682f32a4c9b68176",
+        "tests/fixtures/replay-score-analysis-m2d-store.js": "d674c83a7c626513dfb61085b7a0bac8fef3ddd33a8fa3c9920d4b86924f1847",
+        "tests/fixtures/replay-score-analysis-m2d-worker.js": "1c7994a96da9c500e97cd87a4d8e0801286ff568229d26f594c07ef2e121b7c5",
+        "package.json": "09b25812e48a5749f9fc07c34bf80a3e9ca83fd4cce4f811e80f6b7461e42dee"
+      },
+      "totals": {
+        "tests": 116,
+        "pass": 116,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0
+      },
+      "busyTest": null,
+      "resources": [
+        {
+          "schema": 1,
+          "generate": {
+            "parentElapsedMs": 4355.263791999998,
+            "code": 0,
+            "signal": null,
+            "stderr": "",
+            "result": {
+              "phase": "generate",
+              "schema": 1,
+              "stores": [
+                {
+                  "count": 10,
+                  "inventoryHash": "0a381ec670145629c75de04f5c98c80a62cfe28aa4250b248b6d40bc8207a234",
+                  "unrelatedBytes": 629145600
+                },
+                {
+                  "count": 1000,
+                  "inventoryHash": "62851d77038cb08c8c8b502ff77480240c9343a5c1c768753323c53e03041d5f",
+                  "unrelatedBytes": 629145600
+                }
+              ],
+              "elapsedMs": 4269.686624999999,
+              "maxRssBytes": 156925952
+            }
+          },
+          "operations": {
+            "parentElapsedMs": 348.605166999987,
+            "code": 0,
+            "signal": null,
+            "stderr": "",
+            "result": {
+              "phase": "operations",
+              "schema": 1,
+              "runs": [
+                {
+                  "count": 10,
+                  "reportMode": "full",
+                  "reportHash": "78541d384c9da78ae6b08f3e97fea4d91f8e1da7ee9c1eb8a72e1307e1f57177",
+                  "selectedBytes": 636005,
+                  "elapsedMs": 86.59520900000001,
+                  "sql": 66,
+                  "pragmas": 14,
+                  "rows": 121,
+                  "opens": 12,
+                  "bytes": 636005,
+                  "reads": 19,
+                  "maxChunk": 65536,
+                  "writes": 0,
+                  "metadataOpens": 9,
+                  "unselected": 0
+                },
+                {
+                  "count": 10,
+                  "reportMode": "compact",
+                  "reportHash": "06f82452823db2955082fcf7c3491514958c1532d94325a33d85c9181899203f",
+                  "selectedBytes": 636005,
+                  "elapsedMs": 59.62449999999998,
+                  "sql": 66,
+                  "pragmas": 14,
+                  "rows": 121,
+                  "opens": 12,
+                  "bytes": 636005,
+                  "reads": 19,
+                  "maxChunk": 65536,
+                  "writes": 0,
+                  "metadataOpens": 9,
+                  "unselected": 0
+                },
+                {
+                  "count": 1000,
+                  "reportMode": "full",
+                  "reportHash": "78541d384c9da78ae6b08f3e97fea4d91f8e1da7ee9c1eb8a72e1307e1f57177",
+                  "selectedBytes": 636005,
+                  "elapsedMs": 59.444124999999985,
+                  "sql": 66,
+                  "pragmas": 14,
+                  "rows": 121,
+                  "opens": 12,
+                  "bytes": 636005,
+                  "reads": 19,
+                  "maxChunk": 65536,
+                  "writes": 0,
+                  "metadataOpens": 9,
+                  "unselected": 0
+                },
+                {
+                  "count": 1000,
+                  "reportMode": "compact",
+                  "reportHash": "06f82452823db2955082fcf7c3491514958c1532d94325a33d85c9181899203f",
+                  "selectedBytes": 636005,
+                  "elapsedMs": 56.05183299999999,
+                  "sql": 66,
+                  "pragmas": 14,
+                  "rows": 121,
+                  "opens": 12,
+                  "bytes": 636005,
+                  "reads": 19,
+                  "maxChunk": 65536,
+                  "writes": 0,
+                  "metadataOpens": 9,
+                  "unselected": 0
+                }
+              ],
+              "elapsedMs": 262.68925,
+              "maxRssBytes": 157106176
+            }
+          },
+          "preservation": {
+            "parentElapsedMs": 712.0414170000004,
+            "code": 0,
+            "signal": null,
+            "stderr": "",
+            "result": {
+              "phase": "preservation",
+              "schema": 1,
+              "hashes": [
+                "0a381ec670145629c75de04f5c98c80a62cfe28aa4250b248b6d40bc8207a234",
+                "62851d77038cb08c8c8b502ff77480240c9343a5c1c768753323c53e03041d5f"
+              ],
+              "elapsedMs": 632.4143750000001,
+              "maxRssBytes": 111591424
+            }
+          }
+        },
+        {
+          "schema": 2,
+          "generate": {
+            "parentElapsedMs": 4226.385000000009,
+            "code": 0,
+            "signal": null,
+            "stderr": "",
+            "result": {
+              "phase": "generate",
+              "schema": 2,
+              "stores": [
+                {
+                  "count": 10,
+                  "inventoryHash": "568973a69a071b2a7e2af26344deef160a633f1a76d3fb0291bebc84a84fd36e",
+                  "unrelatedBytes": 629145600
+                },
+                {
+                  "count": 1000,
+                  "inventoryHash": "270adb28273b574c23f1ca8428113ea8b4357d597b2f082fbbe3967166d835c0",
+                  "unrelatedBytes": 629145600
+                }
+              ],
+              "elapsedMs": 4143.479666,
+              "maxRssBytes": 157679616
+            }
+          },
+          "operations": {
+            "parentElapsedMs": 345.95291599999473,
+            "code": 0,
+            "signal": null,
+            "stderr": "",
+            "result": {
+              "phase": "operations",
+              "schema": 2,
+              "runs": [
+                {
+                  "count": 10,
+                  "reportMode": "full",
+                  "reportHash": "78541d384c9da78ae6b08f3e97fea4d91f8e1da7ee9c1eb8a72e1307e1f57177",
+                  "selectedBytes": 636005,
+                  "elapsedMs": 86.32720800000001,
+                  "sql": 68,
+                  "pragmas": 14,
+                  "rows": 123,
+                  "opens": 12,
+                  "bytes": 636005,
+                  "reads": 19,
+                  "maxChunk": 65536,
+                  "writes": 0,
+                  "metadataOpens": 9,
+                  "unselected": 0
+                },
+                {
+                  "count": 10,
+                  "reportMode": "compact",
+                  "reportHash": "06f82452823db2955082fcf7c3491514958c1532d94325a33d85c9181899203f",
+                  "selectedBytes": 636005,
+                  "elapsedMs": 61.80283299999999,
+                  "sql": 68,
+                  "pragmas": 14,
+                  "rows": 123,
+                  "opens": 12,
+                  "bytes": 636005,
+                  "reads": 19,
+                  "maxChunk": 65536,
+                  "writes": 0,
+                  "metadataOpens": 9,
+                  "unselected": 0
+                },
+                {
+                  "count": 1000,
+                  "reportMode": "full",
+                  "reportHash": "78541d384c9da78ae6b08f3e97fea4d91f8e1da7ee9c1eb8a72e1307e1f57177",
+                  "selectedBytes": 636005,
+                  "elapsedMs": 60.314291,
+                  "sql": 68,
+                  "pragmas": 14,
+                  "rows": 123,
+                  "opens": 12,
+                  "bytes": 636005,
+                  "reads": 19,
+                  "maxChunk": 65536,
+                  "writes": 0,
+                  "metadataOpens": 9,
+                  "unselected": 0
+                },
+                {
+                  "count": 1000,
+                  "reportMode": "compact",
+                  "reportHash": "06f82452823db2955082fcf7c3491514958c1532d94325a33d85c9181899203f",
+                  "selectedBytes": 636005,
+                  "elapsedMs": 56.51400000000001,
+                  "sql": 68,
+                  "pragmas": 14,
+                  "rows": 123,
+                  "opens": 12,
+                  "bytes": 636005,
+                  "reads": 19,
+                  "maxChunk": 65536,
+                  "writes": 0,
+                  "metadataOpens": 9,
+                  "unselected": 0
+                }
+              ],
+              "elapsedMs": 266.004584,
+              "maxRssBytes": 157892608
+            }
+          },
+          "preservation": {
+            "parentElapsedMs": 701.7346250000119,
+            "code": 0,
+            "signal": null,
+            "stderr": "",
+            "result": {
+              "phase": "preservation",
+              "schema": 2,
+              "hashes": [
+                "568973a69a071b2a7e2af26344deef160a633f1a76d3fb0291bebc84a84fd36e",
+                "270adb28273b574c23f1ca8428113ea8b4357d597b2f082fbbe3967166d835c0"
+              ],
+              "elapsedMs": 620.336958,
+              "maxRssBytes": 111509504
+            }
+          }
+        }
+      ]
+    },
+    "check-delivered": {
+      "command": [
+        "npm",
+        "run",
+        "check"
+      ],
+      "startedAt": "2026-10-05T16:25:33.764Z",
+      "endedAt": "2026-10-05T16:25:34.971Z",
+      "elapsedMs": 1204.869667,
+      "code": 0,
+      "signal": null,
+      "runtime": {
+        "execPath": "/Users/zoltanka/Library/Caches/JetBrains/WebStorm2026.2/acp-agents/.runtimes/node/24.19.0/bin/node",
+        "node": "v24.19.0",
+        "sqlite": "3.53.3",
+        "platform": "darwin",
+        "arch": "arm64"
+      },
+      "log": "/tmp/pain-gain-m2d.QXda0F/check-delivered.log",
+      "logHash": "9f10520efe2bc7831c46518bfe6f13e7f7f377445ad797507b3a2f5ae4ef190c",
+      "retainedReceipt": "/tmp/pain-gain-m2d.QXda0F/check-delivered.json",
+      "retainedReceiptHash": "627067a03b366d42ebd0b03e804c0eef575a209a97fdcffdf0a53dcd8269a61c",
+      "unchanged": true,
+      "before": {
+        "tools/replay-store.js": "30663a4567a6933f5c14b841d64c0703c3a76cac705b45d2cafbd94788fba252",
+        "tools/replay-score-analysis.js": "42afb9e83682dc303d6c6cb258992d6505be9905745f0dfdd74c236a0ea10ff6",
+        "tools/replay-analysis.js": "75558600647beea2f985532809388018d82af06525d29b8762db00479792d556",
+        "tools/replay-score-analysis-fixture.js": "356cb479754192b549a33824f77ce4860af1924d0e5edecd47c0c76976565516",
+        "tests/unit/replay-score-analysis-fixture.test.js": "e515c07177fb617f78b2e4cfde513525324acc97df9473a18aadda07f8579e81",
+        "tests/fixtures/replay-score-analysis-m2d-oracle.json": "07e152deb5cf7dae86eba27d06a1f1dfe503304fc09aafc1342070d232394047",
+        "tests/fixtures/replay-score-analysis-m2d-process.js": "dcfa913ee7286e9f51ab3c11fdeaa9eb20dde45f87f55e615248c4dc6ceeb521",
+        "tests/fixtures/replay-score-analysis-m2d-recipe.js": "1a0045c8bbe703f9262020a91f986c8834f3650ceeaafd62682f32a4c9b68176",
+        "tests/fixtures/replay-score-analysis-m2d-store.js": "d674c83a7c626513dfb61085b7a0bac8fef3ddd33a8fa3c9920d4b86924f1847",
+        "tests/fixtures/replay-score-analysis-m2d-worker.js": "1c7994a96da9c500e97cd87a4d8e0801286ff568229d26f594c07ef2e121b7c5",
+        "package.json": "09b25812e48a5749f9fc07c34bf80a3e9ca83fd4cce4f811e80f6b7461e42dee"
+      },
+      "after": {
+        "tools/replay-store.js": "30663a4567a6933f5c14b841d64c0703c3a76cac705b45d2cafbd94788fba252",
+        "tools/replay-score-analysis.js": "42afb9e83682dc303d6c6cb258992d6505be9905745f0dfdd74c236a0ea10ff6",
+        "tools/replay-analysis.js": "75558600647beea2f985532809388018d82af06525d29b8762db00479792d556",
+        "tools/replay-score-analysis-fixture.js": "356cb479754192b549a33824f77ce4860af1924d0e5edecd47c0c76976565516",
+        "tests/unit/replay-score-analysis-fixture.test.js": "e515c07177fb617f78b2e4cfde513525324acc97df9473a18aadda07f8579e81",
+        "tests/fixtures/replay-score-analysis-m2d-oracle.json": "07e152deb5cf7dae86eba27d06a1f1dfe503304fc09aafc1342070d232394047",
+        "tests/fixtures/replay-score-analysis-m2d-process.js": "dcfa913ee7286e9f51ab3c11fdeaa9eb20dde45f87f55e615248c4dc6ceeb521",
+        "tests/fixtures/replay-score-analysis-m2d-recipe.js": "1a0045c8bbe703f9262020a91f986c8834f3650ceeaafd62682f32a4c9b68176",
+        "tests/fixtures/replay-score-analysis-m2d-store.js": "d674c83a7c626513dfb61085b7a0bac8fef3ddd33a8fa3c9920d4b86924f1847",
+        "tests/fixtures/replay-score-analysis-m2d-worker.js": "1c7994a96da9c500e97cd87a4d8e0801286ff568229d26f594c07ef2e121b7c5",
+        "package.json": "09b25812e48a5749f9fc07c34bf80a3e9ca83fd4cce4f811e80f6b7461e42dee"
+      },
+      "totals": {},
+      "busyTest": null,
+      "resources": []
+    },
+    "repository-delivered": {
+      "command": [
+        "npm",
+        "test"
+      ],
+      "startedAt": "2026-10-05T16:26:43.891Z",
+      "endedAt": "2026-10-05T16:29:09.526Z",
+      "elapsedMs": 145632.05008400002,
+      "code": 0,
+      "signal": null,
+      "runtime": {
+        "execPath": "/Users/zoltanka/Library/Caches/JetBrains/WebStorm2026.2/acp-agents/.runtimes/node/24.19.0/bin/node",
+        "node": "v24.19.0",
+        "sqlite": "3.53.3",
+        "platform": "darwin",
+        "arch": "arm64"
+      },
+      "log": "/tmp/pain-gain-m2d.QXda0F/repository-delivered.log",
+      "logHash": "1911cc71bcda6c9d27def11421e217637cbbfcaeecf2a25bd2a0c8e6ae33d831",
+      "retainedReceipt": "/tmp/pain-gain-m2d.QXda0F/repository-delivered.json",
+      "retainedReceiptHash": "cfb550069ab88d0202562e103204f3207970aa9b4ad5276390a0f7b2c821cdf2",
+      "unchanged": true,
+      "before": {
+        "tools/replay-store.js": "30663a4567a6933f5c14b841d64c0703c3a76cac705b45d2cafbd94788fba252",
+        "tools/replay-score-analysis.js": "42afb9e83682dc303d6c6cb258992d6505be9905745f0dfdd74c236a0ea10ff6",
+        "tools/replay-analysis.js": "75558600647beea2f985532809388018d82af06525d29b8762db00479792d556",
+        "tools/replay-score-analysis-fixture.js": "356cb479754192b549a33824f77ce4860af1924d0e5edecd47c0c76976565516",
+        "tests/unit/replay-score-analysis-fixture.test.js": "e515c07177fb617f78b2e4cfde513525324acc97df9473a18aadda07f8579e81",
+        "tests/fixtures/replay-score-analysis-m2d-oracle.json": "07e152deb5cf7dae86eba27d06a1f1dfe503304fc09aafc1342070d232394047",
+        "tests/fixtures/replay-score-analysis-m2d-process.js": "dcfa913ee7286e9f51ab3c11fdeaa9eb20dde45f87f55e615248c4dc6ceeb521",
+        "tests/fixtures/replay-score-analysis-m2d-recipe.js": "1a0045c8bbe703f9262020a91f986c8834f3650ceeaafd62682f32a4c9b68176",
+        "tests/fixtures/replay-score-analysis-m2d-store.js": "d674c83a7c626513dfb61085b7a0bac8fef3ddd33a8fa3c9920d4b86924f1847",
+        "tests/fixtures/replay-score-analysis-m2d-worker.js": "1c7994a96da9c500e97cd87a4d8e0801286ff568229d26f594c07ef2e121b7c5",
+        "package.json": "09b25812e48a5749f9fc07c34bf80a3e9ca83fd4cce4f811e80f6b7461e42dee"
+      },
+      "after": {
+        "tools/replay-store.js": "30663a4567a6933f5c14b841d64c0703c3a76cac705b45d2cafbd94788fba252",
+        "tools/replay-score-analysis.js": "42afb9e83682dc303d6c6cb258992d6505be9905745f0dfdd74c236a0ea10ff6",
+        "tools/replay-analysis.js": "75558600647beea2f985532809388018d82af06525d29b8762db00479792d556",
+        "tools/replay-score-analysis-fixture.js": "356cb479754192b549a33824f77ce4860af1924d0e5edecd47c0c76976565516",
+        "tests/unit/replay-score-analysis-fixture.test.js": "e515c07177fb617f78b2e4cfde513525324acc97df9473a18aadda07f8579e81",
+        "tests/fixtures/replay-score-analysis-m2d-oracle.json": "07e152deb5cf7dae86eba27d06a1f1dfe503304fc09aafc1342070d232394047",
+        "tests/fixtures/replay-score-analysis-m2d-process.js": "dcfa913ee7286e9f51ab3c11fdeaa9eb20dde45f87f55e615248c4dc6ceeb521",
+        "tests/fixtures/replay-score-analysis-m2d-recipe.js": "1a0045c8bbe703f9262020a91f986c8834f3650ceeaafd62682f32a4c9b68176",
+        "tests/fixtures/replay-score-analysis-m2d-store.js": "d674c83a7c626513dfb61085b7a0bac8fef3ddd33a8fa3c9920d4b86924f1847",
+        "tests/fixtures/replay-score-analysis-m2d-worker.js": "1c7994a96da9c500e97cd87a4d8e0801286ff568229d26f594c07ef2e121b7c5",
+        "package.json": "09b25812e48a5749f9fc07c34bf80a3e9ca83fd4cce4f811e80f6b7461e42dee"
+      },
+      "totals": {
+        "tests": 573,
+        "pass": 573,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0
+      },
+      "busyTest": "✔ SQLite busy exhaustion is bounded and cannot publish ready evidence (5688.478084ms)",
+      "resources": [
+        {
+          "schema": 1,
+          "generate": {
+            "parentElapsedMs": 10516.782791000005,
+            "code": 0,
+            "signal": null,
+            "stderr": "",
+            "result": {
+              "phase": "generate",
+              "schema": 1,
+              "stores": [
+                {
+                  "count": 10,
+                  "inventoryHash": "2e0cde95a26a1cac98c425d9e0d215c7239dbaada44e03e6dc263419ebe6c1f9",
+                  "unrelatedBytes": 629145600
+                },
+                {
+                  "count": 1000,
+                  "inventoryHash": "9e7bd9b2358fcc0e3e2b5fdee178fe383ae5c82f70b83d4facfa684925d37462",
+                  "unrelatedBytes": 629145600
+                }
+              ],
+              "elapsedMs": 10429.860292,
+              "maxRssBytes": 157696000
+            }
+          },
+          "operations": {
+            "parentElapsedMs": 399.93320799998764,
+            "code": 0,
+            "signal": null,
+            "stderr": "",
+            "result": {
+              "phase": "operations",
+              "schema": 1,
+              "runs": [
+                {
+                  "count": 10,
+                  "reportMode": "full",
+                  "reportHash": "78541d384c9da78ae6b08f3e97fea4d91f8e1da7ee9c1eb8a72e1307e1f57177",
+                  "selectedBytes": 636005,
+                  "elapsedMs": 95.74733299999998,
+                  "sql": 66,
+                  "pragmas": 14,
+                  "rows": 121,
+                  "opens": 12,
+                  "bytes": 636005,
+                  "reads": 19,
+                  "maxChunk": 65536,
+                  "writes": 0,
+                  "metadataOpens": 9,
+                  "unselected": 0
+                },
+                {
+                  "count": 10,
+                  "reportMode": "compact",
+                  "reportHash": "06f82452823db2955082fcf7c3491514958c1532d94325a33d85c9181899203f",
+                  "selectedBytes": 636005,
+                  "elapsedMs": 74.98925,
+                  "sql": 66,
+                  "pragmas": 14,
+                  "rows": 121,
+                  "opens": 12,
+                  "bytes": 636005,
+                  "reads": 19,
+                  "maxChunk": 65536,
+                  "writes": 0,
+                  "metadataOpens": 9,
+                  "unselected": 0
+                },
+                {
+                  "count": 1000,
+                  "reportMode": "full",
+                  "reportHash": "78541d384c9da78ae6b08f3e97fea4d91f8e1da7ee9c1eb8a72e1307e1f57177",
+                  "selectedBytes": 636005,
+                  "elapsedMs": 67.54445900000002,
+                  "sql": 66,
+                  "pragmas": 14,
+                  "rows": 121,
+                  "opens": 12,
+                  "bytes": 636005,
+                  "reads": 19,
+                  "maxChunk": 65536,
+                  "writes": 0,
+                  "metadataOpens": 9,
+                  "unselected": 0
+                },
+                {
+                  "count": 1000,
+                  "reportMode": "compact",
+                  "reportHash": "06f82452823db2955082fcf7c3491514958c1532d94325a33d85c9181899203f",
+                  "selectedBytes": 636005,
+                  "elapsedMs": 68.09445800000003,
+                  "sql": 66,
+                  "pragmas": 14,
+                  "rows": 121,
+                  "opens": 12,
+                  "bytes": 636005,
+                  "reads": 19,
+                  "maxChunk": 65536,
+                  "writes": 0,
+                  "metadataOpens": 9,
+                  "unselected": 0
+                }
+              ],
+              "elapsedMs": 307.377334,
+              "maxRssBytes": 157646848
+            }
+          },
+          "preservation": {
+            "parentElapsedMs": 714.9689579999977,
+            "code": 0,
+            "signal": null,
+            "stderr": "",
+            "result": {
+              "phase": "preservation",
+              "schema": 1,
+              "hashes": [
+                "2e0cde95a26a1cac98c425d9e0d215c7239dbaada44e03e6dc263419ebe6c1f9",
+                "9e7bd9b2358fcc0e3e2b5fdee178fe383ae5c82f70b83d4facfa684925d37462"
+              ],
+              "elapsedMs": 630.62625,
+              "maxRssBytes": 111476736
+            }
+          }
+        },
+        {
+          "schema": 2,
+          "generate": {
+            "parentElapsedMs": 6039.901874999996,
+            "code": 0,
+            "signal": null,
+            "stderr": "",
+            "result": {
+              "phase": "generate",
+              "schema": 2,
+              "stores": [
+                {
+                  "count": 10,
+                  "inventoryHash": "ae9e8b576b93749ffab71a7877b819a4589edb38a712122aa0cfbbba738c34ba",
+                  "unrelatedBytes": 629145600
+                },
+                {
+                  "count": 1000,
+                  "inventoryHash": "f5111a4304e214cf84f8c4fc7e111c12c2e0bf41dd50641f29fac86f668b435b",
+                  "unrelatedBytes": 629145600
+                }
+              ],
+              "elapsedMs": 5954.3288330000005,
+              "maxRssBytes": 158842880
+            }
+          },
+          "operations": {
+            "parentElapsedMs": 361.018791999988,
+            "code": 0,
+            "signal": null,
+            "stderr": "",
+            "result": {
+              "phase": "operations",
+              "schema": 2,
+              "runs": [
+                {
+                  "count": 10,
+                  "reportMode": "full",
+                  "reportHash": "78541d384c9da78ae6b08f3e97fea4d91f8e1da7ee9c1eb8a72e1307e1f57177",
+                  "selectedBytes": 636005,
+                  "elapsedMs": 88.07,
+                  "sql": 68,
+                  "pragmas": 14,
+                  "rows": 123,
+                  "opens": 12,
+                  "bytes": 636005,
+                  "reads": 19,
+                  "maxChunk": 65536,
+                  "writes": 0,
+                  "metadataOpens": 9,
+                  "unselected": 0
+                },
+                {
+                  "count": 10,
+                  "reportMode": "compact",
+                  "reportHash": "06f82452823db2955082fcf7c3491514958c1532d94325a33d85c9181899203f",
+                  "selectedBytes": 636005,
+                  "elapsedMs": 62.63466700000001,
+                  "sql": 68,
+                  "pragmas": 14,
+                  "rows": 123,
+                  "opens": 12,
+                  "bytes": 636005,
+                  "reads": 19,
+                  "maxChunk": 65536,
+                  "writes": 0,
+                  "metadataOpens": 9,
+                  "unselected": 0
+                },
+                {
+                  "count": 1000,
+                  "reportMode": "full",
+                  "reportHash": "78541d384c9da78ae6b08f3e97fea4d91f8e1da7ee9c1eb8a72e1307e1f57177",
+                  "selectedBytes": 636005,
+                  "elapsedMs": 66.36637499999998,
+                  "sql": 68,
+                  "pragmas": 14,
+                  "rows": 123,
+                  "opens": 12,
+                  "bytes": 636005,
+                  "reads": 19,
+                  "maxChunk": 65536,
+                  "writes": 0,
+                  "metadataOpens": 9,
+                  "unselected": 0
+                },
+                {
+                  "count": 1000,
+                  "reportMode": "compact",
+                  "reportHash": "06f82452823db2955082fcf7c3491514958c1532d94325a33d85c9181899203f",
+                  "selectedBytes": 636005,
+                  "elapsedMs": 58.459749999999985,
+                  "sql": 68,
+                  "pragmas": 14,
+                  "rows": 123,
+                  "opens": 12,
+                  "bytes": 636005,
+                  "reads": 19,
+                  "maxChunk": 65536,
+                  "writes": 0,
+                  "metadataOpens": 9,
+                  "unselected": 0
+                }
+              ],
+              "elapsedMs": 276.581708,
+              "maxRssBytes": 158187520
+            }
+          },
+          "preservation": {
+            "parentElapsedMs": 757.0063749999972,
+            "code": 0,
+            "signal": null,
+            "stderr": "",
+            "result": {
+              "phase": "preservation",
+              "schema": 2,
+              "hashes": [
+                "ae9e8b576b93749ffab71a7877b819a4589edb38a712122aa0cfbbba738c34ba",
+                "f5111a4304e214cf84f8c4fc7e111c12c2e0bf41dd50641f29fac86f668b435b"
+              ],
+              "elapsedMs": 654.470792,
+              "maxRssBytes": 111165440
+            }
+          }
+        }
+      ]
+    }
+  },
+  "finalHashes": {
+    "tools/replay-store.js": "30663a4567a6933f5c14b841d64c0703c3a76cac705b45d2cafbd94788fba252",
+    "tools/replay-score-analysis.js": "42afb9e83682dc303d6c6cb258992d6505be9905745f0dfdd74c236a0ea10ff6",
+    "tools/replay-analysis.js": "75558600647beea2f985532809388018d82af06525d29b8762db00479792d556",
+    "tools/replay-score-analysis-fixture.js": "356cb479754192b549a33824f77ce4860af1924d0e5edecd47c0c76976565516",
+    "tests/unit/replay-score-analysis-fixture.test.js": "e515c07177fb617f78b2e4cfde513525324acc97df9473a18aadda07f8579e81",
+    "tests/fixtures/replay-score-analysis-m2d-oracle.json": "07e152deb5cf7dae86eba27d06a1f1dfe503304fc09aafc1342070d232394047",
+    "tests/fixtures/replay-score-analysis-m2d-process.js": "dcfa913ee7286e9f51ab3c11fdeaa9eb20dde45f87f55e615248c4dc6ceeb521",
+    "tests/fixtures/replay-score-analysis-m2d-recipe.js": "1a0045c8bbe703f9262020a91f986c8834f3650ceeaafd62682f32a4c9b68176",
+    "tests/fixtures/replay-score-analysis-m2d-store.js": "d674c83a7c626513dfb61085b7a0bac8fef3ddd33a8fa3c9920d4b86924f1847",
+    "tests/fixtures/replay-score-analysis-m2d-worker.js": "1c7994a96da9c500e97cd87a4d8e0801286ff568229d26f594c07ef2e121b7c5",
+    "package.json": "09b25812e48a5749f9fc07c34bf80a3e9ca83fd4cce4f811e80f6b7461e42dee"
+  },
+  "preservation": {
+    "before": [
+      {
+        "root": "/Users/zoltanka/Documents/Prog/JavaScript/ScreepsArena/pain_and_gain",
+        "head": "651ddb7068eb8905188c3158e9cf84b7e0878c1e",
+        "index": "",
+        "status": " D prompt/analyze_logs.md\n?? docs/architecture/replay-storage-v3-m2d-plan-2026-10-05.md\n",
+        "digest": "f49a85a9bb6b7c10eae45bb55d64c168211396d56eaa3afe65de6f145d8183a1"
+      },
+      {
+        "root": "/Users/zoltanka/Documents/Prog/JavaScript/ScreepsArena/pain_and_gain_hold_trial_2026-10-02",
+        "head": "fd6fdf20ea62c2b663185913d52b58f83f59612a",
+        "index": "",
+        "status": " M src/config.js\n M src/debug/build-id.js\n",
+        "digest": "724783c888a11ae9515b4d14b5658cb74f9db388b05d1773d0e2217a4e632f94"
+      },
+      {
+        "root": "/Users/zoltanka/Documents/Prog/JavaScript/ScreepsArena/pain_and_gain_pair_trial_2026-10-02",
+        "head": "8c0ce181bca388f38cbf569913527dd7b31cc1ad",
+        "index": "",
+        "status": " M README.md\n M docs/architecture/README.md\n M docs/architecture/project-layout.md\n M docs/diagrams/tick-flow.puml\n M package.json\n M src/arena/execute.js\n M src/config.js\n M src/debug/build-id.js\n M src/debug/replay-evidence.js\n M src/loop.js\n M tests/unit/flag-allocation-flow.test.js\n M tests/unit/healer-escort-disabled-flow.test.js\n M tests/unit/scout-hold-flow.test.js\n M tests/unit/tick-flow.test.js\n?? docs/architecture/squad-pair-experiment-2026-10-02.md\n?? docs/architecture/squad-pair-screening-2026-10-02.md\n?? src/squads/pair.js\n?? tests/screening/squad-pair-enabled.test.js\n?? tests/unit/squad-pair-flow.test.js\n?? tests/unit/squad-pair.test.js\n",
+        "digest": "7fb840a630dc2ad4ecf017bf420c6474a34706b85530a5531d52c0bd9b6d23a1"
+      }
+    ],
+    "afterTrials": [
+      {
+        "root": "/Users/zoltanka/Documents/Prog/JavaScript/ScreepsArena/pain_and_gain_hold_trial_2026-10-02",
+        "head": "fd6fdf20ea62c2b663185913d52b58f83f59612a",
+        "index": "",
+        "status": " M src/config.js\n M src/debug/build-id.js\n",
+        "digest": "724783c888a11ae9515b4d14b5658cb74f9db388b05d1773d0e2217a4e632f94"
+      },
+      {
+        "root": "/Users/zoltanka/Documents/Prog/JavaScript/ScreepsArena/pain_and_gain_pair_trial_2026-10-02",
+        "head": "8c0ce181bca388f38cbf569913527dd7b31cc1ad",
+        "index": "",
+        "status": " M README.md\n M docs/architecture/README.md\n M docs/architecture/project-layout.md\n M docs/diagrams/tick-flow.puml\n M package.json\n M src/arena/execute.js\n M src/config.js\n M src/debug/build-id.js\n M src/debug/replay-evidence.js\n M src/loop.js\n M tests/unit/flag-allocation-flow.test.js\n M tests/unit/healer-escort-disabled-flow.test.js\n M tests/unit/scout-hold-flow.test.js\n M tests/unit/tick-flow.test.js\n?? docs/architecture/squad-pair-experiment-2026-10-02.md\n?? docs/architecture/squad-pair-screening-2026-10-02.md\n?? src/squads/pair.js\n?? tests/screening/squad-pair-enabled.test.js\n?? tests/unit/squad-pair-flow.test.js\n?? tests/unit/squad-pair.test.js\n",
+        "digest": "7fb840a630dc2ad4ecf017bf420c6474a34706b85530a5531d52c0bd9b6d23a1"
+      }
+    ],
+    "mainProtectedDigest": "f49a85a9bb6b7c10eae45bb55d64c168211396d56eaa3afe65de6f145d8183a1",
+    "method": "Tracked/untracked nonignored file bytes and statuses; replay_logs/ excluded. For main comparison only allowlisted changed tracked paths are normalized to HEAD and new candidate paths excluded; unchanged plan and prompt absence remain in digest.",
+    "indexEmpty": true,
+    "headUnchanged": true
+  }
+}

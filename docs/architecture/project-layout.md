@@ -64,6 +64,14 @@ before calling the shared synchronous analysis session. It neither writes
 catalog findings nor changes lifecycle state. It is not used by existing
 commands. See the [M2c record](replay-storage-v3-m2c-2026-10-05.md).
 
+`tools/replay-score-analysis-fixture.js` is the separate M2d score-only v3
+adapter. One score-selection snapshot resolves collection presence, readiness,
+global output ownership and pinned original properties/raw responses. Detached
+bounded inputs feed `analyzeLoadedScoreReplay` and `analyzeLoadedScoreEvidence`,
+sharing the existing score/report algorithms with the synchronous v2 wrapper.
+It does not require maps or add SQLite to the v2 dependency path. See the
+[M2d record](replay-storage-v3-m2d-2026-10-05.md).
+
 `tools/replay-analysis.js` implements the deterministic M4 analyzer outside the
 Arena runtime. Its importable
 `analyzeReplay({ root, replayId, fingerprints?, scoreFingerprints?, reportMode? })`

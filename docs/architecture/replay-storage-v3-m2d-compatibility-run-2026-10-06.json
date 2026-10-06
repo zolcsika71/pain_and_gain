@@ -1,0 +1,1486 @@
+{
+  "scope": "M2d compatibility gaps closed; bounded synthetic qualification passed; awaiting independent review",
+  "documentationChecks": {
+    "localLinks": 79,
+    "anchors": 8,
+    "jsonFiles": 5,
+    "candidatePaths": 18,
+    "trackedAndNewWhitespace": "passed",
+    "testedAndRetainedLogHashes": "matched"
+  },
+  "base": "651ddb7068eb8905188c3158e9cf84b7e0878c1e",
+  "candidatePaths": [
+    "README.md",
+    "docs/architecture/README.md",
+    "docs/architecture/project-layout.md",
+    "docs/architecture/replay-storage-v3-m2d-2026-10-05.md",
+    "docs/architecture/replay-storage-v3-m2d-run-2026-10-05.json",
+    "package.json",
+    "tools/replay-analysis.js",
+    "tools/replay-score-analysis.js",
+    "tools/replay-store.js",
+    "tools/replay-score-analysis-fixture.js",
+    "tests/unit/replay-score-analysis-fixture.test.js",
+    "tests/fixtures/replay-score-analysis-m2d-recipe.js",
+    "tests/fixtures/replay-score-analysis-m2d-oracle.json",
+    "tests/fixtures/replay-score-analysis-m2d-store.js",
+    "tests/fixtures/replay-score-analysis-m2d-worker.js",
+    "tests/fixtures/replay-score-analysis-m2d-process.js",
+    "tests/fixtures/replay-score-analysis-m2d-compat-oracle.json",
+    "docs/architecture/replay-storage-v3-m2d-compatibility-run-2026-10-06.json"
+  ],
+  "publicationDependency": {
+    "path": "docs/architecture/replay-storage-v3-m2d-plan-2026-10-05.md",
+    "sha256": "867bd456fa7f853dfa77cea3278f3a56ca2f04da54e421d042b06e21b6fcefa6",
+    "unchanged": true,
+    "includedInChangedCandidate": false
+  },
+  "historicalReceipt": {
+    "path": "docs/architecture/replay-storage-v3-m2d-run-2026-10-05.json",
+    "sha256": "01afb4cda2bab666f9ddc3ed3c46c9a47bfd86f67fd47b5c8e7f8cc4a0e9b215",
+    "unchanged": true
+  },
+  "oracle": {
+    "path": "tests/fixtures/replay-score-analysis-m2d-compat-oracle.json",
+    "sha256": "38e4a31583b096b79763074d7054a768856c0af9b5ce3d0e3c862175a82898c3",
+    "generator": "/tmp/pain-gain-m2d-compat.FJaHC8/freeze.mjs",
+    "generatorHash": "09206f39f472b0fc5b6d8b7e7526f04d1627c32e564498d5ffa5472dd1f403b8",
+    "unmodifiedExport": "/tmp/pain-gain-m2d-compat.FJaHC8/published",
+    "frozenAt": "2026-10-06T09:37:30.014Z",
+    "implementationChanges": false,
+    "initialCapture": "First stdout capture exceeded tool display limit; retained generator output saved to temporary JSON before tests were added. No candidate-derived expectations."
+  },
+  "retainedRunDirectory": "/tmp/pain-gain-m2d-compat.FJaHC8",
+  "runs": {
+    "targeted": {
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=M2d compatibility:",
+        "tests/unit/replay-score-analysis-fixture.test.js"
+      ],
+      "startedAt": "2026-10-06T09:38:25.713Z",
+      "endedAt": "2026-10-06T09:38:27.053Z",
+      "elapsedMs": 1338.039167,
+      "code": 1,
+      "signal": null,
+      "runtime": {
+        "execPath": "/Users/zoltanka/Library/Caches/JetBrains/WebStorm2026.2/acp-agents/.runtimes/node/24.19.0/bin/node",
+        "node": "v24.19.0",
+        "sqlite": "3.53.3",
+        "platform": "darwin",
+        "arch": "arm64"
+      },
+      "before": {
+        "tools/replay-store.js": "30663a4567a6933f5c14b841d64c0703c3a76cac705b45d2cafbd94788fba252",
+        "tools/replay-score-analysis.js": "42afb9e83682dc303d6c6cb258992d6505be9905745f0dfdd74c236a0ea10ff6",
+        "tools/replay-analysis.js": "75558600647beea2f985532809388018d82af06525d29b8762db00479792d556",
+        "tools/replay-score-analysis-fixture.js": "356cb479754192b549a33824f77ce4860af1924d0e5edecd47c0c76976565516",
+        "tests/unit/replay-score-analysis-fixture.test.js": "23bf32ce649a7aecb6b408748664a6c825f646db355340bb7b704c25a9e56680",
+        "tests/fixtures/replay-score-analysis-m2d-compat-oracle.json": "38e4a31583b096b79763074d7054a768856c0af9b5ce3d0e3c862175a82898c3",
+        "tests/fixtures/replay-score-analysis-m2d-oracle.json": "07e152deb5cf7dae86eba27d06a1f1dfe503304fc09aafc1342070d232394047",
+        "tests/fixtures/replay-score-analysis-m2d-process.js": "dcfa913ee7286e9f51ab3c11fdeaa9eb20dde45f87f55e615248c4dc6ceeb521",
+        "tests/fixtures/replay-score-analysis-m2d-recipe.js": "1a0045c8bbe703f9262020a91f986c8834f3650ceeaafd62682f32a4c9b68176",
+        "tests/fixtures/replay-score-analysis-m2d-store.js": "d674c83a7c626513dfb61085b7a0bac8fef3ddd33a8fa3c9920d4b86924f1847",
+        "tests/fixtures/replay-score-analysis-m2d-worker.js": "1c7994a96da9c500e97cd87a4d8e0801286ff568229d26f594c07ef2e121b7c5",
+        "package.json": "09b25812e48a5749f9fc07c34bf80a3e9ca83fd4cce4f811e80f6b7461e42dee"
+      },
+      "after": {
+        "tools/replay-store.js": "30663a4567a6933f5c14b841d64c0703c3a76cac705b45d2cafbd94788fba252",
+        "tools/replay-score-analysis.js": "42afb9e83682dc303d6c6cb258992d6505be9905745f0dfdd74c236a0ea10ff6",
+        "tools/replay-analysis.js": "75558600647beea2f985532809388018d82af06525d29b8762db00479792d556",
+        "tools/replay-score-analysis-fixture.js": "356cb479754192b549a33824f77ce4860af1924d0e5edecd47c0c76976565516",
+        "tests/unit/replay-score-analysis-fixture.test.js": "23bf32ce649a7aecb6b408748664a6c825f646db355340bb7b704c25a9e56680",
+        "tests/fixtures/replay-score-analysis-m2d-compat-oracle.json": "38e4a31583b096b79763074d7054a768856c0af9b5ce3d0e3c862175a82898c3",
+        "tests/fixtures/replay-score-analysis-m2d-oracle.json": "07e152deb5cf7dae86eba27d06a1f1dfe503304fc09aafc1342070d232394047",
+        "tests/fixtures/replay-score-analysis-m2d-process.js": "dcfa913ee7286e9f51ab3c11fdeaa9eb20dde45f87f55e615248c4dc6ceeb521",
+        "tests/fixtures/replay-score-analysis-m2d-recipe.js": "1a0045c8bbe703f9262020a91f986c8834f3650ceeaafd62682f32a4c9b68176",
+        "tests/fixtures/replay-score-analysis-m2d-store.js": "d674c83a7c626513dfb61085b7a0bac8fef3ddd33a8fa3c9920d4b86924f1847",
+        "tests/fixtures/replay-score-analysis-m2d-worker.js": "1c7994a96da9c500e97cd87a4d8e0801286ff568229d26f594c07ef2e121b7c5",
+        "package.json": "09b25812e48a5749f9fc07c34bf80a3e9ca83fd4cce4f811e80f6b7461e42dee"
+      },
+      "log": "/tmp/pain-gain-m2d-compat.FJaHC8/targeted.log",
+      "logHash": "3fa5e2cc786da8f770cfa471638aabafcb85e4edeb0bd2ba7ed85f5f7dc37085",
+      "retainedReceipt": "/tmp/pain-gain-m2d-compat.FJaHC8/targeted.json",
+      "retainedReceiptHash": "c6177599cf65f03411b19a3a3bbe3b9ba882f72eeb9694923c55418c1f75bbff",
+      "totals": {
+        "tests": 9,
+        "pass": 7,
+        "fail": 2,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0
+      },
+      "unchanged": true,
+      "m2dGates": [],
+      "busyTest": null
+    },
+    "targeted-corrected": {
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=M2d compatibility:",
+        "tests/unit/replay-score-analysis-fixture.test.js"
+      ],
+      "startedAt": "2026-10-06T09:38:41.486Z",
+      "endedAt": "2026-10-06T09:38:42.864Z",
+      "elapsedMs": 1376.1209999999999,
+      "code": 0,
+      "signal": null,
+      "runtime": {
+        "execPath": "/Users/zoltanka/Library/Caches/JetBrains/WebStorm2026.2/acp-agents/.runtimes/node/24.19.0/bin/node",
+        "node": "v24.19.0",
+        "sqlite": "3.53.3",
+        "platform": "darwin",
+        "arch": "arm64"
+      },
+      "before": {
+        "tools/replay-store.js": "30663a4567a6933f5c14b841d64c0703c3a76cac705b45d2cafbd94788fba252",
+        "tools/replay-score-analysis.js": "42afb9e83682dc303d6c6cb258992d6505be9905745f0dfdd74c236a0ea10ff6",
+        "tools/replay-analysis.js": "75558600647beea2f985532809388018d82af06525d29b8762db00479792d556",
+        "tools/replay-score-analysis-fixture.js": "356cb479754192b549a33824f77ce4860af1924d0e5edecd47c0c76976565516",
+        "tests/unit/replay-score-analysis-fixture.test.js": "f6af2c8f93497690a771ae12019d944bd87c45ad9c8e57147e199d8fb59b559b",
+        "tests/fixtures/replay-score-analysis-m2d-compat-oracle.json": "38e4a31583b096b79763074d7054a768856c0af9b5ce3d0e3c862175a82898c3",
+        "tests/fixtures/replay-score-analysis-m2d-oracle.json": "07e152deb5cf7dae86eba27d06a1f1dfe503304fc09aafc1342070d232394047",
+        "tests/fixtures/replay-score-analysis-m2d-process.js": "dcfa913ee7286e9f51ab3c11fdeaa9eb20dde45f87f55e615248c4dc6ceeb521",
+        "tests/fixtures/replay-score-analysis-m2d-recipe.js": "1a0045c8bbe703f9262020a91f986c8834f3650ceeaafd62682f32a4c9b68176",
+        "tests/fixtures/replay-score-analysis-m2d-store.js": "d674c83a7c626513dfb61085b7a0bac8fef3ddd33a8fa3c9920d4b86924f1847",
+        "tests/fixtures/replay-score-analysis-m2d-worker.js": "1c7994a96da9c500e97cd87a4d8e0801286ff568229d26f594c07ef2e121b7c5",
+        "package.json": "09b25812e48a5749f9fc07c34bf80a3e9ca83fd4cce4f811e80f6b7461e42dee"
+      },
+      "after": {
+        "tools/replay-store.js": "30663a4567a6933f5c14b841d64c0703c3a76cac705b45d2cafbd94788fba252",
+        "tools/replay-score-analysis.js": "42afb9e83682dc303d6c6cb258992d6505be9905745f0dfdd74c236a0ea10ff6",
+        "tools/replay-analysis.js": "75558600647beea2f985532809388018d82af06525d29b8762db00479792d556",
+        "tools/replay-score-analysis-fixture.js": "356cb479754192b549a33824f77ce4860af1924d0e5edecd47c0c76976565516",
+        "tests/unit/replay-score-analysis-fixture.test.js": "f6af2c8f93497690a771ae12019d944bd87c45ad9c8e57147e199d8fb59b559b",
+        "tests/fixtures/replay-score-analysis-m2d-compat-oracle.json": "38e4a31583b096b79763074d7054a768856c0af9b5ce3d0e3c862175a82898c3",
+        "tests/fixtures/replay-score-analysis-m2d-oracle.json": "07e152deb5cf7dae86eba27d06a1f1dfe503304fc09aafc1342070d232394047",
+        "tests/fixtures/replay-score-analysis-m2d-process.js": "dcfa913ee7286e9f51ab3c11fdeaa9eb20dde45f87f55e615248c4dc6ceeb521",
+        "tests/fixtures/replay-score-analysis-m2d-recipe.js": "1a0045c8bbe703f9262020a91f986c8834f3650ceeaafd62682f32a4c9b68176",
+        "tests/fixtures/replay-score-analysis-m2d-store.js": "d674c83a7c626513dfb61085b7a0bac8fef3ddd33a8fa3c9920d4b86924f1847",
+        "tests/fixtures/replay-score-analysis-m2d-worker.js": "1c7994a96da9c500e97cd87a4d8e0801286ff568229d26f594c07ef2e121b7c5",
+        "package.json": "09b25812e48a5749f9fc07c34bf80a3e9ca83fd4cce4f811e80f6b7461e42dee"
+      },
+      "log": "/tmp/pain-gain-m2d-compat.FJaHC8/targeted-corrected.log",
+      "logHash": "512c0926019646d261a06eb7e65d39488bc7f2e58857379ef7bde432e7bddacc",
+      "retainedReceipt": "/tmp/pain-gain-m2d-compat.FJaHC8/targeted-corrected.json",
+      "retainedReceiptHash": "ad4739533b6b71343619d167a92a3723d40585c40ea721a6419a95eb1d7636be",
+      "totals": {
+        "tests": 9,
+        "pass": 9,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0
+      },
+      "unchanged": true,
+      "m2dGates": [],
+      "busyTest": null
+    },
+    "focused": {
+      "command": [
+        "node",
+        "--test",
+        "tests/unit/replay-score-analysis-fixture.test.js",
+        "tests/unit/replay-score-analysis.test.js",
+        "tests/unit/replay-analysis.test.js"
+      ],
+      "startedAt": "2026-10-06T09:38:42.973Z",
+      "endedAt": "2026-10-06T09:40:03.486Z",
+      "elapsedMs": 80512.612167,
+      "code": 0,
+      "signal": null,
+      "runtime": {
+        "execPath": "/Users/zoltanka/Library/Caches/JetBrains/WebStorm2026.2/acp-agents/.runtimes/node/24.19.0/bin/node",
+        "node": "v24.19.0",
+        "sqlite": "3.53.3",
+        "platform": "darwin",
+        "arch": "arm64"
+      },
+      "before": {
+        "tools/replay-store.js": "30663a4567a6933f5c14b841d64c0703c3a76cac705b45d2cafbd94788fba252",
+        "tools/replay-score-analysis.js": "42afb9e83682dc303d6c6cb258992d6505be9905745f0dfdd74c236a0ea10ff6",
+        "tools/replay-analysis.js": "75558600647beea2f985532809388018d82af06525d29b8762db00479792d556",
+        "tools/replay-score-analysis-fixture.js": "356cb479754192b549a33824f77ce4860af1924d0e5edecd47c0c76976565516",
+        "tests/unit/replay-score-analysis-fixture.test.js": "f6af2c8f93497690a771ae12019d944bd87c45ad9c8e57147e199d8fb59b559b",
+        "tests/fixtures/replay-score-analysis-m2d-compat-oracle.json": "38e4a31583b096b79763074d7054a768856c0af9b5ce3d0e3c862175a82898c3",
+        "tests/fixtures/replay-score-analysis-m2d-oracle.json": "07e152deb5cf7dae86eba27d06a1f1dfe503304fc09aafc1342070d232394047",
+        "tests/fixtures/replay-score-analysis-m2d-process.js": "dcfa913ee7286e9f51ab3c11fdeaa9eb20dde45f87f55e615248c4dc6ceeb521",
+        "tests/fixtures/replay-score-analysis-m2d-recipe.js": "1a0045c8bbe703f9262020a91f986c8834f3650ceeaafd62682f32a4c9b68176",
+        "tests/fixtures/replay-score-analysis-m2d-store.js": "d674c83a7c626513dfb61085b7a0bac8fef3ddd33a8fa3c9920d4b86924f1847",
+        "tests/fixtures/replay-score-analysis-m2d-worker.js": "1c7994a96da9c500e97cd87a4d8e0801286ff568229d26f594c07ef2e121b7c5",
+        "package.json": "09b25812e48a5749f9fc07c34bf80a3e9ca83fd4cce4f811e80f6b7461e42dee"
+      },
+      "after": {
+        "tools/replay-store.js": "30663a4567a6933f5c14b841d64c0703c3a76cac705b45d2cafbd94788fba252",
+        "tools/replay-score-analysis.js": "42afb9e83682dc303d6c6cb258992d6505be9905745f0dfdd74c236a0ea10ff6",
+        "tools/replay-analysis.js": "75558600647beea2f985532809388018d82af06525d29b8762db00479792d556",
+        "tools/replay-score-analysis-fixture.js": "356cb479754192b549a33824f77ce4860af1924d0e5edecd47c0c76976565516",
+        "tests/unit/replay-score-analysis-fixture.test.js": "f6af2c8f93497690a771ae12019d944bd87c45ad9c8e57147e199d8fb59b559b",
+        "tests/fixtures/replay-score-analysis-m2d-compat-oracle.json": "38e4a31583b096b79763074d7054a768856c0af9b5ce3d0e3c862175a82898c3",
+        "tests/fixtures/replay-score-analysis-m2d-oracle.json": "07e152deb5cf7dae86eba27d06a1f1dfe503304fc09aafc1342070d232394047",
+        "tests/fixtures/replay-score-analysis-m2d-process.js": "dcfa913ee7286e9f51ab3c11fdeaa9eb20dde45f87f55e615248c4dc6ceeb521",
+        "tests/fixtures/replay-score-analysis-m2d-recipe.js": "1a0045c8bbe703f9262020a91f986c8834f3650ceeaafd62682f32a4c9b68176",
+        "tests/fixtures/replay-score-analysis-m2d-store.js": "d674c83a7c626513dfb61085b7a0bac8fef3ddd33a8fa3c9920d4b86924f1847",
+        "tests/fixtures/replay-score-analysis-m2d-worker.js": "1c7994a96da9c500e97cd87a4d8e0801286ff568229d26f594c07ef2e121b7c5",
+        "package.json": "09b25812e48a5749f9fc07c34bf80a3e9ca83fd4cce4f811e80f6b7461e42dee"
+      },
+      "log": "/tmp/pain-gain-m2d-compat.FJaHC8/focused.log",
+      "logHash": "e6d6a7a1f8d7e78bae23d3d167c13d042100cc3e3b004e467d9c96e3cb48dff9",
+      "retainedReceipt": "/tmp/pain-gain-m2d-compat.FJaHC8/focused.json",
+      "retainedReceiptHash": "0fd194e870f8b8cf25dc53f0d48b87f905a4fb8f5a6eda3997c711de0323b7ac",
+      "totals": {
+        "tests": 125,
+        "pass": 125,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0
+      },
+      "unchanged": true,
+      "m2dGates": [
+        {
+          "schema": 1,
+          "generate": {
+            "args": [
+              "--max-old-space-size=192",
+              "/Users/zoltanka/Documents/Prog/JavaScript/ScreepsArena/pain_and_gain/tests/fixtures/replay-score-analysis-m2d-worker.js",
+              "generate",
+              "1",
+              "/private/var/folders/dy/9msg37jj549dkw5k__ct1kv00000gn/T/pain-gain-store-v3-fixture-c1ECW6",
+              "/private/var/folders/dy/9msg37jj549dkw5k__ct1kv00000gn/T/pain-gain-store-v3-fixture-0TWBqe"
+            ],
+            "code": 0,
+            "signal": null,
+            "elapsedMs": 4856.869583000007,
+            "stderr": "",
+            "result": {
+              "phase": "generate",
+              "schema": 1,
+              "stores": [
+                {
+                  "count": 10,
+                  "selected": [
+                    {
+                      "path": "replay-score-source-dddddddddddddddddddddddd-f33fe83e565ecf8cd460de432813b2cb6193013efee9f1b722b963c7e6098856.response",
+                      "bytes": 302
+                    },
+                    {
+                      "path": "store-v3/c0eec9f6-d1c9-4832-bf94-b9638ee232e2/summaries/fa/ee0022e2d922d534ece9f3224c913fcc72fb8f14de5530f646862d0b0c3dbb35/fa7ed4e9e6cc251bb58e98d1a26b5958d4e6b20b8aaf35d40cf456f7faf4e738.json",
+                      "bytes": 399
+                    },
+                    {
+                      "path": "store-v3/c0eec9f6-d1c9-4832-bf94-b9638ee232e2/extensions/4d/97abd5ca27c80d1a0110147b829c78e264ce6603597620d05199b3f3e5c81b05/4d41610bf1712ac960b6fb9296bf954a21ab076471030bb040d97792208ef1a7.json",
+                      "bytes": 65538
+                    },
+                    {
+                      "path": "replay-score-source-dddddddddddddddddddddddd-6484036a3b91ce4d55cd686b7456ae03175d592c43cf033f9d16028afbc8c60a.response",
+                      "bytes": 36340
+                    },
+                    {
+                      "path": "store-v3/c0eec9f6-d1c9-4832-bf94-b9638ee232e2/summaries/be/82987e0c97a009792509ae8fb3780106eaf4a51f7a4b8de0f42ee31d8b8ee804/be4efe79da0e2b00966b9a3f8b255a780eade80684f943cc2141fbb74bd61bd3.json",
+                      "bytes": 87551
+                    },
+                    {
+                      "path": "store-v3/c0eec9f6-d1c9-4832-bf94-b9638ee232e2/extensions/4d/cfef6ad5e25e19e3558a116d868563c10e4166da43d0f8a41b0659125c459fab/4d41610bf1712ac960b6fb9296bf954a21ab076471030bb040d97792208ef1a7.json",
+                      "bytes": 65538
+                    },
+                    {
+                      "path": "replay-score-source-dddddddddddddddddddddddd-0bd7cdedf631b22d21ed8ada804eefb11fce147bd43c76ddbd04923b57688a5a.response",
+                      "bytes": 36539
+                    },
+                    {
+                      "path": "store-v3/c0eec9f6-d1c9-4832-bf94-b9638ee232e2/summaries/21/57dde290d5a3289c139ad1cd1dfd1e7560d61d5e40afd4b6e5728128b6b34444/21726a86a9f8e0f053903f1a879ae167f0022025bb048e33066ca469f0b23e76.json",
+                      "bytes": 87969
+                    },
+                    {
+                      "path": "store-v3/c0eec9f6-d1c9-4832-bf94-b9638ee232e2/extensions/4d/bb997e8afb12c15f65ed12447c52339a77a62e828e7076ac704366cbc567ac40/4d41610bf1712ac960b6fb9296bf954a21ab076471030bb040d97792208ef1a7.json",
+                      "bytes": 65538
+                    },
+                    {
+                      "path": "replay-score-source-dddddddddddddddddddddddd-8b6d7b123ce93672c485d6c610b50f2adfd6fd4ba731ce553a6cc8a3d2aadc77.response",
+                      "bytes": 36609
+                    },
+                    {
+                      "path": "store-v3/c0eec9f6-d1c9-4832-bf94-b9638ee232e2/summaries/f9/5c643850b06d19362b70e8192a144000524ef13f4494c0bc2f9133f5675ef5d6/f9971ff1bf6228c891aacd236d56111ea67fa4405f8705150b701ab6399caa32.json",
+                      "bytes": 88144
+                    },
+                    {
+                      "path": "store-v3/c0eec9f6-d1c9-4832-bf94-b9638ee232e2/extensions/4d/30de6e02105efbcd96ad25fd23e0310b308a186e26e1cbafe91ed2eeaefcf733/4d41610bf1712ac960b6fb9296bf954a21ab076471030bb040d97792208ef1a7.json",
+                      "bytes": 65538
+                    }
+                  ],
+                  "inventoryHash": "826ec370d50efccf7b795a9a89c018d02b212bbbceb0fca14335a5626c25ace3",
+                  "unrelatedBytes": 629145600
+                },
+                {
+                  "count": 1000,
+                  "selected": [
+                    {
+                      "path": "replay-score-source-dddddddddddddddddddddddd-f33fe83e565ecf8cd460de432813b2cb6193013efee9f1b722b963c7e6098856.response",
+                      "bytes": 302
+                    },
+                    {
+                      "path": "store-v3/eab4f7ff-2ac8-44f3-96f5-7b6d1b3f7b68/summaries/fa/ee0022e2d922d534ece9f3224c913fcc72fb8f14de5530f646862d0b0c3dbb35/fa7ed4e9e6cc251bb58e98d1a26b5958d4e6b20b8aaf35d40cf456f7faf4e738.json",
+                      "bytes": 399
+                    },
+                    {
+                      "path": "store-v3/eab4f7ff-2ac8-44f3-96f5-7b6d1b3f7b68/extensions/4d/97abd5ca27c80d1a0110147b829c78e264ce6603597620d05199b3f3e5c81b05/4d41610bf1712ac960b6fb9296bf954a21ab076471030bb040d97792208ef1a7.json",
+                      "bytes": 65538
+                    },
+                    {
+                      "path": "replay-score-source-dddddddddddddddddddddddd-6484036a3b91ce4d55cd686b7456ae03175d592c43cf033f9d16028afbc8c60a.response",
+                      "bytes": 36340
+                    },
+                    {
+                      "path": "store-v3/eab4f7ff-2ac8-44f3-96f5-7b6d1b3f7b68/summaries/be/82987e0c97a009792509ae8fb3780106eaf4a51f7a4b8de0f42ee31d8b8ee804/be4efe79da0e2b00966b9a3f8b255a780eade80684f943cc2141fbb74bd61bd3.json",
+                      "bytes": 87551
+                    },
+                    {
+                      "path": "store-v3/eab4f7ff-2ac8-44f3-96f5-7b6d1b3f7b68/extensions/4d/cfef6ad5e25e19e3558a116d868563c10e4166da43d0f8a41b0659125c459fab/4d41610bf1712ac960b6fb9296bf954a21ab076471030bb040d97792208ef1a7.json",
+                      "bytes": 65538
+                    },
+                    {
+                      "path": "replay-score-source-dddddddddddddddddddddddd-0bd7cdedf631b22d21ed8ada804eefb11fce147bd43c76ddbd04923b57688a5a.response",
+                      "bytes": 36539
+                    },
+                    {
+                      "path": "store-v3/eab4f7ff-2ac8-44f3-96f5-7b6d1b3f7b68/summaries/21/57dde290d5a3289c139ad1cd1dfd1e7560d61d5e40afd4b6e5728128b6b34444/21726a86a9f8e0f053903f1a879ae167f0022025bb048e33066ca469f0b23e76.json",
+                      "bytes": 87969
+                    },
+                    {
+                      "path": "store-v3/eab4f7ff-2ac8-44f3-96f5-7b6d1b3f7b68/extensions/4d/bb997e8afb12c15f65ed12447c52339a77a62e828e7076ac704366cbc567ac40/4d41610bf1712ac960b6fb9296bf954a21ab076471030bb040d97792208ef1a7.json",
+                      "bytes": 65538
+                    },
+                    {
+                      "path": "replay-score-source-dddddddddddddddddddddddd-8b6d7b123ce93672c485d6c610b50f2adfd6fd4ba731ce553a6cc8a3d2aadc77.response",
+                      "bytes": 36609
+                    },
+                    {
+                      "path": "store-v3/eab4f7ff-2ac8-44f3-96f5-7b6d1b3f7b68/summaries/f9/5c643850b06d19362b70e8192a144000524ef13f4494c0bc2f9133f5675ef5d6/f9971ff1bf6228c891aacd236d56111ea67fa4405f8705150b701ab6399caa32.json",
+                      "bytes": 88144
+                    },
+                    {
+                      "path": "store-v3/eab4f7ff-2ac8-44f3-96f5-7b6d1b3f7b68/extensions/4d/30de6e02105efbcd96ad25fd23e0310b308a186e26e1cbafe91ed2eeaefcf733/4d41610bf1712ac960b6fb9296bf954a21ab076471030bb040d97792208ef1a7.json",
+                      "bytes": 65538
+                    }
+                  ],
+                  "inventoryHash": "0bb9f4a2d59684acca43e8bb65bcaae98965b836f81d30e9e5c1ccdf663e503b",
+                  "unrelatedBytes": 629145600
+                }
+              ],
+              "elapsedMs": 4760.828,
+              "maxRssBytes": 156794880
+            }
+          },
+          "operations": {
+            "args": [
+              "--max-old-space-size=192",
+              "/Users/zoltanka/Documents/Prog/JavaScript/ScreepsArena/pain_and_gain/tests/fixtures/replay-score-analysis-m2d-worker.js",
+              "operations",
+              "1",
+              "/private/var/folders/dy/9msg37jj549dkw5k__ct1kv00000gn/T/pain-gain-store-v3-fixture-c1ECW6",
+              "/private/var/folders/dy/9msg37jj549dkw5k__ct1kv00000gn/T/pain-gain-store-v3-fixture-0TWBqe",
+              "/private/var/folders/dy/9msg37jj549dkw5k__ct1kv00000gn/T/pain-gain-m2d-gate-mFFXIm/generation.json"
+            ],
+            "code": 0,
+            "signal": null,
+            "elapsedMs": 359.01845799999137,
+            "stderr": "",
+            "result": {
+              "phase": "operations",
+              "schema": 1,
+              "runs": [
+                {
+                  "count": 10,
+                  "reportMode": "full",
+                  "reportHash": "78541d384c9da78ae6b08f3e97fea4d91f8e1da7ee9c1eb8a72e1307e1f57177",
+                  "selectedBytes": 636005,
+                  "elapsedMs": 87.07549999999999,
+                  "sql": 66,
+                  "pragmas": 14,
+                  "rows": 121,
+                  "opens": 12,
+                  "bytes": 636005,
+                  "reads": 19,
+                  "maxChunk": 65536,
+                  "writes": 0,
+                  "metadataOpens": 9,
+                  "unselected": 0
+                },
+                {
+                  "count": 10,
+                  "reportMode": "compact",
+                  "reportHash": "06f82452823db2955082fcf7c3491514958c1532d94325a33d85c9181899203f",
+                  "selectedBytes": 636005,
+                  "elapsedMs": 61.108292000000006,
+                  "sql": 66,
+                  "pragmas": 14,
+                  "rows": 121,
+                  "opens": 12,
+                  "bytes": 636005,
+                  "reads": 19,
+                  "maxChunk": 65536,
+                  "writes": 0,
+                  "metadataOpens": 9,
+                  "unselected": 0
+                },
+                {
+                  "count": 1000,
+                  "reportMode": "full",
+                  "reportHash": "78541d384c9da78ae6b08f3e97fea4d91f8e1da7ee9c1eb8a72e1307e1f57177",
+                  "selectedBytes": 636005,
+                  "elapsedMs": 64.12849999999997,
+                  "sql": 66,
+                  "pragmas": 14,
+                  "rows": 121,
+                  "opens": 12,
+                  "bytes": 636005,
+                  "reads": 19,
+                  "maxChunk": 65536,
+                  "writes": 0,
+                  "metadataOpens": 9,
+                  "unselected": 0
+                },
+                {
+                  "count": 1000,
+                  "reportMode": "compact",
+                  "reportHash": "06f82452823db2955082fcf7c3491514958c1532d94325a33d85c9181899203f",
+                  "selectedBytes": 636005,
+                  "elapsedMs": 56.73983399999997,
+                  "sql": 66,
+                  "pragmas": 14,
+                  "rows": 121,
+                  "opens": 12,
+                  "bytes": 636005,
+                  "reads": 19,
+                  "maxChunk": 65536,
+                  "writes": 0,
+                  "metadataOpens": 9,
+                  "unselected": 0
+                }
+              ],
+              "elapsedMs": 271.168917,
+              "maxRssBytes": 157237248
+            }
+          },
+          "preservation": {
+            "args": [
+              "--max-old-space-size=192",
+              "/Users/zoltanka/Documents/Prog/JavaScript/ScreepsArena/pain_and_gain/tests/fixtures/replay-score-analysis-m2d-worker.js",
+              "preservation",
+              "1",
+              "/private/var/folders/dy/9msg37jj549dkw5k__ct1kv00000gn/T/pain-gain-store-v3-fixture-c1ECW6",
+              "/private/var/folders/dy/9msg37jj549dkw5k__ct1kv00000gn/T/pain-gain-store-v3-fixture-0TWBqe",
+              "/private/var/folders/dy/9msg37jj549dkw5k__ct1kv00000gn/T/pain-gain-m2d-gate-mFFXIm/generation.json"
+            ],
+            "code": 0,
+            "signal": null,
+            "elapsedMs": 729.3786660000042,
+            "stderr": "",
+            "result": {
+              "phase": "preservation",
+              "schema": 1,
+              "hashes": [
+                "826ec370d50efccf7b795a9a89c018d02b212bbbceb0fca14335a5626c25ace3",
+                "0bb9f4a2d59684acca43e8bb65bcaae98965b836f81d30e9e5c1ccdf663e503b"
+              ],
+              "elapsedMs": 636.812041,
+              "maxRssBytes": 111624192
+            }
+          }
+        },
+        {
+          "schema": 2,
+          "generate": {
+            "args": [
+              "--max-old-space-size=192",
+              "/Users/zoltanka/Documents/Prog/JavaScript/ScreepsArena/pain_and_gain/tests/fixtures/replay-score-analysis-m2d-worker.js",
+              "generate",
+              "2",
+              "/private/var/folders/dy/9msg37jj549dkw5k__ct1kv00000gn/T/pain-gain-store-v3-fixture-fZMNCv",
+              "/private/var/folders/dy/9msg37jj549dkw5k__ct1kv00000gn/T/pain-gain-store-v3-fixture-cKMmYw"
+            ],
+            "code": 0,
+            "signal": null,
+            "elapsedMs": 4517.437250000003,
+            "stderr": "",
+            "result": {
+              "phase": "generate",
+              "schema": 2,
+              "stores": [
+                {
+                  "count": 10,
+                  "selected": [
+                    {
+                      "path": "replay-score-source-dddddddddddddddddddddddd-f33fe83e565ecf8cd460de432813b2cb6193013efee9f1b722b963c7e6098856.response",
+                      "bytes": 302
+                    },
+                    {
+                      "path": "store-v3/c5b53a32-f4ce-4595-9a49-795d82a03247/summaries/fa/ee0022e2d922d534ece9f3224c913fcc72fb8f14de5530f646862d0b0c3dbb35/fa7ed4e9e6cc251bb58e98d1a26b5958d4e6b20b8aaf35d40cf456f7faf4e738.json",
+                      "bytes": 399
+                    },
+                    {
+                      "path": "store-v3/c5b53a32-f4ce-4595-9a49-795d82a03247/extensions/4d/97abd5ca27c80d1a0110147b829c78e264ce6603597620d05199b3f3e5c81b05/4d41610bf1712ac960b6fb9296bf954a21ab076471030bb040d97792208ef1a7.json",
+                      "bytes": 65538
+                    },
+                    {
+                      "path": "replay-score-source-dddddddddddddddddddddddd-6484036a3b91ce4d55cd686b7456ae03175d592c43cf033f9d16028afbc8c60a.response",
+                      "bytes": 36340
+                    },
+                    {
+                      "path": "store-v3/c5b53a32-f4ce-4595-9a49-795d82a03247/summaries/be/82987e0c97a009792509ae8fb3780106eaf4a51f7a4b8de0f42ee31d8b8ee804/be4efe79da0e2b00966b9a3f8b255a780eade80684f943cc2141fbb74bd61bd3.json",
+                      "bytes": 87551
+                    },
+                    {
+                      "path": "store-v3/c5b53a32-f4ce-4595-9a49-795d82a03247/extensions/4d/cfef6ad5e25e19e3558a116d868563c10e4166da43d0f8a41b0659125c459fab/4d41610bf1712ac960b6fb9296bf954a21ab076471030bb040d97792208ef1a7.json",
+                      "bytes": 65538
+                    },
+                    {
+                      "path": "replay-score-source-dddddddddddddddddddddddd-0bd7cdedf631b22d21ed8ada804eefb11fce147bd43c76ddbd04923b57688a5a.response",
+                      "bytes": 36539
+                    },
+                    {
+                      "path": "store-v3/c5b53a32-f4ce-4595-9a49-795d82a03247/summaries/21/57dde290d5a3289c139ad1cd1dfd1e7560d61d5e40afd4b6e5728128b6b34444/21726a86a9f8e0f053903f1a879ae167f0022025bb048e33066ca469f0b23e76.json",
+                      "bytes": 87969
+                    },
+                    {
+                      "path": "store-v3/c5b53a32-f4ce-4595-9a49-795d82a03247/extensions/4d/bb997e8afb12c15f65ed12447c52339a77a62e828e7076ac704366cbc567ac40/4d41610bf1712ac960b6fb9296bf954a21ab076471030bb040d97792208ef1a7.json",
+                      "bytes": 65538
+                    },
+                    {
+                      "path": "replay-score-source-dddddddddddddddddddddddd-8b6d7b123ce93672c485d6c610b50f2adfd6fd4ba731ce553a6cc8a3d2aadc77.response",
+                      "bytes": 36609
+                    },
+                    {
+                      "path": "store-v3/c5b53a32-f4ce-4595-9a49-795d82a03247/summaries/f9/5c643850b06d19362b70e8192a144000524ef13f4494c0bc2f9133f5675ef5d6/f9971ff1bf6228c891aacd236d56111ea67fa4405f8705150b701ab6399caa32.json",
+                      "bytes": 88144
+                    },
+                    {
+                      "path": "store-v3/c5b53a32-f4ce-4595-9a49-795d82a03247/extensions/4d/30de6e02105efbcd96ad25fd23e0310b308a186e26e1cbafe91ed2eeaefcf733/4d41610bf1712ac960b6fb9296bf954a21ab076471030bb040d97792208ef1a7.json",
+                      "bytes": 65538
+                    }
+                  ],
+                  "inventoryHash": "b207e311e93d83926a9a925eceba80e082aec923bc77a98fb4d3d7284f8b15c4",
+                  "unrelatedBytes": 629145600
+                },
+                {
+                  "count": 1000,
+                  "selected": [
+                    {
+                      "path": "replay-score-source-dddddddddddddddddddddddd-f33fe83e565ecf8cd460de432813b2cb6193013efee9f1b722b963c7e6098856.response",
+                      "bytes": 302
+                    },
+                    {
+                      "path": "store-v3/d9334a71-98ce-424b-bb09-e19754db6b38/summaries/fa/ee0022e2d922d534ece9f3224c913fcc72fb8f14de5530f646862d0b0c3dbb35/fa7ed4e9e6cc251bb58e98d1a26b5958d4e6b20b8aaf35d40cf456f7faf4e738.json",
+                      "bytes": 399
+                    },
+                    {
+                      "path": "store-v3/d9334a71-98ce-424b-bb09-e19754db6b38/extensions/4d/97abd5ca27c80d1a0110147b829c78e264ce6603597620d05199b3f3e5c81b05/4d41610bf1712ac960b6fb9296bf954a21ab076471030bb040d97792208ef1a7.json",
+                      "bytes": 65538
+                    },
+                    {
+                      "path": "replay-score-source-dddddddddddddddddddddddd-6484036a3b91ce4d55cd686b7456ae03175d592c43cf033f9d16028afbc8c60a.response",
+                      "bytes": 36340
+                    },
+                    {
+                      "path": "store-v3/d9334a71-98ce-424b-bb09-e19754db6b38/summaries/be/82987e0c97a009792509ae8fb3780106eaf4a51f7a4b8de0f42ee31d8b8ee804/be4efe79da0e2b00966b9a3f8b255a780eade80684f943cc2141fbb74bd61bd3.json",
+                      "bytes": 87551
+                    },
+                    {
+                      "path": "store-v3/d9334a71-98ce-424b-bb09-e19754db6b38/extensions/4d/cfef6ad5e25e19e3558a116d868563c10e4166da43d0f8a41b0659125c459fab/4d41610bf1712ac960b6fb9296bf954a21ab076471030bb040d97792208ef1a7.json",
+                      "bytes": 65538
+                    },
+                    {
+                      "path": "replay-score-source-dddddddddddddddddddddddd-0bd7cdedf631b22d21ed8ada804eefb11fce147bd43c76ddbd04923b57688a5a.response",
+                      "bytes": 36539
+                    },
+                    {
+                      "path": "store-v3/d9334a71-98ce-424b-bb09-e19754db6b38/summaries/21/57dde290d5a3289c139ad1cd1dfd1e7560d61d5e40afd4b6e5728128b6b34444/21726a86a9f8e0f053903f1a879ae167f0022025bb048e33066ca469f0b23e76.json",
+                      "bytes": 87969
+                    },
+                    {
+                      "path": "store-v3/d9334a71-98ce-424b-bb09-e19754db6b38/extensions/4d/bb997e8afb12c15f65ed12447c52339a77a62e828e7076ac704366cbc567ac40/4d41610bf1712ac960b6fb9296bf954a21ab076471030bb040d97792208ef1a7.json",
+                      "bytes": 65538
+                    },
+                    {
+                      "path": "replay-score-source-dddddddddddddddddddddddd-8b6d7b123ce93672c485d6c610b50f2adfd6fd4ba731ce553a6cc8a3d2aadc77.response",
+                      "bytes": 36609
+                    },
+                    {
+                      "path": "store-v3/d9334a71-98ce-424b-bb09-e19754db6b38/summaries/f9/5c643850b06d19362b70e8192a144000524ef13f4494c0bc2f9133f5675ef5d6/f9971ff1bf6228c891aacd236d56111ea67fa4405f8705150b701ab6399caa32.json",
+                      "bytes": 88144
+                    },
+                    {
+                      "path": "store-v3/d9334a71-98ce-424b-bb09-e19754db6b38/extensions/4d/30de6e02105efbcd96ad25fd23e0310b308a186e26e1cbafe91ed2eeaefcf733/4d41610bf1712ac960b6fb9296bf954a21ab076471030bb040d97792208ef1a7.json",
+                      "bytes": 65538
+                    }
+                  ],
+                  "inventoryHash": "0532e1e9c3ce61234f6c98dfb5836dd8bf2fd9752a2e685be588d649edc5c797",
+                  "unrelatedBytes": 629145600
+                }
+              ],
+              "elapsedMs": 4434.282334,
+              "maxRssBytes": 157581312
+            }
+          },
+          "operations": {
+            "args": [
+              "--max-old-space-size=192",
+              "/Users/zoltanka/Documents/Prog/JavaScript/ScreepsArena/pain_and_gain/tests/fixtures/replay-score-analysis-m2d-worker.js",
+              "operations",
+              "2",
+              "/private/var/folders/dy/9msg37jj549dkw5k__ct1kv00000gn/T/pain-gain-store-v3-fixture-fZMNCv",
+              "/private/var/folders/dy/9msg37jj549dkw5k__ct1kv00000gn/T/pain-gain-store-v3-fixture-cKMmYw",
+              "/private/var/folders/dy/9msg37jj549dkw5k__ct1kv00000gn/T/pain-gain-m2d-gate-PfDuQY/generation.json"
+            ],
+            "code": 0,
+            "signal": null,
+            "elapsedMs": 359.6548749999929,
+            "stderr": "",
+            "result": {
+              "phase": "operations",
+              "schema": 2,
+              "runs": [
+                {
+                  "count": 10,
+                  "reportMode": "full",
+                  "reportHash": "78541d384c9da78ae6b08f3e97fea4d91f8e1da7ee9c1eb8a72e1307e1f57177",
+                  "selectedBytes": 636005,
+                  "elapsedMs": 87.390625,
+                  "sql": 68,
+                  "pragmas": 14,
+                  "rows": 123,
+                  "opens": 12,
+                  "bytes": 636005,
+                  "reads": 19,
+                  "maxChunk": 65536,
+                  "writes": 0,
+                  "metadataOpens": 9,
+                  "unselected": 0
+                },
+                {
+                  "count": 10,
+                  "reportMode": "compact",
+                  "reportHash": "06f82452823db2955082fcf7c3491514958c1532d94325a33d85c9181899203f",
+                  "selectedBytes": 636005,
+                  "elapsedMs": 64.300208,
+                  "sql": 68,
+                  "pragmas": 14,
+                  "rows": 123,
+                  "opens": 12,
+                  "bytes": 636005,
+                  "reads": 19,
+                  "maxChunk": 65536,
+                  "writes": 0,
+                  "metadataOpens": 9,
+                  "unselected": 0
+                },
+                {
+                  "count": 1000,
+                  "reportMode": "full",
+                  "reportHash": "78541d384c9da78ae6b08f3e97fea4d91f8e1da7ee9c1eb8a72e1307e1f57177",
+                  "selectedBytes": 636005,
+                  "elapsedMs": 61.860833000000014,
+                  "sql": 68,
+                  "pragmas": 14,
+                  "rows": 123,
+                  "opens": 12,
+                  "bytes": 636005,
+                  "reads": 19,
+                  "maxChunk": 65536,
+                  "writes": 0,
+                  "metadataOpens": 9,
+                  "unselected": 0
+                },
+                {
+                  "count": 1000,
+                  "reportMode": "compact",
+                  "reportHash": "06f82452823db2955082fcf7c3491514958c1532d94325a33d85c9181899203f",
+                  "selectedBytes": 636005,
+                  "elapsedMs": 58.79424999999998,
+                  "sql": 68,
+                  "pragmas": 14,
+                  "rows": 123,
+                  "opens": 12,
+                  "bytes": 636005,
+                  "reads": 19,
+                  "maxChunk": 65536,
+                  "writes": 0,
+                  "metadataOpens": 9,
+                  "unselected": 0
+                }
+              ],
+              "elapsedMs": 273.40595900000005,
+              "maxRssBytes": 156680192
+            }
+          },
+          "preservation": {
+            "args": [
+              "--max-old-space-size=192",
+              "/Users/zoltanka/Documents/Prog/JavaScript/ScreepsArena/pain_and_gain/tests/fixtures/replay-score-analysis-m2d-worker.js",
+              "preservation",
+              "2",
+              "/private/var/folders/dy/9msg37jj549dkw5k__ct1kv00000gn/T/pain-gain-store-v3-fixture-fZMNCv",
+              "/private/var/folders/dy/9msg37jj549dkw5k__ct1kv00000gn/T/pain-gain-store-v3-fixture-cKMmYw",
+              "/private/var/folders/dy/9msg37jj549dkw5k__ct1kv00000gn/T/pain-gain-m2d-gate-PfDuQY/generation.json"
+            ],
+            "code": 0,
+            "signal": null,
+            "elapsedMs": 713.1617499999993,
+            "stderr": "",
+            "result": {
+              "phase": "preservation",
+              "schema": 2,
+              "hashes": [
+                "b207e311e93d83926a9a925eceba80e082aec923bc77a98fb4d3d7284f8b15c4",
+                "0532e1e9c3ce61234f6c98dfb5836dd8bf2fd9752a2e685be588d649edc5c797"
+              ],
+              "elapsedMs": 634.213041,
+              "maxRssBytes": 111493120
+            }
+          }
+        }
+      ],
+      "busyTest": null
+    },
+    "affected": {
+      "command": [
+        "node",
+        "--test",
+        "tests/unit/replay-store.test.js",
+        "tests/unit/replay-store-payloads.test.js",
+        "tests/unit/replay-catalog.test.js",
+        "tests/unit/replay-other.test.js",
+        "tests/unit/replay-analysis-fixture.test.js",
+        "tests/unit/replay-legacy-reader.test.js"
+      ],
+      "startedAt": "2026-10-06T09:40:07.862Z",
+      "endedAt": "2026-10-06T09:42:00.950Z",
+      "elapsedMs": 113088.798417,
+      "code": 0,
+      "signal": null,
+      "runtime": {
+        "execPath": "/Users/zoltanka/Library/Caches/JetBrains/WebStorm2026.2/acp-agents/.runtimes/node/24.19.0/bin/node",
+        "node": "v24.19.0",
+        "sqlite": "3.53.3",
+        "platform": "darwin",
+        "arch": "arm64"
+      },
+      "before": {
+        "tools/replay-store.js": "30663a4567a6933f5c14b841d64c0703c3a76cac705b45d2cafbd94788fba252",
+        "tools/replay-score-analysis.js": "42afb9e83682dc303d6c6cb258992d6505be9905745f0dfdd74c236a0ea10ff6",
+        "tools/replay-analysis.js": "75558600647beea2f985532809388018d82af06525d29b8762db00479792d556",
+        "tools/replay-score-analysis-fixture.js": "356cb479754192b549a33824f77ce4860af1924d0e5edecd47c0c76976565516",
+        "tests/unit/replay-score-analysis-fixture.test.js": "f6af2c8f93497690a771ae12019d944bd87c45ad9c8e57147e199d8fb59b559b",
+        "tests/fixtures/replay-score-analysis-m2d-compat-oracle.json": "38e4a31583b096b79763074d7054a768856c0af9b5ce3d0e3c862175a82898c3",
+        "tests/fixtures/replay-score-analysis-m2d-oracle.json": "07e152deb5cf7dae86eba27d06a1f1dfe503304fc09aafc1342070d232394047",
+        "tests/fixtures/replay-score-analysis-m2d-process.js": "dcfa913ee7286e9f51ab3c11fdeaa9eb20dde45f87f55e615248c4dc6ceeb521",
+        "tests/fixtures/replay-score-analysis-m2d-recipe.js": "1a0045c8bbe703f9262020a91f986c8834f3650ceeaafd62682f32a4c9b68176",
+        "tests/fixtures/replay-score-analysis-m2d-store.js": "d674c83a7c626513dfb61085b7a0bac8fef3ddd33a8fa3c9920d4b86924f1847",
+        "tests/fixtures/replay-score-analysis-m2d-worker.js": "1c7994a96da9c500e97cd87a4d8e0801286ff568229d26f594c07ef2e121b7c5",
+        "package.json": "09b25812e48a5749f9fc07c34bf80a3e9ca83fd4cce4f811e80f6b7461e42dee"
+      },
+      "after": {
+        "tools/replay-store.js": "30663a4567a6933f5c14b841d64c0703c3a76cac705b45d2cafbd94788fba252",
+        "tools/replay-score-analysis.js": "42afb9e83682dc303d6c6cb258992d6505be9905745f0dfdd74c236a0ea10ff6",
+        "tools/replay-analysis.js": "75558600647beea2f985532809388018d82af06525d29b8762db00479792d556",
+        "tools/replay-score-analysis-fixture.js": "356cb479754192b549a33824f77ce4860af1924d0e5edecd47c0c76976565516",
+        "tests/unit/replay-score-analysis-fixture.test.js": "f6af2c8f93497690a771ae12019d944bd87c45ad9c8e57147e199d8fb59b559b",
+        "tests/fixtures/replay-score-analysis-m2d-compat-oracle.json": "38e4a31583b096b79763074d7054a768856c0af9b5ce3d0e3c862175a82898c3",
+        "tests/fixtures/replay-score-analysis-m2d-oracle.json": "07e152deb5cf7dae86eba27d06a1f1dfe503304fc09aafc1342070d232394047",
+        "tests/fixtures/replay-score-analysis-m2d-process.js": "dcfa913ee7286e9f51ab3c11fdeaa9eb20dde45f87f55e615248c4dc6ceeb521",
+        "tests/fixtures/replay-score-analysis-m2d-recipe.js": "1a0045c8bbe703f9262020a91f986c8834f3650ceeaafd62682f32a4c9b68176",
+        "tests/fixtures/replay-score-analysis-m2d-store.js": "d674c83a7c626513dfb61085b7a0bac8fef3ddd33a8fa3c9920d4b86924f1847",
+        "tests/fixtures/replay-score-analysis-m2d-worker.js": "1c7994a96da9c500e97cd87a4d8e0801286ff568229d26f594c07ef2e121b7c5",
+        "package.json": "09b25812e48a5749f9fc07c34bf80a3e9ca83fd4cce4f811e80f6b7461e42dee"
+      },
+      "log": "/tmp/pain-gain-m2d-compat.FJaHC8/affected.log",
+      "logHash": "79cbd7384cbe3de2da251bed05a4fd26a096353b3d0da6a2643932e142d3dcc7",
+      "retainedReceipt": "/tmp/pain-gain-m2d-compat.FJaHC8/affected.json",
+      "retainedReceiptHash": "a8ecfae0783bcf953dbfd018e48e7055f27ef4bdb9980f410bbb177938afa442",
+      "totals": {
+        "tests": 260,
+        "pass": 260,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0
+      },
+      "unchanged": true,
+      "m2dGates": [],
+      "busyTest": "✔ SQLite busy exhaustion is bounded and cannot publish ready evidence (5325.45425ms)"
+    },
+    "repository": {
+      "command": [
+        "npm",
+        "test"
+      ],
+      "startedAt": "2026-10-06T09:42:04.780Z",
+      "endedAt": "2026-10-06T09:44:40.520Z",
+      "elapsedMs": 155740.101291,
+      "code": 0,
+      "signal": null,
+      "runtime": {
+        "execPath": "/Users/zoltanka/Library/Caches/JetBrains/WebStorm2026.2/acp-agents/.runtimes/node/24.19.0/bin/node",
+        "node": "v24.19.0",
+        "sqlite": "3.53.3",
+        "platform": "darwin",
+        "arch": "arm64"
+      },
+      "before": {
+        "tools/replay-store.js": "30663a4567a6933f5c14b841d64c0703c3a76cac705b45d2cafbd94788fba252",
+        "tools/replay-score-analysis.js": "42afb9e83682dc303d6c6cb258992d6505be9905745f0dfdd74c236a0ea10ff6",
+        "tools/replay-analysis.js": "75558600647beea2f985532809388018d82af06525d29b8762db00479792d556",
+        "tools/replay-score-analysis-fixture.js": "356cb479754192b549a33824f77ce4860af1924d0e5edecd47c0c76976565516",
+        "tests/unit/replay-score-analysis-fixture.test.js": "f6af2c8f93497690a771ae12019d944bd87c45ad9c8e57147e199d8fb59b559b",
+        "tests/fixtures/replay-score-analysis-m2d-compat-oracle.json": "38e4a31583b096b79763074d7054a768856c0af9b5ce3d0e3c862175a82898c3",
+        "tests/fixtures/replay-score-analysis-m2d-oracle.json": "07e152deb5cf7dae86eba27d06a1f1dfe503304fc09aafc1342070d232394047",
+        "tests/fixtures/replay-score-analysis-m2d-process.js": "dcfa913ee7286e9f51ab3c11fdeaa9eb20dde45f87f55e615248c4dc6ceeb521",
+        "tests/fixtures/replay-score-analysis-m2d-recipe.js": "1a0045c8bbe703f9262020a91f986c8834f3650ceeaafd62682f32a4c9b68176",
+        "tests/fixtures/replay-score-analysis-m2d-store.js": "d674c83a7c626513dfb61085b7a0bac8fef3ddd33a8fa3c9920d4b86924f1847",
+        "tests/fixtures/replay-score-analysis-m2d-worker.js": "1c7994a96da9c500e97cd87a4d8e0801286ff568229d26f594c07ef2e121b7c5",
+        "package.json": "09b25812e48a5749f9fc07c34bf80a3e9ca83fd4cce4f811e80f6b7461e42dee"
+      },
+      "after": {
+        "tools/replay-store.js": "30663a4567a6933f5c14b841d64c0703c3a76cac705b45d2cafbd94788fba252",
+        "tools/replay-score-analysis.js": "42afb9e83682dc303d6c6cb258992d6505be9905745f0dfdd74c236a0ea10ff6",
+        "tools/replay-analysis.js": "75558600647beea2f985532809388018d82af06525d29b8762db00479792d556",
+        "tools/replay-score-analysis-fixture.js": "356cb479754192b549a33824f77ce4860af1924d0e5edecd47c0c76976565516",
+        "tests/unit/replay-score-analysis-fixture.test.js": "f6af2c8f93497690a771ae12019d944bd87c45ad9c8e57147e199d8fb59b559b",
+        "tests/fixtures/replay-score-analysis-m2d-compat-oracle.json": "38e4a31583b096b79763074d7054a768856c0af9b5ce3d0e3c862175a82898c3",
+        "tests/fixtures/replay-score-analysis-m2d-oracle.json": "07e152deb5cf7dae86eba27d06a1f1dfe503304fc09aafc1342070d232394047",
+        "tests/fixtures/replay-score-analysis-m2d-process.js": "dcfa913ee7286e9f51ab3c11fdeaa9eb20dde45f87f55e615248c4dc6ceeb521",
+        "tests/fixtures/replay-score-analysis-m2d-recipe.js": "1a0045c8bbe703f9262020a91f986c8834f3650ceeaafd62682f32a4c9b68176",
+        "tests/fixtures/replay-score-analysis-m2d-store.js": "d674c83a7c626513dfb61085b7a0bac8fef3ddd33a8fa3c9920d4b86924f1847",
+        "tests/fixtures/replay-score-analysis-m2d-worker.js": "1c7994a96da9c500e97cd87a4d8e0801286ff568229d26f594c07ef2e121b7c5",
+        "package.json": "09b25812e48a5749f9fc07c34bf80a3e9ca83fd4cce4f811e80f6b7461e42dee"
+      },
+      "log": "/tmp/pain-gain-m2d-compat.FJaHC8/repository.log",
+      "logHash": "fcc674778f612ab1755f08fffb8adc9d8ec6856c21f3bfbea1bf046a1247999f",
+      "retainedReceipt": "/tmp/pain-gain-m2d-compat.FJaHC8/repository.json",
+      "retainedReceiptHash": "3f7c45935ec29dd3138ce12f43ca151c4a41cf15bd19f010e2c9bba80193b8ff",
+      "totals": {
+        "tests": 582,
+        "pass": 582,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0
+      },
+      "unchanged": true,
+      "m2dGates": [
+        {
+          "schema": 1,
+          "generate": {
+            "args": [
+              "--max-old-space-size=192",
+              "/Users/zoltanka/Documents/Prog/JavaScript/ScreepsArena/pain_and_gain/tests/fixtures/replay-score-analysis-m2d-worker.js",
+              "generate",
+              "1",
+              "/private/var/folders/dy/9msg37jj549dkw5k__ct1kv00000gn/T/pain-gain-store-v3-fixture-e1eZuf",
+              "/private/var/folders/dy/9msg37jj549dkw5k__ct1kv00000gn/T/pain-gain-store-v3-fixture-GmQrTo"
+            ],
+            "code": 0,
+            "signal": null,
+            "elapsedMs": 10108.357334,
+            "stderr": "",
+            "result": {
+              "phase": "generate",
+              "schema": 1,
+              "stores": [
+                {
+                  "count": 10,
+                  "selected": [
+                    {
+                      "path": "replay-score-source-dddddddddddddddddddddddd-f33fe83e565ecf8cd460de432813b2cb6193013efee9f1b722b963c7e6098856.response",
+                      "bytes": 302
+                    },
+                    {
+                      "path": "store-v3/51b878b5-6fbf-4a02-b523-ea2d1cfbf7ce/summaries/fa/ee0022e2d922d534ece9f3224c913fcc72fb8f14de5530f646862d0b0c3dbb35/fa7ed4e9e6cc251bb58e98d1a26b5958d4e6b20b8aaf35d40cf456f7faf4e738.json",
+                      "bytes": 399
+                    },
+                    {
+                      "path": "store-v3/51b878b5-6fbf-4a02-b523-ea2d1cfbf7ce/extensions/4d/97abd5ca27c80d1a0110147b829c78e264ce6603597620d05199b3f3e5c81b05/4d41610bf1712ac960b6fb9296bf954a21ab076471030bb040d97792208ef1a7.json",
+                      "bytes": 65538
+                    },
+                    {
+                      "path": "replay-score-source-dddddddddddddddddddddddd-6484036a3b91ce4d55cd686b7456ae03175d592c43cf033f9d16028afbc8c60a.response",
+                      "bytes": 36340
+                    },
+                    {
+                      "path": "store-v3/51b878b5-6fbf-4a02-b523-ea2d1cfbf7ce/summaries/be/82987e0c97a009792509ae8fb3780106eaf4a51f7a4b8de0f42ee31d8b8ee804/be4efe79da0e2b00966b9a3f8b255a780eade80684f943cc2141fbb74bd61bd3.json",
+                      "bytes": 87551
+                    },
+                    {
+                      "path": "store-v3/51b878b5-6fbf-4a02-b523-ea2d1cfbf7ce/extensions/4d/cfef6ad5e25e19e3558a116d868563c10e4166da43d0f8a41b0659125c459fab/4d41610bf1712ac960b6fb9296bf954a21ab076471030bb040d97792208ef1a7.json",
+                      "bytes": 65538
+                    },
+                    {
+                      "path": "replay-score-source-dddddddddddddddddddddddd-0bd7cdedf631b22d21ed8ada804eefb11fce147bd43c76ddbd04923b57688a5a.response",
+                      "bytes": 36539
+                    },
+                    {
+                      "path": "store-v3/51b878b5-6fbf-4a02-b523-ea2d1cfbf7ce/summaries/21/57dde290d5a3289c139ad1cd1dfd1e7560d61d5e40afd4b6e5728128b6b34444/21726a86a9f8e0f053903f1a879ae167f0022025bb048e33066ca469f0b23e76.json",
+                      "bytes": 87969
+                    },
+                    {
+                      "path": "store-v3/51b878b5-6fbf-4a02-b523-ea2d1cfbf7ce/extensions/4d/bb997e8afb12c15f65ed12447c52339a77a62e828e7076ac704366cbc567ac40/4d41610bf1712ac960b6fb9296bf954a21ab076471030bb040d97792208ef1a7.json",
+                      "bytes": 65538
+                    },
+                    {
+                      "path": "replay-score-source-dddddddddddddddddddddddd-8b6d7b123ce93672c485d6c610b50f2adfd6fd4ba731ce553a6cc8a3d2aadc77.response",
+                      "bytes": 36609
+                    },
+                    {
+                      "path": "store-v3/51b878b5-6fbf-4a02-b523-ea2d1cfbf7ce/summaries/f9/5c643850b06d19362b70e8192a144000524ef13f4494c0bc2f9133f5675ef5d6/f9971ff1bf6228c891aacd236d56111ea67fa4405f8705150b701ab6399caa32.json",
+                      "bytes": 88144
+                    },
+                    {
+                      "path": "store-v3/51b878b5-6fbf-4a02-b523-ea2d1cfbf7ce/extensions/4d/30de6e02105efbcd96ad25fd23e0310b308a186e26e1cbafe91ed2eeaefcf733/4d41610bf1712ac960b6fb9296bf954a21ab076471030bb040d97792208ef1a7.json",
+                      "bytes": 65538
+                    }
+                  ],
+                  "inventoryHash": "5941748292fd9f81e9debbd740c35b74780e551985678bd4a2899b1f58954aac",
+                  "unrelatedBytes": 629145600
+                },
+                {
+                  "count": 1000,
+                  "selected": [
+                    {
+                      "path": "replay-score-source-dddddddddddddddddddddddd-f33fe83e565ecf8cd460de432813b2cb6193013efee9f1b722b963c7e6098856.response",
+                      "bytes": 302
+                    },
+                    {
+                      "path": "store-v3/6029fe97-c7e3-44c2-a665-c563b68da401/summaries/fa/ee0022e2d922d534ece9f3224c913fcc72fb8f14de5530f646862d0b0c3dbb35/fa7ed4e9e6cc251bb58e98d1a26b5958d4e6b20b8aaf35d40cf456f7faf4e738.json",
+                      "bytes": 399
+                    },
+                    {
+                      "path": "store-v3/6029fe97-c7e3-44c2-a665-c563b68da401/extensions/4d/97abd5ca27c80d1a0110147b829c78e264ce6603597620d05199b3f3e5c81b05/4d41610bf1712ac960b6fb9296bf954a21ab076471030bb040d97792208ef1a7.json",
+                      "bytes": 65538
+                    },
+                    {
+                      "path": "replay-score-source-dddddddddddddddddddddddd-6484036a3b91ce4d55cd686b7456ae03175d592c43cf033f9d16028afbc8c60a.response",
+                      "bytes": 36340
+                    },
+                    {
+                      "path": "store-v3/6029fe97-c7e3-44c2-a665-c563b68da401/summaries/be/82987e0c97a009792509ae8fb3780106eaf4a51f7a4b8de0f42ee31d8b8ee804/be4efe79da0e2b00966b9a3f8b255a780eade80684f943cc2141fbb74bd61bd3.json",
+                      "bytes": 87551
+                    },
+                    {
+                      "path": "store-v3/6029fe97-c7e3-44c2-a665-c563b68da401/extensions/4d/cfef6ad5e25e19e3558a116d868563c10e4166da43d0f8a41b0659125c459fab/4d41610bf1712ac960b6fb9296bf954a21ab076471030bb040d97792208ef1a7.json",
+                      "bytes": 65538
+                    },
+                    {
+                      "path": "replay-score-source-dddddddddddddddddddddddd-0bd7cdedf631b22d21ed8ada804eefb11fce147bd43c76ddbd04923b57688a5a.response",
+                      "bytes": 36539
+                    },
+                    {
+                      "path": "store-v3/6029fe97-c7e3-44c2-a665-c563b68da401/summaries/21/57dde290d5a3289c139ad1cd1dfd1e7560d61d5e40afd4b6e5728128b6b34444/21726a86a9f8e0f053903f1a879ae167f0022025bb048e33066ca469f0b23e76.json",
+                      "bytes": 87969
+                    },
+                    {
+                      "path": "store-v3/6029fe97-c7e3-44c2-a665-c563b68da401/extensions/4d/bb997e8afb12c15f65ed12447c52339a77a62e828e7076ac704366cbc567ac40/4d41610bf1712ac960b6fb9296bf954a21ab076471030bb040d97792208ef1a7.json",
+                      "bytes": 65538
+                    },
+                    {
+                      "path": "replay-score-source-dddddddddddddddddddddddd-8b6d7b123ce93672c485d6c610b50f2adfd6fd4ba731ce553a6cc8a3d2aadc77.response",
+                      "bytes": 36609
+                    },
+                    {
+                      "path": "store-v3/6029fe97-c7e3-44c2-a665-c563b68da401/summaries/f9/5c643850b06d19362b70e8192a144000524ef13f4494c0bc2f9133f5675ef5d6/f9971ff1bf6228c891aacd236d56111ea67fa4405f8705150b701ab6399caa32.json",
+                      "bytes": 88144
+                    },
+                    {
+                      "path": "store-v3/6029fe97-c7e3-44c2-a665-c563b68da401/extensions/4d/30de6e02105efbcd96ad25fd23e0310b308a186e26e1cbafe91ed2eeaefcf733/4d41610bf1712ac960b6fb9296bf954a21ab076471030bb040d97792208ef1a7.json",
+                      "bytes": 65538
+                    }
+                  ],
+                  "inventoryHash": "6dabcbe2861ee0d8ec63a8d40387731e8bf5dbb79306764d393e4c6ce504b971",
+                  "unrelatedBytes": 629145600
+                }
+              ],
+              "elapsedMs": 10022.721249999999,
+              "maxRssBytes": 157302784
+            }
+          },
+          "operations": {
+            "args": [
+              "--max-old-space-size=192",
+              "/Users/zoltanka/Documents/Prog/JavaScript/ScreepsArena/pain_and_gain/tests/fixtures/replay-score-analysis-m2d-worker.js",
+              "operations",
+              "1",
+              "/private/var/folders/dy/9msg37jj549dkw5k__ct1kv00000gn/T/pain-gain-store-v3-fixture-e1eZuf",
+              "/private/var/folders/dy/9msg37jj549dkw5k__ct1kv00000gn/T/pain-gain-store-v3-fixture-GmQrTo",
+              "/private/var/folders/dy/9msg37jj549dkw5k__ct1kv00000gn/T/pain-gain-m2d-gate-o6RcnM/generation.json"
+            ],
+            "code": 0,
+            "signal": null,
+            "elapsedMs": 408.0675410000258,
+            "stderr": "",
+            "result": {
+              "phase": "operations",
+              "schema": 1,
+              "runs": [
+                {
+                  "count": 10,
+                  "reportMode": "full",
+                  "reportHash": "78541d384c9da78ae6b08f3e97fea4d91f8e1da7ee9c1eb8a72e1307e1f57177",
+                  "selectedBytes": 636005,
+                  "elapsedMs": 99.33250000000001,
+                  "sql": 66,
+                  "pragmas": 14,
+                  "rows": 121,
+                  "opens": 12,
+                  "bytes": 636005,
+                  "reads": 19,
+                  "maxChunk": 65536,
+                  "writes": 0,
+                  "metadataOpens": 9,
+                  "unselected": 0
+                },
+                {
+                  "count": 10,
+                  "reportMode": "compact",
+                  "reportHash": "06f82452823db2955082fcf7c3491514958c1532d94325a33d85c9181899203f",
+                  "selectedBytes": 636005,
+                  "elapsedMs": 67.10120800000001,
+                  "sql": 66,
+                  "pragmas": 14,
+                  "rows": 121,
+                  "opens": 12,
+                  "bytes": 636005,
+                  "reads": 19,
+                  "maxChunk": 65536,
+                  "writes": 0,
+                  "metadataOpens": 9,
+                  "unselected": 0
+                },
+                {
+                  "count": 1000,
+                  "reportMode": "full",
+                  "reportHash": "78541d384c9da78ae6b08f3e97fea4d91f8e1da7ee9c1eb8a72e1307e1f57177",
+                  "selectedBytes": 636005,
+                  "elapsedMs": 75.955917,
+                  "sql": 66,
+                  "pragmas": 14,
+                  "rows": 121,
+                  "opens": 12,
+                  "bytes": 636005,
+                  "reads": 19,
+                  "maxChunk": 65536,
+                  "writes": 0,
+                  "metadataOpens": 9,
+                  "unselected": 0
+                },
+                {
+                  "count": 1000,
+                  "reportMode": "compact",
+                  "reportHash": "06f82452823db2955082fcf7c3491514958c1532d94325a33d85c9181899203f",
+                  "selectedBytes": 636005,
+                  "elapsedMs": 68.90462500000001,
+                  "sql": 66,
+                  "pragmas": 14,
+                  "rows": 121,
+                  "opens": 12,
+                  "bytes": 636005,
+                  "reads": 19,
+                  "maxChunk": 65536,
+                  "writes": 0,
+                  "metadataOpens": 9,
+                  "unselected": 0
+                }
+              ],
+              "elapsedMs": 312.535167,
+              "maxRssBytes": 156827648
+            }
+          },
+          "preservation": {
+            "args": [
+              "--max-old-space-size=192",
+              "/Users/zoltanka/Documents/Prog/JavaScript/ScreepsArena/pain_and_gain/tests/fixtures/replay-score-analysis-m2d-worker.js",
+              "preservation",
+              "1",
+              "/private/var/folders/dy/9msg37jj549dkw5k__ct1kv00000gn/T/pain-gain-store-v3-fixture-e1eZuf",
+              "/private/var/folders/dy/9msg37jj549dkw5k__ct1kv00000gn/T/pain-gain-store-v3-fixture-GmQrTo",
+              "/private/var/folders/dy/9msg37jj549dkw5k__ct1kv00000gn/T/pain-gain-m2d-gate-o6RcnM/generation.json"
+            ],
+            "code": 0,
+            "signal": null,
+            "elapsedMs": 725.5711669999873,
+            "stderr": "",
+            "result": {
+              "phase": "preservation",
+              "schema": 1,
+              "hashes": [
+                "5941748292fd9f81e9debbd740c35b74780e551985678bd4a2899b1f58954aac",
+                "6dabcbe2861ee0d8ec63a8d40387731e8bf5dbb79306764d393e4c6ce504b971"
+              ],
+              "elapsedMs": 643.022292,
+              "maxRssBytes": 111362048
+            }
+          }
+        },
+        {
+          "schema": 2,
+          "generate": {
+            "args": [
+              "--max-old-space-size=192",
+              "/Users/zoltanka/Documents/Prog/JavaScript/ScreepsArena/pain_and_gain/tests/fixtures/replay-score-analysis-m2d-worker.js",
+              "generate",
+              "2",
+              "/private/var/folders/dy/9msg37jj549dkw5k__ct1kv00000gn/T/pain-gain-store-v3-fixture-WauOWb",
+              "/private/var/folders/dy/9msg37jj549dkw5k__ct1kv00000gn/T/pain-gain-store-v3-fixture-JUG8TK"
+            ],
+            "code": 0,
+            "signal": null,
+            "elapsedMs": 6552.261208000011,
+            "stderr": "",
+            "result": {
+              "phase": "generate",
+              "schema": 2,
+              "stores": [
+                {
+                  "count": 10,
+                  "selected": [
+                    {
+                      "path": "replay-score-source-dddddddddddddddddddddddd-f33fe83e565ecf8cd460de432813b2cb6193013efee9f1b722b963c7e6098856.response",
+                      "bytes": 302
+                    },
+                    {
+                      "path": "store-v3/686d1dc1-32e7-47b5-a70c-725184a8bba6/summaries/fa/ee0022e2d922d534ece9f3224c913fcc72fb8f14de5530f646862d0b0c3dbb35/fa7ed4e9e6cc251bb58e98d1a26b5958d4e6b20b8aaf35d40cf456f7faf4e738.json",
+                      "bytes": 399
+                    },
+                    {
+                      "path": "store-v3/686d1dc1-32e7-47b5-a70c-725184a8bba6/extensions/4d/97abd5ca27c80d1a0110147b829c78e264ce6603597620d05199b3f3e5c81b05/4d41610bf1712ac960b6fb9296bf954a21ab076471030bb040d97792208ef1a7.json",
+                      "bytes": 65538
+                    },
+                    {
+                      "path": "replay-score-source-dddddddddddddddddddddddd-6484036a3b91ce4d55cd686b7456ae03175d592c43cf033f9d16028afbc8c60a.response",
+                      "bytes": 36340
+                    },
+                    {
+                      "path": "store-v3/686d1dc1-32e7-47b5-a70c-725184a8bba6/summaries/be/82987e0c97a009792509ae8fb3780106eaf4a51f7a4b8de0f42ee31d8b8ee804/be4efe79da0e2b00966b9a3f8b255a780eade80684f943cc2141fbb74bd61bd3.json",
+                      "bytes": 87551
+                    },
+                    {
+                      "path": "store-v3/686d1dc1-32e7-47b5-a70c-725184a8bba6/extensions/4d/cfef6ad5e25e19e3558a116d868563c10e4166da43d0f8a41b0659125c459fab/4d41610bf1712ac960b6fb9296bf954a21ab076471030bb040d97792208ef1a7.json",
+                      "bytes": 65538
+                    },
+                    {
+                      "path": "replay-score-source-dddddddddddddddddddddddd-0bd7cdedf631b22d21ed8ada804eefb11fce147bd43c76ddbd04923b57688a5a.response",
+                      "bytes": 36539
+                    },
+                    {
+                      "path": "store-v3/686d1dc1-32e7-47b5-a70c-725184a8bba6/summaries/21/57dde290d5a3289c139ad1cd1dfd1e7560d61d5e40afd4b6e5728128b6b34444/21726a86a9f8e0f053903f1a879ae167f0022025bb048e33066ca469f0b23e76.json",
+                      "bytes": 87969
+                    },
+                    {
+                      "path": "store-v3/686d1dc1-32e7-47b5-a70c-725184a8bba6/extensions/4d/bb997e8afb12c15f65ed12447c52339a77a62e828e7076ac704366cbc567ac40/4d41610bf1712ac960b6fb9296bf954a21ab076471030bb040d97792208ef1a7.json",
+                      "bytes": 65538
+                    },
+                    {
+                      "path": "replay-score-source-dddddddddddddddddddddddd-8b6d7b123ce93672c485d6c610b50f2adfd6fd4ba731ce553a6cc8a3d2aadc77.response",
+                      "bytes": 36609
+                    },
+                    {
+                      "path": "store-v3/686d1dc1-32e7-47b5-a70c-725184a8bba6/summaries/f9/5c643850b06d19362b70e8192a144000524ef13f4494c0bc2f9133f5675ef5d6/f9971ff1bf6228c891aacd236d56111ea67fa4405f8705150b701ab6399caa32.json",
+                      "bytes": 88144
+                    },
+                    {
+                      "path": "store-v3/686d1dc1-32e7-47b5-a70c-725184a8bba6/extensions/4d/30de6e02105efbcd96ad25fd23e0310b308a186e26e1cbafe91ed2eeaefcf733/4d41610bf1712ac960b6fb9296bf954a21ab076471030bb040d97792208ef1a7.json",
+                      "bytes": 65538
+                    }
+                  ],
+                  "inventoryHash": "554ce8837bffebf7a637ebc3d7dc24479cb2ef6a1b2c6dca89f3f792e653a952",
+                  "unrelatedBytes": 629145600
+                },
+                {
+                  "count": 1000,
+                  "selected": [
+                    {
+                      "path": "replay-score-source-dddddddddddddddddddddddd-f33fe83e565ecf8cd460de432813b2cb6193013efee9f1b722b963c7e6098856.response",
+                      "bytes": 302
+                    },
+                    {
+                      "path": "store-v3/809ccb57-0bd9-4ec0-a8b9-dc1056979a23/summaries/fa/ee0022e2d922d534ece9f3224c913fcc72fb8f14de5530f646862d0b0c3dbb35/fa7ed4e9e6cc251bb58e98d1a26b5958d4e6b20b8aaf35d40cf456f7faf4e738.json",
+                      "bytes": 399
+                    },
+                    {
+                      "path": "store-v3/809ccb57-0bd9-4ec0-a8b9-dc1056979a23/extensions/4d/97abd5ca27c80d1a0110147b829c78e264ce6603597620d05199b3f3e5c81b05/4d41610bf1712ac960b6fb9296bf954a21ab076471030bb040d97792208ef1a7.json",
+                      "bytes": 65538
+                    },
+                    {
+                      "path": "replay-score-source-dddddddddddddddddddddddd-6484036a3b91ce4d55cd686b7456ae03175d592c43cf033f9d16028afbc8c60a.response",
+                      "bytes": 36340
+                    },
+                    {
+                      "path": "store-v3/809ccb57-0bd9-4ec0-a8b9-dc1056979a23/summaries/be/82987e0c97a009792509ae8fb3780106eaf4a51f7a4b8de0f42ee31d8b8ee804/be4efe79da0e2b00966b9a3f8b255a780eade80684f943cc2141fbb74bd61bd3.json",
+                      "bytes": 87551
+                    },
+                    {
+                      "path": "store-v3/809ccb57-0bd9-4ec0-a8b9-dc1056979a23/extensions/4d/cfef6ad5e25e19e3558a116d868563c10e4166da43d0f8a41b0659125c459fab/4d41610bf1712ac960b6fb9296bf954a21ab076471030bb040d97792208ef1a7.json",
+                      "bytes": 65538
+                    },
+                    {
+                      "path": "replay-score-source-dddddddddddddddddddddddd-0bd7cdedf631b22d21ed8ada804eefb11fce147bd43c76ddbd04923b57688a5a.response",
+                      "bytes": 36539
+                    },
+                    {
+                      "path": "store-v3/809ccb57-0bd9-4ec0-a8b9-dc1056979a23/summaries/21/57dde290d5a3289c139ad1cd1dfd1e7560d61d5e40afd4b6e5728128b6b34444/21726a86a9f8e0f053903f1a879ae167f0022025bb048e33066ca469f0b23e76.json",
+                      "bytes": 87969
+                    },
+                    {
+                      "path": "store-v3/809ccb57-0bd9-4ec0-a8b9-dc1056979a23/extensions/4d/bb997e8afb12c15f65ed12447c52339a77a62e828e7076ac704366cbc567ac40/4d41610bf1712ac960b6fb9296bf954a21ab076471030bb040d97792208ef1a7.json",
+                      "bytes": 65538
+                    },
+                    {
+                      "path": "replay-score-source-dddddddddddddddddddddddd-8b6d7b123ce93672c485d6c610b50f2adfd6fd4ba731ce553a6cc8a3d2aadc77.response",
+                      "bytes": 36609
+                    },
+                    {
+                      "path": "store-v3/809ccb57-0bd9-4ec0-a8b9-dc1056979a23/summaries/f9/5c643850b06d19362b70e8192a144000524ef13f4494c0bc2f9133f5675ef5d6/f9971ff1bf6228c891aacd236d56111ea67fa4405f8705150b701ab6399caa32.json",
+                      "bytes": 88144
+                    },
+                    {
+                      "path": "store-v3/809ccb57-0bd9-4ec0-a8b9-dc1056979a23/extensions/4d/30de6e02105efbcd96ad25fd23e0310b308a186e26e1cbafe91ed2eeaefcf733/4d41610bf1712ac960b6fb9296bf954a21ab076471030bb040d97792208ef1a7.json",
+                      "bytes": 65538
+                    }
+                  ],
+                  "inventoryHash": "ceab7daaa520fc26b694d875092565b601e948fab069b6c935ef95c776b64a7c",
+                  "unrelatedBytes": 629145600
+                }
+              ],
+              "elapsedMs": 6463.90625,
+              "maxRssBytes": 157089792
+            }
+          },
+          "operations": {
+            "args": [
+              "--max-old-space-size=192",
+              "/Users/zoltanka/Documents/Prog/JavaScript/ScreepsArena/pain_and_gain/tests/fixtures/replay-score-analysis-m2d-worker.js",
+              "operations",
+              "2",
+              "/private/var/folders/dy/9msg37jj549dkw5k__ct1kv00000gn/T/pain-gain-store-v3-fixture-WauOWb",
+              "/private/var/folders/dy/9msg37jj549dkw5k__ct1kv00000gn/T/pain-gain-store-v3-fixture-JUG8TK",
+              "/private/var/folders/dy/9msg37jj549dkw5k__ct1kv00000gn/T/pain-gain-m2d-gate-K9iplU/generation.json"
+            ],
+            "code": 0,
+            "signal": null,
+            "elapsedMs": 406.5909999999858,
+            "stderr": "",
+            "result": {
+              "phase": "operations",
+              "schema": 2,
+              "runs": [
+                {
+                  "count": 10,
+                  "reportMode": "full",
+                  "reportHash": "78541d384c9da78ae6b08f3e97fea4d91f8e1da7ee9c1eb8a72e1307e1f57177",
+                  "selectedBytes": 636005,
+                  "elapsedMs": 95.227458,
+                  "sql": 68,
+                  "pragmas": 14,
+                  "rows": 123,
+                  "opens": 12,
+                  "bytes": 636005,
+                  "reads": 19,
+                  "maxChunk": 65536,
+                  "writes": 0,
+                  "metadataOpens": 9,
+                  "unselected": 0
+                },
+                {
+                  "count": 10,
+                  "reportMode": "compact",
+                  "reportHash": "06f82452823db2955082fcf7c3491514958c1532d94325a33d85c9181899203f",
+                  "selectedBytes": 636005,
+                  "elapsedMs": 75.201459,
+                  "sql": 68,
+                  "pragmas": 14,
+                  "rows": 123,
+                  "opens": 12,
+                  "bytes": 636005,
+                  "reads": 19,
+                  "maxChunk": 65536,
+                  "writes": 0,
+                  "metadataOpens": 9,
+                  "unselected": 0
+                },
+                {
+                  "count": 1000,
+                  "reportMode": "full",
+                  "reportHash": "78541d384c9da78ae6b08f3e97fea4d91f8e1da7ee9c1eb8a72e1307e1f57177",
+                  "selectedBytes": 636005,
+                  "elapsedMs": 68.615375,
+                  "sql": 68,
+                  "pragmas": 14,
+                  "rows": 123,
+                  "opens": 12,
+                  "bytes": 636005,
+                  "reads": 19,
+                  "maxChunk": 65536,
+                  "writes": 0,
+                  "metadataOpens": 9,
+                  "unselected": 0
+                },
+                {
+                  "count": 1000,
+                  "reportMode": "compact",
+                  "reportHash": "06f82452823db2955082fcf7c3491514958c1532d94325a33d85c9181899203f",
+                  "selectedBytes": 636005,
+                  "elapsedMs": 60.32483300000001,
+                  "sql": 68,
+                  "pragmas": 14,
+                  "rows": 123,
+                  "opens": 12,
+                  "bytes": 636005,
+                  "reads": 19,
+                  "maxChunk": 65536,
+                  "writes": 0,
+                  "metadataOpens": 9,
+                  "unselected": 0
+                }
+              ],
+              "elapsedMs": 300.778334,
+              "maxRssBytes": 157581312
+            }
+          },
+          "preservation": {
+            "args": [
+              "--max-old-space-size=192",
+              "/Users/zoltanka/Documents/Prog/JavaScript/ScreepsArena/pain_and_gain/tests/fixtures/replay-score-analysis-m2d-worker.js",
+              "preservation",
+              "2",
+              "/private/var/folders/dy/9msg37jj549dkw5k__ct1kv00000gn/T/pain-gain-store-v3-fixture-WauOWb",
+              "/private/var/folders/dy/9msg37jj549dkw5k__ct1kv00000gn/T/pain-gain-store-v3-fixture-JUG8TK",
+              "/private/var/folders/dy/9msg37jj549dkw5k__ct1kv00000gn/T/pain-gain-m2d-gate-K9iplU/generation.json"
+            ],
+            "code": 0,
+            "signal": null,
+            "elapsedMs": 740.2015839999949,
+            "stderr": "",
+            "result": {
+              "phase": "preservation",
+              "schema": 2,
+              "hashes": [
+                "554ce8837bffebf7a637ebc3d7dc24479cb2ef6a1b2c6dca89f3f792e653a952",
+                "ceab7daaa520fc26b694d875092565b601e948fab069b6c935ef95c776b64a7c"
+              ],
+              "elapsedMs": 656.224,
+              "maxRssBytes": 111624192
+            }
+          }
+        }
+      ],
+      "busyTest": "✔ SQLite busy exhaustion is bounded and cannot publish ready evidence (5478.8185ms)"
+    },
+    "check": {
+      "command": [
+        "npm",
+        "run",
+        "check"
+      ],
+      "startedAt": "2026-10-06T09:44:47.953Z",
+      "endedAt": "2026-10-06T09:44:49.208Z",
+      "elapsedMs": 1254.154292,
+      "code": 0,
+      "signal": null,
+      "runtime": {
+        "execPath": "/Users/zoltanka/Library/Caches/JetBrains/WebStorm2026.2/acp-agents/.runtimes/node/24.19.0/bin/node",
+        "node": "v24.19.0",
+        "sqlite": "3.53.3",
+        "platform": "darwin",
+        "arch": "arm64"
+      },
+      "before": {
+        "tools/replay-store.js": "30663a4567a6933f5c14b841d64c0703c3a76cac705b45d2cafbd94788fba252",
+        "tools/replay-score-analysis.js": "42afb9e83682dc303d6c6cb258992d6505be9905745f0dfdd74c236a0ea10ff6",
+        "tools/replay-analysis.js": "75558600647beea2f985532809388018d82af06525d29b8762db00479792d556",
+        "tools/replay-score-analysis-fixture.js": "356cb479754192b549a33824f77ce4860af1924d0e5edecd47c0c76976565516",
+        "tests/unit/replay-score-analysis-fixture.test.js": "f6af2c8f93497690a771ae12019d944bd87c45ad9c8e57147e199d8fb59b559b",
+        "tests/fixtures/replay-score-analysis-m2d-compat-oracle.json": "38e4a31583b096b79763074d7054a768856c0af9b5ce3d0e3c862175a82898c3",
+        "tests/fixtures/replay-score-analysis-m2d-oracle.json": "07e152deb5cf7dae86eba27d06a1f1dfe503304fc09aafc1342070d232394047",
+        "tests/fixtures/replay-score-analysis-m2d-process.js": "dcfa913ee7286e9f51ab3c11fdeaa9eb20dde45f87f55e615248c4dc6ceeb521",
+        "tests/fixtures/replay-score-analysis-m2d-recipe.js": "1a0045c8bbe703f9262020a91f986c8834f3650ceeaafd62682f32a4c9b68176",
+        "tests/fixtures/replay-score-analysis-m2d-store.js": "d674c83a7c626513dfb61085b7a0bac8fef3ddd33a8fa3c9920d4b86924f1847",
+        "tests/fixtures/replay-score-analysis-m2d-worker.js": "1c7994a96da9c500e97cd87a4d8e0801286ff568229d26f594c07ef2e121b7c5",
+        "package.json": "09b25812e48a5749f9fc07c34bf80a3e9ca83fd4cce4f811e80f6b7461e42dee"
+      },
+      "after": {
+        "tools/replay-store.js": "30663a4567a6933f5c14b841d64c0703c3a76cac705b45d2cafbd94788fba252",
+        "tools/replay-score-analysis.js": "42afb9e83682dc303d6c6cb258992d6505be9905745f0dfdd74c236a0ea10ff6",
+        "tools/replay-analysis.js": "75558600647beea2f985532809388018d82af06525d29b8762db00479792d556",
+        "tools/replay-score-analysis-fixture.js": "356cb479754192b549a33824f77ce4860af1924d0e5edecd47c0c76976565516",
+        "tests/unit/replay-score-analysis-fixture.test.js": "f6af2c8f93497690a771ae12019d944bd87c45ad9c8e57147e199d8fb59b559b",
+        "tests/fixtures/replay-score-analysis-m2d-compat-oracle.json": "38e4a31583b096b79763074d7054a768856c0af9b5ce3d0e3c862175a82898c3",
+        "tests/fixtures/replay-score-analysis-m2d-oracle.json": "07e152deb5cf7dae86eba27d06a1f1dfe503304fc09aafc1342070d232394047",
+        "tests/fixtures/replay-score-analysis-m2d-process.js": "dcfa913ee7286e9f51ab3c11fdeaa9eb20dde45f87f55e615248c4dc6ceeb521",
+        "tests/fixtures/replay-score-analysis-m2d-recipe.js": "1a0045c8bbe703f9262020a91f986c8834f3650ceeaafd62682f32a4c9b68176",
+        "tests/fixtures/replay-score-analysis-m2d-store.js": "d674c83a7c626513dfb61085b7a0bac8fef3ddd33a8fa3c9920d4b86924f1847",
+        "tests/fixtures/replay-score-analysis-m2d-worker.js": "1c7994a96da9c500e97cd87a4d8e0801286ff568229d26f594c07ef2e121b7c5",
+        "package.json": "09b25812e48a5749f9fc07c34bf80a3e9ca83fd4cce4f811e80f6b7461e42dee"
+      },
+      "log": "/tmp/pain-gain-m2d-compat.FJaHC8/check.log",
+      "logHash": "9f10520efe2bc7831c46518bfe6f13e7f7f377445ad797507b3a2f5ae4ef190c",
+      "retainedReceipt": "/tmp/pain-gain-m2d-compat.FJaHC8/check.json",
+      "retainedReceiptHash": "50a23848334c83ed39edbbc7b0b7ab6c2959c19eae68f3640b4030ba47b73fba",
+      "totals": {},
+      "unchanged": true,
+      "m2dGates": [],
+      "busyTest": null
+    }
+  },
+  "finalHashes": {
+    "tools/replay-store.js": "30663a4567a6933f5c14b841d64c0703c3a76cac705b45d2cafbd94788fba252",
+    "tools/replay-score-analysis.js": "42afb9e83682dc303d6c6cb258992d6505be9905745f0dfdd74c236a0ea10ff6",
+    "tools/replay-analysis.js": "75558600647beea2f985532809388018d82af06525d29b8762db00479792d556",
+    "tools/replay-score-analysis-fixture.js": "356cb479754192b549a33824f77ce4860af1924d0e5edecd47c0c76976565516",
+    "tests/unit/replay-score-analysis-fixture.test.js": "f6af2c8f93497690a771ae12019d944bd87c45ad9c8e57147e199d8fb59b559b",
+    "tests/fixtures/replay-score-analysis-m2d-compat-oracle.json": "38e4a31583b096b79763074d7054a768856c0af9b5ce3d0e3c862175a82898c3",
+    "tests/fixtures/replay-score-analysis-m2d-oracle.json": "07e152deb5cf7dae86eba27d06a1f1dfe503304fc09aafc1342070d232394047",
+    "tests/fixtures/replay-score-analysis-m2d-process.js": "dcfa913ee7286e9f51ab3c11fdeaa9eb20dde45f87f55e615248c4dc6ceeb521",
+    "tests/fixtures/replay-score-analysis-m2d-recipe.js": "1a0045c8bbe703f9262020a91f986c8834f3650ceeaafd62682f32a4c9b68176",
+    "tests/fixtures/replay-score-analysis-m2d-store.js": "d674c83a7c626513dfb61085b7a0bac8fef3ddd33a8fa3c9920d4b86924f1847",
+    "tests/fixtures/replay-score-analysis-m2d-worker.js": "1c7994a96da9c500e97cd87a4d8e0801286ff568229d26f594c07ef2e121b7c5",
+    "package.json": "09b25812e48a5749f9fc07c34bf80a3e9ca83fd4cce4f811e80f6b7461e42dee"
+  },
+  "preservation": {
+    "before": [
+      {
+        "root": "/Users/zoltanka/Documents/Prog/JavaScript/ScreepsArena/pain_and_gain",
+        "head": "651ddb7068eb8905188c3158e9cf84b7e0878c1e",
+        "index": "",
+        "status": " M README.md\n M docs/architecture/README.md\n M docs/architecture/project-layout.md\n M package.json\n D prompt/analyze_logs.md\n M tools/replay-analysis.js\n M tools/replay-score-analysis.js\n M tools/replay-store.js\n?? docs/architecture/replay-storage-v3-m2d-2026-10-05.md\n?? docs/architecture/replay-storage-v3-m2d-plan-2026-10-05.md\n?? docs/architecture/replay-storage-v3-m2d-run-2026-10-05.json\n?? tests/fixtures/replay-score-analysis-m2d-oracle.json\n?? tests/fixtures/replay-score-analysis-m2d-process.js\n?? tests/fixtures/replay-score-analysis-m2d-recipe.js\n?? tests/fixtures/replay-score-analysis-m2d-store.js\n?? tests/fixtures/replay-score-analysis-m2d-worker.js\n?? tests/unit/replay-score-analysis-fixture.test.js\n?? tools/replay-score-analysis-fixture.js\n",
+        "digest": "dd417f590e1aee6fa172243c529c1861093e4e2e11046e18efd00920418bb34d"
+      },
+      {
+        "root": "/Users/zoltanka/Documents/Prog/JavaScript/ScreepsArena/pain_and_gain_hold_trial_2026-10-02",
+        "head": "fd6fdf20ea62c2b663185913d52b58f83f59612a",
+        "index": "",
+        "status": " M src/config.js\n M src/debug/build-id.js\n",
+        "digest": "724783c888a11ae9515b4d14b5658cb74f9db388b05d1773d0e2217a4e632f94"
+      },
+      {
+        "root": "/Users/zoltanka/Documents/Prog/JavaScript/ScreepsArena/pain_and_gain_pair_trial_2026-10-02",
+        "head": "8c0ce181bca388f38cbf569913527dd7b31cc1ad",
+        "index": "",
+        "status": " M README.md\n M docs/architecture/README.md\n M docs/architecture/project-layout.md\n M docs/diagrams/tick-flow.puml\n M package.json\n M src/arena/execute.js\n M src/config.js\n M src/debug/build-id.js\n M src/debug/replay-evidence.js\n M src/loop.js\n M tests/unit/flag-allocation-flow.test.js\n M tests/unit/healer-escort-disabled-flow.test.js\n M tests/unit/scout-hold-flow.test.js\n M tests/unit/tick-flow.test.js\n?? docs/architecture/squad-pair-experiment-2026-10-02.md\n?? docs/architecture/squad-pair-screening-2026-10-02.md\n?? src/squads/pair.js\n?? tests/screening/squad-pair-enabled.test.js\n?? tests/unit/squad-pair-flow.test.js\n?? tests/unit/squad-pair.test.js\n",
+        "digest": "7fb840a630dc2ad4ecf017bf420c6474a34706b85530a5531d52c0bd9b6d23a1"
+      }
+    ],
+    "trialWorktreesUnchanged": true,
+    "preExistingMainFilesChecked": 406,
+    "allowedExistingChanges": [
+      "tests/unit/replay-score-analysis-fixture.test.js",
+      "docs/architecture/replay-storage-v3-m2d-2026-10-05.md"
+    ],
+    "unexpectedDifferences": [],
+    "head": "651ddb7068eb8905188c3158e9cf84b7e0878c1e",
+    "index": "",
+    "promptDeletionPreserved": true,
+    "productionEvidenceExcluded": "replay_logs/",
+    "planAndOriginalOracleAndHistoricalReceiptUnchanged": true
+  }
+}

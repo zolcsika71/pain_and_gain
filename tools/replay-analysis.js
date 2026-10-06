@@ -18,7 +18,7 @@ import {
     validCpuSample,
     validMap,
 } from './replay-logs.js';
-import { analyzeScoreEvidence } from './replay-score-analysis.js';
+import { analyzeScoreEvidence, analyzeLoadedScoreEvidence } from './replay-score-analysis.js';
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const replayIdPattern = /^[a-f0-9]{24}$/;
@@ -1130,6 +1130,29 @@ export function createReplayAnalysisSession(options) {
     return {acceptRecord, finish};
 }
 
+function finishScoreReport(session, localId, loader, options) {
+    const {state, snapshots, merged, selectedBuildIds} = session.finishForScores();
+    if (options.scoreFingerprints !== undefined) {
+        const result = loader({...options,snapshots,merged,selectedBuildIds,
+            addFinding:(rule,verdict,refs,message,observed=null,buildIds=[null])=>
+                addFinding(state,rule,verdict,refs,message,observed,buildIds)});
+        state.selectedScoreFingerprints = result.selectedScoreFingerprints;
+        state.scoring = result.scoring;
+    }
+    return finalReport(state,localId,selectedBuildIds);
+}
+
+// Detached score inputs only. The synchronous v2 wrapper retains all pathname IO.
+export function analyzeLoadedScoreReplay({replayId,scoreFingerprints,reportMode='full',
+    localBuildId=null,scoreCollectionPresent,scoreRecords,sourceEvidence}) {
+    const manifest={version:2,maps:[],replays:[],records:[],
+        ...(scoreCollectionPresent?{scoreRecords}:{})};
+    const session=analysisSession({replayId,fingerprints:[],reportMode,localBuildId,
+        logicalManifest:manifest,mapEvidence:{}});
+    return finishScoreReport(session,localBuildId,analyzeLoadedScoreEvidence,
+        {manifest,replayId,scoreFingerprints,reportMode,sourceEvidence});
+}
+
 export function analyzeReplay({ root = projectRoot, replayId, fingerprints, scoreFingerprints,
     reportMode = 'full' } = {}) {
     if (!replayIdPattern.test(replayId ?? '')) throw new Error('Expected a verified 24-character replay ID');
@@ -1194,16 +1217,8 @@ export function analyzeReplay({ root = projectRoot, replayId, fingerprints, scor
         session.acceptRecord(record, record.outputPath === null || record.outputFingerprint === null ? null :
             safeRegularFile(directory, record.outputPath, outputNamePattern));
     }
-    const {state: analyzed, snapshots, merged, selectedBuildIds} = session.finishForScores();
-    if (scoreFingerprints !== undefined) {
-        const result = analyzeScoreEvidence({ directory, manifest, replayId, scoreFingerprints,
-            snapshots, merged, selectedBuildIds, reportMode,
-            addFinding: (rule, verdict, refs, message, observed = null, buildIds = [null]) =>
-                addFinding(analyzed, rule, verdict, refs, message, observed, buildIds) });
-        analyzed.selectedScoreFingerprints = result.selectedScoreFingerprints;
-        analyzed.scoring = result.scoring;
-    }
-    return finalReport(analyzed, localId, selectedBuildIds);
+    return finishScoreReport(session,localId,analyzeScoreEvidence,
+        {directory,manifest,replayId,scoreFingerprints,reportMode});
 }
 
 function* jsonValueChunks(value, depth) {
