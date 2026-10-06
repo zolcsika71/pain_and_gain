@@ -1,0 +1,1124 @@
+{
+  "base": "859f5ab33ac4b9385e70b04c273fad79a5897527",
+  "documentationValidation": {"receiptPath":"/tmp/pain-gain-m2e-correction.QEv5Y3/documentation-final.json","receiptHash":"3aa6a4976a527d34e93471c1b11923f65ecd461ef067ff4c44f004a3dbe00b6f","command":["node","/tmp/pain-gain-m2e.vjGeD5/check-docs.mjs"],"code":0,"log":"/tmp/pain-gain-m2e-correction.QEv5Y3/documentation-final.log","logHash":"ee488cbd3b622761ce3c1f9dd044e5e6621e5438291a16d503224ac9ba4c5417","result":{"links":97,"anchors":9,"jsonExamples":0,"jsExamplesParsed":1,"checkedFiles":21,"errors":[]}},
+  "status": "bounded synthetic correction qualification passed; independent review pending",
+  "historical": {
+    "path": "docs/architecture/replay-storage-v3-m2e-run-2026-10-06.json",
+    "hash": "1183c6c78a2a86adc9071dfe10533adedbb4b7de0dbe087e06a0415bb9f93417",
+    "supersededForCurrentBytes": true
+  },
+  "publicationDependency": {
+    "path": "docs/architecture/replay-storage-v3-m2e-plan-2026-10-06.md",
+    "hash": "2e16ab1dcbe168811e021f6a8cfc158b3d734987828f0a7ed10288236ab8d418",
+    "unchanged": true,
+    "inCandidate": false
+  },
+  "candidatePaths": [
+    "README.md",
+    "docs/architecture/README.md",
+    "docs/architecture/project-layout.md",
+    "docs/architecture/replay-storage-v3-m2e-2026-10-06.md",
+    "docs/architecture/replay-storage-v3-m2e-run-2026-10-06.json",
+    "package.json",
+    "tests/fixtures/replay-combined-analysis-m2e-definitions.js",
+    "tests/fixtures/replay-combined-analysis-m2e-faults.js",
+    "tests/fixtures/replay-combined-analysis-m2e-oracle.json",
+    "tests/fixtures/replay-combined-analysis-m2e-recipe.js",
+    "tests/fixtures/replay-combined-analysis-m2e-store.js",
+    "tests/fixtures/replay-combined-analysis-m2e-worker.js",
+    "tests/unit/replay-combined-analysis-fixture.test.js",
+    "tools/replay-analysis-fixture.js",
+    "tools/replay-analysis.js",
+    "tools/replay-combined-analysis-fixture.js",
+    "tools/replay-score-analysis-fixture.js",
+    "tools/replay-store.js",
+    "tests/fixtures/replay-combined-analysis-m2e-validation.js",
+    "docs/architecture/replay-storage-v3-m2e-validation-run-2026-10-06.json"
+  ],
+  "candidateHashes": {
+    "README.md": "d600c71cb9a9ce5b47cdc11a2f12ba1822f68c60bf6947106084caa042e5c4e2",
+    "docs/architecture/README.md": "c96c9fe07da3d136536e1b4d60be4f123f9eed9562dac36d684dde9c90708c41",
+    "docs/architecture/project-layout.md": "fa09cd2437f0414b82592c7ad92fd5c1f15b9520c34b9af2f03506d177cc8e33",
+    "docs/architecture/replay-storage-v3-m2e-2026-10-06.md": "5163f28523179801ffdd3ce2fef6f3818eecc8e8ff6bd60dc16fa7b62e29dedd",
+    "docs/architecture/replay-storage-v3-m2e-run-2026-10-06.json": "1183c6c78a2a86adc9071dfe10533adedbb4b7de0dbe087e06a0415bb9f93417",
+    "package.json": "69bab8032b5e512c96277ef8444bfe75e546d15a626c3298dce3b7b7b8568b44",
+    "tests/fixtures/replay-combined-analysis-m2e-definitions.js": "618bdf4bbe83685df2a1c6f52813bb796a919dc554a4a60fedf7c6b3b60d7a40",
+    "tests/fixtures/replay-combined-analysis-m2e-faults.js": "efee9dcd93a61a56ed5ff3cfaa11cdf7860cc23293b7fe44a2c0aeda132a663d",
+    "tests/fixtures/replay-combined-analysis-m2e-oracle.json": "3292b3759dcddae48e90497cd1e4cb694b68e19c58b63f18d291e5084e08a219",
+    "tests/fixtures/replay-combined-analysis-m2e-recipe.js": "188f8fbad9ab0b836728e147410b614293887f77f570409ef1ac8f914531afec",
+    "tests/fixtures/replay-combined-analysis-m2e-store.js": "32c531ed57eb5bea2561db61305dc16d16640000cd308c4804f45ba39cd664a8",
+    "tests/fixtures/replay-combined-analysis-m2e-worker.js": "f05a7daa55bef0cd82a120c8a8eb1cf51bf49d425f1363e29c4a53187c871868",
+    "tests/unit/replay-combined-analysis-fixture.test.js": "7bae3bcdad0cb2dc0eef95320f6ba6f24015e270a56b362a85511090e80f8240",
+    "tools/replay-analysis-fixture.js": "2709d9f396ba65d2de9894c6528b9daa6770a5d3c6ae2fc4fbfda98bcb98f380",
+    "tools/replay-analysis.js": "bcb15f49a8f3a71413577f74441efcc01c044c9023d3d8cabe84b6412cedbff3",
+    "tools/replay-combined-analysis-fixture.js": "fee4449597d034a4101e44ce38e65a1075c3c6c216d87f13ab593982beaec29a",
+    "tools/replay-score-analysis-fixture.js": "85bb4cc68facf47c64caa5412cc720b3ffcd2ecd66042a8b0cfee4fc9467b0ff",
+    "tools/replay-store.js": "03e36aa9e496257c6b25fc3a86d33e22276716030876f1136a5980ff5cb25d59",
+    "tests/fixtures/replay-combined-analysis-m2e-validation.js": "02e89040a8516d19cf960d9314f15a40f32c6c8ce721d9bdc9d9e085448e5e5e"
+  },
+  "testedSourceHashes": {
+    "package.json": "69bab8032b5e512c96277ef8444bfe75e546d15a626c3298dce3b7b7b8568b44",
+    "src/arena/execute.js": "fcf4d764574b0304d460f701419881e454b40df3d94ebac6c729d5110c25039b",
+    "src/arena/observe.js": "014911140f8dc6c8571225ca27623a3585ba7a2745716ff1c4f795b8c46c53cb",
+    "src/config.js": "2fdf04e37b852cf7348143841ccfb4c2fe66890a5f55963811f041fa48c3c4f2",
+    "src/debug/build-id.js": "4849fd380f58169ab34a6f122c4f278efb6a831af66c47ea67ce4e97d1222544",
+    "src/debug/game-state.js": "d0b5b6b653c922611a661527d818e2de0b9e17ee57e8c597a55bc2372d8b1b2b",
+    "src/debug/replay-evidence.js": "68ceb8168189e7e7fb169c2fd64ff1b5ba63031839a90eb145c9b615d7a8d033",
+    "src/loop.js": "f3f181c9c93b39e7825ea14fe456317b358193571d7337a4003350c88ef233e0",
+    "src/main.mjs": "dfe3150dc399751da6f2b7974c5d44e64a7b634ef1c3299edcd00d3674e031a7",
+    "src/squads/membership.js": "07ab5f2d09ebf2a4286c4676deebd331f9f3daa700144e4bb6fd1a5ac74b5154",
+    "src/squads/pair.js": "5fe5a72adb56c40f26edfc712c9e6cc0c63a75dd9a41ace6ec0dc324cf55ffa7",
+    "src/strategy/flag-allocation.js": "b200df89b73ee07683e252532af75a1a1b709e28c963c4dcd89a23c7bdb9b16a",
+    "src/strategy/objectives.js": "9eb7f8de19e76774619767424d5167554a4c443e2a43dce215dbc8c147bc409b",
+    "src/tactics/body.js": "9cc81fa05bcabc130d9d84b5f07e1b2235aed4664ccf6ac3e428fcca4a49bcbc",
+    "src/tactics/combat.js": "366f09f4e044bdb17aad14a268662fa54f126957ec3664748e4497843404245f",
+    "src/tactics/healer-escort.js": "1d55b335704da6c3782bfdd7e89758d5a9cddc79f4317f94962651866195da59",
+    "src/tactics/healing.js": "dd24679ee2df116621e5d004a42acaf42a8dbc4496f4383c95b43f271fbe889a",
+    "src/tactics/movement.js": "9eb4a78991773fcf5e29987b3813d3ea642695a86c4ce3b197965ecfc7d06fc4",
+    "src/tactics/targets.js": "d553911d03c152685671b972411d0d5654ba150c44981c1bb2f251c21757faf4",
+    "tests/benchmarks/replay-report-modes.mjs": "4a3fa2312ad2a5c1b1668b5897303ad9f8f6b0760f89fe31dac6965819fc5cb3",
+    "tests/fixtures/replay-analysis-m2c-empty-oracle.json": "fff906304bc566a728befa71b1f1e4fefc8087d519ed92d445b25904c3be5ab9",
+    "tests/fixtures/replay-analysis-m2c-oracle.json": "6aea8f2269d7b8fcd917177b658a0b422e6dfd4d7f3926d43c03109092fe0964",
+    "tests/fixtures/replay-analysis-m2c-recipe.js": "04ef92f70cd06b89d52ef06abaeb98200956588920ca7372928042965a13163d",
+    "tests/fixtures/replay-analysis-m2c-store.js": "5f2a03afc3907225c5171ccd1bfe6880ef52e7adc891540cd98b673b7186975c",
+    "tests/fixtures/replay-analysis-m2c-worker.js": "bd730aa5cc45d01b4a18f3bdc26bb35d1fbe7a40192f33ad06770afff359ead4",
+    "tests/fixtures/replay-combined-analysis-m2e-definitions.js": "618bdf4bbe83685df2a1c6f52813bb796a919dc554a4a60fedf7c6b3b60d7a40",
+    "tests/fixtures/replay-combined-analysis-m2e-faults.js": "efee9dcd93a61a56ed5ff3cfaa11cdf7860cc23293b7fe44a2c0aeda132a663d",
+    "tests/fixtures/replay-combined-analysis-m2e-oracle.json": "3292b3759dcddae48e90497cd1e4cb694b68e19c58b63f18d291e5084e08a219",
+    "tests/fixtures/replay-combined-analysis-m2e-recipe.js": "188f8fbad9ab0b836728e147410b614293887f77f570409ef1ac8f914531afec",
+    "tests/fixtures/replay-combined-analysis-m2e-store.js": "32c531ed57eb5bea2561db61305dc16d16640000cd308c4804f45ba39cd664a8",
+    "tests/fixtures/replay-combined-analysis-m2e-validation.js": "02e89040a8516d19cf960d9314f15a40f32c6c8ce721d9bdc9d9e085448e5e5e",
+    "tests/fixtures/replay-combined-analysis-m2e-worker.js": "f05a7daa55bef0cd82a120c8a8eb1cf51bf49d425f1363e29c4a53187c871868",
+    "tests/fixtures/replay-score-analysis-m2d-compat-oracle.json": "38e4a31583b096b79763074d7054a768856c0af9b5ce3d0e3c862175a82898c3",
+    "tests/fixtures/replay-score-analysis-m2d-oracle.json": "07e152deb5cf7dae86eba27d06a1f1dfe503304fc09aafc1342070d232394047",
+    "tests/fixtures/replay-score-analysis-m2d-process.js": "dcfa913ee7286e9f51ab3c11fdeaa9eb20dde45f87f55e615248c4dc6ceeb521",
+    "tests/fixtures/replay-score-analysis-m2d-recipe.js": "1a0045c8bbe703f9262020a91f986c8834f3650ceeaafd62682f32a4c9b68176",
+    "tests/fixtures/replay-score-analysis-m2d-store.js": "d674c83a7c626513dfb61085b7a0bac8fef3ddd33a8fa3c9920d4b86924f1847",
+    "tests/fixtures/replay-score-analysis-m2d-worker.js": "1c7994a96da9c500e97cd87a4d8e0801286ff568229d26f594c07ef2e121b7c5",
+    "tests/unit/build-id.test.js": "7340f897182521130288f448df6f36a9793295f962023b93b3c6b2b091c1f0b0",
+    "tests/unit/current-behavior.test.js": "ad7813480a29604e04aa5e03c29b42da593c5d2503ffa9c1fac802733021e45b",
+    "tests/unit/flag-allocation-flow.test.js": "a94fdb10e8ec22c508d17610f7f6851f153d440345e64ef508ad9e270bf47b32",
+    "tests/unit/flag-allocation.test.js": "93fbc1b1b4c53b588c29832feb8aacf2814b090e626aaa497249fbc4ee68f3f8",
+    "tests/unit/game-state.test.js": "ed57099b14f3c9604bbdf80903cd6ec28543e2ad715f5277f4384dfc7aa46801",
+    "tests/unit/healer-escort-disabled-flow.test.js": "d83229f00613da66b6df8998186ef39efcee9075c67180a83ae41d4d06cde072",
+    "tests/unit/healer-escort-flow.test.js": "cd475abd3cc79f617f5aa05849d04f15e56e619958db1272564a4dec51b89d7d",
+    "tests/unit/healer-escort.test.js": "339e6948dcc0e10a219646d2de9a455fedd2c6739f3ce7415ffc353a5c11a004",
+    "tests/unit/historical-index.test.js": "6635a9da54ebde2d19da9a3b475a88a4e59f54feffb6e7249cc6c28e8b7ccf04",
+    "tests/unit/membership.test.js": "01b4d7afa3f319e60870ff03b190d2d49a53c55b05f42a9670e9e2cb4d6ec4b5",
+    "tests/unit/movement.test.js": "d9bbe3076116e0eb90dab0faa69d50c9ef483b7068ae0a8067f4ed0d279ff681",
+    "tests/unit/replay-analysis-fixture.test.js": "1970c7ecfc3f48c36b4e6877090b89ced3c881371ac1694b95e452dddb0c71bc",
+    "tests/unit/replay-analysis.test.js": "5ad54ae0f72ab908c39d5c6796109e94e41008fc32fd55fbf259133ee6751a05",
+    "tests/unit/replay-catalog.test.js": "de1fff3415806e2862074b91dc476a370a0278ad6137d4eb57b32f65ce691f07",
+    "tests/unit/replay-combined-analysis-fixture.test.js": "7bae3bcdad0cb2dc0eef95320f6ba6f24015e270a56b362a85511090e80f8240",
+    "tests/unit/replay-evidence.test.js": "094cfe245fcfa58aa7d9b65f4bab07b58d0e3a99df95c01f485bf0bb7e6e3606",
+    "tests/unit/replay-legacy-reader.test.js": "58f142f3881d7805dcf471892bb9112d3b30b883baca7911c38364c683ba2357",
+    "tests/unit/replay-logs.test.js": "b328acc96a7a5a0c275163bb8bbd42ea2f7a2c8f13fdf529eb93a20debe51cfb",
+    "tests/unit/replay-other.test.js": "259f952949c2ccfe08a07559f13a11ecea8bbfb2eef571fca16f9279a0185571",
+    "tests/unit/replay-score-analysis-fixture.test.js": "f6af2c8f93497690a771ae12019d944bd87c45ad9c8e57147e199d8fb59b559b",
+    "tests/unit/replay-score-analysis.test.js": "01b69572e64eb77a0e3505266f757caab0f151e6b13c759146093493b02b8024",
+    "tests/unit/replay-score-sources.test.js": "e235b9ecb7930a3788c585dcdfd1fa4a5263ee5f3ac2891d2b3ec9469d909c96",
+    "tests/unit/replay-store-payloads.test.js": "68da3fe6a493d2f20cd4986ed3912b04306186c695b64384f680494eacd6feff",
+    "tests/unit/replay-store.test.js": "947deb5a5e40749245d9fd4565145f98d6c04c82a8bae524099dcef1fdb32b89",
+    "tests/unit/scout-hold-flow.test.js": "42e114ab318fdf3737389113f3079e302a302b74b158e5e3ce0e42b6c60163eb",
+    "tests/unit/scout-hold-screen.test.js": "bffef554974281473fbbcba85c217b6a325838650fb5b79cfb3234f63feb48db",
+    "tests/unit/scout-hold.test.js": "361ca63e917e2efa3f63b2289bde8a6a37289d02271aa65bb9e724ef354da37b",
+    "tests/unit/squad-pair-flow.test.js": "c4a835fc7784ebb2bb2b1acee4165802af7de1c79e1aa720159cb0e48e6de777",
+    "tests/unit/squad-pair.test.js": "711e6b9479c36c9f3cb5d9d1085d1502b6ce939c50450fe5c6a59e197c057ad1",
+    "tests/unit/tactics.test.js": "579cfc4d548875c56e8ec0341d472b82a608f603d9663149867ff333e4f9ba96",
+    "tests/unit/tick-flow.test.js": "76692b100d5dcc4bcb5c8eca9c3eb2ada7d53947a9c8207b7e9f4e6a6c6355f6",
+    "tools/build-id.js": "d1a1cb14e69ca3fea0bfcf5549ff8f0abcd2beb336ca12f51bc4df8d26a96ba0",
+    "tools/historical-index.js": "f6a63ba06d6daf85ef88086573850db0bfa40f54281697520b1fe391195c94a3",
+    "tools/replay-analysis-fixture.js": "2709d9f396ba65d2de9894c6528b9daa6770a5d3c6ae2fc4fbfda98bcb98f380",
+    "tools/replay-analysis.js": "bcb15f49a8f3a71413577f74441efcc01c044c9023d3d8cabe84b6412cedbff3",
+    "tools/replay-catalog.js": "63725d96d4d8f7f13dec97aa770f369bf452b5ac0f904fe481e852fa0db3204a",
+    "tools/replay-combined-analysis-fixture.js": "fee4449597d034a4101e44ce38e65a1075c3c6c216d87f13ab593982beaec29a",
+    "tools/replay-legacy-json.js": "25427c4c5fb80bd545a88d3cbe612c77eef9f27a300b26c790d703e925fe663e",
+    "tools/replay-legacy-reader.js": "7f6778e9dcc180f90248aa6a1f70c7a722174d0496d10fc6d35b357df01cdb94",
+    "tools/replay-logs.js": "41d7604f8e4dff3d78c08c0c5fbde5faa68be965b48fd0f922053211c272545c",
+    "tools/replay-other.js": "f199c35e286003510f15a0aa7be9b371125873760dfc7f8021622da701a7ce41",
+    "tools/replay-score-analysis-fixture.js": "85bb4cc68facf47c64caa5412cc720b3ffcd2ecd66042a8b0cfee4fc9467b0ff",
+    "tools/replay-score-analysis.js": "42afb9e83682dc303d6c6cb258992d6505be9905745f0dfdd74c236a0ea10ff6",
+    "tools/replay-store-payloads.js": "6676b64a07c213a2f996b139fabdc1e68b1905b09a2986c0f6c710ea46d119c0",
+    "tools/replay-store.js": "03e36aa9e496257c6b25fc3a86d33e22276716030876f1136a5980ff5cb25d59",
+    "tools/scout-hold-screen.js": "9f927b23f33fb966605d0edb2de59f5cfbc1b9b33fc2a3bab60ebb751677b106"
+  },
+  "runs": [
+    {
+      "label": "pre-fix",
+      "receiptPath": "/tmp/pain-gain-m2e-correction.QEv5Y3/pre-fix.json",
+      "receiptHash": "6123f4786214cd70e4f974869e5ccb5285e49212eeea9a9b779ab967d18d27ee",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=M2e validation",
+        "tests/unit/replay-combined-analysis-fixture.test.js"
+      ],
+      "start": "2026-10-06T11:28:09.606Z",
+      "end": "2026-10-06T11:28:21.536Z",
+      "elapsedMs": 11927.689167,
+      "code": 1,
+      "signal": null,
+      "log": "/tmp/pain-gain-m2e-correction.QEv5Y3/pre-fix.log",
+      "logHash": "33e3c7bbe4b7771e00debf908471cf8ce0eac424a51a026a42b2332b260197ee",
+      "node": "v24.19.0",
+      "executable": "/Users/zoltanka/Library/Caches/JetBrains/WebStorm2026.2/acp-agents/.runtimes/node/24.19.0/bin/node",
+      "versions": {
+        "node": "24.19.0",
+        "acorn": "8.17.0",
+        "ada": "3.4.4",
+        "amaro": "1.1.10",
+        "ares": "1.34.6",
+        "brotli": "1.2.0",
+        "cldr": "48.0",
+        "icu": "78.3",
+        "llhttp": "9.4.3",
+        "merve": "1.2.2",
+        "modules": "137",
+        "napi": "10",
+        "nbytes": "0.1.4",
+        "ncrypto": "0.0.1",
+        "nghttp2": "1.69.0",
+        "nghttp3": "",
+        "ngtcp2": "",
+        "openssl": "3.5.7",
+        "simdjson": "4.6.4",
+        "simdutf": "6.4.0",
+        "sqlite": "3.53.3",
+        "tz": "2026b",
+        "undici": "7.29.0",
+        "unicode": "17.0",
+        "uv": "1.52.1",
+        "uvwasi": "0.0.23",
+        "v8": "13.6.233.17-node.51",
+        "zlib": "1.3.2.1-motley-3246f1b",
+        "zstd": "1.5.7"
+      },
+      "unchanged": true,
+      "counts": {
+        "tests": 16,
+        "pass": 4,
+        "fail": 12,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0
+      }
+    },
+    {
+      "label": "targeted-final",
+      "receiptPath": "/tmp/pain-gain-m2e-correction.QEv5Y3/targeted-final.json",
+      "receiptHash": "c8f13f4d47262ca0abd61707cadc36068c90ab6e8b0cb1af1f44c3e23833bae2",
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=M2e validation",
+        "tests/unit/replay-combined-analysis-fixture.test.js"
+      ],
+      "start": "2026-10-06T11:28:40.729Z",
+      "end": "2026-10-06T11:28:52.877Z",
+      "elapsedMs": 12146.296708,
+      "code": 0,
+      "signal": null,
+      "log": "/tmp/pain-gain-m2e-correction.QEv5Y3/targeted-final.log",
+      "logHash": "55d8989b38103a0b7638c1f7e1ed1586acc19f8a0ce1db149068998231772ceb",
+      "node": "v24.19.0",
+      "executable": "/Users/zoltanka/Library/Caches/JetBrains/WebStorm2026.2/acp-agents/.runtimes/node/24.19.0/bin/node",
+      "versions": {
+        "node": "24.19.0",
+        "acorn": "8.17.0",
+        "ada": "3.4.4",
+        "amaro": "1.1.10",
+        "ares": "1.34.6",
+        "brotli": "1.2.0",
+        "cldr": "48.0",
+        "icu": "78.3",
+        "llhttp": "9.4.3",
+        "merve": "1.2.2",
+        "modules": "137",
+        "napi": "10",
+        "nbytes": "0.1.4",
+        "ncrypto": "0.0.1",
+        "nghttp2": "1.69.0",
+        "nghttp3": "",
+        "ngtcp2": "",
+        "openssl": "3.5.7",
+        "simdjson": "4.6.4",
+        "simdutf": "6.4.0",
+        "sqlite": "3.53.3",
+        "tz": "2026b",
+        "undici": "7.29.0",
+        "unicode": "17.0",
+        "uv": "1.52.1",
+        "uvwasi": "0.0.23",
+        "v8": "13.6.233.17-node.51",
+        "zlib": "1.3.2.1-motley-3246f1b",
+        "zstd": "1.5.7"
+      },
+      "unchanged": true,
+      "counts": {
+        "tests": 16,
+        "pass": 16,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0
+      }
+    },
+    {
+      "label": "focused-final",
+      "receiptPath": "/tmp/pain-gain-m2e-correction.QEv5Y3/focused-final.json",
+      "receiptHash": "8d0a393b897b6e57c4ed78fcd13c35a1112000c9552d7637d5f08f72ad55713c",
+      "command": [
+        "node",
+        "--test",
+        "tests/unit/replay-combined-analysis-fixture.test.js",
+        "tests/unit/replay-analysis.test.js",
+        "tests/unit/replay-score-analysis.test.js",
+        "tests/unit/replay-analysis-fixture.test.js",
+        "tests/unit/replay-score-analysis-fixture.test.js"
+      ],
+      "start": "2026-10-06T11:29:15.405Z",
+      "end": "2026-10-06T11:33:17.960Z",
+      "elapsedMs": 242550.5765,
+      "code": 0,
+      "signal": null,
+      "log": "/tmp/pain-gain-m2e-correction.QEv5Y3/focused-final.log",
+      "logHash": "73df1929b065c155363a4048a8c436185737ed88c1763800c4a28600634e08f1",
+      "node": "v24.19.0",
+      "executable": "/Users/zoltanka/Library/Caches/JetBrains/WebStorm2026.2/acp-agents/.runtimes/node/24.19.0/bin/node",
+      "versions": {
+        "node": "24.19.0",
+        "acorn": "8.17.0",
+        "ada": "3.4.4",
+        "amaro": "1.1.10",
+        "ares": "1.34.6",
+        "brotli": "1.2.0",
+        "cldr": "48.0",
+        "icu": "78.3",
+        "llhttp": "9.4.3",
+        "merve": "1.2.2",
+        "modules": "137",
+        "napi": "10",
+        "nbytes": "0.1.4",
+        "ncrypto": "0.0.1",
+        "nghttp2": "1.69.0",
+        "nghttp3": "",
+        "ngtcp2": "",
+        "openssl": "3.5.7",
+        "simdjson": "4.6.4",
+        "simdutf": "6.4.0",
+        "sqlite": "3.53.3",
+        "tz": "2026b",
+        "undici": "7.29.0",
+        "unicode": "17.0",
+        "uv": "1.52.1",
+        "uvwasi": "0.0.23",
+        "v8": "13.6.233.17-node.51",
+        "zlib": "1.3.2.1-motley-3246f1b",
+        "zstd": "1.5.7"
+      },
+      "unchanged": true,
+      "counts": {
+        "tests": 360,
+        "pass": 360,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0
+      }
+    },
+    {
+      "label": "affected-core-final",
+      "receiptPath": "/tmp/pain-gain-m2e-correction.QEv5Y3/affected-core-final.json",
+      "receiptHash": "9ee93005c5a2be5d2cffdcc4214fc2139d1ee7e5eb000ef083fe5cfa1ffaea09",
+      "command": [
+        "node",
+        "--test",
+        "tests/unit/replay-store.test.js",
+        "tests/unit/replay-store-payloads.test.js",
+        "tests/unit/replay-catalog.test.js",
+        "tests/unit/replay-other.test.js",
+        "tests/unit/replay-legacy-reader.test.js"
+      ],
+      "start": "2026-10-06T11:33:26.862Z",
+      "end": "2026-10-06T11:34:27.017Z",
+      "elapsedMs": 60151.938167,
+      "code": 0,
+      "signal": null,
+      "log": "/tmp/pain-gain-m2e-correction.QEv5Y3/affected-core-final.log",
+      "logHash": "43d0224f8b48f09ffa6a49c18dc992f2674f9dad7397bf8266503aebe4303b87",
+      "node": "v24.19.0",
+      "executable": "/Users/zoltanka/Library/Caches/JetBrains/WebStorm2026.2/acp-agents/.runtimes/node/24.19.0/bin/node",
+      "versions": {
+        "node": "24.19.0",
+        "acorn": "8.17.0",
+        "ada": "3.4.4",
+        "amaro": "1.1.10",
+        "ares": "1.34.6",
+        "brotli": "1.2.0",
+        "cldr": "48.0",
+        "icu": "78.3",
+        "llhttp": "9.4.3",
+        "merve": "1.2.2",
+        "modules": "137",
+        "napi": "10",
+        "nbytes": "0.1.4",
+        "ncrypto": "0.0.1",
+        "nghttp2": "1.69.0",
+        "nghttp3": "",
+        "ngtcp2": "",
+        "openssl": "3.5.7",
+        "simdjson": "4.6.4",
+        "simdutf": "6.4.0",
+        "sqlite": "3.53.3",
+        "tz": "2026b",
+        "undici": "7.29.0",
+        "unicode": "17.0",
+        "uv": "1.52.1",
+        "uvwasi": "0.0.23",
+        "v8": "13.6.233.17-node.51",
+        "zlib": "1.3.2.1-motley-3246f1b",
+        "zstd": "1.5.7"
+      },
+      "unchanged": true,
+      "counts": {
+        "tests": 166,
+        "pass": 166,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0
+      }
+    },
+    {
+      "label": "repository-final",
+      "receiptPath": "/tmp/pain-gain-m2e-correction.QEv5Y3/repository-final.json",
+      "receiptHash": "c8ac11a2715bb821da6f8834fa39bb3fbda5b70f9fe68f711beebfcd5f9380f2",
+      "command": [
+        "npm",
+        "test"
+      ],
+      "start": "2026-10-06T11:34:34.470Z",
+      "end": "2026-10-06T11:39:21.997Z",
+      "elapsedMs": 287517.057709,
+      "code": 0,
+      "signal": null,
+      "log": "/tmp/pain-gain-m2e-correction.QEv5Y3/repository-final.log",
+      "logHash": "3be703b28cf7d69891f83b388ea1d87fbfbbd677ab48d35bed266b58241b6913",
+      "node": "v24.19.0",
+      "executable": "/Users/zoltanka/Library/Caches/JetBrains/WebStorm2026.2/acp-agents/.runtimes/node/24.19.0/bin/node",
+      "versions": {
+        "node": "24.19.0",
+        "acorn": "8.17.0",
+        "ada": "3.4.4",
+        "amaro": "1.1.10",
+        "ares": "1.34.6",
+        "brotli": "1.2.0",
+        "cldr": "48.0",
+        "icu": "78.3",
+        "llhttp": "9.4.3",
+        "merve": "1.2.2",
+        "modules": "137",
+        "napi": "10",
+        "nbytes": "0.1.4",
+        "ncrypto": "0.0.1",
+        "nghttp2": "1.69.0",
+        "nghttp3": "",
+        "ngtcp2": "",
+        "openssl": "3.5.7",
+        "simdjson": "4.6.4",
+        "simdutf": "6.4.0",
+        "sqlite": "3.53.3",
+        "tz": "2026b",
+        "undici": "7.29.0",
+        "unicode": "17.0",
+        "uv": "1.52.1",
+        "uvwasi": "0.0.23",
+        "v8": "13.6.233.17-node.51",
+        "zlib": "1.3.2.1-motley-3246f1b",
+        "zstd": "1.5.7"
+      },
+      "unchanged": true,
+      "counts": {
+        "tests": 723,
+        "pass": 723,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0
+      }
+    },
+    {
+      "label": "check-final",
+      "receiptPath": "/tmp/pain-gain-m2e-correction.QEv5Y3/check-final.json",
+      "receiptHash": "40df2f80bb68288e967d99a1c6d25decb70ca9517af39d246726cde89648de41",
+      "command": [
+        "npm",
+        "run",
+        "check"
+      ],
+      "start": "2026-10-06T11:39:31.375Z",
+      "end": "2026-10-06T11:39:32.653Z",
+      "elapsedMs": 1277.176208,
+      "code": 0,
+      "signal": null,
+      "log": "/tmp/pain-gain-m2e-correction.QEv5Y3/check-final.log",
+      "logHash": "df2e09c9b97d4e7841aff5e9f3446833f1abf5fdcfc71ff570b5cea7a3d73b30",
+      "node": "v24.19.0",
+      "executable": "/Users/zoltanka/Library/Caches/JetBrains/WebStorm2026.2/acp-agents/.runtimes/node/24.19.0/bin/node",
+      "versions": {
+        "node": "24.19.0",
+        "acorn": "8.17.0",
+        "ada": "3.4.4",
+        "amaro": "1.1.10",
+        "ares": "1.34.6",
+        "brotli": "1.2.0",
+        "cldr": "48.0",
+        "icu": "78.3",
+        "llhttp": "9.4.3",
+        "merve": "1.2.2",
+        "modules": "137",
+        "napi": "10",
+        "nbytes": "0.1.4",
+        "ncrypto": "0.0.1",
+        "nghttp2": "1.69.0",
+        "nghttp3": "",
+        "ngtcp2": "",
+        "openssl": "3.5.7",
+        "simdjson": "4.6.4",
+        "simdutf": "6.4.0",
+        "sqlite": "3.53.3",
+        "tz": "2026b",
+        "undici": "7.29.0",
+        "unicode": "17.0",
+        "uv": "1.52.1",
+        "uvwasi": "0.0.23",
+        "v8": "13.6.233.17-node.51",
+        "zlib": "1.3.2.1-motley-3246f1b",
+        "zstd": "1.5.7"
+      },
+      "unchanged": true,
+      "counts": {}
+    }
+  ],
+  "resourceGates": [
+    {
+      "schema": 1,
+      "generate": {
+        "args": [
+          "--max-old-space-size=192",
+          "/Users/zoltanka/Documents/Prog/JavaScript/ScreepsArena/pain_and_gain/tests/fixtures/replay-combined-analysis-m2e-worker.js",
+          "generate",
+          "1",
+          "/private/var/folders/dy/9msg37jj549dkw5k__ct1kv00000gn/T/pain-gain-store-v3-fixture-vjepyQ",
+          "/private/var/folders/dy/9msg37jj549dkw5k__ct1kv00000gn/T/pain-gain-store-v3-fixture-4jLStc"
+        ],
+        "code": 0,
+        "signal": null,
+        "elapsedMs": 4500.909290999989,
+        "stderr": "",
+        "result": {
+          "phase": "generate",
+          "schema": 1,
+          "stores": [
+            {
+              "count": 10,
+              "selected": [
+                {
+                  "path": "pain_and_gain_map_2026-10-06T00-00-00-000Z.json",
+                  "bytes": 20496
+                },
+                {
+                  "path": "bbbbbbbbbbbbbbbbbbbbbbbb-0000000000000000000000000000000000000000000000000000000000000000.jsonl",
+                  "bytes": 922
+                },
+                {
+                  "path": "replay-score-source-bbbbbbbbbbbbbbbbbbbbbbbb-dc2285ad6874bf50f4b85d530fbc14b727d747cdfcd87b12abfa47fd7c1b1999.response",
+                  "bytes": 302
+                },
+                {
+                  "path": "replay-score-source-bbbbbbbbbbbbbbbbbbbbbbbb-daf3f3ef20551c4674c2558014606c007779cf7e973fa2aec594b9afbac2032f.response",
+                  "bytes": 935
+                },
+                {
+                  "path": "store-v3/78b73acb-d2ab-4d91-9c79-995f90720e3c/diagnostics/1c/fbbb3d73cbf14b2ddf177e35468691b9c304adb1ac1a3b9eb12522214d56dccd/1ccc275b7082f579712e3ac7073eb40988d8ce380f822748e69ce11b41b89dd5.jsonl",
+                  "bytes": 196298
+                },
+                {
+                  "path": "store-v3/78b73acb-d2ab-4d91-9c79-995f90720e3c/extensions/cd/3799f1ef5feeece925964ca7742d1509cd490a9d0d68fdae0c44324eb17a5351/cd407bed2b620e9c5d7fcff7740b7e88bdb4f98d20116435a854a0c4c2fceb85.json",
+                  "bytes": 165
+                },
+                {
+                  "path": "store-v3/78b73acb-d2ab-4d91-9c79-995f90720e3c/diagnostics/aa/dace011631c2119058951054cbb66705dc0148aaeeab4aacc0599c4b8fa20f5b/aafa177a20bfd811030b6601480bfe2d766af1fcefc96a172340e82131c7f959.jsonl",
+                  "bytes": 199496
+                },
+                {
+                  "path": "store-v3/78b73acb-d2ab-4d91-9c79-995f90720e3c/extensions/cd/436dce9caf9720907520813d8c600a87dadf4446aa73e33d7146d0e30a298fad/cd407bed2b620e9c5d7fcff7740b7e88bdb4f98d20116435a854a0c4c2fceb85.json",
+                  "bytes": 165
+                },
+                {
+                  "path": "store-v3/78b73acb-d2ab-4d91-9c79-995f90720e3c/summaries/bd/f736590d70d5d14468a5059158a0f6956e3a4e1efce70a45e21df773100c7e9a/bd96e534796a6d410d353d05516b9174ae21963e8a49496496750592369db6a2.json",
+                  "bytes": 399
+                },
+                {
+                  "path": "store-v3/78b73acb-d2ab-4d91-9c79-995f90720e3c/extensions/4d/72e47741c5da731d084fd0f23c98a1196e0757dfc9e2f7886352229cc0ef50db/4d41610bf1712ac960b6fb9296bf954a21ab076471030bb040d97792208ef1a7.json",
+                  "bytes": 65538
+                },
+                {
+                  "path": "store-v3/78b73acb-d2ab-4d91-9c79-995f90720e3c/summaries/fc/0fdd1b4495adb727d648f02454638b2b7efbb974dffb59b16d5b7f788a90a4a8/fcaf41b95e1abeb88ced853eddb41ebb852e50723e44fc4841d7ec4cee8ac970.json",
+                  "bytes": 1604
+                },
+                {
+                  "path": "store-v3/78b73acb-d2ab-4d91-9c79-995f90720e3c/extensions/4d/5579c230fa1573f1918ff6f1935472220776cb0c272e8329f68a1eb9354eed78/4d41610bf1712ac960b6fb9296bf954a21ab076471030bb040d97792208ef1a7.json",
+                  "bytes": 65538
+                }
+              ],
+              "fingerprints": [
+                "0000000000000000000000000000000000000000000000000000000000000000",
+                "0000000000000000000000000000000000000000000000000000000000000001"
+              ],
+              "scoreFingerprints": [
+                "dc2285ad6874bf50f4b85d530fbc14b727d747cdfcd87b12abfa47fd7c1b1999",
+                "daf3f3ef20551c4674c2558014606c007779cf7e973fa2aec594b9afbac2032f"
+              ],
+              "inventoryHash": "c936cdd773887b79ad4ff2c21620c2526ee0131c5c1fb18941675644da47ac94",
+              "unrelatedBytes": 629145600
+            },
+            {
+              "count": 1000,
+              "selected": [
+                {
+                  "path": "pain_and_gain_map_2026-10-06T00-00-00-000Z.json",
+                  "bytes": 20496
+                },
+                {
+                  "path": "bbbbbbbbbbbbbbbbbbbbbbbb-0000000000000000000000000000000000000000000000000000000000000000.jsonl",
+                  "bytes": 922
+                },
+                {
+                  "path": "replay-score-source-bbbbbbbbbbbbbbbbbbbbbbbb-dc2285ad6874bf50f4b85d530fbc14b727d747cdfcd87b12abfa47fd7c1b1999.response",
+                  "bytes": 302
+                },
+                {
+                  "path": "replay-score-source-bbbbbbbbbbbbbbbbbbbbbbbb-daf3f3ef20551c4674c2558014606c007779cf7e973fa2aec594b9afbac2032f.response",
+                  "bytes": 935
+                },
+                {
+                  "path": "store-v3/1394e832-84af-4425-99ad-30f9b1b48b8e/diagnostics/1c/fbbb3d73cbf14b2ddf177e35468691b9c304adb1ac1a3b9eb12522214d56dccd/1ccc275b7082f579712e3ac7073eb40988d8ce380f822748e69ce11b41b89dd5.jsonl",
+                  "bytes": 196298
+                },
+                {
+                  "path": "store-v3/1394e832-84af-4425-99ad-30f9b1b48b8e/extensions/cd/3799f1ef5feeece925964ca7742d1509cd490a9d0d68fdae0c44324eb17a5351/cd407bed2b620e9c5d7fcff7740b7e88bdb4f98d20116435a854a0c4c2fceb85.json",
+                  "bytes": 165
+                },
+                {
+                  "path": "store-v3/1394e832-84af-4425-99ad-30f9b1b48b8e/diagnostics/aa/dace011631c2119058951054cbb66705dc0148aaeeab4aacc0599c4b8fa20f5b/aafa177a20bfd811030b6601480bfe2d766af1fcefc96a172340e82131c7f959.jsonl",
+                  "bytes": 199496
+                },
+                {
+                  "path": "store-v3/1394e832-84af-4425-99ad-30f9b1b48b8e/extensions/cd/436dce9caf9720907520813d8c600a87dadf4446aa73e33d7146d0e30a298fad/cd407bed2b620e9c5d7fcff7740b7e88bdb4f98d20116435a854a0c4c2fceb85.json",
+                  "bytes": 165
+                },
+                {
+                  "path": "store-v3/1394e832-84af-4425-99ad-30f9b1b48b8e/summaries/bd/f736590d70d5d14468a5059158a0f6956e3a4e1efce70a45e21df773100c7e9a/bd96e534796a6d410d353d05516b9174ae21963e8a49496496750592369db6a2.json",
+                  "bytes": 399
+                },
+                {
+                  "path": "store-v3/1394e832-84af-4425-99ad-30f9b1b48b8e/extensions/4d/72e47741c5da731d084fd0f23c98a1196e0757dfc9e2f7886352229cc0ef50db/4d41610bf1712ac960b6fb9296bf954a21ab076471030bb040d97792208ef1a7.json",
+                  "bytes": 65538
+                },
+                {
+                  "path": "store-v3/1394e832-84af-4425-99ad-30f9b1b48b8e/summaries/fc/0fdd1b4495adb727d648f02454638b2b7efbb974dffb59b16d5b7f788a90a4a8/fcaf41b95e1abeb88ced853eddb41ebb852e50723e44fc4841d7ec4cee8ac970.json",
+                  "bytes": 1604
+                },
+                {
+                  "path": "store-v3/1394e832-84af-4425-99ad-30f9b1b48b8e/extensions/4d/5579c230fa1573f1918ff6f1935472220776cb0c272e8329f68a1eb9354eed78/4d41610bf1712ac960b6fb9296bf954a21ab076471030bb040d97792208ef1a7.json",
+                  "bytes": 65538
+                }
+              ],
+              "fingerprints": [
+                "0000000000000000000000000000000000000000000000000000000000000000",
+                "0000000000000000000000000000000000000000000000000000000000000001"
+              ],
+              "scoreFingerprints": [
+                "dc2285ad6874bf50f4b85d530fbc14b727d747cdfcd87b12abfa47fd7c1b1999",
+                "daf3f3ef20551c4674c2558014606c007779cf7e973fa2aec594b9afbac2032f"
+              ],
+              "inventoryHash": "d4b3b0eadb4e885cf94f71f17a907adf07a46d52b8b1d6de91075fbcaca1614b",
+              "unrelatedBytes": 629145600
+            }
+          ],
+          "elapsedMs": 4455.258957999999,
+          "maxRssBytes": 106938368
+        }
+      },
+      "operations": {
+        "args": [
+          "--max-old-space-size=192",
+          "/Users/zoltanka/Documents/Prog/JavaScript/ScreepsArena/pain_and_gain/tests/fixtures/replay-combined-analysis-m2e-worker.js",
+          "operations",
+          "1",
+          "/private/var/folders/dy/9msg37jj549dkw5k__ct1kv00000gn/T/pain-gain-store-v3-fixture-vjepyQ",
+          "/private/var/folders/dy/9msg37jj549dkw5k__ct1kv00000gn/T/pain-gain-store-v3-fixture-4jLStc",
+          "/var/folders/dy/9msg37jj549dkw5k__ct1kv00000gn/T/pain-gain-m2e-gate-dj58NB/generation.json"
+        ],
+        "code": 0,
+        "signal": null,
+        "elapsedMs": 279.46220800001174,
+        "stderr": "",
+        "result": {
+          "phase": "operations",
+          "schema": 1,
+          "runs": [
+            {
+              "count": 10,
+              "reportMode": "full",
+              "reportHash": "452d47460a2a818004812e4e937d4452f82be209599a618d07107b390c1d6c44",
+              "selectedBytes": 551858,
+              "elapsedMs": 88.526625,
+              "sql": 81,
+              "pragmas": 14,
+              "rows": 124,
+              "opens": 12,
+              "bytes": 948312,
+              "reads": 30,
+              "maxChunk": 65536,
+              "writes": 0,
+              "metadataOpens": 9,
+              "unselected": 0
+            },
+            {
+              "count": 10,
+              "reportMode": "compact",
+              "reportHash": "9e61326039d8a2a69af33ebc24261b88071fe405fe5989038535c28b76977059",
+              "selectedBytes": 551858,
+              "elapsedMs": 62.14133299999999,
+              "sql": 81,
+              "pragmas": 14,
+              "rows": 124,
+              "opens": 12,
+              "bytes": 948312,
+              "reads": 30,
+              "maxChunk": 65536,
+              "writes": 0,
+              "metadataOpens": 9,
+              "unselected": 0
+            },
+            {
+              "count": 1000,
+              "reportMode": "full",
+              "reportHash": "452d47460a2a818004812e4e937d4452f82be209599a618d07107b390c1d6c44",
+              "selectedBytes": 551858,
+              "elapsedMs": 37.93899999999999,
+              "sql": 81,
+              "pragmas": 14,
+              "rows": 124,
+              "opens": 12,
+              "bytes": 948312,
+              "reads": 30,
+              "maxChunk": 65536,
+              "writes": 0,
+              "metadataOpens": 9,
+              "unselected": 0
+            },
+            {
+              "count": 1000,
+              "reportMode": "compact",
+              "reportHash": "9e61326039d8a2a69af33ebc24261b88071fe405fe5989038535c28b76977059",
+              "selectedBytes": 551858,
+              "elapsedMs": 34.67824999999999,
+              "sql": 81,
+              "pragmas": 14,
+              "rows": 124,
+              "opens": 12,
+              "bytes": 948312,
+              "reads": 30,
+              "maxChunk": 65536,
+              "writes": 0,
+              "metadataOpens": 9,
+              "unselected": 0
+            }
+          ],
+          "elapsedMs": 234.487375,
+          "maxRssBytes": 109953024
+        }
+      },
+      "preservation": {
+        "args": [
+          "--max-old-space-size=192",
+          "/Users/zoltanka/Documents/Prog/JavaScript/ScreepsArena/pain_and_gain/tests/fixtures/replay-combined-analysis-m2e-worker.js",
+          "preservation",
+          "1",
+          "/private/var/folders/dy/9msg37jj549dkw5k__ct1kv00000gn/T/pain-gain-store-v3-fixture-vjepyQ",
+          "/private/var/folders/dy/9msg37jj549dkw5k__ct1kv00000gn/T/pain-gain-store-v3-fixture-4jLStc",
+          "/var/folders/dy/9msg37jj549dkw5k__ct1kv00000gn/T/pain-gain-m2e-gate-dj58NB/generation.json"
+        ],
+        "code": 0,
+        "signal": null,
+        "elapsedMs": 678.0958749999991,
+        "stderr": "",
+        "result": {
+          "phase": "preservation",
+          "schema": 1,
+          "hashes": [
+            "c936cdd773887b79ad4ff2c21620c2526ee0131c5c1fb18941675644da47ac94",
+            "d4b3b0eadb4e885cf94f71f17a907adf07a46d52b8b1d6de91075fbcaca1614b"
+          ],
+          "elapsedMs": 634.147625,
+          "maxRssBytes": 80461824
+        }
+      }
+    },
+    {
+      "schema": 2,
+      "generate": {
+        "args": [
+          "--max-old-space-size=192",
+          "/Users/zoltanka/Documents/Prog/JavaScript/ScreepsArena/pain_and_gain/tests/fixtures/replay-combined-analysis-m2e-worker.js",
+          "generate",
+          "2",
+          "/private/var/folders/dy/9msg37jj549dkw5k__ct1kv00000gn/T/pain-gain-store-v3-fixture-34JnYa",
+          "/private/var/folders/dy/9msg37jj549dkw5k__ct1kv00000gn/T/pain-gain-store-v3-fixture-V1f0ys"
+        ],
+        "code": 0,
+        "signal": null,
+        "elapsedMs": 4500.486291999987,
+        "stderr": "",
+        "result": {
+          "phase": "generate",
+          "schema": 2,
+          "stores": [
+            {
+              "count": 10,
+              "selected": [
+                {
+                  "path": "pain_and_gain_map_2026-10-06T00-00-00-000Z.json",
+                  "bytes": 20496
+                },
+                {
+                  "path": "bbbbbbbbbbbbbbbbbbbbbbbb-0000000000000000000000000000000000000000000000000000000000000000.jsonl",
+                  "bytes": 922
+                },
+                {
+                  "path": "replay-score-source-bbbbbbbbbbbbbbbbbbbbbbbb-dc2285ad6874bf50f4b85d530fbc14b727d747cdfcd87b12abfa47fd7c1b1999.response",
+                  "bytes": 302
+                },
+                {
+                  "path": "replay-score-source-bbbbbbbbbbbbbbbbbbbbbbbb-daf3f3ef20551c4674c2558014606c007779cf7e973fa2aec594b9afbac2032f.response",
+                  "bytes": 935
+                },
+                {
+                  "path": "store-v3/7f6cb431-c1f5-4a72-8742-2d3f86434d29/diagnostics/1c/fbbb3d73cbf14b2ddf177e35468691b9c304adb1ac1a3b9eb12522214d56dccd/1ccc275b7082f579712e3ac7073eb40988d8ce380f822748e69ce11b41b89dd5.jsonl",
+                  "bytes": 196298
+                },
+                {
+                  "path": "store-v3/7f6cb431-c1f5-4a72-8742-2d3f86434d29/extensions/cd/3799f1ef5feeece925964ca7742d1509cd490a9d0d68fdae0c44324eb17a5351/cd407bed2b620e9c5d7fcff7740b7e88bdb4f98d20116435a854a0c4c2fceb85.json",
+                  "bytes": 165
+                },
+                {
+                  "path": "store-v3/7f6cb431-c1f5-4a72-8742-2d3f86434d29/diagnostics/aa/dace011631c2119058951054cbb66705dc0148aaeeab4aacc0599c4b8fa20f5b/aafa177a20bfd811030b6601480bfe2d766af1fcefc96a172340e82131c7f959.jsonl",
+                  "bytes": 199496
+                },
+                {
+                  "path": "store-v3/7f6cb431-c1f5-4a72-8742-2d3f86434d29/extensions/cd/436dce9caf9720907520813d8c600a87dadf4446aa73e33d7146d0e30a298fad/cd407bed2b620e9c5d7fcff7740b7e88bdb4f98d20116435a854a0c4c2fceb85.json",
+                  "bytes": 165
+                },
+                {
+                  "path": "store-v3/7f6cb431-c1f5-4a72-8742-2d3f86434d29/summaries/bd/f736590d70d5d14468a5059158a0f6956e3a4e1efce70a45e21df773100c7e9a/bd96e534796a6d410d353d05516b9174ae21963e8a49496496750592369db6a2.json",
+                  "bytes": 399
+                },
+                {
+                  "path": "store-v3/7f6cb431-c1f5-4a72-8742-2d3f86434d29/extensions/4d/72e47741c5da731d084fd0f23c98a1196e0757dfc9e2f7886352229cc0ef50db/4d41610bf1712ac960b6fb9296bf954a21ab076471030bb040d97792208ef1a7.json",
+                  "bytes": 65538
+                },
+                {
+                  "path": "store-v3/7f6cb431-c1f5-4a72-8742-2d3f86434d29/summaries/fc/0fdd1b4495adb727d648f02454638b2b7efbb974dffb59b16d5b7f788a90a4a8/fcaf41b95e1abeb88ced853eddb41ebb852e50723e44fc4841d7ec4cee8ac970.json",
+                  "bytes": 1604
+                },
+                {
+                  "path": "store-v3/7f6cb431-c1f5-4a72-8742-2d3f86434d29/extensions/4d/5579c230fa1573f1918ff6f1935472220776cb0c272e8329f68a1eb9354eed78/4d41610bf1712ac960b6fb9296bf954a21ab076471030bb040d97792208ef1a7.json",
+                  "bytes": 65538
+                }
+              ],
+              "fingerprints": [
+                "0000000000000000000000000000000000000000000000000000000000000000",
+                "0000000000000000000000000000000000000000000000000000000000000001"
+              ],
+              "scoreFingerprints": [
+                "dc2285ad6874bf50f4b85d530fbc14b727d747cdfcd87b12abfa47fd7c1b1999",
+                "daf3f3ef20551c4674c2558014606c007779cf7e973fa2aec594b9afbac2032f"
+              ],
+              "inventoryHash": "01d8bf93555f7dfb1f58b814ace42694d05596bf9497549c560649ad8be826ec",
+              "unrelatedBytes": 629145600
+            },
+            {
+              "count": 1000,
+              "selected": [
+                {
+                  "path": "pain_and_gain_map_2026-10-06T00-00-00-000Z.json",
+                  "bytes": 20496
+                },
+                {
+                  "path": "bbbbbbbbbbbbbbbbbbbbbbbb-0000000000000000000000000000000000000000000000000000000000000000.jsonl",
+                  "bytes": 922
+                },
+                {
+                  "path": "replay-score-source-bbbbbbbbbbbbbbbbbbbbbbbb-dc2285ad6874bf50f4b85d530fbc14b727d747cdfcd87b12abfa47fd7c1b1999.response",
+                  "bytes": 302
+                },
+                {
+                  "path": "replay-score-source-bbbbbbbbbbbbbbbbbbbbbbbb-daf3f3ef20551c4674c2558014606c007779cf7e973fa2aec594b9afbac2032f.response",
+                  "bytes": 935
+                },
+                {
+                  "path": "store-v3/a77f2bc6-dfdc-42a4-bc22-44d98cec360c/diagnostics/1c/fbbb3d73cbf14b2ddf177e35468691b9c304adb1ac1a3b9eb12522214d56dccd/1ccc275b7082f579712e3ac7073eb40988d8ce380f822748e69ce11b41b89dd5.jsonl",
+                  "bytes": 196298
+                },
+                {
+                  "path": "store-v3/a77f2bc6-dfdc-42a4-bc22-44d98cec360c/extensions/cd/3799f1ef5feeece925964ca7742d1509cd490a9d0d68fdae0c44324eb17a5351/cd407bed2b620e9c5d7fcff7740b7e88bdb4f98d20116435a854a0c4c2fceb85.json",
+                  "bytes": 165
+                },
+                {
+                  "path": "store-v3/a77f2bc6-dfdc-42a4-bc22-44d98cec360c/diagnostics/aa/dace011631c2119058951054cbb66705dc0148aaeeab4aacc0599c4b8fa20f5b/aafa177a20bfd811030b6601480bfe2d766af1fcefc96a172340e82131c7f959.jsonl",
+                  "bytes": 199496
+                },
+                {
+                  "path": "store-v3/a77f2bc6-dfdc-42a4-bc22-44d98cec360c/extensions/cd/436dce9caf9720907520813d8c600a87dadf4446aa73e33d7146d0e30a298fad/cd407bed2b620e9c5d7fcff7740b7e88bdb4f98d20116435a854a0c4c2fceb85.json",
+                  "bytes": 165
+                },
+                {
+                  "path": "store-v3/a77f2bc6-dfdc-42a4-bc22-44d98cec360c/summaries/bd/f736590d70d5d14468a5059158a0f6956e3a4e1efce70a45e21df773100c7e9a/bd96e534796a6d410d353d05516b9174ae21963e8a49496496750592369db6a2.json",
+                  "bytes": 399
+                },
+                {
+                  "path": "store-v3/a77f2bc6-dfdc-42a4-bc22-44d98cec360c/extensions/4d/72e47741c5da731d084fd0f23c98a1196e0757dfc9e2f7886352229cc0ef50db/4d41610bf1712ac960b6fb9296bf954a21ab076471030bb040d97792208ef1a7.json",
+                  "bytes": 65538
+                },
+                {
+                  "path": "store-v3/a77f2bc6-dfdc-42a4-bc22-44d98cec360c/summaries/fc/0fdd1b4495adb727d648f02454638b2b7efbb974dffb59b16d5b7f788a90a4a8/fcaf41b95e1abeb88ced853eddb41ebb852e50723e44fc4841d7ec4cee8ac970.json",
+                  "bytes": 1604
+                },
+                {
+                  "path": "store-v3/a77f2bc6-dfdc-42a4-bc22-44d98cec360c/extensions/4d/5579c230fa1573f1918ff6f1935472220776cb0c272e8329f68a1eb9354eed78/4d41610bf1712ac960b6fb9296bf954a21ab076471030bb040d97792208ef1a7.json",
+                  "bytes": 65538
+                }
+              ],
+              "fingerprints": [
+                "0000000000000000000000000000000000000000000000000000000000000000",
+                "0000000000000000000000000000000000000000000000000000000000000001"
+              ],
+              "scoreFingerprints": [
+                "dc2285ad6874bf50f4b85d530fbc14b727d747cdfcd87b12abfa47fd7c1b1999",
+                "daf3f3ef20551c4674c2558014606c007779cf7e973fa2aec594b9afbac2032f"
+              ],
+              "inventoryHash": "dff50f502384cecdfe810be2ee3add4f4122010c71663b4b6fcd6ad10835976c",
+              "unrelatedBytes": 629145600
+            }
+          ],
+          "elapsedMs": 4455.369084000001,
+          "maxRssBytes": 107577344
+        }
+      },
+      "operations": {
+        "args": [
+          "--max-old-space-size=192",
+          "/Users/zoltanka/Documents/Prog/JavaScript/ScreepsArena/pain_and_gain/tests/fixtures/replay-combined-analysis-m2e-worker.js",
+          "operations",
+          "2",
+          "/private/var/folders/dy/9msg37jj549dkw5k__ct1kv00000gn/T/pain-gain-store-v3-fixture-34JnYa",
+          "/private/var/folders/dy/9msg37jj549dkw5k__ct1kv00000gn/T/pain-gain-store-v3-fixture-V1f0ys",
+          "/var/folders/dy/9msg37jj549dkw5k__ct1kv00000gn/T/pain-gain-m2e-gate-1PkWzr/generation.json"
+        ],
+        "code": 0,
+        "signal": null,
+        "elapsedMs": 284.22870899998816,
+        "stderr": "",
+        "result": {
+          "phase": "operations",
+          "schema": 2,
+          "runs": [
+            {
+              "count": 10,
+              "reportMode": "full",
+              "reportHash": "452d47460a2a818004812e4e937d4452f82be209599a618d07107b390c1d6c44",
+              "selectedBytes": 551858,
+              "elapsedMs": 89.85516700000001,
+              "sql": 83,
+              "pragmas": 14,
+              "rows": 126,
+              "opens": 12,
+              "bytes": 948312,
+              "reads": 30,
+              "maxChunk": 65536,
+              "writes": 0,
+              "metadataOpens": 9,
+              "unselected": 0
+            },
+            {
+              "count": 10,
+              "reportMode": "compact",
+              "reportHash": "9e61326039d8a2a69af33ebc24261b88071fe405fe5989038535c28b76977059",
+              "selectedBytes": 551858,
+              "elapsedMs": 63.27924999999999,
+              "sql": 83,
+              "pragmas": 14,
+              "rows": 126,
+              "opens": 12,
+              "bytes": 948312,
+              "reads": 30,
+              "maxChunk": 65536,
+              "writes": 0,
+              "metadataOpens": 9,
+              "unselected": 0
+            },
+            {
+              "count": 1000,
+              "reportMode": "full",
+              "reportHash": "452d47460a2a818004812e4e937d4452f82be209599a618d07107b390c1d6c44",
+              "selectedBytes": 551858,
+              "elapsedMs": 39.025499999999994,
+              "sql": 83,
+              "pragmas": 14,
+              "rows": 126,
+              "opens": 12,
+              "bytes": 948312,
+              "reads": 30,
+              "maxChunk": 65536,
+              "writes": 0,
+              "metadataOpens": 9,
+              "unselected": 0
+            },
+            {
+              "count": 1000,
+              "reportMode": "compact",
+              "reportHash": "9e61326039d8a2a69af33ebc24261b88071fe405fe5989038535c28b76977059",
+              "selectedBytes": 551858,
+              "elapsedMs": 36.474875000000026,
+              "sql": 83,
+              "pragmas": 14,
+              "rows": 126,
+              "opens": 12,
+              "bytes": 948312,
+              "reads": 30,
+              "maxChunk": 65536,
+              "writes": 0,
+              "metadataOpens": 9,
+              "unselected": 0
+            }
+          ],
+          "elapsedMs": 239.985125,
+          "maxRssBytes": 109690880
+        }
+      },
+      "preservation": {
+        "args": [
+          "--max-old-space-size=192",
+          "/Users/zoltanka/Documents/Prog/JavaScript/ScreepsArena/pain_and_gain/tests/fixtures/replay-combined-analysis-m2e-worker.js",
+          "preservation",
+          "2",
+          "/private/var/folders/dy/9msg37jj549dkw5k__ct1kv00000gn/T/pain-gain-store-v3-fixture-34JnYa",
+          "/private/var/folders/dy/9msg37jj549dkw5k__ct1kv00000gn/T/pain-gain-store-v3-fixture-V1f0ys",
+          "/var/folders/dy/9msg37jj549dkw5k__ct1kv00000gn/T/pain-gain-m2e-gate-1PkWzr/generation.json"
+        ],
+        "code": 0,
+        "signal": null,
+        "elapsedMs": 681.741457999975,
+        "stderr": "",
+        "result": {
+          "phase": "preservation",
+          "schema": 2,
+          "hashes": [
+            "01d8bf93555f7dfb1f58b814ace42694d05596bf9497549c560649ad8be826ec",
+            "dff50f502384cecdfe810be2ee3add4f4122010c71663b4b6fcd6ad10835976c"
+          ],
+          "elapsedMs": 635.309458,
+          "maxRssBytes": 80756736
+        }
+      }
+    }
+  ],
+  "regressionEvidence": {
+    "before": {
+      "tests": 16,
+      "pass": 4,
+      "fail": 12,
+      "analyzerEntriesPerNegative": 1
+    },
+    "after": {
+      "tests": 16,
+      "pass": 16,
+      "fail": 0,
+      "analyzerEntriesPerNegative": 0
+    },
+    "firstRootCloseControl": "Allows zero opens on early rejection; all acquired descriptors must close. No rejection assertion or frozen report changed.",
+    "encodingFault": "Test-only CHECK bypass constructs invalid encoding; application connections and writer rules unchanged."
+  },
+  "preservation": {
+    "baselinePath": "/tmp/pain-gain-m2e-correction.QEv5Y3/before.json",
+    "baselineHash": "455eaa62679eac332a5c3eeb6b4fa9de6a519407ab3a22cc53d6a9780fdc3bfc",
+    "changedBaselinePaths": [
+      "docs/architecture/replay-storage-v3-m2e-2026-10-06.md",
+      "tests/unit/replay-combined-analysis-fixture.test.js",
+      "tools/replay-analysis-fixture.js",
+      "tools/replay-store.js"
+    ],
+    "worktrees": [
+      {
+        "root": "/Users/zoltanka/Documents/Prog/JavaScript/ScreepsArena/pain_and_gain",
+        "head": "859f5ab33ac4b9385e70b04c273fad79a5897527",
+        "index": "",
+        "protectedFileCount": 401,
+        "protectedDigest": "fec53908be8f234601fb3b3cdb1823bfe479133695771db5b4feda9db20d8b95",
+        "excludedFromHash": [
+          "README.md",
+          "docs/architecture/README.md",
+          "docs/architecture/project-layout.md",
+          "docs/architecture/replay-storage-v3-m2e-2026-10-06.md",
+          "docs/architecture/replay-storage-v3-m2e-run-2026-10-06.json",
+          "package.json",
+          "tests/fixtures/replay-combined-analysis-m2e-definitions.js",
+          "tests/fixtures/replay-combined-analysis-m2e-faults.js",
+          "tests/fixtures/replay-combined-analysis-m2e-oracle.json",
+          "tests/fixtures/replay-combined-analysis-m2e-recipe.js",
+          "tests/fixtures/replay-combined-analysis-m2e-store.js",
+          "tests/fixtures/replay-combined-analysis-m2e-worker.js",
+          "tests/unit/replay-combined-analysis-fixture.test.js",
+          "tools/replay-analysis-fixture.js",
+          "tools/replay-analysis.js",
+          "tools/replay-combined-analysis-fixture.js",
+          "tools/replay-score-analysis-fixture.js",
+          "tools/replay-store.js",
+          "tests/fixtures/replay-combined-analysis-m2e-validation.js",
+          "docs/architecture/replay-storage-v3-m2e-validation-run-2026-10-06.json"
+        ]
+      },
+      {
+        "root": "/Users/zoltanka/Documents/Prog/JavaScript/ScreepsArena/pain_and_gain_hold_trial_2026-10-02",
+        "head": "fd6fdf20ea62c2b663185913d52b58f83f59612a",
+        "index": "",
+        "status": " M src/config.js\n M src/debug/build-id.js\n",
+        "count": 351,
+        "digest": "a8cd9c397c6c9e14db1c9abb84b8179ed3efbe723d7d79d62f61fa5df093e374"
+      },
+      {
+        "root": "/Users/zoltanka/Documents/Prog/JavaScript/ScreepsArena/pain_and_gain_pair_trial_2026-10-02",
+        "head": "8c0ce181bca388f38cbf569913527dd7b31cc1ad",
+        "index": "",
+        "status": " M README.md\n M docs/architecture/README.md\n M docs/architecture/project-layout.md\n M docs/diagrams/tick-flow.puml\n M package.json\n M src/arena/execute.js\n M src/config.js\n M src/debug/build-id.js\n M src/debug/replay-evidence.js\n M src/loop.js\n M tests/unit/flag-allocation-flow.test.js\n M tests/unit/healer-escort-disabled-flow.test.js\n M tests/unit/scout-hold-flow.test.js\n M tests/unit/tick-flow.test.js\n?? docs/architecture/squad-pair-experiment-2026-10-02.md\n?? docs/architecture/squad-pair-screening-2026-10-02.md\n?? src/squads/pair.js\n?? tests/screening/squad-pair-enabled.test.js\n?? tests/unit/squad-pair-flow.test.js\n?? tests/unit/squad-pair.test.js\n",
+        "count": 358,
+        "digest": "9ba68a06350522719c7f8bbd20a4566b64753ccc377e73cb0eb87075b9e7417e"
+      }
+    ],
+    "unchangedPlan": true,
+    "unchangedHistoricalReceipt": true,
+    "promptDeletionPreserved": true,
+    "productionEvidenceExcluded": true
+  },
+  "executionIncidentLimitation": "Prior CLI incident supports empty capture selections and no lifecycle execution, not a comprehensive filesystem-write audit. No production evidence accessed in this correction task.",
+  "limitations": [
+    "Fixed-selection synthetic corpus independence, not general analyzer-memory boundedness",
+    "No full M2 completion or production readiness",
+    "No broader durability/platform qualification",
+    "Intermittent SQLite delay remains unresolved",
+    "Full logs/generators/preservation inventories retained in local temporary evidence directory; not all are repository artifacts"
+  ]
+}

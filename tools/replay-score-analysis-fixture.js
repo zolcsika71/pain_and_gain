@@ -77,15 +77,21 @@ export async function analyzeFixtureScoreReplay(options) {
     try {
         const localBuildId=localBuild(root);
         return await store.withReadSnapshot({scoreSelection:{replayId,fingerprints}},async view=>{
-            const facts=view.scoreSelection(),scoreRecords=[],sourceEvidence=new Map(),budget={metadata:0,raw:0};
-            const ordered=[...view.records.values()].sort((a,b)=>a.ordinal<b.ordinal?-1:a.ordinal>b.ordinal?1:a.key<b.key?-1:a.key>b.key?1:0);
-            for(const row of ordered) {
-                const owner={kind:'record',key:row.key},record=await originals(view,owner,budget);
-                for(const [name,column]of Object.entries({replayId:'replay_id',fingerprint:'fingerprint',outputPath:'output_path',outputFingerprint:'output_hash'}))if(record[name]!==row[column])fail('INVALID_REFERENCE',`${name} original/projection mismatch`);
-                const ref=view.output({collection:'score',replayId,fingerprint:row.fingerprint});
-                sourceEvidence.set(record,{bytes:await rawBody(view,ref,budget)});scoreRecords.push(record);
-            }
-            return analyzeLoadedScoreReplay({replayId,scoreFingerprints:fingerprints,reportMode,localBuildId,scoreCollectionPresent:facts.collections.scoreRecords.present,scoreRecords,sourceEvidence});
+            const {scoreRecords,sourceEvidence}=await loadFixtureScores(view,{replayId});
+            return analyzeLoadedScoreReplay({replayId,scoreFingerprints:fingerprints,reportMode,localBuildId,scoreCollectionPresent:view.scoreSelection().collections.scoreRecords.present,scoreRecords,sourceEvidence});
         });
     }catch(e){failed=true;throw e;}finally{try{handle.close();}catch(e){if(!failed)throw e;}}
+}
+
+// Shared pinned loader; raw response bytes retain native score semantics.
+export async function loadFixtureScores(view,{replayId,budget={metadata:0,raw:0}}) {
+    const scoreRecords=[],sourceEvidence=new Map();
+    const ordered=[...view.records.values()].filter(r=>r.collection==='score').sort((a,b)=>a.ordinal<b.ordinal?-1:a.ordinal>b.ordinal?1:a.key<b.key?-1:a.key>b.key?1:0);
+    for(const row of ordered) {
+        const owner={kind:'record',key:row.key},record=await originals(view,owner,budget);
+        for(const [name,column]of Object.entries({replayId:'replay_id',fingerprint:'fingerprint',outputPath:'output_path',outputFingerprint:'output_hash'}))if(record[name]!==row[column])fail('INVALID_REFERENCE',`${name} original/projection mismatch`);
+        const ref=view.output({collection:'score',replayId,fingerprint:row.fingerprint});
+        sourceEvidence.set(record,{bytes:await rawBody(view,ref,budget)});scoreRecords.push(record);
+    }
+    return {scoreRecords,sourceEvidence};
 }

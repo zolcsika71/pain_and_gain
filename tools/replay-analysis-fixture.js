@@ -22,7 +22,7 @@ function encodedSize(value, limit, field) {
 }
 
 // This provenance file is not a capture and is not a fallback to main's build.
-function localBuild(root) {
+export function localBuild(root) {
     let current = root;
     for (const name of ['src','debug','build-id.js']) {
         current = path.join(current,name);
@@ -86,6 +86,12 @@ async function properties(view, owner, budget, recordKey) {
                 }
                 if (count !== BigInt(ref.items)) fail('INVALID_ARTIFACT','Diagnostic item count mismatch');
             } else {
+                // M2e admits exact JSON roots, not M2c's same-owner aliases.
+                // Keep the existing single-source loader's admission unchanged.
+                if (budget.combined) {
+                    if (row.value !== null || row.payload_pointer !== row.pointer || ref.pointer !== row.pointer) fail('INVALID_REFERENCE','Original property root binding mismatch');
+                    if (ref.encoding !== 'json-v1' || !['summaries','extensions'].includes(ref.role)) fail('UNSUPPORTED_REPRESENTATION','Combined log originals require JSON root values');
+                }
                 let count = 0;
                 for await (const item of iterateJson(view,ref)) {
                     if (item.kind !== 'value') fail('RESOURCE_LIMIT',`${name} exceeds 1 MiB`);
@@ -96,6 +102,10 @@ async function properties(view, owner, budget, recordKey) {
         } else {
             if (name === 'otherEntries' && owner.kind === 'record') fail('UNSUPPORTED_REPRESENTATION','Diagnostics require the exact owned root');
             value = JSON.parse(row.value);
+        }
+        if (name === 'otherEntries' && owner.kind === 'record' && budget.combined) {
+            budget.metadata += Buffer.byteLength(row.pointer);
+            if (budget.metadata > LIMITS.pageBytes) fail('RESOURCE_LIMIT','Expanded metadata exceeds 8 MiB');
         }
         if (name !== 'otherEntries' || owner.kind !== 'record') {
             budget.metadata += Buffer.byteLength(row.pointer) + encodedSize(value,LIMITS.token,name);
@@ -130,51 +140,56 @@ export async function analyzeFixtureReplay(options) {
         const localBuildId = localBuild(root);
         const recordKeys = selection.map(fingerprint=>({collection:'log',replayId,fingerprint}));
         return await store.withReadSnapshot({recordKeys},async view => {
-            const budget = {metadata:0,diagnostics:0};
-            const replayRow = view.replays.get(replayId);
-            if (!replayRow) fail('UNAVAILABLE','Selected replay association absent');
-            const replay = await properties(view,{kind:'replay',key:replayId},budget);
-            projections(replay,replayRow,{replayId:'key',mapId:'map_id',buildId:'build_id',status:'status'});
-            same(replay.replayId,replayId,'replay identity');
-            if (replay.status !== 'active') fail('INVALID_REFERENCE','Replay association is not active');
-            const mapRow = view.maps.get(replay.mapId);
-            if (!mapRow) fail('INVALID_REFERENCE','Selected map association mismatch');
-            const map = await properties(view,{kind:'map',key:replay.mapId},budget);
-            projections(map,mapRow,{mapId:'key',path:'path',hash:'hash',status:'status'});
-            same(map.id,mapRow.key,'map identity'); same(map.checksum,mapRow.key,'map checksum');
-            same(map.file,mapRow.path,'map file');
-            if (typeof map.file !== 'string' || !/^pain_and_gain_map_\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-\d{3}Z(?:-[a-f0-9]{12,64})?\.json$/.test(map.file)) fail('INVALID_REFERENCE','Unsafe logical map name');
-            if (map.status !== 'validated') fail('INVALID_REFERENCE','Map registration is not validated');
-            const mapEvidence = Object.create(null);
-            mapEvidence[map.file] = {bytes:await bytes(view,view.mapArtifact(map.id),MiB,'map')};
-            const records = [], outputs = []; let outputBytes = 0;
-            // Relational comparison is exact for the core's Number/BigInt
-            // ordinals; Array.sort must receive an ordinary numeric sign.
-            const ordered = [...view.records.values()].sort((a,b)=>
-                a.ordinal < b.ordinal ? -1 : a.ordinal > b.ordinal ? 1 :
-                    a.key < b.key ? -1 : a.key > b.key ? 1 : 0);
-            for (const row of ordered) {
-                const key = {collection:'log',replayId,fingerprint:row.fingerprint};
-                const record = await properties(view,{kind:'record',key:row.key},budget,key);
-                projections(record,row,{collection:'collection',replayId:'replay_id',fingerprint:'fingerprint',mapId:'map_id',buildId:'build_id',status:'status',outputPath:'output_path',outputFingerprint:'output_hash'});
-                same(record.replayId,replayId,'record replay'); same(record.fingerprint,row.fingerprint,'record fingerprint');
-                same(record.mapId,map.id,'record map'); same(record.mapChecksum,map.checksum,'record map checksum'); same(record.mapFile,map.file,'record map file');
-                const ref = view.output(key);
-                if (ref === null) {
-                    same(record.outputPath,null,'output-free path'); same(record.outputFingerprint,null,'output-free hash'); outputs.push(null);
-                } else {
-                    if (typeof record.outputPath !== 'string' || !/^[a-f0-9]{24}(?:-[a-f0-9]{12,64}(?:-\d+)?)?\.jsonl$/.test(record.outputPath)) fail('INVALID_REFERENCE','Unsafe logical output name');
-                    same(record.outputPath,ref.path,'output path'); same(record.outputFingerprint,ref.hash,'output hash');
-                    const content = await bytes(view,ref,16*MiB-outputBytes,'JSONL',true); outputBytes += content.length;
-                    outputs.push({bytes:content});
-                }
-                records.push(record);
-            }
-            const logicalManifest = {version:2,maps:[map],replays:[replay],records};
-            const session = createReplayAnalysisSession({replayId,fingerprints:selection,reportMode,localBuildId,logicalManifest,mapEvidence});
-            records.forEach((record,i)=>session.acceptRecord(record,outputs[i]));
+            const {logicalManifest,mapEvidence,logEvidence}=await loadFixtureLogs(view,{replayId});
+            const session=createReplayAnalysisSession({replayId,fingerprints:selection,reportMode,localBuildId,logicalManifest,mapEvidence});
+            for(const record of logicalManifest.records)session.acceptRecord(record,logEvidence.get(record));
             return session.finish();
         });
     } catch (error) { failed = true; throw error; }
     finally { try { handle.close(); } catch (error) { if (!failed) throw error; } }
+}
+
+// Shared pinned loader; never opens an artifact by pathname.
+export async function loadFixtureLogs(view,{replayId,budget={metadata:0,diagnostics:0}}) {
+    const replayRow = view.replays.get(replayId);
+    if (!replayRow) fail('UNAVAILABLE','Selected replay association absent');
+    const replay = await properties(view,{kind:'replay',key:replayId},budget);
+    projections(replay,replayRow,{replayId:'key',mapId:'map_id',buildId:'build_id',status:'status'});
+    same(replay.replayId,replayId,'replay identity');
+    if (replay.status !== 'active') fail('INVALID_REFERENCE','Replay association is not active');
+    const mapRow = view.maps.get(replay.mapId);
+    if (!mapRow) fail('INVALID_REFERENCE','Selected map association mismatch');
+    const map = await properties(view,{kind:'map',key:replay.mapId},budget);
+    projections(map,mapRow,{mapId:'key',path:'path',hash:'hash',status:'status'});
+    same(map.id,mapRow.key,'map identity'); same(map.checksum,mapRow.key,'map checksum');
+    same(map.file,mapRow.path,'map file');
+    if (typeof map.file !== 'string' || !/^pain_and_gain_map_\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-\d{3}Z(?:-[a-f0-9]{12,64})?\.json$/.test(map.file)) fail('INVALID_REFERENCE','Unsafe logical map name');
+    if (map.status !== 'validated') fail('INVALID_REFERENCE','Map registration is not validated');
+    const mapEvidence = Object.create(null);
+    mapEvidence[map.file] = {bytes:await bytes(view,view.mapArtifact(map.id),MiB,'map')};
+    const records = [], outputs = []; let outputBytes = 0;
+    // Relational comparison is exact for the core's Number/BigInt
+    // ordinals; Array.sort must receive an ordinary numeric sign.
+    const ordered = [...view.records.values()].filter(r=>r.collection==='log').sort((a,b)=>
+        a.ordinal < b.ordinal ? -1 : a.ordinal > b.ordinal ? 1 :
+            a.key < b.key ? -1 : a.key > b.key ? 1 : 0);
+    for (const row of ordered) {
+        const key = {collection:'log',replayId,fingerprint:row.fingerprint};
+        const record = await properties(view,{kind:'record',key:row.key},budget,key);
+        projections(record,row,{collection:'collection',replayId:'replay_id',fingerprint:'fingerprint',mapId:'map_id',buildId:'build_id',status:'status',outputPath:'output_path',outputFingerprint:'output_hash'});
+        same(record.replayId,replayId,'record replay'); same(record.fingerprint,row.fingerprint,'record fingerprint');
+        same(record.mapId,map.id,'record map'); same(record.mapChecksum,map.checksum,'record map checksum'); same(record.mapFile,map.file,'record map file');
+        const ref = view.output(key);
+        if (ref === null) {
+            same(record.outputPath,null,'output-free path'); same(record.outputFingerprint,null,'output-free hash'); outputs.push(null);
+        } else {
+            if (typeof record.outputPath !== 'string' || !/^[a-f0-9]{24}(?:-[a-f0-9]{12,64}(?:-\d+)?)?\.jsonl$/.test(record.outputPath)) fail('INVALID_REFERENCE','Unsafe logical output name');
+            same(record.outputPath,ref.path,'output path'); same(record.outputFingerprint,ref.hash,'output hash');
+            const content = await bytes(view,ref,16*MiB-outputBytes,'JSONL',true); outputBytes += content.length;
+            outputs.push({bytes:content});
+        }
+        records.push(record);
+    }
+    const logicalManifest = {version:2,maps:[map],replays:[replay],records};
+    return {logicalManifest,mapEvidence,logEvidence:new Map(records.map((record,i)=>[record,outputs[i]]))};
 }

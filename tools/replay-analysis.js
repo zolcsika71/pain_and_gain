@@ -1153,6 +1153,19 @@ export function analyzeLoadedScoreReplay({replayId,scoreFingerprints,reportMode=
         {manifest,replayId,scoreFingerprints,reportMode,sourceEvidence});
 }
 
+// One detached combined input. Loading/transport validation completes before entry.
+export function analyzeLoadedCombinedReplay({replayId,fingerprints,scoreFingerprints,
+    reportMode='full',localBuildId=null,logicalManifest,mapEvidence,logEvidence,sourceEvidence}) {
+    const session=analysisSession({replayId,fingerprints,reportMode,localBuildId,logicalManifest,mapEvidence});
+    const requested=new Set(fingerprints);
+    for(const record of logicalManifest.records.filter(r=>r?.replayId===replayId&&requested.has(r.fingerprint))) {
+        if(!logEvidence.has(record))throw new Error('Combined log evidence is incomplete');
+        session.acceptRecord(record,logEvidence.get(record));
+    }
+    return finishScoreReport(session,localBuildId,analyzeLoadedScoreEvidence,
+        {manifest:logicalManifest,replayId,scoreFingerprints,reportMode,sourceEvidence});
+}
+
 export function analyzeReplay({ root = projectRoot, replayId, fingerprints, scoreFingerprints,
     reportMode = 'full' } = {}) {
     if (!replayIdPattern.test(replayId ?? '')) throw new Error('Expected a verified 24-character replay ID');

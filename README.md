@@ -192,6 +192,14 @@ accepted. It never selects logs or reads optional maps, changes lifecycle state,
 or enables v3 CLI dispatch. See the [M2d qualification record](docs/architecture/replay-storage-v3-m2d-2026-10-05.md)
 for exact scope, independent score-only oracles and retained limitations.
 
+`tools/replay-combined-analysis-fixture.js` provides M2e's asynchronous
+`analyzeFixtureCombinedReplay({root, schemaVersion, replayId, fingerprints, scoreFingerprints, reportMode})`.
+Both selections must be explicit and nonempty. One combined snapshot applies
+log-map and score-presence policies separately before shared analysis; it does
+not compose two adapter calls or enable production dispatch. See the
+[M2e qualification record](docs/architecture/replay-storage-v3-m2e-2026-10-06.md)
+for measured status, independent oracles and bounded synthetic limitations.
+
 ### Managed replay-score sources
 
 ADR 0005 Milestone 1 adds optional manifest-version-2 `scoreRecords` and

@@ -72,6 +72,13 @@ sharing the existing score/report algorithms with the synchronous v2 wrapper.
 It does not require maps or add SQLite to the v2 dependency path. See the
 [M2d record](replay-storage-v3-m2d-2026-10-05.md).
 
+`tools/replay-combined-analysis-fixture.js` is the M2e combined-input adapter.
+Its exclusive combined snapshot shares one acquisition and pinned lifetime,
+with collection-specific readiness, map and missing-score policies. Shared
+M2c/M2d loaders feed the storage-neutral `analyzeLoadedCombinedReplay` boundary;
+existing analysis algorithms, CLI dispatch and lifecycle callers are unchanged.
+See the [M2e record](replay-storage-v3-m2e-2026-10-06.md).
+
 `tools/replay-analysis.js` implements the deterministic M4 analyzer outside the
 Arena runtime. Its importable
 `analyzeReplay({ root, replayId, fingerprints?, scoreFingerprints?, reportMode? })`
