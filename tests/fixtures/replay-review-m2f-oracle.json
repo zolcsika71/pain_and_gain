@@ -1,0 +1,3704 @@
+{
+  "base": "b9144735ba28d67ba43fa35ee5cbfb56ac8e4f34",
+  "frozenAt": "2026-10-06T12:36:02.794Z",
+  "generatorHash": "c2e783438d1cdf8244ff6ad2b1e0e94918e3ac4e7afad120698d16f7cb66138c",
+  "exports": {
+    "package.json": {
+      "blob": "307720ce3bae7bbee1c0360a5980ab4f89a4772e",
+      "sha256": "69bab8032b5e512c96277ef8444bfe75e546d15a626c3298dce3b7b7b8568b44"
+    },
+    "tests/fixtures/replay-analysis-m2c-recipe.js": {
+      "blob": "082792f8c60895e68181699e360727ff0a95114b",
+      "sha256": "04ef92f70cd06b89d52ef06abaeb98200956588920ca7372928042965a13163d"
+    },
+    "tests/fixtures/replay-analysis-m2c-store.js": {
+      "blob": "6045f0bbe15f113a986182ec7d16210619c81d6f",
+      "sha256": "5f2a03afc3907225c5171ccd1bfe6880ef52e7adc891540cd98b673b7186975c"
+    },
+    "tests/fixtures/replay-analysis-m2c-worker.js": {
+      "blob": "f55f974c67ba23b056b4ade7d81c1cc00b539d8d",
+      "sha256": "bd730aa5cc45d01b4a18f3bdc26bb35d1fbe7a40192f33ad06770afff359ead4"
+    },
+    "tests/fixtures/replay-combined-analysis-m2e-definitions.js": {
+      "blob": "f7f0ce2a232d93d182ae36570148c31ea77e0a49",
+      "sha256": "618bdf4bbe83685df2a1c6f52813bb796a919dc554a4a60fedf7c6b3b60d7a40"
+    },
+    "tests/fixtures/replay-combined-analysis-m2e-faults.js": {
+      "blob": "e2f030ad7c9f700fe5867528d886769d660f78c4",
+      "sha256": "efee9dcd93a61a56ed5ff3cfaa11cdf7860cc23293b7fe44a2c0aeda132a663d"
+    },
+    "tests/fixtures/replay-combined-analysis-m2e-recipe.js": {
+      "blob": "40ebf8bae09dd13ffd582b1b623234e4e2625542",
+      "sha256": "188f8fbad9ab0b836728e147410b614293887f77f570409ef1ac8f914531afec"
+    },
+    "tests/fixtures/replay-combined-analysis-m2e-store.js": {
+      "blob": "dc7430afa86c35582d065fa6b6dc899b49f4a601",
+      "sha256": "32c531ed57eb5bea2561db61305dc16d16640000cd308c4804f45ba39cd664a8"
+    },
+    "tests/fixtures/replay-combined-analysis-m2e-validation.js": {
+      "blob": "6b5ea2550edac1a6e9f4765dd2f4a046ae523116",
+      "sha256": "02e89040a8516d19cf960d9314f15a40f32c6c8ce721d9bdc9d9e085448e5e5e"
+    },
+    "tests/fixtures/replay-combined-analysis-m2e-worker.js": {
+      "blob": "e61ff9a3b5ce55e079de6a2aa0db2a85a608951a",
+      "sha256": "f05a7daa55bef0cd82a120c8a8eb1cf51bf49d425f1363e29c4a53187c871868"
+    },
+    "tests/fixtures/replay-score-analysis-m2d-process.js": {
+      "blob": "3771abff16ed7532865a5a22f19a8dfdbea66e49",
+      "sha256": "dcfa913ee7286e9f51ab3c11fdeaa9eb20dde45f87f55e615248c4dc6ceeb521"
+    },
+    "tests/fixtures/replay-score-analysis-m2d-recipe.js": {
+      "blob": "7f62bffdc42d99fc025a70359279b27ecda48034",
+      "sha256": "1a0045c8bbe703f9262020a91f986c8834f3650ceeaafd62682f32a4c9b68176"
+    },
+    "tests/fixtures/replay-score-analysis-m2d-store.js": {
+      "blob": "86678b6f54be1446c9d0264e3700ddcc360c04ab",
+      "sha256": "d674c83a7c626513dfb61085b7a0bac8fef3ddd33a8fa3c9920d4b86924f1847"
+    },
+    "tests/fixtures/replay-score-analysis-m2d-worker.js": {
+      "blob": "4aefa7c15215aac85e94a2f4a23cb7c84f9a7acd",
+      "sha256": "1c7994a96da9c500e97cd87a4d8e0801286ff568229d26f594c07ef2e121b7c5"
+    },
+    "tools/build-id.js": {
+      "blob": "dc9d50930156e23284c915949f51076751b29719",
+      "sha256": "d1a1cb14e69ca3fea0bfcf5549ff8f0abcd2beb336ca12f51bc4df8d26a96ba0"
+    },
+    "tools/historical-index.js": {
+      "blob": "e346200566482fb030f9e823e2d04cbbbd57de40",
+      "sha256": "f6a63ba06d6daf85ef88086573850db0bfa40f54281697520b1fe391195c94a3"
+    },
+    "tools/replay-analysis-fixture.js": {
+      "blob": "7a4b33d98f986d62711af8c2ac2ca941fec49c94",
+      "sha256": "2709d9f396ba65d2de9894c6528b9daa6770a5d3c6ae2fc4fbfda98bcb98f380"
+    },
+    "tools/replay-analysis.js": {
+      "blob": "72328ddcd059cc05347853ae964aedd132741eab",
+      "sha256": "bcb15f49a8f3a71413577f74441efcc01c044c9023d3d8cabe84b6412cedbff3"
+    },
+    "tools/replay-catalog.js": {
+      "blob": "964b035cce008b67f849b00563c07113e97c27e6",
+      "sha256": "63725d96d4d8f7f13dec97aa770f369bf452b5ac0f904fe481e852fa0db3204a"
+    },
+    "tools/replay-combined-analysis-fixture.js": {
+      "blob": "e9585ef7959b120edaf23b6108a28146b1242079",
+      "sha256": "fee4449597d034a4101e44ce38e65a1075c3c6c216d87f13ab593982beaec29a"
+    },
+    "tools/replay-legacy-json.js": {
+      "blob": "9f9a962b7b3a0128ce6fd8871b0bd1d948f4b648",
+      "sha256": "25427c4c5fb80bd545a88d3cbe612c77eef9f27a300b26c790d703e925fe663e"
+    },
+    "tools/replay-legacy-reader.js": {
+      "blob": "5efd20181b68a0544ab1439efc8e71a4077185e1",
+      "sha256": "7f6778e9dcc180f90248aa6a1f70c7a722174d0496d10fc6d35b357df01cdb94"
+    },
+    "tools/replay-logs.js": {
+      "blob": "529424496ee0fc0cc92804a3aafc0b447a321064",
+      "sha256": "41d7604f8e4dff3d78c08c0c5fbde5faa68be965b48fd0f922053211c272545c"
+    },
+    "tools/replay-other.js": {
+      "blob": "78fad6f69a27466f5cca5bc71d59080910d5526a",
+      "sha256": "f199c35e286003510f15a0aa7be9b371125873760dfc7f8021622da701a7ce41"
+    },
+    "tools/replay-score-analysis-fixture.js": {
+      "blob": "3acb065c03353a9c15fc705cf268039dd8a5401f",
+      "sha256": "85bb4cc68facf47c64caa5412cc720b3ffcd2ecd66042a8b0cfee4fc9467b0ff"
+    },
+    "tools/replay-score-analysis.js": {
+      "blob": "a96799acc7874030c86a6b2ab053e9fb577a9b18",
+      "sha256": "42afb9e83682dc303d6c6cb258992d6505be9905745f0dfdd74c236a0ea10ff6"
+    },
+    "tools/replay-store-payloads.js": {
+      "blob": "dc194dead586266866c6803756d91a2ff8cc161b",
+      "sha256": "6676b64a07c213a2f996b139fabdc1e68b1905b09a2986c0f6c710ea46d119c0"
+    },
+    "tools/replay-store.js": {
+      "blob": "bf4c637ff397677f8ae48a22155398c6930ec093",
+      "sha256": "03e36aa9e496257c6b25fc3a86d33e22276716030876f1136a5980ff5cb25d59"
+    },
+    "tools/scout-hold-screen.js": {
+      "blob": "d5c7825b4081c3146eb23d0e000b42cebe067c94",
+      "sha256": "9f927b23f33fb966605d0edb2de59f5cfbc1b9b33fc2a3bab60ebb751677b106"
+    }
+  },
+  "scenarios": [
+    {
+      "collection": "log",
+      "name": "absent",
+      "taskId": "codex/m2f-case",
+      "action": "claim",
+      "initial": null,
+      "absent": true,
+      "root": "/tmp/pain-gain-m2f.zt3u1S/oracle-final/v2-0/replay_logs",
+      "steps": [
+        {
+          "clock": "2026-10-06T00:01:00.000Z",
+          "error": null,
+          "changed": true,
+          "checkpoints": {
+            "claimedAt": {
+              "present": true,
+              "value": "2026-10-06T00:01:00.000Z"
+            },
+            "examinedAt": {
+              "present": true,
+              "value": null
+            },
+            "completedAt": {
+              "present": true,
+              "value": null
+            }
+          },
+          "beforeHash": "df23570aa97afe4903c6cffbe8275703dbdf1b3011b7152f3edea60046730bbc",
+          "afterHash": "23f6c073c60c0b1f02069e804edca99809810af8d663e6e059f89572c01887aa"
+        },
+        {
+          "clock": "2026-10-06T00:01:01.000Z",
+          "error": null,
+          "changed": false,
+          "checkpoints": {
+            "claimedAt": {
+              "present": true,
+              "value": "2026-10-06T00:01:00.000Z"
+            },
+            "examinedAt": {
+              "present": true,
+              "value": null
+            },
+            "completedAt": {
+              "present": true,
+              "value": null
+            }
+          },
+          "beforeHash": "23f6c073c60c0b1f02069e804edca99809810af8d663e6e059f89572c01887aa",
+          "afterHash": "23f6c073c60c0b1f02069e804edca99809810af8d663e6e059f89572c01887aa"
+        }
+      ]
+    },
+    {
+      "collection": "log",
+      "name": "absent",
+      "taskId": "constructor",
+      "action": "claim",
+      "initial": null,
+      "absent": true,
+      "root": "/tmp/pain-gain-m2f.zt3u1S/oracle-final/v2-1/replay_logs",
+      "steps": [
+        {
+          "clock": "2026-10-06T00:01:00.000Z",
+          "error": null,
+          "changed": true,
+          "checkpoints": {
+            "claimedAt": {
+              "present": true,
+              "value": "2026-10-06T00:01:00.000Z"
+            },
+            "examinedAt": {
+              "present": true,
+              "value": null
+            },
+            "completedAt": {
+              "present": true,
+              "value": null
+            }
+          },
+          "beforeHash": "df23570aa97afe4903c6cffbe8275703dbdf1b3011b7152f3edea60046730bbc",
+          "afterHash": "a2faf23c00e1c4cdec1eba9a10ffc2c89b33d01fff21724e391b120d1307ff31"
+        },
+        {
+          "clock": "2026-10-06T00:01:01.000Z",
+          "error": null,
+          "changed": false,
+          "checkpoints": {
+            "claimedAt": {
+              "present": true,
+              "value": "2026-10-06T00:01:00.000Z"
+            },
+            "examinedAt": {
+              "present": true,
+              "value": null
+            },
+            "completedAt": {
+              "present": true,
+              "value": null
+            }
+          },
+          "beforeHash": "a2faf23c00e1c4cdec1eba9a10ffc2c89b33d01fff21724e391b120d1307ff31",
+          "afterHash": "a2faf23c00e1c4cdec1eba9a10ffc2c89b33d01fff21724e391b120d1307ff31"
+        }
+      ]
+    },
+    {
+      "collection": "log",
+      "name": "absent",
+      "taskId": "codex/m2f-case",
+      "action": "examined",
+      "initial": null,
+      "absent": true,
+      "root": "/tmp/pain-gain-m2f.zt3u1S/oracle-final/v2-2/replay_logs",
+      "steps": [
+        {
+          "clock": "2026-10-06T00:01:00.000Z",
+          "error": "Task codex/m2f-case has not claimed this log",
+          "changed": false,
+          "checkpoints": null,
+          "beforeHash": "df23570aa97afe4903c6cffbe8275703dbdf1b3011b7152f3edea60046730bbc",
+          "afterHash": "df23570aa97afe4903c6cffbe8275703dbdf1b3011b7152f3edea60046730bbc"
+        },
+        {
+          "clock": "2026-10-06T00:01:01.000Z",
+          "error": "Task codex/m2f-case has not claimed this log",
+          "changed": false,
+          "checkpoints": null,
+          "beforeHash": "df23570aa97afe4903c6cffbe8275703dbdf1b3011b7152f3edea60046730bbc",
+          "afterHash": "df23570aa97afe4903c6cffbe8275703dbdf1b3011b7152f3edea60046730bbc"
+        }
+      ]
+    },
+    {
+      "collection": "log",
+      "name": "absent",
+      "taskId": "constructor",
+      "action": "examined",
+      "initial": null,
+      "absent": true,
+      "root": "/tmp/pain-gain-m2f.zt3u1S/oracle-final/v2-3/replay_logs",
+      "steps": [
+        {
+          "clock": "2026-10-06T00:01:00.000Z",
+          "error": "Task constructor has not claimed this log",
+          "changed": false,
+          "checkpoints": null,
+          "beforeHash": "df23570aa97afe4903c6cffbe8275703dbdf1b3011b7152f3edea60046730bbc",
+          "afterHash": "df23570aa97afe4903c6cffbe8275703dbdf1b3011b7152f3edea60046730bbc"
+        },
+        {
+          "clock": "2026-10-06T00:01:01.000Z",
+          "error": "Task constructor has not claimed this log",
+          "changed": false,
+          "checkpoints": null,
+          "beforeHash": "df23570aa97afe4903c6cffbe8275703dbdf1b3011b7152f3edea60046730bbc",
+          "afterHash": "df23570aa97afe4903c6cffbe8275703dbdf1b3011b7152f3edea60046730bbc"
+        }
+      ]
+    },
+    {
+      "collection": "log",
+      "name": "empty",
+      "taskId": "codex/m2f-case",
+      "action": "claim",
+      "initial": {},
+      "absent": false,
+      "root": "/tmp/pain-gain-m2f.zt3u1S/oracle-final/v2-4/replay_logs",
+      "steps": [
+        {
+          "clock": "2026-10-06T00:01:00.000Z",
+          "error": null,
+          "changed": false,
+          "checkpoints": {
+            "claimedAt": {
+              "present": false
+            },
+            "examinedAt": {
+              "present": false
+            },
+            "completedAt": {
+              "present": false
+            }
+          },
+          "beforeHash": "73def54fa42fd8e0c650ade08ea1d39e34418d24a182632c0e06ea7b33671500",
+          "afterHash": "b4cee55467ef0e8c065dbda40d80a829fbdc71327132511108c66e22499de062"
+        },
+        {
+          "clock": "2026-10-06T00:01:01.000Z",
+          "error": null,
+          "changed": false,
+          "checkpoints": {
+            "claimedAt": {
+              "present": false
+            },
+            "examinedAt": {
+              "present": false
+            },
+            "completedAt": {
+              "present": false
+            }
+          },
+          "beforeHash": "b4cee55467ef0e8c065dbda40d80a829fbdc71327132511108c66e22499de062",
+          "afterHash": "b4cee55467ef0e8c065dbda40d80a829fbdc71327132511108c66e22499de062"
+        }
+      ]
+    },
+    {
+      "collection": "log",
+      "name": "empty",
+      "taskId": "constructor",
+      "action": "claim",
+      "initial": {},
+      "absent": false,
+      "root": "/tmp/pain-gain-m2f.zt3u1S/oracle-final/v2-5/replay_logs",
+      "steps": [
+        {
+          "clock": "2026-10-06T00:01:00.000Z",
+          "error": null,
+          "changed": false,
+          "checkpoints": {
+            "claimedAt": {
+              "present": false
+            },
+            "examinedAt": {
+              "present": false
+            },
+            "completedAt": {
+              "present": false
+            }
+          },
+          "beforeHash": "35d14d3c52a078907a3fd15aa2e0163e24f784a6c4d711a341347381e001ceb5",
+          "afterHash": "4e49152e5c265f301a71d510c152810e5ebdf70e538f781db4275bf5fe8749c0"
+        },
+        {
+          "clock": "2026-10-06T00:01:01.000Z",
+          "error": null,
+          "changed": false,
+          "checkpoints": {
+            "claimedAt": {
+              "present": false
+            },
+            "examinedAt": {
+              "present": false
+            },
+            "completedAt": {
+              "present": false
+            }
+          },
+          "beforeHash": "4e49152e5c265f301a71d510c152810e5ebdf70e538f781db4275bf5fe8749c0",
+          "afterHash": "4e49152e5c265f301a71d510c152810e5ebdf70e538f781db4275bf5fe8749c0"
+        }
+      ]
+    },
+    {
+      "collection": "log",
+      "name": "empty",
+      "taskId": "codex/m2f-case",
+      "action": "examined",
+      "initial": {},
+      "absent": false,
+      "root": "/tmp/pain-gain-m2f.zt3u1S/oracle-final/v2-6/replay_logs",
+      "steps": [
+        {
+          "clock": "2026-10-06T00:01:00.000Z",
+          "error": null,
+          "changed": true,
+          "checkpoints": {
+            "claimedAt": {
+              "present": false
+            },
+            "examinedAt": {
+              "present": true,
+              "value": "2026-10-06T00:01:00.000Z"
+            },
+            "completedAt": {
+              "present": false
+            }
+          },
+          "beforeHash": "73def54fa42fd8e0c650ade08ea1d39e34418d24a182632c0e06ea7b33671500",
+          "afterHash": "3990c908ecb934b40126ee019939c8648cafa0987d0ec90a42eba232177dc400"
+        },
+        {
+          "clock": "2026-10-06T00:01:01.000Z",
+          "error": null,
+          "changed": false,
+          "checkpoints": {
+            "claimedAt": {
+              "present": false
+            },
+            "examinedAt": {
+              "present": true,
+              "value": "2026-10-06T00:01:00.000Z"
+            },
+            "completedAt": {
+              "present": false
+            }
+          },
+          "beforeHash": "3990c908ecb934b40126ee019939c8648cafa0987d0ec90a42eba232177dc400",
+          "afterHash": "3990c908ecb934b40126ee019939c8648cafa0987d0ec90a42eba232177dc400"
+        }
+      ]
+    },
+    {
+      "collection": "log",
+      "name": "empty",
+      "taskId": "constructor",
+      "action": "examined",
+      "initial": {},
+      "absent": false,
+      "root": "/tmp/pain-gain-m2f.zt3u1S/oracle-final/v2-7/replay_logs",
+      "steps": [
+        {
+          "clock": "2026-10-06T00:01:00.000Z",
+          "error": null,
+          "changed": true,
+          "checkpoints": {
+            "claimedAt": {
+              "present": false
+            },
+            "examinedAt": {
+              "present": true,
+              "value": "2026-10-06T00:01:00.000Z"
+            },
+            "completedAt": {
+              "present": false
+            }
+          },
+          "beforeHash": "35d14d3c52a078907a3fd15aa2e0163e24f784a6c4d711a341347381e001ceb5",
+          "afterHash": "4460042928e007868f19ff116c4f365ffb09b288227abe842f74424f177c5356"
+        },
+        {
+          "clock": "2026-10-06T00:01:01.000Z",
+          "error": null,
+          "changed": false,
+          "checkpoints": {
+            "claimedAt": {
+              "present": false
+            },
+            "examinedAt": {
+              "present": true,
+              "value": "2026-10-06T00:01:00.000Z"
+            },
+            "completedAt": {
+              "present": false
+            }
+          },
+          "beforeHash": "4460042928e007868f19ff116c4f365ffb09b288227abe842f74424f177c5356",
+          "afterHash": "4460042928e007868f19ff116c4f365ffb09b288227abe842f74424f177c5356"
+        }
+      ]
+    },
+    {
+      "collection": "log",
+      "name": "nulls",
+      "taskId": "codex/m2f-case",
+      "action": "claim",
+      "initial": {
+        "claimedAt": null,
+        "examinedAt": null,
+        "completedAt": null
+      },
+      "absent": false,
+      "root": "/tmp/pain-gain-m2f.zt3u1S/oracle-final/v2-8/replay_logs",
+      "steps": [
+        {
+          "clock": "2026-10-06T00:01:00.000Z",
+          "error": null,
+          "changed": false,
+          "checkpoints": {
+            "claimedAt": {
+              "present": true,
+              "value": null
+            },
+            "examinedAt": {
+              "present": true,
+              "value": null
+            },
+            "completedAt": {
+              "present": true,
+              "value": null
+            }
+          },
+          "beforeHash": "09c90551e971792af749187695377d11fa8a51bf60d854cb6b1d43fb21e60a29",
+          "afterHash": "2eca69abd15a08f279e50fa1d2215f3189778ea6c68500d9677cbabf219dff30"
+        },
+        {
+          "clock": "2026-10-06T00:01:01.000Z",
+          "error": null,
+          "changed": false,
+          "checkpoints": {
+            "claimedAt": {
+              "present": true,
+              "value": null
+            },
+            "examinedAt": {
+              "present": true,
+              "value": null
+            },
+            "completedAt": {
+              "present": true,
+              "value": null
+            }
+          },
+          "beforeHash": "2eca69abd15a08f279e50fa1d2215f3189778ea6c68500d9677cbabf219dff30",
+          "afterHash": "2eca69abd15a08f279e50fa1d2215f3189778ea6c68500d9677cbabf219dff30"
+        }
+      ]
+    },
+    {
+      "collection": "log",
+      "name": "nulls",
+      "taskId": "constructor",
+      "action": "claim",
+      "initial": {
+        "claimedAt": null,
+        "examinedAt": null,
+        "completedAt": null
+      },
+      "absent": false,
+      "root": "/tmp/pain-gain-m2f.zt3u1S/oracle-final/v2-9/replay_logs",
+      "steps": [
+        {
+          "clock": "2026-10-06T00:01:00.000Z",
+          "error": null,
+          "changed": false,
+          "checkpoints": {
+            "claimedAt": {
+              "present": true,
+              "value": null
+            },
+            "examinedAt": {
+              "present": true,
+              "value": null
+            },
+            "completedAt": {
+              "present": true,
+              "value": null
+            }
+          },
+          "beforeHash": "af5ac06e8d52674d4a3c43878ec957ed5fb08e3d7bb9507579f65876c35c6af6",
+          "afterHash": "37baee6ec4131b94ad283e73ffa0aa865c2c880222f1aa0c62e4e7f472ad6184"
+        },
+        {
+          "clock": "2026-10-06T00:01:01.000Z",
+          "error": null,
+          "changed": false,
+          "checkpoints": {
+            "claimedAt": {
+              "present": true,
+              "value": null
+            },
+            "examinedAt": {
+              "present": true,
+              "value": null
+            },
+            "completedAt": {
+              "present": true,
+              "value": null
+            }
+          },
+          "beforeHash": "37baee6ec4131b94ad283e73ffa0aa865c2c880222f1aa0c62e4e7f472ad6184",
+          "afterHash": "37baee6ec4131b94ad283e73ffa0aa865c2c880222f1aa0c62e4e7f472ad6184"
+        }
+      ]
+    },
+    {
+      "collection": "log",
+      "name": "nulls",
+      "taskId": "codex/m2f-case",
+      "action": "examined",
+      "initial": {
+        "claimedAt": null,
+        "examinedAt": null,
+        "completedAt": null
+      },
+      "absent": false,
+      "root": "/tmp/pain-gain-m2f.zt3u1S/oracle-final/v2-10/replay_logs",
+      "steps": [
+        {
+          "clock": "2026-10-06T00:01:00.000Z",
+          "error": null,
+          "changed": true,
+          "checkpoints": {
+            "claimedAt": {
+              "present": true,
+              "value": null
+            },
+            "examinedAt": {
+              "present": true,
+              "value": "2026-10-06T00:01:00.000Z"
+            },
+            "completedAt": {
+              "present": true,
+              "value": null
+            }
+          },
+          "beforeHash": "09c90551e971792af749187695377d11fa8a51bf60d854cb6b1d43fb21e60a29",
+          "afterHash": "3ebf76e9c809480577917ebd3b66db38fdddb808bc498890ce2e88e3981067ed"
+        },
+        {
+          "clock": "2026-10-06T00:01:01.000Z",
+          "error": null,
+          "changed": false,
+          "checkpoints": {
+            "claimedAt": {
+              "present": true,
+              "value": null
+            },
+            "examinedAt": {
+              "present": true,
+              "value": "2026-10-06T00:01:00.000Z"
+            },
+            "completedAt": {
+              "present": true,
+              "value": null
+            }
+          },
+          "beforeHash": "3ebf76e9c809480577917ebd3b66db38fdddb808bc498890ce2e88e3981067ed",
+          "afterHash": "3ebf76e9c809480577917ebd3b66db38fdddb808bc498890ce2e88e3981067ed"
+        }
+      ]
+    },
+    {
+      "collection": "log",
+      "name": "nulls",
+      "taskId": "constructor",
+      "action": "examined",
+      "initial": {
+        "claimedAt": null,
+        "examinedAt": null,
+        "completedAt": null
+      },
+      "absent": false,
+      "root": "/tmp/pain-gain-m2f.zt3u1S/oracle-final/v2-11/replay_logs",
+      "steps": [
+        {
+          "clock": "2026-10-06T00:01:00.000Z",
+          "error": null,
+          "changed": true,
+          "checkpoints": {
+            "claimedAt": {
+              "present": true,
+              "value": null
+            },
+            "examinedAt": {
+              "present": true,
+              "value": "2026-10-06T00:01:00.000Z"
+            },
+            "completedAt": {
+              "present": true,
+              "value": null
+            }
+          },
+          "beforeHash": "af5ac06e8d52674d4a3c43878ec957ed5fb08e3d7bb9507579f65876c35c6af6",
+          "afterHash": "bef9a26d2b9831b4af8a8587cd15c92b7b527364d1d39a09997ab81f419564ec"
+        },
+        {
+          "clock": "2026-10-06T00:01:01.000Z",
+          "error": null,
+          "changed": false,
+          "checkpoints": {
+            "claimedAt": {
+              "present": true,
+              "value": null
+            },
+            "examinedAt": {
+              "present": true,
+              "value": "2026-10-06T00:01:00.000Z"
+            },
+            "completedAt": {
+              "present": true,
+              "value": null
+            }
+          },
+          "beforeHash": "bef9a26d2b9831b4af8a8587cd15c92b7b527364d1d39a09997ab81f419564ec",
+          "afterHash": "bef9a26d2b9831b4af8a8587cd15c92b7b527364d1d39a09997ab81f419564ec"
+        }
+      ]
+    },
+    {
+      "collection": "log",
+      "name": "strings",
+      "taskId": "codex/m2f-case",
+      "action": "claim",
+      "initial": {
+        "claimedAt": "old",
+        "examinedAt": "",
+        "completedAt": "finished"
+      },
+      "absent": false,
+      "root": "/tmp/pain-gain-m2f.zt3u1S/oracle-final/v2-12/replay_logs",
+      "steps": [
+        {
+          "clock": "2026-10-06T00:01:00.000Z",
+          "error": null,
+          "changed": false,
+          "checkpoints": {
+            "claimedAt": {
+              "present": true,
+              "value": "old"
+            },
+            "examinedAt": {
+              "present": true,
+              "value": ""
+            },
+            "completedAt": {
+              "present": true,
+              "value": "finished"
+            }
+          },
+          "beforeHash": "d60d6c9370ef63c03cae8b272c2abe387218b5b3597df38d86a197013be051fa",
+          "afterHash": "40db4387614f74331838bc5f7c465468f785b458f7aa578fe87832c500a6e364"
+        },
+        {
+          "clock": "2026-10-06T00:01:01.000Z",
+          "error": null,
+          "changed": false,
+          "checkpoints": {
+            "claimedAt": {
+              "present": true,
+              "value": "old"
+            },
+            "examinedAt": {
+              "present": true,
+              "value": ""
+            },
+            "completedAt": {
+              "present": true,
+              "value": "finished"
+            }
+          },
+          "beforeHash": "40db4387614f74331838bc5f7c465468f785b458f7aa578fe87832c500a6e364",
+          "afterHash": "40db4387614f74331838bc5f7c465468f785b458f7aa578fe87832c500a6e364"
+        }
+      ]
+    },
+    {
+      "collection": "log",
+      "name": "strings",
+      "taskId": "constructor",
+      "action": "claim",
+      "initial": {
+        "claimedAt": "old",
+        "examinedAt": "",
+        "completedAt": "finished"
+      },
+      "absent": false,
+      "root": "/tmp/pain-gain-m2f.zt3u1S/oracle-final/v2-13/replay_logs",
+      "steps": [
+        {
+          "clock": "2026-10-06T00:01:00.000Z",
+          "error": null,
+          "changed": false,
+          "checkpoints": {
+            "claimedAt": {
+              "present": true,
+              "value": "old"
+            },
+            "examinedAt": {
+              "present": true,
+              "value": ""
+            },
+            "completedAt": {
+              "present": true,
+              "value": "finished"
+            }
+          },
+          "beforeHash": "a68adcebe80853f277e06ed4fd24789f7cf2e35efda633e0f1a7234cb234deb0",
+          "afterHash": "a1aedc4cee4aae62fdee6f330be7608b074bcf4da4e13fc1743f91e872541454"
+        },
+        {
+          "clock": "2026-10-06T00:01:01.000Z",
+          "error": null,
+          "changed": false,
+          "checkpoints": {
+            "claimedAt": {
+              "present": true,
+              "value": "old"
+            },
+            "examinedAt": {
+              "present": true,
+              "value": ""
+            },
+            "completedAt": {
+              "present": true,
+              "value": "finished"
+            }
+          },
+          "beforeHash": "a1aedc4cee4aae62fdee6f330be7608b074bcf4da4e13fc1743f91e872541454",
+          "afterHash": "a1aedc4cee4aae62fdee6f330be7608b074bcf4da4e13fc1743f91e872541454"
+        }
+      ]
+    },
+    {
+      "collection": "log",
+      "name": "strings",
+      "taskId": "codex/m2f-case",
+      "action": "examined",
+      "initial": {
+        "claimedAt": "old",
+        "examinedAt": "",
+        "completedAt": "finished"
+      },
+      "absent": false,
+      "root": "/tmp/pain-gain-m2f.zt3u1S/oracle-final/v2-14/replay_logs",
+      "steps": [
+        {
+          "clock": "2026-10-06T00:01:00.000Z",
+          "error": null,
+          "changed": false,
+          "checkpoints": {
+            "claimedAt": {
+              "present": true,
+              "value": "old"
+            },
+            "examinedAt": {
+              "present": true,
+              "value": ""
+            },
+            "completedAt": {
+              "present": true,
+              "value": "finished"
+            }
+          },
+          "beforeHash": "d60d6c9370ef63c03cae8b272c2abe387218b5b3597df38d86a197013be051fa",
+          "afterHash": "40db4387614f74331838bc5f7c465468f785b458f7aa578fe87832c500a6e364"
+        },
+        {
+          "clock": "2026-10-06T00:01:01.000Z",
+          "error": null,
+          "changed": false,
+          "checkpoints": {
+            "claimedAt": {
+              "present": true,
+              "value": "old"
+            },
+            "examinedAt": {
+              "present": true,
+              "value": ""
+            },
+            "completedAt": {
+              "present": true,
+              "value": "finished"
+            }
+          },
+          "beforeHash": "40db4387614f74331838bc5f7c465468f785b458f7aa578fe87832c500a6e364",
+          "afterHash": "40db4387614f74331838bc5f7c465468f785b458f7aa578fe87832c500a6e364"
+        }
+      ]
+    },
+    {
+      "collection": "log",
+      "name": "strings",
+      "taskId": "constructor",
+      "action": "examined",
+      "initial": {
+        "claimedAt": "old",
+        "examinedAt": "",
+        "completedAt": "finished"
+      },
+      "absent": false,
+      "root": "/tmp/pain-gain-m2f.zt3u1S/oracle-final/v2-15/replay_logs",
+      "steps": [
+        {
+          "clock": "2026-10-06T00:01:00.000Z",
+          "error": null,
+          "changed": false,
+          "checkpoints": {
+            "claimedAt": {
+              "present": true,
+              "value": "old"
+            },
+            "examinedAt": {
+              "present": true,
+              "value": ""
+            },
+            "completedAt": {
+              "present": true,
+              "value": "finished"
+            }
+          },
+          "beforeHash": "a68adcebe80853f277e06ed4fd24789f7cf2e35efda633e0f1a7234cb234deb0",
+          "afterHash": "a1aedc4cee4aae62fdee6f330be7608b074bcf4da4e13fc1743f91e872541454"
+        },
+        {
+          "clock": "2026-10-06T00:01:01.000Z",
+          "error": null,
+          "changed": false,
+          "checkpoints": {
+            "claimedAt": {
+              "present": true,
+              "value": "old"
+            },
+            "examinedAt": {
+              "present": true,
+              "value": ""
+            },
+            "completedAt": {
+              "present": true,
+              "value": "finished"
+            }
+          },
+          "beforeHash": "a1aedc4cee4aae62fdee6f330be7608b074bcf4da4e13fc1743f91e872541454",
+          "afterHash": "a1aedc4cee4aae62fdee6f330be7608b074bcf4da4e13fc1743f91e872541454"
+        }
+      ]
+    },
+    {
+      "collection": "log",
+      "name": "missing-examined",
+      "taskId": "codex/m2f-case",
+      "action": "claim",
+      "initial": {
+        "claimedAt": "",
+        "completedAt": null,
+        "note": {
+          "zero": 0,
+          "flag": false
+        }
+      },
+      "absent": false,
+      "root": "/tmp/pain-gain-m2f.zt3u1S/oracle-final/v2-16/replay_logs",
+      "steps": [
+        {
+          "clock": "2026-10-06T00:01:00.000Z",
+          "error": null,
+          "changed": false,
+          "checkpoints": {
+            "claimedAt": {
+              "present": true,
+              "value": ""
+            },
+            "examinedAt": {
+              "present": false
+            },
+            "completedAt": {
+              "present": true,
+              "value": null
+            }
+          },
+          "beforeHash": "b9ff2e32f2fabbe64ec237ac096453ca4fe19d7a54039beb703a0cdde942e974",
+          "afterHash": "22db53e07c94549d536f630b439f0ac768b9f3e748d7634cb4c9807ebdf676b8"
+        },
+        {
+          "clock": "2026-10-06T00:01:01.000Z",
+          "error": null,
+          "changed": false,
+          "checkpoints": {
+            "claimedAt": {
+              "present": true,
+              "value": ""
+            },
+            "examinedAt": {
+              "present": false
+            },
+            "completedAt": {
+              "present": true,
+              "value": null
+            }
+          },
+          "beforeHash": "22db53e07c94549d536f630b439f0ac768b9f3e748d7634cb4c9807ebdf676b8",
+          "afterHash": "22db53e07c94549d536f630b439f0ac768b9f3e748d7634cb4c9807ebdf676b8"
+        }
+      ]
+    },
+    {
+      "collection": "log",
+      "name": "missing-examined",
+      "taskId": "constructor",
+      "action": "claim",
+      "initial": {
+        "claimedAt": "",
+        "completedAt": null,
+        "note": {
+          "zero": 0,
+          "flag": false
+        }
+      },
+      "absent": false,
+      "root": "/tmp/pain-gain-m2f.zt3u1S/oracle-final/v2-17/replay_logs",
+      "steps": [
+        {
+          "clock": "2026-10-06T00:01:00.000Z",
+          "error": null,
+          "changed": false,
+          "checkpoints": {
+            "claimedAt": {
+              "present": true,
+              "value": ""
+            },
+            "examinedAt": {
+              "present": false
+            },
+            "completedAt": {
+              "present": true,
+              "value": null
+            }
+          },
+          "beforeHash": "666bf619d2b94ae3a5c0824cd77033eef0779219da9f43b3d9e55e1bde362ab0",
+          "afterHash": "49a51cac56b85b1a872de807369e69d5b94df197380e66e4a750562f71c5fe7c"
+        },
+        {
+          "clock": "2026-10-06T00:01:01.000Z",
+          "error": null,
+          "changed": false,
+          "checkpoints": {
+            "claimedAt": {
+              "present": true,
+              "value": ""
+            },
+            "examinedAt": {
+              "present": false
+            },
+            "completedAt": {
+              "present": true,
+              "value": null
+            }
+          },
+          "beforeHash": "49a51cac56b85b1a872de807369e69d5b94df197380e66e4a750562f71c5fe7c",
+          "afterHash": "49a51cac56b85b1a872de807369e69d5b94df197380e66e4a750562f71c5fe7c"
+        }
+      ]
+    },
+    {
+      "collection": "log",
+      "name": "missing-examined",
+      "taskId": "codex/m2f-case",
+      "action": "examined",
+      "initial": {
+        "claimedAt": "",
+        "completedAt": null,
+        "note": {
+          "zero": 0,
+          "flag": false
+        }
+      },
+      "absent": false,
+      "root": "/tmp/pain-gain-m2f.zt3u1S/oracle-final/v2-18/replay_logs",
+      "steps": [
+        {
+          "clock": "2026-10-06T00:01:00.000Z",
+          "error": null,
+          "changed": true,
+          "checkpoints": {
+            "claimedAt": {
+              "present": true,
+              "value": ""
+            },
+            "examinedAt": {
+              "present": true,
+              "value": "2026-10-06T00:01:00.000Z"
+            },
+            "completedAt": {
+              "present": true,
+              "value": null
+            }
+          },
+          "beforeHash": "b9ff2e32f2fabbe64ec237ac096453ca4fe19d7a54039beb703a0cdde942e974",
+          "afterHash": "1d941bff17bcd5ed3cacab4b966d584929a3c97dedfde354d113510df96fa948"
+        },
+        {
+          "clock": "2026-10-06T00:01:01.000Z",
+          "error": null,
+          "changed": false,
+          "checkpoints": {
+            "claimedAt": {
+              "present": true,
+              "value": ""
+            },
+            "examinedAt": {
+              "present": true,
+              "value": "2026-10-06T00:01:00.000Z"
+            },
+            "completedAt": {
+              "present": true,
+              "value": null
+            }
+          },
+          "beforeHash": "1d941bff17bcd5ed3cacab4b966d584929a3c97dedfde354d113510df96fa948",
+          "afterHash": "1d941bff17bcd5ed3cacab4b966d584929a3c97dedfde354d113510df96fa948"
+        }
+      ]
+    },
+    {
+      "collection": "log",
+      "name": "missing-examined",
+      "taskId": "constructor",
+      "action": "examined",
+      "initial": {
+        "claimedAt": "",
+        "completedAt": null,
+        "note": {
+          "zero": 0,
+          "flag": false
+        }
+      },
+      "absent": false,
+      "root": "/tmp/pain-gain-m2f.zt3u1S/oracle-final/v2-19/replay_logs",
+      "steps": [
+        {
+          "clock": "2026-10-06T00:01:00.000Z",
+          "error": null,
+          "changed": true,
+          "checkpoints": {
+            "claimedAt": {
+              "present": true,
+              "value": ""
+            },
+            "examinedAt": {
+              "present": true,
+              "value": "2026-10-06T00:01:00.000Z"
+            },
+            "completedAt": {
+              "present": true,
+              "value": null
+            }
+          },
+          "beforeHash": "666bf619d2b94ae3a5c0824cd77033eef0779219da9f43b3d9e55e1bde362ab0",
+          "afterHash": "f07b1bbf54971f4d4d3499c611f0a6ad99af594b6fafa2a26708e709f436eff7"
+        },
+        {
+          "clock": "2026-10-06T00:01:01.000Z",
+          "error": null,
+          "changed": false,
+          "checkpoints": {
+            "claimedAt": {
+              "present": true,
+              "value": ""
+            },
+            "examinedAt": {
+              "present": true,
+              "value": "2026-10-06T00:01:00.000Z"
+            },
+            "completedAt": {
+              "present": true,
+              "value": null
+            }
+          },
+          "beforeHash": "f07b1bbf54971f4d4d3499c611f0a6ad99af594b6fafa2a26708e709f436eff7",
+          "afterHash": "f07b1bbf54971f4d4d3499c611f0a6ad99af594b6fafa2a26708e709f436eff7"
+        }
+      ]
+    },
+    {
+      "collection": "log",
+      "name": "unusual",
+      "taskId": "codex/m2f-case",
+      "action": "claim",
+      "initial": {
+        "claimedAt": "非ISO",
+        "examinedAt": "later?",
+        "completedAt": ""
+      },
+      "absent": false,
+      "root": "/tmp/pain-gain-m2f.zt3u1S/oracle-final/v2-20/replay_logs",
+      "steps": [
+        {
+          "clock": "2026-10-06T00:01:00.000Z",
+          "error": null,
+          "changed": false,
+          "checkpoints": {
+            "claimedAt": {
+              "present": true,
+              "value": "非ISO"
+            },
+            "examinedAt": {
+              "present": true,
+              "value": "later?"
+            },
+            "completedAt": {
+              "present": true,
+              "value": ""
+            }
+          },
+          "beforeHash": "c6641aee911f4e2e87d7a62a38770d0dd22461f109ece2f7b39c8ce752553ecd",
+          "afterHash": "e41c021202badd9587280b23cee269c64017549631befbc96aa3fc57e0fa8dd4"
+        },
+        {
+          "clock": "2026-10-06T00:01:01.000Z",
+          "error": null,
+          "changed": false,
+          "checkpoints": {
+            "claimedAt": {
+              "present": true,
+              "value": "非ISO"
+            },
+            "examinedAt": {
+              "present": true,
+              "value": "later?"
+            },
+            "completedAt": {
+              "present": true,
+              "value": ""
+            }
+          },
+          "beforeHash": "e41c021202badd9587280b23cee269c64017549631befbc96aa3fc57e0fa8dd4",
+          "afterHash": "e41c021202badd9587280b23cee269c64017549631befbc96aa3fc57e0fa8dd4"
+        }
+      ]
+    },
+    {
+      "collection": "log",
+      "name": "unusual",
+      "taskId": "constructor",
+      "action": "claim",
+      "initial": {
+        "claimedAt": "非ISO",
+        "examinedAt": "later?",
+        "completedAt": ""
+      },
+      "absent": false,
+      "root": "/tmp/pain-gain-m2f.zt3u1S/oracle-final/v2-21/replay_logs",
+      "steps": [
+        {
+          "clock": "2026-10-06T00:01:00.000Z",
+          "error": null,
+          "changed": false,
+          "checkpoints": {
+            "claimedAt": {
+              "present": true,
+              "value": "非ISO"
+            },
+            "examinedAt": {
+              "present": true,
+              "value": "later?"
+            },
+            "completedAt": {
+              "present": true,
+              "value": ""
+            }
+          },
+          "beforeHash": "2d1434f3bb901c898ea765e4ff0432bffec6c2cc43a14758c8c570bd5f449a22",
+          "afterHash": "32ced1c54c4af2fbb1d68ba597362d5d6c52c4ac70be21e4905110ea99e10c49"
+        },
+        {
+          "clock": "2026-10-06T00:01:01.000Z",
+          "error": null,
+          "changed": false,
+          "checkpoints": {
+            "claimedAt": {
+              "present": true,
+              "value": "非ISO"
+            },
+            "examinedAt": {
+              "present": true,
+              "value": "later?"
+            },
+            "completedAt": {
+              "present": true,
+              "value": ""
+            }
+          },
+          "beforeHash": "32ced1c54c4af2fbb1d68ba597362d5d6c52c4ac70be21e4905110ea99e10c49",
+          "afterHash": "32ced1c54c4af2fbb1d68ba597362d5d6c52c4ac70be21e4905110ea99e10c49"
+        }
+      ]
+    },
+    {
+      "collection": "log",
+      "name": "unusual",
+      "taskId": "codex/m2f-case",
+      "action": "examined",
+      "initial": {
+        "claimedAt": "非ISO",
+        "examinedAt": "later?",
+        "completedAt": ""
+      },
+      "absent": false,
+      "root": "/tmp/pain-gain-m2f.zt3u1S/oracle-final/v2-22/replay_logs",
+      "steps": [
+        {
+          "clock": "2026-10-06T00:01:00.000Z",
+          "error": null,
+          "changed": false,
+          "checkpoints": {
+            "claimedAt": {
+              "present": true,
+              "value": "非ISO"
+            },
+            "examinedAt": {
+              "present": true,
+              "value": "later?"
+            },
+            "completedAt": {
+              "present": true,
+              "value": ""
+            }
+          },
+          "beforeHash": "c6641aee911f4e2e87d7a62a38770d0dd22461f109ece2f7b39c8ce752553ecd",
+          "afterHash": "e41c021202badd9587280b23cee269c64017549631befbc96aa3fc57e0fa8dd4"
+        },
+        {
+          "clock": "2026-10-06T00:01:01.000Z",
+          "error": null,
+          "changed": false,
+          "checkpoints": {
+            "claimedAt": {
+              "present": true,
+              "value": "非ISO"
+            },
+            "examinedAt": {
+              "present": true,
+              "value": "later?"
+            },
+            "completedAt": {
+              "present": true,
+              "value": ""
+            }
+          },
+          "beforeHash": "e41c021202badd9587280b23cee269c64017549631befbc96aa3fc57e0fa8dd4",
+          "afterHash": "e41c021202badd9587280b23cee269c64017549631befbc96aa3fc57e0fa8dd4"
+        }
+      ]
+    },
+    {
+      "collection": "log",
+      "name": "unusual",
+      "taskId": "constructor",
+      "action": "examined",
+      "initial": {
+        "claimedAt": "非ISO",
+        "examinedAt": "later?",
+        "completedAt": ""
+      },
+      "absent": false,
+      "root": "/tmp/pain-gain-m2f.zt3u1S/oracle-final/v2-23/replay_logs",
+      "steps": [
+        {
+          "clock": "2026-10-06T00:01:00.000Z",
+          "error": null,
+          "changed": false,
+          "checkpoints": {
+            "claimedAt": {
+              "present": true,
+              "value": "非ISO"
+            },
+            "examinedAt": {
+              "present": true,
+              "value": "later?"
+            },
+            "completedAt": {
+              "present": true,
+              "value": ""
+            }
+          },
+          "beforeHash": "2d1434f3bb901c898ea765e4ff0432bffec6c2cc43a14758c8c570bd5f449a22",
+          "afterHash": "32ced1c54c4af2fbb1d68ba597362d5d6c52c4ac70be21e4905110ea99e10c49"
+        },
+        {
+          "clock": "2026-10-06T00:01:01.000Z",
+          "error": null,
+          "changed": false,
+          "checkpoints": {
+            "claimedAt": {
+              "present": true,
+              "value": "非ISO"
+            },
+            "examinedAt": {
+              "present": true,
+              "value": "later?"
+            },
+            "completedAt": {
+              "present": true,
+              "value": ""
+            }
+          },
+          "beforeHash": "32ced1c54c4af2fbb1d68ba597362d5d6c52c4ac70be21e4905110ea99e10c49",
+          "afterHash": "32ced1c54c4af2fbb1d68ba597362d5d6c52c4ac70be21e4905110ea99e10c49"
+        }
+      ]
+    },
+    {
+      "collection": "score",
+      "name": "absent",
+      "taskId": "codex/m2f-case",
+      "action": "claim",
+      "initial": null,
+      "absent": true,
+      "root": "/tmp/pain-gain-m2f.zt3u1S/oracle-final/v2-24/replay_logs",
+      "steps": [
+        {
+          "clock": "2026-10-06T00:01:00.000Z",
+          "error": null,
+          "changed": true,
+          "checkpoints": {
+            "claimedAt": {
+              "present": true,
+              "value": "2026-10-06T00:01:00.000Z"
+            },
+            "examinedAt": {
+              "present": true,
+              "value": null
+            },
+            "completedAt": {
+              "present": true,
+              "value": null
+            }
+          },
+          "beforeHash": "238a8f8b9db2a89bddabc67d577b81380d5139d52552396c6e5c21b210ffe6ba",
+          "afterHash": "48bde35d858f27b897f82c8fd43155b58736a5d92f7153e08c83d2592b3ef4cb"
+        },
+        {
+          "clock": "2026-10-06T00:01:01.000Z",
+          "error": null,
+          "changed": false,
+          "checkpoints": {
+            "claimedAt": {
+              "present": true,
+              "value": "2026-10-06T00:01:00.000Z"
+            },
+            "examinedAt": {
+              "present": true,
+              "value": null
+            },
+            "completedAt": {
+              "present": true,
+              "value": null
+            }
+          },
+          "beforeHash": "48bde35d858f27b897f82c8fd43155b58736a5d92f7153e08c83d2592b3ef4cb",
+          "afterHash": "48bde35d858f27b897f82c8fd43155b58736a5d92f7153e08c83d2592b3ef4cb"
+        }
+      ]
+    },
+    {
+      "collection": "score",
+      "name": "absent",
+      "taskId": "constructor",
+      "action": "claim",
+      "initial": null,
+      "absent": true,
+      "root": "/tmp/pain-gain-m2f.zt3u1S/oracle-final/v2-25/replay_logs",
+      "steps": [
+        {
+          "clock": "2026-10-06T00:01:00.000Z",
+          "error": null,
+          "changed": true,
+          "checkpoints": {
+            "claimedAt": {
+              "present": true,
+              "value": "2026-10-06T00:01:00.000Z"
+            },
+            "examinedAt": {
+              "present": true,
+              "value": null
+            },
+            "completedAt": {
+              "present": true,
+              "value": null
+            }
+          },
+          "beforeHash": "238a8f8b9db2a89bddabc67d577b81380d5139d52552396c6e5c21b210ffe6ba",
+          "afterHash": "3a7bac78b5a4d64f5b7dc93a365d3daa9437f0c536fcc50e915554448e25f672"
+        },
+        {
+          "clock": "2026-10-06T00:01:01.000Z",
+          "error": null,
+          "changed": false,
+          "checkpoints": {
+            "claimedAt": {
+              "present": true,
+              "value": "2026-10-06T00:01:00.000Z"
+            },
+            "examinedAt": {
+              "present": true,
+              "value": null
+            },
+            "completedAt": {
+              "present": true,
+              "value": null
+            }
+          },
+          "beforeHash": "3a7bac78b5a4d64f5b7dc93a365d3daa9437f0c536fcc50e915554448e25f672",
+          "afterHash": "3a7bac78b5a4d64f5b7dc93a365d3daa9437f0c536fcc50e915554448e25f672"
+        }
+      ]
+    },
+    {
+      "collection": "score",
+      "name": "absent",
+      "taskId": "codex/m2f-case",
+      "action": "examined",
+      "initial": null,
+      "absent": true,
+      "root": "/tmp/pain-gain-m2f.zt3u1S/oracle-final/v2-26/replay_logs",
+      "steps": [
+        {
+          "clock": "2026-10-06T00:01:00.000Z",
+          "error": "Task codex/m2f-case has not claimed this replay-score source",
+          "changed": false,
+          "checkpoints": null,
+          "beforeHash": "238a8f8b9db2a89bddabc67d577b81380d5139d52552396c6e5c21b210ffe6ba",
+          "afterHash": "238a8f8b9db2a89bddabc67d577b81380d5139d52552396c6e5c21b210ffe6ba"
+        },
+        {
+          "clock": "2026-10-06T00:01:01.000Z",
+          "error": "Task codex/m2f-case has not claimed this replay-score source",
+          "changed": false,
+          "checkpoints": null,
+          "beforeHash": "238a8f8b9db2a89bddabc67d577b81380d5139d52552396c6e5c21b210ffe6ba",
+          "afterHash": "238a8f8b9db2a89bddabc67d577b81380d5139d52552396c6e5c21b210ffe6ba"
+        }
+      ]
+    },
+    {
+      "collection": "score",
+      "name": "absent",
+      "taskId": "constructor",
+      "action": "examined",
+      "initial": null,
+      "absent": true,
+      "root": "/tmp/pain-gain-m2f.zt3u1S/oracle-final/v2-27/replay_logs",
+      "steps": [
+        {
+          "clock": "2026-10-06T00:01:00.000Z",
+          "error": "Task constructor has not claimed this replay-score source",
+          "changed": false,
+          "checkpoints": null,
+          "beforeHash": "238a8f8b9db2a89bddabc67d577b81380d5139d52552396c6e5c21b210ffe6ba",
+          "afterHash": "238a8f8b9db2a89bddabc67d577b81380d5139d52552396c6e5c21b210ffe6ba"
+        },
+        {
+          "clock": "2026-10-06T00:01:01.000Z",
+          "error": "Task constructor has not claimed this replay-score source",
+          "changed": false,
+          "checkpoints": null,
+          "beforeHash": "238a8f8b9db2a89bddabc67d577b81380d5139d52552396c6e5c21b210ffe6ba",
+          "afterHash": "238a8f8b9db2a89bddabc67d577b81380d5139d52552396c6e5c21b210ffe6ba"
+        }
+      ]
+    },
+    {
+      "collection": "score",
+      "name": "empty",
+      "taskId": "codex/m2f-case",
+      "action": "claim",
+      "initial": {},
+      "absent": false,
+      "root": "/tmp/pain-gain-m2f.zt3u1S/oracle-final/v2-28/replay_logs",
+      "steps": [
+        {
+          "clock": "2026-10-06T00:01:00.000Z",
+          "error": null,
+          "changed": false,
+          "checkpoints": {
+            "claimedAt": {
+              "present": false
+            },
+            "examinedAt": {
+              "present": false
+            },
+            "completedAt": {
+              "present": false
+            }
+          },
+          "beforeHash": "638f5ac4591c3c8cdc82f4534cc245865609ea8c7c275d8fa84a580c715d7566",
+          "afterHash": "e0fceb6b4f73b833258d598ae99a7121c25e15e58eff2c91dcf08979ca58b8b8"
+        },
+        {
+          "clock": "2026-10-06T00:01:01.000Z",
+          "error": null,
+          "changed": false,
+          "checkpoints": {
+            "claimedAt": {
+              "present": false
+            },
+            "examinedAt": {
+              "present": false
+            },
+            "completedAt": {
+              "present": false
+            }
+          },
+          "beforeHash": "e0fceb6b4f73b833258d598ae99a7121c25e15e58eff2c91dcf08979ca58b8b8",
+          "afterHash": "e0fceb6b4f73b833258d598ae99a7121c25e15e58eff2c91dcf08979ca58b8b8"
+        }
+      ]
+    },
+    {
+      "collection": "score",
+      "name": "empty",
+      "taskId": "constructor",
+      "action": "claim",
+      "initial": {},
+      "absent": false,
+      "root": "/tmp/pain-gain-m2f.zt3u1S/oracle-final/v2-29/replay_logs",
+      "steps": [
+        {
+          "clock": "2026-10-06T00:01:00.000Z",
+          "error": null,
+          "changed": false,
+          "checkpoints": {
+            "claimedAt": {
+              "present": false
+            },
+            "examinedAt": {
+              "present": false
+            },
+            "completedAt": {
+              "present": false
+            }
+          },
+          "beforeHash": "70fe3f542623d3fb79a3d3e64f29a2f09aef6f8e7d4dfad6a152428c0d803a7e",
+          "afterHash": "9c6970e43a63172ce9eccb213c701c93684fdc7ce14f1d6fc98e2a362430d11a"
+        },
+        {
+          "clock": "2026-10-06T00:01:01.000Z",
+          "error": null,
+          "changed": false,
+          "checkpoints": {
+            "claimedAt": {
+              "present": false
+            },
+            "examinedAt": {
+              "present": false
+            },
+            "completedAt": {
+              "present": false
+            }
+          },
+          "beforeHash": "9c6970e43a63172ce9eccb213c701c93684fdc7ce14f1d6fc98e2a362430d11a",
+          "afterHash": "9c6970e43a63172ce9eccb213c701c93684fdc7ce14f1d6fc98e2a362430d11a"
+        }
+      ]
+    },
+    {
+      "collection": "score",
+      "name": "empty",
+      "taskId": "codex/m2f-case",
+      "action": "examined",
+      "initial": {},
+      "absent": false,
+      "root": "/tmp/pain-gain-m2f.zt3u1S/oracle-final/v2-30/replay_logs",
+      "steps": [
+        {
+          "clock": "2026-10-06T00:01:00.000Z",
+          "error": null,
+          "changed": true,
+          "checkpoints": {
+            "claimedAt": {
+              "present": false
+            },
+            "examinedAt": {
+              "present": true,
+              "value": "2026-10-06T00:01:00.000Z"
+            },
+            "completedAt": {
+              "present": false
+            }
+          },
+          "beforeHash": "638f5ac4591c3c8cdc82f4534cc245865609ea8c7c275d8fa84a580c715d7566",
+          "afterHash": "ab1efc4f638c645e213ce0c522c9ac6c0af6e3d11a63d5e96496ee44e1acb4fb"
+        },
+        {
+          "clock": "2026-10-06T00:01:01.000Z",
+          "error": null,
+          "changed": false,
+          "checkpoints": {
+            "claimedAt": {
+              "present": false
+            },
+            "examinedAt": {
+              "present": true,
+              "value": "2026-10-06T00:01:00.000Z"
+            },
+            "completedAt": {
+              "present": false
+            }
+          },
+          "beforeHash": "ab1efc4f638c645e213ce0c522c9ac6c0af6e3d11a63d5e96496ee44e1acb4fb",
+          "afterHash": "ab1efc4f638c645e213ce0c522c9ac6c0af6e3d11a63d5e96496ee44e1acb4fb"
+        }
+      ]
+    },
+    {
+      "collection": "score",
+      "name": "empty",
+      "taskId": "constructor",
+      "action": "examined",
+      "initial": {},
+      "absent": false,
+      "root": "/tmp/pain-gain-m2f.zt3u1S/oracle-final/v2-31/replay_logs",
+      "steps": [
+        {
+          "clock": "2026-10-06T00:01:00.000Z",
+          "error": null,
+          "changed": true,
+          "checkpoints": {
+            "claimedAt": {
+              "present": false
+            },
+            "examinedAt": {
+              "present": true,
+              "value": "2026-10-06T00:01:00.000Z"
+            },
+            "completedAt": {
+              "present": false
+            }
+          },
+          "beforeHash": "70fe3f542623d3fb79a3d3e64f29a2f09aef6f8e7d4dfad6a152428c0d803a7e",
+          "afterHash": "81341eb8b9bea5015583c7adf41648fee0b082ccd8be3bbc385a3bc01c47672e"
+        },
+        {
+          "clock": "2026-10-06T00:01:01.000Z",
+          "error": null,
+          "changed": false,
+          "checkpoints": {
+            "claimedAt": {
+              "present": false
+            },
+            "examinedAt": {
+              "present": true,
+              "value": "2026-10-06T00:01:00.000Z"
+            },
+            "completedAt": {
+              "present": false
+            }
+          },
+          "beforeHash": "81341eb8b9bea5015583c7adf41648fee0b082ccd8be3bbc385a3bc01c47672e",
+          "afterHash": "81341eb8b9bea5015583c7adf41648fee0b082ccd8be3bbc385a3bc01c47672e"
+        }
+      ]
+    },
+    {
+      "collection": "score",
+      "name": "nulls",
+      "taskId": "codex/m2f-case",
+      "action": "claim",
+      "initial": {
+        "claimedAt": null,
+        "examinedAt": null,
+        "completedAt": null
+      },
+      "absent": false,
+      "root": "/tmp/pain-gain-m2f.zt3u1S/oracle-final/v2-32/replay_logs",
+      "steps": [
+        {
+          "clock": "2026-10-06T00:01:00.000Z",
+          "error": null,
+          "changed": false,
+          "checkpoints": {
+            "claimedAt": {
+              "present": true,
+              "value": null
+            },
+            "examinedAt": {
+              "present": true,
+              "value": null
+            },
+            "completedAt": {
+              "present": true,
+              "value": null
+            }
+          },
+          "beforeHash": "6ef1431535721a9a6c7853921f4f3cfdf1d6d3704472ee97d6532dd17e83ea87",
+          "afterHash": "0bceaa4dbcb4f2e155b7ce7e7ce0e952a6bfadc7223f24c0bc1f4e4cef36d11c"
+        },
+        {
+          "clock": "2026-10-06T00:01:01.000Z",
+          "error": null,
+          "changed": false,
+          "checkpoints": {
+            "claimedAt": {
+              "present": true,
+              "value": null
+            },
+            "examinedAt": {
+              "present": true,
+              "value": null
+            },
+            "completedAt": {
+              "present": true,
+              "value": null
+            }
+          },
+          "beforeHash": "0bceaa4dbcb4f2e155b7ce7e7ce0e952a6bfadc7223f24c0bc1f4e4cef36d11c",
+          "afterHash": "0bceaa4dbcb4f2e155b7ce7e7ce0e952a6bfadc7223f24c0bc1f4e4cef36d11c"
+        }
+      ]
+    },
+    {
+      "collection": "score",
+      "name": "nulls",
+      "taskId": "constructor",
+      "action": "claim",
+      "initial": {
+        "claimedAt": null,
+        "examinedAt": null,
+        "completedAt": null
+      },
+      "absent": false,
+      "root": "/tmp/pain-gain-m2f.zt3u1S/oracle-final/v2-33/replay_logs",
+      "steps": [
+        {
+          "clock": "2026-10-06T00:01:00.000Z",
+          "error": null,
+          "changed": false,
+          "checkpoints": {
+            "claimedAt": {
+              "present": true,
+              "value": null
+            },
+            "examinedAt": {
+              "present": true,
+              "value": null
+            },
+            "completedAt": {
+              "present": true,
+              "value": null
+            }
+          },
+          "beforeHash": "0bc0b5c3e0aa0687a5b7c0bd5e3ce19e5d92e3038c70adc6c65d5f2c76fe5749",
+          "afterHash": "70a19f9c6db9fcca2906a9c2bf4e5e5760bbf10779334aa6b27f46ce38f425d7"
+        },
+        {
+          "clock": "2026-10-06T00:01:01.000Z",
+          "error": null,
+          "changed": false,
+          "checkpoints": {
+            "claimedAt": {
+              "present": true,
+              "value": null
+            },
+            "examinedAt": {
+              "present": true,
+              "value": null
+            },
+            "completedAt": {
+              "present": true,
+              "value": null
+            }
+          },
+          "beforeHash": "70a19f9c6db9fcca2906a9c2bf4e5e5760bbf10779334aa6b27f46ce38f425d7",
+          "afterHash": "70a19f9c6db9fcca2906a9c2bf4e5e5760bbf10779334aa6b27f46ce38f425d7"
+        }
+      ]
+    },
+    {
+      "collection": "score",
+      "name": "nulls",
+      "taskId": "codex/m2f-case",
+      "action": "examined",
+      "initial": {
+        "claimedAt": null,
+        "examinedAt": null,
+        "completedAt": null
+      },
+      "absent": false,
+      "root": "/tmp/pain-gain-m2f.zt3u1S/oracle-final/v2-34/replay_logs",
+      "steps": [
+        {
+          "clock": "2026-10-06T00:01:00.000Z",
+          "error": null,
+          "changed": true,
+          "checkpoints": {
+            "claimedAt": {
+              "present": true,
+              "value": null
+            },
+            "examinedAt": {
+              "present": true,
+              "value": "2026-10-06T00:01:00.000Z"
+            },
+            "completedAt": {
+              "present": true,
+              "value": null
+            }
+          },
+          "beforeHash": "6ef1431535721a9a6c7853921f4f3cfdf1d6d3704472ee97d6532dd17e83ea87",
+          "afterHash": "bc64ddc2fb33e401557d0d1d7c225deac3a9a35d79797f941ded2cb6e5bdae38"
+        },
+        {
+          "clock": "2026-10-06T00:01:01.000Z",
+          "error": null,
+          "changed": false,
+          "checkpoints": {
+            "claimedAt": {
+              "present": true,
+              "value": null
+            },
+            "examinedAt": {
+              "present": true,
+              "value": "2026-10-06T00:01:00.000Z"
+            },
+            "completedAt": {
+              "present": true,
+              "value": null
+            }
+          },
+          "beforeHash": "bc64ddc2fb33e401557d0d1d7c225deac3a9a35d79797f941ded2cb6e5bdae38",
+          "afterHash": "bc64ddc2fb33e401557d0d1d7c225deac3a9a35d79797f941ded2cb6e5bdae38"
+        }
+      ]
+    },
+    {
+      "collection": "score",
+      "name": "nulls",
+      "taskId": "constructor",
+      "action": "examined",
+      "initial": {
+        "claimedAt": null,
+        "examinedAt": null,
+        "completedAt": null
+      },
+      "absent": false,
+      "root": "/tmp/pain-gain-m2f.zt3u1S/oracle-final/v2-35/replay_logs",
+      "steps": [
+        {
+          "clock": "2026-10-06T00:01:00.000Z",
+          "error": null,
+          "changed": true,
+          "checkpoints": {
+            "claimedAt": {
+              "present": true,
+              "value": null
+            },
+            "examinedAt": {
+              "present": true,
+              "value": "2026-10-06T00:01:00.000Z"
+            },
+            "completedAt": {
+              "present": true,
+              "value": null
+            }
+          },
+          "beforeHash": "0bc0b5c3e0aa0687a5b7c0bd5e3ce19e5d92e3038c70adc6c65d5f2c76fe5749",
+          "afterHash": "950ecdfabac45983fd510c6f58b5dec974ace1a7e87f55e15f8798f85ef7f9a3"
+        },
+        {
+          "clock": "2026-10-06T00:01:01.000Z",
+          "error": null,
+          "changed": false,
+          "checkpoints": {
+            "claimedAt": {
+              "present": true,
+              "value": null
+            },
+            "examinedAt": {
+              "present": true,
+              "value": "2026-10-06T00:01:00.000Z"
+            },
+            "completedAt": {
+              "present": true,
+              "value": null
+            }
+          },
+          "beforeHash": "950ecdfabac45983fd510c6f58b5dec974ace1a7e87f55e15f8798f85ef7f9a3",
+          "afterHash": "950ecdfabac45983fd510c6f58b5dec974ace1a7e87f55e15f8798f85ef7f9a3"
+        }
+      ]
+    },
+    {
+      "collection": "score",
+      "name": "strings",
+      "taskId": "codex/m2f-case",
+      "action": "claim",
+      "initial": {
+        "claimedAt": "old",
+        "examinedAt": "",
+        "completedAt": "finished"
+      },
+      "absent": false,
+      "root": "/tmp/pain-gain-m2f.zt3u1S/oracle-final/v2-36/replay_logs",
+      "steps": [
+        {
+          "clock": "2026-10-06T00:01:00.000Z",
+          "error": null,
+          "changed": false,
+          "checkpoints": {
+            "claimedAt": {
+              "present": true,
+              "value": "old"
+            },
+            "examinedAt": {
+              "present": true,
+              "value": ""
+            },
+            "completedAt": {
+              "present": true,
+              "value": "finished"
+            }
+          },
+          "beforeHash": "258d794633ba91e6ad60edf5876c8de3a73c557d4f693ca45a30088df16f152d",
+          "afterHash": "89c8be46a7c413547845ae6562d280fea78103036310496b8685a68f012eeabd"
+        },
+        {
+          "clock": "2026-10-06T00:01:01.000Z",
+          "error": null,
+          "changed": false,
+          "checkpoints": {
+            "claimedAt": {
+              "present": true,
+              "value": "old"
+            },
+            "examinedAt": {
+              "present": true,
+              "value": ""
+            },
+            "completedAt": {
+              "present": true,
+              "value": "finished"
+            }
+          },
+          "beforeHash": "89c8be46a7c413547845ae6562d280fea78103036310496b8685a68f012eeabd",
+          "afterHash": "89c8be46a7c413547845ae6562d280fea78103036310496b8685a68f012eeabd"
+        }
+      ]
+    },
+    {
+      "collection": "score",
+      "name": "strings",
+      "taskId": "constructor",
+      "action": "claim",
+      "initial": {
+        "claimedAt": "old",
+        "examinedAt": "",
+        "completedAt": "finished"
+      },
+      "absent": false,
+      "root": "/tmp/pain-gain-m2f.zt3u1S/oracle-final/v2-37/replay_logs",
+      "steps": [
+        {
+          "clock": "2026-10-06T00:01:00.000Z",
+          "error": null,
+          "changed": false,
+          "checkpoints": {
+            "claimedAt": {
+              "present": true,
+              "value": "old"
+            },
+            "examinedAt": {
+              "present": true,
+              "value": ""
+            },
+            "completedAt": {
+              "present": true,
+              "value": "finished"
+            }
+          },
+          "beforeHash": "4f2ea1aeac8ad8209bf1b49e428e8163d99c0825f969ee2c8db3eb9d61971bda",
+          "afterHash": "23ca2bebb30608a463123fe0c4cd7aaf5d1b276e732718c389878f42d0e00add"
+        },
+        {
+          "clock": "2026-10-06T00:01:01.000Z",
+          "error": null,
+          "changed": false,
+          "checkpoints": {
+            "claimedAt": {
+              "present": true,
+              "value": "old"
+            },
+            "examinedAt": {
+              "present": true,
+              "value": ""
+            },
+            "completedAt": {
+              "present": true,
+              "value": "finished"
+            }
+          },
+          "beforeHash": "23ca2bebb30608a463123fe0c4cd7aaf5d1b276e732718c389878f42d0e00add",
+          "afterHash": "23ca2bebb30608a463123fe0c4cd7aaf5d1b276e732718c389878f42d0e00add"
+        }
+      ]
+    },
+    {
+      "collection": "score",
+      "name": "strings",
+      "taskId": "codex/m2f-case",
+      "action": "examined",
+      "initial": {
+        "claimedAt": "old",
+        "examinedAt": "",
+        "completedAt": "finished"
+      },
+      "absent": false,
+      "root": "/tmp/pain-gain-m2f.zt3u1S/oracle-final/v2-38/replay_logs",
+      "steps": [
+        {
+          "clock": "2026-10-06T00:01:00.000Z",
+          "error": null,
+          "changed": false,
+          "checkpoints": {
+            "claimedAt": {
+              "present": true,
+              "value": "old"
+            },
+            "examinedAt": {
+              "present": true,
+              "value": ""
+            },
+            "completedAt": {
+              "present": true,
+              "value": "finished"
+            }
+          },
+          "beforeHash": "258d794633ba91e6ad60edf5876c8de3a73c557d4f693ca45a30088df16f152d",
+          "afterHash": "89c8be46a7c413547845ae6562d280fea78103036310496b8685a68f012eeabd"
+        },
+        {
+          "clock": "2026-10-06T00:01:01.000Z",
+          "error": null,
+          "changed": false,
+          "checkpoints": {
+            "claimedAt": {
+              "present": true,
+              "value": "old"
+            },
+            "examinedAt": {
+              "present": true,
+              "value": ""
+            },
+            "completedAt": {
+              "present": true,
+              "value": "finished"
+            }
+          },
+          "beforeHash": "89c8be46a7c413547845ae6562d280fea78103036310496b8685a68f012eeabd",
+          "afterHash": "89c8be46a7c413547845ae6562d280fea78103036310496b8685a68f012eeabd"
+        }
+      ]
+    },
+    {
+      "collection": "score",
+      "name": "strings",
+      "taskId": "constructor",
+      "action": "examined",
+      "initial": {
+        "claimedAt": "old",
+        "examinedAt": "",
+        "completedAt": "finished"
+      },
+      "absent": false,
+      "root": "/tmp/pain-gain-m2f.zt3u1S/oracle-final/v2-39/replay_logs",
+      "steps": [
+        {
+          "clock": "2026-10-06T00:01:00.000Z",
+          "error": null,
+          "changed": false,
+          "checkpoints": {
+            "claimedAt": {
+              "present": true,
+              "value": "old"
+            },
+            "examinedAt": {
+              "present": true,
+              "value": ""
+            },
+            "completedAt": {
+              "present": true,
+              "value": "finished"
+            }
+          },
+          "beforeHash": "4f2ea1aeac8ad8209bf1b49e428e8163d99c0825f969ee2c8db3eb9d61971bda",
+          "afterHash": "23ca2bebb30608a463123fe0c4cd7aaf5d1b276e732718c389878f42d0e00add"
+        },
+        {
+          "clock": "2026-10-06T00:01:01.000Z",
+          "error": null,
+          "changed": false,
+          "checkpoints": {
+            "claimedAt": {
+              "present": true,
+              "value": "old"
+            },
+            "examinedAt": {
+              "present": true,
+              "value": ""
+            },
+            "completedAt": {
+              "present": true,
+              "value": "finished"
+            }
+          },
+          "beforeHash": "23ca2bebb30608a463123fe0c4cd7aaf5d1b276e732718c389878f42d0e00add",
+          "afterHash": "23ca2bebb30608a463123fe0c4cd7aaf5d1b276e732718c389878f42d0e00add"
+        }
+      ]
+    },
+    {
+      "collection": "score",
+      "name": "missing-examined",
+      "taskId": "codex/m2f-case",
+      "action": "claim",
+      "initial": {
+        "claimedAt": "",
+        "completedAt": null,
+        "note": {
+          "zero": 0,
+          "flag": false
+        }
+      },
+      "absent": false,
+      "root": "/tmp/pain-gain-m2f.zt3u1S/oracle-final/v2-40/replay_logs",
+      "steps": [
+        {
+          "clock": "2026-10-06T00:01:00.000Z",
+          "error": null,
+          "changed": false,
+          "checkpoints": {
+            "claimedAt": {
+              "present": true,
+              "value": ""
+            },
+            "examinedAt": {
+              "present": false
+            },
+            "completedAt": {
+              "present": true,
+              "value": null
+            }
+          },
+          "beforeHash": "ac17ad0ab56e925160da695464386b7ede6029d1228c698c6221c46dfe402244",
+          "afterHash": "2ae041af55d261e28d621545515069e70dabb1fa4c0d93c0ae8c584a4731a9f7"
+        },
+        {
+          "clock": "2026-10-06T00:01:01.000Z",
+          "error": null,
+          "changed": false,
+          "checkpoints": {
+            "claimedAt": {
+              "present": true,
+              "value": ""
+            },
+            "examinedAt": {
+              "present": false
+            },
+            "completedAt": {
+              "present": true,
+              "value": null
+            }
+          },
+          "beforeHash": "2ae041af55d261e28d621545515069e70dabb1fa4c0d93c0ae8c584a4731a9f7",
+          "afterHash": "2ae041af55d261e28d621545515069e70dabb1fa4c0d93c0ae8c584a4731a9f7"
+        }
+      ]
+    },
+    {
+      "collection": "score",
+      "name": "missing-examined",
+      "taskId": "constructor",
+      "action": "claim",
+      "initial": {
+        "claimedAt": "",
+        "completedAt": null,
+        "note": {
+          "zero": 0,
+          "flag": false
+        }
+      },
+      "absent": false,
+      "root": "/tmp/pain-gain-m2f.zt3u1S/oracle-final/v2-41/replay_logs",
+      "steps": [
+        {
+          "clock": "2026-10-06T00:01:00.000Z",
+          "error": null,
+          "changed": false,
+          "checkpoints": {
+            "claimedAt": {
+              "present": true,
+              "value": ""
+            },
+            "examinedAt": {
+              "present": false
+            },
+            "completedAt": {
+              "present": true,
+              "value": null
+            }
+          },
+          "beforeHash": "78dd20443da1c9ea896e5ec8cce16a8fb507349c1de468100e004f4db80e30e7",
+          "afterHash": "1c22c89320c3f26c608bdce3968a0f5450d9b113043d54787471147c2322c9af"
+        },
+        {
+          "clock": "2026-10-06T00:01:01.000Z",
+          "error": null,
+          "changed": false,
+          "checkpoints": {
+            "claimedAt": {
+              "present": true,
+              "value": ""
+            },
+            "examinedAt": {
+              "present": false
+            },
+            "completedAt": {
+              "present": true,
+              "value": null
+            }
+          },
+          "beforeHash": "1c22c89320c3f26c608bdce3968a0f5450d9b113043d54787471147c2322c9af",
+          "afterHash": "1c22c89320c3f26c608bdce3968a0f5450d9b113043d54787471147c2322c9af"
+        }
+      ]
+    },
+    {
+      "collection": "score",
+      "name": "missing-examined",
+      "taskId": "codex/m2f-case",
+      "action": "examined",
+      "initial": {
+        "claimedAt": "",
+        "completedAt": null,
+        "note": {
+          "zero": 0,
+          "flag": false
+        }
+      },
+      "absent": false,
+      "root": "/tmp/pain-gain-m2f.zt3u1S/oracle-final/v2-42/replay_logs",
+      "steps": [
+        {
+          "clock": "2026-10-06T00:01:00.000Z",
+          "error": null,
+          "changed": true,
+          "checkpoints": {
+            "claimedAt": {
+              "present": true,
+              "value": ""
+            },
+            "examinedAt": {
+              "present": true,
+              "value": "2026-10-06T00:01:00.000Z"
+            },
+            "completedAt": {
+              "present": true,
+              "value": null
+            }
+          },
+          "beforeHash": "ac17ad0ab56e925160da695464386b7ede6029d1228c698c6221c46dfe402244",
+          "afterHash": "87d1f7e40971c15c5af20a23729d8f33bbe8391063f9396bd2e02d7fbc45108c"
+        },
+        {
+          "clock": "2026-10-06T00:01:01.000Z",
+          "error": null,
+          "changed": false,
+          "checkpoints": {
+            "claimedAt": {
+              "present": true,
+              "value": ""
+            },
+            "examinedAt": {
+              "present": true,
+              "value": "2026-10-06T00:01:00.000Z"
+            },
+            "completedAt": {
+              "present": true,
+              "value": null
+            }
+          },
+          "beforeHash": "87d1f7e40971c15c5af20a23729d8f33bbe8391063f9396bd2e02d7fbc45108c",
+          "afterHash": "87d1f7e40971c15c5af20a23729d8f33bbe8391063f9396bd2e02d7fbc45108c"
+        }
+      ]
+    },
+    {
+      "collection": "score",
+      "name": "missing-examined",
+      "taskId": "constructor",
+      "action": "examined",
+      "initial": {
+        "claimedAt": "",
+        "completedAt": null,
+        "note": {
+          "zero": 0,
+          "flag": false
+        }
+      },
+      "absent": false,
+      "root": "/tmp/pain-gain-m2f.zt3u1S/oracle-final/v2-43/replay_logs",
+      "steps": [
+        {
+          "clock": "2026-10-06T00:01:00.000Z",
+          "error": null,
+          "changed": true,
+          "checkpoints": {
+            "claimedAt": {
+              "present": true,
+              "value": ""
+            },
+            "examinedAt": {
+              "present": true,
+              "value": "2026-10-06T00:01:00.000Z"
+            },
+            "completedAt": {
+              "present": true,
+              "value": null
+            }
+          },
+          "beforeHash": "78dd20443da1c9ea896e5ec8cce16a8fb507349c1de468100e004f4db80e30e7",
+          "afterHash": "ed5718ce195aaa9d51c7e22267444344990723012557257f46d95704357e0bee"
+        },
+        {
+          "clock": "2026-10-06T00:01:01.000Z",
+          "error": null,
+          "changed": false,
+          "checkpoints": {
+            "claimedAt": {
+              "present": true,
+              "value": ""
+            },
+            "examinedAt": {
+              "present": true,
+              "value": "2026-10-06T00:01:00.000Z"
+            },
+            "completedAt": {
+              "present": true,
+              "value": null
+            }
+          },
+          "beforeHash": "ed5718ce195aaa9d51c7e22267444344990723012557257f46d95704357e0bee",
+          "afterHash": "ed5718ce195aaa9d51c7e22267444344990723012557257f46d95704357e0bee"
+        }
+      ]
+    },
+    {
+      "collection": "score",
+      "name": "unusual",
+      "taskId": "codex/m2f-case",
+      "action": "claim",
+      "initial": {
+        "claimedAt": "非ISO",
+        "examinedAt": "later?",
+        "completedAt": ""
+      },
+      "absent": false,
+      "root": "/tmp/pain-gain-m2f.zt3u1S/oracle-final/v2-44/replay_logs",
+      "steps": [
+        {
+          "clock": "2026-10-06T00:01:00.000Z",
+          "error": null,
+          "changed": false,
+          "checkpoints": {
+            "claimedAt": {
+              "present": true,
+              "value": "非ISO"
+            },
+            "examinedAt": {
+              "present": true,
+              "value": "later?"
+            },
+            "completedAt": {
+              "present": true,
+              "value": ""
+            }
+          },
+          "beforeHash": "eff060f4d92355412d50f98f8a015c2957cfe92dbd1a38e41c0429843f71aab2",
+          "afterHash": "f6de8162ae11c22dd7a1a2c9ec8905916d267bf0343cb6e7b5b3f09a4bb72d11"
+        },
+        {
+          "clock": "2026-10-06T00:01:01.000Z",
+          "error": null,
+          "changed": false,
+          "checkpoints": {
+            "claimedAt": {
+              "present": true,
+              "value": "非ISO"
+            },
+            "examinedAt": {
+              "present": true,
+              "value": "later?"
+            },
+            "completedAt": {
+              "present": true,
+              "value": ""
+            }
+          },
+          "beforeHash": "f6de8162ae11c22dd7a1a2c9ec8905916d267bf0343cb6e7b5b3f09a4bb72d11",
+          "afterHash": "f6de8162ae11c22dd7a1a2c9ec8905916d267bf0343cb6e7b5b3f09a4bb72d11"
+        }
+      ]
+    },
+    {
+      "collection": "score",
+      "name": "unusual",
+      "taskId": "constructor",
+      "action": "claim",
+      "initial": {
+        "claimedAt": "非ISO",
+        "examinedAt": "later?",
+        "completedAt": ""
+      },
+      "absent": false,
+      "root": "/tmp/pain-gain-m2f.zt3u1S/oracle-final/v2-45/replay_logs",
+      "steps": [
+        {
+          "clock": "2026-10-06T00:01:00.000Z",
+          "error": null,
+          "changed": false,
+          "checkpoints": {
+            "claimedAt": {
+              "present": true,
+              "value": "非ISO"
+            },
+            "examinedAt": {
+              "present": true,
+              "value": "later?"
+            },
+            "completedAt": {
+              "present": true,
+              "value": ""
+            }
+          },
+          "beforeHash": "512c5493b1efaa7481abd3baa6193872ed6698cf156813dfc73f1d785b269b1d",
+          "afterHash": "d7488b5781e2d688f3e9c306b12546033ae8c30955a74db284e22b8e90344050"
+        },
+        {
+          "clock": "2026-10-06T00:01:01.000Z",
+          "error": null,
+          "changed": false,
+          "checkpoints": {
+            "claimedAt": {
+              "present": true,
+              "value": "非ISO"
+            },
+            "examinedAt": {
+              "present": true,
+              "value": "later?"
+            },
+            "completedAt": {
+              "present": true,
+              "value": ""
+            }
+          },
+          "beforeHash": "d7488b5781e2d688f3e9c306b12546033ae8c30955a74db284e22b8e90344050",
+          "afterHash": "d7488b5781e2d688f3e9c306b12546033ae8c30955a74db284e22b8e90344050"
+        }
+      ]
+    },
+    {
+      "collection": "score",
+      "name": "unusual",
+      "taskId": "codex/m2f-case",
+      "action": "examined",
+      "initial": {
+        "claimedAt": "非ISO",
+        "examinedAt": "later?",
+        "completedAt": ""
+      },
+      "absent": false,
+      "root": "/tmp/pain-gain-m2f.zt3u1S/oracle-final/v2-46/replay_logs",
+      "steps": [
+        {
+          "clock": "2026-10-06T00:01:00.000Z",
+          "error": null,
+          "changed": false,
+          "checkpoints": {
+            "claimedAt": {
+              "present": true,
+              "value": "非ISO"
+            },
+            "examinedAt": {
+              "present": true,
+              "value": "later?"
+            },
+            "completedAt": {
+              "present": true,
+              "value": ""
+            }
+          },
+          "beforeHash": "eff060f4d92355412d50f98f8a015c2957cfe92dbd1a38e41c0429843f71aab2",
+          "afterHash": "f6de8162ae11c22dd7a1a2c9ec8905916d267bf0343cb6e7b5b3f09a4bb72d11"
+        },
+        {
+          "clock": "2026-10-06T00:01:01.000Z",
+          "error": null,
+          "changed": false,
+          "checkpoints": {
+            "claimedAt": {
+              "present": true,
+              "value": "非ISO"
+            },
+            "examinedAt": {
+              "present": true,
+              "value": "later?"
+            },
+            "completedAt": {
+              "present": true,
+              "value": ""
+            }
+          },
+          "beforeHash": "f6de8162ae11c22dd7a1a2c9ec8905916d267bf0343cb6e7b5b3f09a4bb72d11",
+          "afterHash": "f6de8162ae11c22dd7a1a2c9ec8905916d267bf0343cb6e7b5b3f09a4bb72d11"
+        }
+      ]
+    },
+    {
+      "collection": "score",
+      "name": "unusual",
+      "taskId": "constructor",
+      "action": "examined",
+      "initial": {
+        "claimedAt": "非ISO",
+        "examinedAt": "later?",
+        "completedAt": ""
+      },
+      "absent": false,
+      "root": "/tmp/pain-gain-m2f.zt3u1S/oracle-final/v2-47/replay_logs",
+      "steps": [
+        {
+          "clock": "2026-10-06T00:01:00.000Z",
+          "error": null,
+          "changed": false,
+          "checkpoints": {
+            "claimedAt": {
+              "present": true,
+              "value": "非ISO"
+            },
+            "examinedAt": {
+              "present": true,
+              "value": "later?"
+            },
+            "completedAt": {
+              "present": true,
+              "value": ""
+            }
+          },
+          "beforeHash": "512c5493b1efaa7481abd3baa6193872ed6698cf156813dfc73f1d785b269b1d",
+          "afterHash": "d7488b5781e2d688f3e9c306b12546033ae8c30955a74db284e22b8e90344050"
+        },
+        {
+          "clock": "2026-10-06T00:01:01.000Z",
+          "error": null,
+          "changed": false,
+          "checkpoints": {
+            "claimedAt": {
+              "present": true,
+              "value": "非ISO"
+            },
+            "examinedAt": {
+              "present": true,
+              "value": "later?"
+            },
+            "completedAt": {
+              "present": true,
+              "value": ""
+            }
+          },
+          "beforeHash": "d7488b5781e2d688f3e9c306b12546033ae8c30955a74db284e22b8e90344050",
+          "afterHash": "d7488b5781e2d688f3e9c306b12546033ae8c30955a74db284e22b8e90344050"
+        }
+      ]
+    }
+  ],
+  "scale": [
+    {
+      "clock": "2026-10-06T00:01:00.000Z",
+      "request": {
+        "collection": "log",
+        "replayId": "bbbbbbbbbbbbbbbbbbbbbbbb",
+        "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+        "taskId": "codex/m2f-new",
+        "action": "claim"
+      },
+      "result": {
+        "collection": "log",
+        "replayId": "bbbbbbbbbbbbbbbbbbbbbbbb",
+        "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+        "taskId": "codex/m2f-new",
+        "action": "claim",
+        "changed": true,
+        "recordStatus": "claim",
+        "reviewOrdinal": "8",
+        "generation": "1",
+        "checkpoints": {
+          "claimedAt": {
+            "present": true,
+            "value": "2026-10-06T00:01:00.000Z"
+          },
+          "examinedAt": {
+            "present": true,
+            "value": null
+          },
+          "completedAt": {
+            "present": true,
+            "value": null
+          }
+        }
+      },
+      "beforeHash": "a5b7fc659fa207d4f8dea434a90705917af533a45d73281323bc54ac37ab1d25",
+      "afterHash": "caeb8661d497f66c129c6951f6d817246bec2d04b80030cf5fd3119c6f9a1584"
+    },
+    {
+      "clock": "2026-10-06T00:01:01.000Z",
+      "request": {
+        "collection": "log",
+        "replayId": "bbbbbbbbbbbbbbbbbbbbbbbb",
+        "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+        "taskId": "codex/m2f-new",
+        "action": "claim"
+      },
+      "result": {
+        "collection": "log",
+        "replayId": "bbbbbbbbbbbbbbbbbbbbbbbb",
+        "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+        "taskId": "codex/m2f-new",
+        "action": "claim",
+        "changed": false,
+        "recordStatus": "claim",
+        "reviewOrdinal": "8",
+        "generation": "1",
+        "checkpoints": {
+          "claimedAt": {
+            "present": true,
+            "value": "2026-10-06T00:01:00.000Z"
+          },
+          "examinedAt": {
+            "present": true,
+            "value": null
+          },
+          "completedAt": {
+            "present": true,
+            "value": null
+          }
+        }
+      },
+      "beforeHash": "caeb8661d497f66c129c6951f6d817246bec2d04b80030cf5fd3119c6f9a1584",
+      "afterHash": "caeb8661d497f66c129c6951f6d817246bec2d04b80030cf5fd3119c6f9a1584"
+    },
+    {
+      "clock": "2026-10-06T00:01:02.000Z",
+      "request": {
+        "collection": "log",
+        "replayId": "bbbbbbbbbbbbbbbbbbbbbbbb",
+        "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+        "taskId": "codex/m2f-new",
+        "action": "examined"
+      },
+      "result": {
+        "collection": "log",
+        "replayId": "bbbbbbbbbbbbbbbbbbbbbbbb",
+        "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+        "taskId": "codex/m2f-new",
+        "action": "examined",
+        "changed": true,
+        "recordStatus": "claim",
+        "reviewOrdinal": "8",
+        "generation": "2",
+        "checkpoints": {
+          "claimedAt": {
+            "present": true,
+            "value": "2026-10-06T00:01:00.000Z"
+          },
+          "examinedAt": {
+            "present": true,
+            "value": "2026-10-06T00:01:02.000Z"
+          },
+          "completedAt": {
+            "present": true,
+            "value": null
+          }
+        }
+      },
+      "beforeHash": "caeb8661d497f66c129c6951f6d817246bec2d04b80030cf5fd3119c6f9a1584",
+      "afterHash": "8b9e584ec93638cdcd266e606e54fbb8358c2c1355409a712ad81196d366a9e9"
+    },
+    {
+      "clock": "2026-10-06T00:01:03.000Z",
+      "request": {
+        "collection": "log",
+        "replayId": "bbbbbbbbbbbbbbbbbbbbbbbb",
+        "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+        "taskId": "codex/m2f-new",
+        "action": "examined"
+      },
+      "result": {
+        "collection": "log",
+        "replayId": "bbbbbbbbbbbbbbbbbbbbbbbb",
+        "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+        "taskId": "codex/m2f-new",
+        "action": "examined",
+        "changed": false,
+        "recordStatus": "claim",
+        "reviewOrdinal": "8",
+        "generation": "2",
+        "checkpoints": {
+          "claimedAt": {
+            "present": true,
+            "value": "2026-10-06T00:01:00.000Z"
+          },
+          "examinedAt": {
+            "present": true,
+            "value": "2026-10-06T00:01:02.000Z"
+          },
+          "completedAt": {
+            "present": true,
+            "value": null
+          }
+        }
+      },
+      "beforeHash": "8b9e584ec93638cdcd266e606e54fbb8358c2c1355409a712ad81196d366a9e9",
+      "afterHash": "8b9e584ec93638cdcd266e606e54fbb8358c2c1355409a712ad81196d366a9e9"
+    },
+    {
+      "clock": "2026-10-06T00:01:04.000Z",
+      "request": {
+        "collection": "log",
+        "replayId": "bbbbbbbbbbbbbbbbbbbbbbbb",
+        "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+        "taskId": "codex/m2f-existing",
+        "action": "examined"
+      },
+      "result": {
+        "collection": "log",
+        "replayId": "bbbbbbbbbbbbbbbbbbbbbbbb",
+        "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+        "taskId": "codex/m2f-existing",
+        "action": "examined",
+        "changed": true,
+        "recordStatus": "claim",
+        "reviewOrdinal": "7",
+        "generation": "3",
+        "checkpoints": {
+          "claimedAt": {
+            "present": true,
+            "value": "2026-10-06T00:00:00.000Z"
+          },
+          "examinedAt": {
+            "present": true,
+            "value": "2026-10-06T00:01:04.000Z"
+          },
+          "completedAt": {
+            "present": true,
+            "value": null
+          }
+        }
+      },
+      "beforeHash": "8b9e584ec93638cdcd266e606e54fbb8358c2c1355409a712ad81196d366a9e9",
+      "afterHash": "2a347a0f4a2dbecb9bac3e3a13756464e1f4b9bc2601b725866083d575291193"
+    },
+    {
+      "clock": "2026-10-06T00:01:05.000Z",
+      "request": {
+        "collection": "log",
+        "replayId": "bbbbbbbbbbbbbbbbbbbbbbbb",
+        "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+        "taskId": "codex/m2f-existing",
+        "action": "examined"
+      },
+      "result": {
+        "collection": "log",
+        "replayId": "bbbbbbbbbbbbbbbbbbbbbbbb",
+        "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+        "taskId": "codex/m2f-existing",
+        "action": "examined",
+        "changed": false,
+        "recordStatus": "claim",
+        "reviewOrdinal": "7",
+        "generation": "3",
+        "checkpoints": {
+          "claimedAt": {
+            "present": true,
+            "value": "2026-10-06T00:00:00.000Z"
+          },
+          "examinedAt": {
+            "present": true,
+            "value": "2026-10-06T00:01:04.000Z"
+          },
+          "completedAt": {
+            "present": true,
+            "value": null
+          }
+        }
+      },
+      "beforeHash": "2a347a0f4a2dbecb9bac3e3a13756464e1f4b9bc2601b725866083d575291193",
+      "afterHash": "2a347a0f4a2dbecb9bac3e3a13756464e1f4b9bc2601b725866083d575291193"
+    },
+    {
+      "clock": "2026-10-06T00:01:06.000Z",
+      "request": {
+        "collection": "log",
+        "replayId": "bbbbbbbbbbbbbbbbbbbbbbbb",
+        "fingerprint": "0000000000000000000000000000000000000000000000000000000000000001",
+        "taskId": "codex/m2f-new",
+        "action": "claim"
+      },
+      "result": {
+        "collection": "log",
+        "replayId": "bbbbbbbbbbbbbbbbbbbbbbbb",
+        "fingerprint": "0000000000000000000000000000000000000000000000000000000000000001",
+        "taskId": "codex/m2f-new",
+        "action": "claim",
+        "changed": true,
+        "recordStatus": "claim",
+        "reviewOrdinal": "8",
+        "generation": "4",
+        "checkpoints": {
+          "claimedAt": {
+            "present": true,
+            "value": "2026-10-06T00:01:06.000Z"
+          },
+          "examinedAt": {
+            "present": true,
+            "value": null
+          },
+          "completedAt": {
+            "present": true,
+            "value": null
+          }
+        }
+      },
+      "beforeHash": "2a347a0f4a2dbecb9bac3e3a13756464e1f4b9bc2601b725866083d575291193",
+      "afterHash": "0389761ee6088413a260f7e7e9fe41035a13093ee3ad26845aae3a8c24863e6a"
+    },
+    {
+      "clock": "2026-10-06T00:01:07.000Z",
+      "request": {
+        "collection": "log",
+        "replayId": "bbbbbbbbbbbbbbbbbbbbbbbb",
+        "fingerprint": "0000000000000000000000000000000000000000000000000000000000000001",
+        "taskId": "codex/m2f-new",
+        "action": "claim"
+      },
+      "result": {
+        "collection": "log",
+        "replayId": "bbbbbbbbbbbbbbbbbbbbbbbb",
+        "fingerprint": "0000000000000000000000000000000000000000000000000000000000000001",
+        "taskId": "codex/m2f-new",
+        "action": "claim",
+        "changed": false,
+        "recordStatus": "claim",
+        "reviewOrdinal": "8",
+        "generation": "4",
+        "checkpoints": {
+          "claimedAt": {
+            "present": true,
+            "value": "2026-10-06T00:01:06.000Z"
+          },
+          "examinedAt": {
+            "present": true,
+            "value": null
+          },
+          "completedAt": {
+            "present": true,
+            "value": null
+          }
+        }
+      },
+      "beforeHash": "0389761ee6088413a260f7e7e9fe41035a13093ee3ad26845aae3a8c24863e6a",
+      "afterHash": "0389761ee6088413a260f7e7e9fe41035a13093ee3ad26845aae3a8c24863e6a"
+    },
+    {
+      "clock": "2026-10-06T00:01:08.000Z",
+      "request": {
+        "collection": "log",
+        "replayId": "bbbbbbbbbbbbbbbbbbbbbbbb",
+        "fingerprint": "0000000000000000000000000000000000000000000000000000000000000001",
+        "taskId": "codex/m2f-new",
+        "action": "examined"
+      },
+      "result": {
+        "collection": "log",
+        "replayId": "bbbbbbbbbbbbbbbbbbbbbbbb",
+        "fingerprint": "0000000000000000000000000000000000000000000000000000000000000001",
+        "taskId": "codex/m2f-new",
+        "action": "examined",
+        "changed": true,
+        "recordStatus": "claim",
+        "reviewOrdinal": "8",
+        "generation": "5",
+        "checkpoints": {
+          "claimedAt": {
+            "present": true,
+            "value": "2026-10-06T00:01:06.000Z"
+          },
+          "examinedAt": {
+            "present": true,
+            "value": "2026-10-06T00:01:08.000Z"
+          },
+          "completedAt": {
+            "present": true,
+            "value": null
+          }
+        }
+      },
+      "beforeHash": "0389761ee6088413a260f7e7e9fe41035a13093ee3ad26845aae3a8c24863e6a",
+      "afterHash": "1d1f0872e5b8194876034c5d6d0a708c7b3c2f65bf25de677185111250bbea5b"
+    },
+    {
+      "clock": "2026-10-06T00:01:09.000Z",
+      "request": {
+        "collection": "log",
+        "replayId": "bbbbbbbbbbbbbbbbbbbbbbbb",
+        "fingerprint": "0000000000000000000000000000000000000000000000000000000000000001",
+        "taskId": "codex/m2f-new",
+        "action": "examined"
+      },
+      "result": {
+        "collection": "log",
+        "replayId": "bbbbbbbbbbbbbbbbbbbbbbbb",
+        "fingerprint": "0000000000000000000000000000000000000000000000000000000000000001",
+        "taskId": "codex/m2f-new",
+        "action": "examined",
+        "changed": false,
+        "recordStatus": "claim",
+        "reviewOrdinal": "8",
+        "generation": "5",
+        "checkpoints": {
+          "claimedAt": {
+            "present": true,
+            "value": "2026-10-06T00:01:06.000Z"
+          },
+          "examinedAt": {
+            "present": true,
+            "value": "2026-10-06T00:01:08.000Z"
+          },
+          "completedAt": {
+            "present": true,
+            "value": null
+          }
+        }
+      },
+      "beforeHash": "1d1f0872e5b8194876034c5d6d0a708c7b3c2f65bf25de677185111250bbea5b",
+      "afterHash": "1d1f0872e5b8194876034c5d6d0a708c7b3c2f65bf25de677185111250bbea5b"
+    },
+    {
+      "clock": "2026-10-06T00:01:10.000Z",
+      "request": {
+        "collection": "log",
+        "replayId": "bbbbbbbbbbbbbbbbbbbbbbbb",
+        "fingerprint": "0000000000000000000000000000000000000000000000000000000000000001",
+        "taskId": "codex/m2f-existing",
+        "action": "examined"
+      },
+      "result": {
+        "collection": "log",
+        "replayId": "bbbbbbbbbbbbbbbbbbbbbbbb",
+        "fingerprint": "0000000000000000000000000000000000000000000000000000000000000001",
+        "taskId": "codex/m2f-existing",
+        "action": "examined",
+        "changed": true,
+        "recordStatus": "claim",
+        "reviewOrdinal": "7",
+        "generation": "6",
+        "checkpoints": {
+          "claimedAt": {
+            "present": true,
+            "value": "2026-10-06T00:00:00.000Z"
+          },
+          "examinedAt": {
+            "present": true,
+            "value": "2026-10-06T00:01:10.000Z"
+          },
+          "completedAt": {
+            "present": true,
+            "value": null
+          }
+        }
+      },
+      "beforeHash": "1d1f0872e5b8194876034c5d6d0a708c7b3c2f65bf25de677185111250bbea5b",
+      "afterHash": "af910d0627f7a993375c12341533801579f851dfc55494c8265980a82dd4afac"
+    },
+    {
+      "clock": "2026-10-06T00:01:11.000Z",
+      "request": {
+        "collection": "log",
+        "replayId": "bbbbbbbbbbbbbbbbbbbbbbbb",
+        "fingerprint": "0000000000000000000000000000000000000000000000000000000000000001",
+        "taskId": "codex/m2f-existing",
+        "action": "examined"
+      },
+      "result": {
+        "collection": "log",
+        "replayId": "bbbbbbbbbbbbbbbbbbbbbbbb",
+        "fingerprint": "0000000000000000000000000000000000000000000000000000000000000001",
+        "taskId": "codex/m2f-existing",
+        "action": "examined",
+        "changed": false,
+        "recordStatus": "claim",
+        "reviewOrdinal": "7",
+        "generation": "6",
+        "checkpoints": {
+          "claimedAt": {
+            "present": true,
+            "value": "2026-10-06T00:00:00.000Z"
+          },
+          "examinedAt": {
+            "present": true,
+            "value": "2026-10-06T00:01:10.000Z"
+          },
+          "completedAt": {
+            "present": true,
+            "value": null
+          }
+        }
+      },
+      "beforeHash": "af910d0627f7a993375c12341533801579f851dfc55494c8265980a82dd4afac",
+      "afterHash": "af910d0627f7a993375c12341533801579f851dfc55494c8265980a82dd4afac"
+    },
+    {
+      "clock": "2026-10-06T00:01:12.000Z",
+      "request": {
+        "collection": "score",
+        "replayId": "bbbbbbbbbbbbbbbbbbbbbbbb",
+        "fingerprint": "dc2285ad6874bf50f4b85d530fbc14b727d747cdfcd87b12abfa47fd7c1b1999",
+        "taskId": "codex/m2f-new",
+        "action": "claim"
+      },
+      "result": {
+        "collection": "score",
+        "replayId": "bbbbbbbbbbbbbbbbbbbbbbbb",
+        "fingerprint": "dc2285ad6874bf50f4b85d530fbc14b727d747cdfcd87b12abfa47fd7c1b1999",
+        "taskId": "codex/m2f-new",
+        "action": "claim",
+        "changed": true,
+        "recordStatus": "claim",
+        "reviewOrdinal": "8",
+        "generation": "7",
+        "checkpoints": {
+          "claimedAt": {
+            "present": true,
+            "value": "2026-10-06T00:01:12.000Z"
+          },
+          "examinedAt": {
+            "present": true,
+            "value": null
+          },
+          "completedAt": {
+            "present": true,
+            "value": null
+          }
+        }
+      },
+      "beforeHash": "af910d0627f7a993375c12341533801579f851dfc55494c8265980a82dd4afac",
+      "afterHash": "f30db5f8ef71cc46ad34b97e1b57aa58d21ec872ebd68852894aa89ba33f2dad"
+    },
+    {
+      "clock": "2026-10-06T00:01:13.000Z",
+      "request": {
+        "collection": "score",
+        "replayId": "bbbbbbbbbbbbbbbbbbbbbbbb",
+        "fingerprint": "dc2285ad6874bf50f4b85d530fbc14b727d747cdfcd87b12abfa47fd7c1b1999",
+        "taskId": "codex/m2f-new",
+        "action": "claim"
+      },
+      "result": {
+        "collection": "score",
+        "replayId": "bbbbbbbbbbbbbbbbbbbbbbbb",
+        "fingerprint": "dc2285ad6874bf50f4b85d530fbc14b727d747cdfcd87b12abfa47fd7c1b1999",
+        "taskId": "codex/m2f-new",
+        "action": "claim",
+        "changed": false,
+        "recordStatus": "claim",
+        "reviewOrdinal": "8",
+        "generation": "7",
+        "checkpoints": {
+          "claimedAt": {
+            "present": true,
+            "value": "2026-10-06T00:01:12.000Z"
+          },
+          "examinedAt": {
+            "present": true,
+            "value": null
+          },
+          "completedAt": {
+            "present": true,
+            "value": null
+          }
+        }
+      },
+      "beforeHash": "f30db5f8ef71cc46ad34b97e1b57aa58d21ec872ebd68852894aa89ba33f2dad",
+      "afterHash": "f30db5f8ef71cc46ad34b97e1b57aa58d21ec872ebd68852894aa89ba33f2dad"
+    },
+    {
+      "clock": "2026-10-06T00:01:14.000Z",
+      "request": {
+        "collection": "score",
+        "replayId": "bbbbbbbbbbbbbbbbbbbbbbbb",
+        "fingerprint": "dc2285ad6874bf50f4b85d530fbc14b727d747cdfcd87b12abfa47fd7c1b1999",
+        "taskId": "codex/m2f-new",
+        "action": "examined"
+      },
+      "result": {
+        "collection": "score",
+        "replayId": "bbbbbbbbbbbbbbbbbbbbbbbb",
+        "fingerprint": "dc2285ad6874bf50f4b85d530fbc14b727d747cdfcd87b12abfa47fd7c1b1999",
+        "taskId": "codex/m2f-new",
+        "action": "examined",
+        "changed": true,
+        "recordStatus": "claim",
+        "reviewOrdinal": "8",
+        "generation": "8",
+        "checkpoints": {
+          "claimedAt": {
+            "present": true,
+            "value": "2026-10-06T00:01:12.000Z"
+          },
+          "examinedAt": {
+            "present": true,
+            "value": "2026-10-06T00:01:14.000Z"
+          },
+          "completedAt": {
+            "present": true,
+            "value": null
+          }
+        }
+      },
+      "beforeHash": "f30db5f8ef71cc46ad34b97e1b57aa58d21ec872ebd68852894aa89ba33f2dad",
+      "afterHash": "49f2fbd63795960ff8d330c4b2f30c79c16db3a5411a58771cd8c8682a18b15f"
+    },
+    {
+      "clock": "2026-10-06T00:01:15.000Z",
+      "request": {
+        "collection": "score",
+        "replayId": "bbbbbbbbbbbbbbbbbbbbbbbb",
+        "fingerprint": "dc2285ad6874bf50f4b85d530fbc14b727d747cdfcd87b12abfa47fd7c1b1999",
+        "taskId": "codex/m2f-new",
+        "action": "examined"
+      },
+      "result": {
+        "collection": "score",
+        "replayId": "bbbbbbbbbbbbbbbbbbbbbbbb",
+        "fingerprint": "dc2285ad6874bf50f4b85d530fbc14b727d747cdfcd87b12abfa47fd7c1b1999",
+        "taskId": "codex/m2f-new",
+        "action": "examined",
+        "changed": false,
+        "recordStatus": "claim",
+        "reviewOrdinal": "8",
+        "generation": "8",
+        "checkpoints": {
+          "claimedAt": {
+            "present": true,
+            "value": "2026-10-06T00:01:12.000Z"
+          },
+          "examinedAt": {
+            "present": true,
+            "value": "2026-10-06T00:01:14.000Z"
+          },
+          "completedAt": {
+            "present": true,
+            "value": null
+          }
+        }
+      },
+      "beforeHash": "49f2fbd63795960ff8d330c4b2f30c79c16db3a5411a58771cd8c8682a18b15f",
+      "afterHash": "49f2fbd63795960ff8d330c4b2f30c79c16db3a5411a58771cd8c8682a18b15f"
+    },
+    {
+      "clock": "2026-10-06T00:01:16.000Z",
+      "request": {
+        "collection": "score",
+        "replayId": "bbbbbbbbbbbbbbbbbbbbbbbb",
+        "fingerprint": "dc2285ad6874bf50f4b85d530fbc14b727d747cdfcd87b12abfa47fd7c1b1999",
+        "taskId": "codex/m2f-existing",
+        "action": "examined"
+      },
+      "result": {
+        "collection": "score",
+        "replayId": "bbbbbbbbbbbbbbbbbbbbbbbb",
+        "fingerprint": "dc2285ad6874bf50f4b85d530fbc14b727d747cdfcd87b12abfa47fd7c1b1999",
+        "taskId": "codex/m2f-existing",
+        "action": "examined",
+        "changed": true,
+        "recordStatus": "claim",
+        "reviewOrdinal": "7",
+        "generation": "9",
+        "checkpoints": {
+          "claimedAt": {
+            "present": true,
+            "value": "2026-10-06T00:00:00.000Z"
+          },
+          "examinedAt": {
+            "present": true,
+            "value": "2026-10-06T00:01:16.000Z"
+          },
+          "completedAt": {
+            "present": true,
+            "value": null
+          }
+        }
+      },
+      "beforeHash": "49f2fbd63795960ff8d330c4b2f30c79c16db3a5411a58771cd8c8682a18b15f",
+      "afterHash": "b3a8692b20030e4d12694fa122c526017fcdcb616b19dd5c186cc03ae8a634ab"
+    },
+    {
+      "clock": "2026-10-06T00:01:17.000Z",
+      "request": {
+        "collection": "score",
+        "replayId": "bbbbbbbbbbbbbbbbbbbbbbbb",
+        "fingerprint": "dc2285ad6874bf50f4b85d530fbc14b727d747cdfcd87b12abfa47fd7c1b1999",
+        "taskId": "codex/m2f-existing",
+        "action": "examined"
+      },
+      "result": {
+        "collection": "score",
+        "replayId": "bbbbbbbbbbbbbbbbbbbbbbbb",
+        "fingerprint": "dc2285ad6874bf50f4b85d530fbc14b727d747cdfcd87b12abfa47fd7c1b1999",
+        "taskId": "codex/m2f-existing",
+        "action": "examined",
+        "changed": false,
+        "recordStatus": "claim",
+        "reviewOrdinal": "7",
+        "generation": "9",
+        "checkpoints": {
+          "claimedAt": {
+            "present": true,
+            "value": "2026-10-06T00:00:00.000Z"
+          },
+          "examinedAt": {
+            "present": true,
+            "value": "2026-10-06T00:01:16.000Z"
+          },
+          "completedAt": {
+            "present": true,
+            "value": null
+          }
+        }
+      },
+      "beforeHash": "b3a8692b20030e4d12694fa122c526017fcdcb616b19dd5c186cc03ae8a634ab",
+      "afterHash": "b3a8692b20030e4d12694fa122c526017fcdcb616b19dd5c186cc03ae8a634ab"
+    },
+    {
+      "clock": "2026-10-06T00:01:18.000Z",
+      "request": {
+        "collection": "score",
+        "replayId": "bbbbbbbbbbbbbbbbbbbbbbbb",
+        "fingerprint": "daf3f3ef20551c4674c2558014606c007779cf7e973fa2aec594b9afbac2032f",
+        "taskId": "codex/m2f-new",
+        "action": "claim"
+      },
+      "result": {
+        "collection": "score",
+        "replayId": "bbbbbbbbbbbbbbbbbbbbbbbb",
+        "fingerprint": "daf3f3ef20551c4674c2558014606c007779cf7e973fa2aec594b9afbac2032f",
+        "taskId": "codex/m2f-new",
+        "action": "claim",
+        "changed": true,
+        "recordStatus": "claim",
+        "reviewOrdinal": "8",
+        "generation": "10",
+        "checkpoints": {
+          "claimedAt": {
+            "present": true,
+            "value": "2026-10-06T00:01:18.000Z"
+          },
+          "examinedAt": {
+            "present": true,
+            "value": null
+          },
+          "completedAt": {
+            "present": true,
+            "value": null
+          }
+        }
+      },
+      "beforeHash": "b3a8692b20030e4d12694fa122c526017fcdcb616b19dd5c186cc03ae8a634ab",
+      "afterHash": "fcea9abd15edf35531dd7796545f5192c0ba30f40fb3d095c28442a2aa0c0cb1"
+    },
+    {
+      "clock": "2026-10-06T00:01:19.000Z",
+      "request": {
+        "collection": "score",
+        "replayId": "bbbbbbbbbbbbbbbbbbbbbbbb",
+        "fingerprint": "daf3f3ef20551c4674c2558014606c007779cf7e973fa2aec594b9afbac2032f",
+        "taskId": "codex/m2f-new",
+        "action": "claim"
+      },
+      "result": {
+        "collection": "score",
+        "replayId": "bbbbbbbbbbbbbbbbbbbbbbbb",
+        "fingerprint": "daf3f3ef20551c4674c2558014606c007779cf7e973fa2aec594b9afbac2032f",
+        "taskId": "codex/m2f-new",
+        "action": "claim",
+        "changed": false,
+        "recordStatus": "claim",
+        "reviewOrdinal": "8",
+        "generation": "10",
+        "checkpoints": {
+          "claimedAt": {
+            "present": true,
+            "value": "2026-10-06T00:01:18.000Z"
+          },
+          "examinedAt": {
+            "present": true,
+            "value": null
+          },
+          "completedAt": {
+            "present": true,
+            "value": null
+          }
+        }
+      },
+      "beforeHash": "fcea9abd15edf35531dd7796545f5192c0ba30f40fb3d095c28442a2aa0c0cb1",
+      "afterHash": "fcea9abd15edf35531dd7796545f5192c0ba30f40fb3d095c28442a2aa0c0cb1"
+    },
+    {
+      "clock": "2026-10-06T00:01:20.000Z",
+      "request": {
+        "collection": "score",
+        "replayId": "bbbbbbbbbbbbbbbbbbbbbbbb",
+        "fingerprint": "daf3f3ef20551c4674c2558014606c007779cf7e973fa2aec594b9afbac2032f",
+        "taskId": "codex/m2f-new",
+        "action": "examined"
+      },
+      "result": {
+        "collection": "score",
+        "replayId": "bbbbbbbbbbbbbbbbbbbbbbbb",
+        "fingerprint": "daf3f3ef20551c4674c2558014606c007779cf7e973fa2aec594b9afbac2032f",
+        "taskId": "codex/m2f-new",
+        "action": "examined",
+        "changed": true,
+        "recordStatus": "claim",
+        "reviewOrdinal": "8",
+        "generation": "11",
+        "checkpoints": {
+          "claimedAt": {
+            "present": true,
+            "value": "2026-10-06T00:01:18.000Z"
+          },
+          "examinedAt": {
+            "present": true,
+            "value": "2026-10-06T00:01:20.000Z"
+          },
+          "completedAt": {
+            "present": true,
+            "value": null
+          }
+        }
+      },
+      "beforeHash": "fcea9abd15edf35531dd7796545f5192c0ba30f40fb3d095c28442a2aa0c0cb1",
+      "afterHash": "44c8dd13d54e948796d01cb592a3753e96cdb064d371b1d7b6b1c2dbd9787045"
+    },
+    {
+      "clock": "2026-10-06T00:01:21.000Z",
+      "request": {
+        "collection": "score",
+        "replayId": "bbbbbbbbbbbbbbbbbbbbbbbb",
+        "fingerprint": "daf3f3ef20551c4674c2558014606c007779cf7e973fa2aec594b9afbac2032f",
+        "taskId": "codex/m2f-new",
+        "action": "examined"
+      },
+      "result": {
+        "collection": "score",
+        "replayId": "bbbbbbbbbbbbbbbbbbbbbbbb",
+        "fingerprint": "daf3f3ef20551c4674c2558014606c007779cf7e973fa2aec594b9afbac2032f",
+        "taskId": "codex/m2f-new",
+        "action": "examined",
+        "changed": false,
+        "recordStatus": "claim",
+        "reviewOrdinal": "8",
+        "generation": "11",
+        "checkpoints": {
+          "claimedAt": {
+            "present": true,
+            "value": "2026-10-06T00:01:18.000Z"
+          },
+          "examinedAt": {
+            "present": true,
+            "value": "2026-10-06T00:01:20.000Z"
+          },
+          "completedAt": {
+            "present": true,
+            "value": null
+          }
+        }
+      },
+      "beforeHash": "44c8dd13d54e948796d01cb592a3753e96cdb064d371b1d7b6b1c2dbd9787045",
+      "afterHash": "44c8dd13d54e948796d01cb592a3753e96cdb064d371b1d7b6b1c2dbd9787045"
+    },
+    {
+      "clock": "2026-10-06T00:01:22.000Z",
+      "request": {
+        "collection": "score",
+        "replayId": "bbbbbbbbbbbbbbbbbbbbbbbb",
+        "fingerprint": "daf3f3ef20551c4674c2558014606c007779cf7e973fa2aec594b9afbac2032f",
+        "taskId": "codex/m2f-existing",
+        "action": "examined"
+      },
+      "result": {
+        "collection": "score",
+        "replayId": "bbbbbbbbbbbbbbbbbbbbbbbb",
+        "fingerprint": "daf3f3ef20551c4674c2558014606c007779cf7e973fa2aec594b9afbac2032f",
+        "taskId": "codex/m2f-existing",
+        "action": "examined",
+        "changed": true,
+        "recordStatus": "claim",
+        "reviewOrdinal": "7",
+        "generation": "12",
+        "checkpoints": {
+          "claimedAt": {
+            "present": true,
+            "value": "2026-10-06T00:00:00.000Z"
+          },
+          "examinedAt": {
+            "present": true,
+            "value": "2026-10-06T00:01:22.000Z"
+          },
+          "completedAt": {
+            "present": true,
+            "value": null
+          }
+        }
+      },
+      "beforeHash": "44c8dd13d54e948796d01cb592a3753e96cdb064d371b1d7b6b1c2dbd9787045",
+      "afterHash": "7b23c270d3b573b08c49eec8111eb5734777fe0e306410a290b33c611eae210e"
+    },
+    {
+      "clock": "2026-10-06T00:01:23.000Z",
+      "request": {
+        "collection": "score",
+        "replayId": "bbbbbbbbbbbbbbbbbbbbbbbb",
+        "fingerprint": "daf3f3ef20551c4674c2558014606c007779cf7e973fa2aec594b9afbac2032f",
+        "taskId": "codex/m2f-existing",
+        "action": "examined"
+      },
+      "result": {
+        "collection": "score",
+        "replayId": "bbbbbbbbbbbbbbbbbbbbbbbb",
+        "fingerprint": "daf3f3ef20551c4674c2558014606c007779cf7e973fa2aec594b9afbac2032f",
+        "taskId": "codex/m2f-existing",
+        "action": "examined",
+        "changed": false,
+        "recordStatus": "claim",
+        "reviewOrdinal": "7",
+        "generation": "12",
+        "checkpoints": {
+          "claimedAt": {
+            "present": true,
+            "value": "2026-10-06T00:00:00.000Z"
+          },
+          "examinedAt": {
+            "present": true,
+            "value": "2026-10-06T00:01:22.000Z"
+          },
+          "completedAt": {
+            "present": true,
+            "value": null
+          }
+        }
+      },
+      "beforeHash": "7b23c270d3b573b08c49eec8111eb5734777fe0e306410a290b33c611eae210e",
+      "afterHash": "7b23c270d3b573b08c49eec8111eb5734777fe0e306410a290b33c611eae210e"
+    }
+  ],
+  "artifacts": [
+    {
+      "logical": "pain_and_gain_map_2026-10-06T00-00-00-000Z.json",
+      "bytes": 20496,
+      "hash": "7f31fcb59e4fce7cfb661d27bcd2367c82adff5b9ccb2ba006747f7cfa456d32"
+    },
+    {
+      "logical": "bbbbbbbbbbbbbbbbbbbbbbbb-0000000000000000000000000000000000000000000000000000000000000000.jsonl",
+      "bytes": 922,
+      "hash": "bd31fd529070659fb447916792067b047e32b8df6b83961ac57a679ac30c2621"
+    },
+    {
+      "logical": "replay-score-source-bbbbbbbbbbbbbbbbbbbbbbbb-dc2285ad6874bf50f4b85d530fbc14b727d747cdfcd87b12abfa47fd7c1b1999.response",
+      "bytes": 302,
+      "hash": "96ea9640714e81c03290d2b758209673755ab1c6c847a154dd9d6810d76c2d0b"
+    },
+    {
+      "logical": "replay-score-source-bbbbbbbbbbbbbbbbbbbbbbbb-daf3f3ef20551c4674c2558014606c007779cf7e973fa2aec594b9afbac2032f.response",
+      "bytes": 935,
+      "hash": "8939870cdab7b23d7730de4fb3d35dc6165a798fd365255360f1f625c51a99ef"
+    },
+    {
+      "collection": "log",
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "pointer": "/otherEntries",
+      "bytes": 196298,
+      "hash": "1ccc275b7082f579712e3ac7073eb40988d8ce380f822748e69ce11b41b89dd5"
+    },
+    {
+      "collection": "log",
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+      "pointer": "/otherEntries/overflow",
+      "bytes": 165,
+      "hash": "cd407bed2b620e9c5d7fcff7740b7e88bdb4f98d20116435a854a0c4c2fceb85"
+    },
+    {
+      "collection": "log",
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000001",
+      "pointer": "/otherEntries",
+      "bytes": 199496,
+      "hash": "aafa177a20bfd811030b6601480bfe2d766af1fcefc96a172340e82131c7f959"
+    },
+    {
+      "collection": "log",
+      "fingerprint": "0000000000000000000000000000000000000000000000000000000000000001",
+      "pointer": "/otherEntries/overflow",
+      "bytes": 165,
+      "hash": "cd407bed2b620e9c5d7fcff7740b7e88bdb4f98d20116435a854a0c4c2fceb85"
+    },
+    {
+      "collection": "score",
+      "fingerprint": "dc2285ad6874bf50f4b85d530fbc14b727d747cdfcd87b12abfa47fd7c1b1999",
+      "pointer": "/validation",
+      "bytes": 399,
+      "hash": "bd96e534796a6d410d353d05516b9174ae21963e8a49496496750592369db6a2"
+    },
+    {
+      "collection": "score",
+      "fingerprint": "dc2285ad6874bf50f4b85d530fbc14b727d747cdfcd87b12abfa47fd7c1b1999",
+      "pointer": "/fixtureNote",
+      "bytes": 65538,
+      "hash": "4d41610bf1712ac960b6fb9296bf954a21ab076471030bb040d97792208ef1a7"
+    },
+    {
+      "collection": "score",
+      "fingerprint": "daf3f3ef20551c4674c2558014606c007779cf7e973fa2aec594b9afbac2032f",
+      "pointer": "/validation",
+      "bytes": 1604,
+      "hash": "fcaf41b95e1abeb88ced853eddb41ebb852e50723e44fc4841d7ec4cee8ac970"
+    },
+    {
+      "collection": "score",
+      "fingerprint": "daf3f3ef20551c4674c2558014606c007779cf7e973fa2aec594b9afbac2032f",
+      "pointer": "/fixtureNote",
+      "bytes": 65538,
+      "hash": "4d41610bf1712ac960b6fb9296bf954a21ab076471030bb040d97792208ef1a7"
+    }
+  ],
+  "large": [
+    {
+      "pointer": "/large-0",
+      "bytes": 52428800,
+      "hash": "c4d8be9b123663beef90df3cf6fb4cef157cd7ef33a07a99b04bdd0082e70bc1"
+    },
+    {
+      "pointer": "/large-1",
+      "bytes": 52428800,
+      "hash": "0d9ebc4d0c03aea39575ceaa40ebef87ceb9a870b1b71c836039a9e823b63293"
+    },
+    {
+      "pointer": "/large-2",
+      "bytes": 52428800,
+      "hash": "21596a810dae07ad5b7c6b2fd7ba4f02b9aaac321b950d48d848d845e7d138d9"
+    },
+    {
+      "pointer": "/large-3",
+      "bytes": 52428800,
+      "hash": "08b28e2c5f35eac12dc6335f35a5f1c7548156d80d164c8790462e9337c38b55"
+    },
+    {
+      "pointer": "/large-4",
+      "bytes": 52428800,
+      "hash": "d4c0b77d1d2d2078edfd276fd81c84c1b55a37d6238c2fb8c1a95db69f4b80a7"
+    },
+    {
+      "pointer": "/large-5",
+      "bytes": 52428800,
+      "hash": "7f5b7e41c402515582ac67731bd399293632f745b46c6677d7d89d16042379d4"
+    },
+    {
+      "pointer": "/large-6",
+      "bytes": 52428800,
+      "hash": "3bd5d948edbd9a48935cd38aef27d8d3c7ea2fa5000766f3d096e01ce3af0123"
+    },
+    {
+      "pointer": "/large-7",
+      "bytes": 52428800,
+      "hash": "b129ff6aebe53adfdc6e8264edee1b7af60f176f89ed700978914ebd51ffb46c"
+    },
+    {
+      "pointer": "/large-8",
+      "bytes": 52428800,
+      "hash": "4407d87662bd82e229715b1a83596df8a7a34bcf7007e7ff24017cecd399da02"
+    },
+    {
+      "pointer": "/large-9",
+      "bytes": 52428800,
+      "hash": "d825c214a5129759229cbbdeef0dfcb1aecca2cc62e584b6d1fdf4c21dd4624a"
+    },
+    {
+      "pointer": "/large-10",
+      "bytes": 52428800,
+      "hash": "81b46c92fbc355c1ad0e22ac8ca275c43be5767c1ccf8d8288a4ccf6a9899938"
+    },
+    {
+      "pointer": "/large-11",
+      "bytes": 52428800,
+      "hash": "7d9098289d3a5feaf76d1d435825314e5c29cafbf120030eb4a178d91ec9462c"
+    }
+  ],
+  "scaleRoot": "/tmp/pain-gain-m2f.zt3u1S/oracle-final/v2-scale/replay_logs",
+  "scoreFingerprints": [
+    "dc2285ad6874bf50f4b85d530fbc14b727d747cdfcd87b12abfa47fd7c1b1999",
+    "daf3f3ef20551c4674c2558014606c007779cf7e973fa2aec594b9afbac2032f"
+  ]
+}

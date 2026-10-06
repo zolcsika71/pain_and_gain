@@ -48,14 +48,15 @@ function pointer(value) { text(value, 'JSON pointer'); if (value && !/^(?:\/(?:[
 export function runtimeCapabilities() {
     const [major, minor, patch] = process.versions.node.split('.').map(Number);
     if (major !== 24 || minor < 19 || (minor === 19 && patch < 0) || process.platform !== 'darwin' || typeof backup !== 'function') fail('UNSUPPORTED_RUNTIME', 'M1 requires qualified Node 24.19+ on local macOS APFS');
-    const db = new DatabaseSync(':memory:');
+    const db = new DatabaseSync(':memory:'); let failed = false;
     try {
         const stmt = db.prepare('SELECT sqlite_version() AS version');
         const version = stmt.get().version;
         const n = version.split('.').map(Number);
         if (n[0] < 3 || (n[0] === 3 && (n[1] < 53 || (n[1] === 53 && n[2] < 3))) || typeof stmt.iterate !== 'function') fail('UNSUPPORTED_RUNTIME', 'SQLite 3.53.3+ required');
         return { node: process.version, sqlite: version, filesystem: 'declared-local-apfs', backup: true };
-    } finally { db.close(); }
+    } catch (error) { failed = true; throw error; }
+    finally { try { db.close(); } catch (error) { if (!failed) throw error; } }
 }
 
 function fixtureRoot(root) {
@@ -105,6 +106,7 @@ function writeExclusive(file, bytes) { const fd = fs.openSync(file, 'wx', 0o600)
 async function locked(root, action, metrics) {
     const lock = path.join(root, '.manifest.lock'), token = randomUUID(), owner = `${lock}.${token}.tmp`;
     writeExclusive(owner, JSON.stringify({ pid: process.pid, token })); let acquired = false;
+    let failed = false;
     try {
         for (let attempt = 0; attempt < 50; attempt++) {
             try { fs.linkSync(owner, lock); acquired = true; metrics.locks++; break; }
@@ -124,12 +126,18 @@ async function locked(root, action, metrics) {
         }
         if (!acquired) fail('LOCKED', 'Fixture store is locked; retry after owner exits');
         return await action();
-    } finally {
-        if (acquired) {
-            const current = JSON.parse(boundedFile(root, '.manifest.lock', 16_384));
-            if (current.token === token) fs.unlinkSync(lock);
-        }
-        fs.unlinkSync(owner);
+    } catch (error) { failed = true; throw error; }
+    finally {
+        let cleanupFailed = false, cleanupError;
+        try {
+            if (acquired) {
+                const current = JSON.parse(boundedFile(root, '.manifest.lock', 16_384));
+                if (current.token === token) fs.unlinkSync(lock);
+            }
+        } catch (error) { cleanupFailed = true; cleanupError = error; }
+        try { fs.unlinkSync(owner); }
+        catch (error) { if (!cleanupFailed) { cleanupFailed = true; cleanupError = error; } }
+        if (!failed && cleanupFailed) throw cleanupError;
     }
 }
 
@@ -179,7 +187,7 @@ function connection(root, d, write, metrics, create = false) {
             if (d.schemaVersion === 2 && db.prepare('SELECT catalog_version FROM store_meta').get().catalog_version !== 1) fail('UNSUPPORTED_STORE','Catalog version mismatch');
         }
         return db;
-    } catch (e) { db.close(); throw e; }
+    } catch (e) { try { db.close(); } catch {} throw e; }
 }
 
 export const createFixtureStore = options => createVersionedFixture(options, 1);
@@ -229,16 +237,35 @@ async function openVersionedStore({ root, mode, fault, recover = false } = {},sc
         const row = normalizeRow(statement.get(...params)); if (row) rowBudget(row); metrics.rows += row ? 1 : 0; return row;
     };
     const generation = db => stmt(db, 'SELECT generation FROM store_meta').generation;
-    const read = action => { assertOpen(); const current = currentDescriptor(); if(current.storeId !== d.storeId) fail('UNSUPPORTED_STORE','Store handle identity changed'); const db = connection(root, current, false, metrics); try { db.exec('BEGIN'); const result = action(db); db.exec('COMMIT'); return result; } finally { db.close(); } };
+    const read = action => { assertOpen(); const current = currentDescriptor(); if(current.storeId !== d.storeId) fail('UNSUPPORTED_STORE','Store handle identity changed'); const db = connection(root, current, false, metrics); let failed = false; try { db.exec('BEGIN'); const result = action(db); db.exec('COMMIT'); return result; } catch (error) { failed = true; throw error; } finally { try { db.close(); } catch (error) { if (!failed) throw error; } } };
     // Normal opens remain nonmutating. A fresh process may explicitly request
     // native journal recovery without first obtaining a read-validated handle.
     if (recover) await locked(root,async () => {
         fixtureRoot(root);
         const current = currentDescriptor();
         if (current.storeId !== d.storeId) fail('UNSUPPORTED_STORE','Store changed while acquiring recovery lock');
-        const db = connection(root,current,true,metrics);
-        try { /* connection verifies settings and identity after native recovery */ }
-        finally { db.close(); }
+        const db = connection(root,current,true,metrics); let failed = false;
+        try {
+            // SQLite rolls back hot journals during connection validation. A
+            // crash before the journal header is synced can leave a non-hot
+            // journal behind even after a successful writable read. Have
+            // SQLite finish its journal lifecycle with a same-value header
+            // write, only on this explicit, locked recovery path. Preserve the
+            // existing user_version and all logical store data/generation.
+            const journal = path.join(root,current.database) + '-journal';
+            if (fs.existsSync(journal) && fs.statSync(journal).size > 0) {
+                const version = db.prepare('PRAGMA user_version').get().user_version;
+                if (!Number.isInteger(version) || version < -2_147_483_648 || version > 2_147_483_647) fail('UNSUPPORTED_STORE','Invalid SQLite user_version');
+                db.exec('BEGIN IMMEDIATE');
+                db.exec(`PRAGMA user_version=${version}`);
+                fault?.('recovery-commit');
+                db.exec('COMMIT');
+            }
+        } catch (error) {
+            failed = true;
+            try { if (db.isTransaction) db.exec('ROLLBACK'); } catch {}
+            throw error;
+        } finally { try { db.close(); } catch (error) { if (!failed) throw error; } }
     },metrics);
     else read(() => null);
     function entity(db, owner) {
@@ -434,6 +461,47 @@ async function openVersionedStore({ root, mode, fault, recover = false } = {},sc
         const outstanding = new Set(), temporaryCloses = new Set();
         const inject = boundary => fault?.(boundary);
         const writer = {
+            readReviewCheckpoint({recordKey:k,taskId}) {
+                ensure(); const key = recordKey(k); text(taskId,'task ID');
+                // Fixed point/header queries only. Never select reviews.value,
+                // unrelated property values or any payload body.
+                let bytes = 0;
+                const get = (sql,params = [],all = false) => {
+                    const value = stmt(db,sql,params,all ? 'all' : 'get');
+                    for (const row of all ? value : value ? [value] : []) {
+                        bytes += Buffer.byteLength(rowJson(row));
+                        if (bytes > 16_384) fail('RESOURCE_LIMIT','Checkpoint facts exceed 16 KiB');
+                    }
+                    return value;
+                };
+                const originals = (kind,key,names) => get(`SELECT pointer,ordinal,value,payload_pointer FROM properties WHERE owner_kind=? AND owner_key=? AND pointer IN (${names.map(()=>'?').join(',')})`,[kind,key,...names],true);
+                const identity = [k.collection,k.replayId,k.fingerprint];
+                const current = get('SELECT * FROM records WHERE collection=? AND replay_id=? AND fingerprint=?',identity);
+                const retired = get('SELECT key FROM retired WHERE collection=? AND replay_id=? AND fingerprint=?',identity);
+                const gen = get('SELECT generation FROM store_meta').generation;
+                if (!current) return {current,retired,generation:gen};
+                const recordProperties = originals('record',key,['/collection','/replayId','/fingerprint','/mapId','/buildId','/status','/outputPath','/outputFingerprint',...(k.collection === 'log' ? ['/mapChecksum','/mapFile'] : [])]);
+                const intent = get('SELECT id FROM operations WHERE collection=? AND replay_id=? AND fingerprint=? LIMIT 1',identity);
+                const output = get('SELECT * FROM outputs WHERE collection=? AND replay_id=? AND fingerprint=?',identity);
+                if (output) assertPathKind(db,output.path,'outputs',payloadPaths);
+                let replay, map, replayProperties, mapProperties;
+                if (k.collection === 'log') {
+                    replay = get('SELECT * FROM replays WHERE key=?',[k.replayId]);
+                    replayProperties = originals('replay',k.replayId,['/replayId','/mapId','/buildId','/status']);
+                    map = get('SELECT * FROM maps WHERE key=?',[current.map_id]);
+                    mapProperties = originals('map',current.map_id,['/mapId','/id','/checksum','/path','/file','/hash','/status']);
+                    if (map?.path) assertPathKind(db,map.path,'maps',payloadPaths);
+                }
+                const owner = {kind:'review',key:inlineJson([key,taskId])};
+                const review = get('SELECT collection,replay_id,fingerprint,task,ordinal,owner_key FROM reviews WHERE collection=? AND replay_id=? AND fingerprint=? AND task=?',[...identity,taskId]);
+                const binding = get('SELECT collection,replay_id,fingerprint,task FROM reviews WHERE owner_key=?',[owner.key]);
+                const checkpoints = originals('review',owner.key,['/claimedAt','/examinedAt','/completedAt']);
+                const reviewTail = get('SELECT ordinal FROM reviews WHERE collection=? AND replay_id=? AND fingerprint=? ORDER BY ordinal DESC,task DESC LIMIT 1',identity);
+                const propertyTail = get('SELECT ordinal FROM properties WHERE owner_kind=? AND owner_key=? ORDER BY ordinal DESC,pointer DESC LIMIT 1',[owner.kind,owner.key]);
+                const facts = {current,retired,generation:gen,recordProperties,intent,output,replay,map,replayProperties,mapProperties,owner,review,binding,checkpoints,reviewTail,propertyTail};
+                if (Buffer.byteLength(JSON.stringify(facts,(_,v)=>typeof v === 'bigint' ? String(v) : v)) > 16_384) fail('RESOURCE_LIMIT','Checkpoint facts exceed 16 KiB');
+                return facts;
+            },
             transaction(callback) {
                 ensure(); if (transactionActive) fail('INVALID_STATE','Nested transactions prohibited'); transactionActive = true;
                 try {
@@ -446,7 +514,7 @@ async function openVersionedStore({ root, mode, fault, recover = false } = {},sc
                     if (result && typeof result.then === 'function') { result.catch(() => {}); fail('INVALID_STATE','Transaction callback must be synchronous'); }
                     const gen = generation(db); if (BigInt(gen) >= MAX_INTEGER) fail('RESOURCE_LIMIT','Generation exhausted');
                     stmt(db,'UPDATE store_meta SET generation=generation+1',[],'run'); inject('transaction-commit'); db.exec('COMMIT'); return result;
-                } catch (e) { if (db.isTransaction) db.exec('ROLLBACK'); throw e; } finally { transactionActive = false; }
+                } catch (e) { try { if (db.isTransaction) db.exec('ROLLBACK'); } catch {} throw e; } finally { transactionActive = false; }
             },
             async publishPayload({ owner, pointer:p, role, source, expectedBytes, expectedHash, parentPointer = null, evidenceOnly = false, items = null }) {
                 ensure(); pointer(p); ownerTuple(owner); const relative = payloadPath(d.storeId,owner,p,role,expectedHash);
@@ -584,7 +652,7 @@ async function openVersionedStore({ root, mode, fault, recover = false } = {},sc
         pagePayloads(owner,parentPointer = null,cursor) { ownerTuple(owner); return read(db => page(db,'SELECT * FROM payloads WHERE owner_kind=? AND owner_key=? AND parent IS ?',[owner.kind,owner.key,parentPointer],'pointer',cursor,LIMITS.page,['payloads',owner,parentPointer])); },
         async withWriter(callback) {
             assertOpen(); if (mode !== 'write' || inWriter) fail('INVALID_STATE','Writable nonnested handle required'); inWriter = true;
-            try { return await locked(root,async () => { const current = currentDescriptor(); if (current.storeId !== d.storeId) fail('UNSUPPORTED_STORE','Store changed while acquiring lock'); const db = connection(root,current,true,metrics); try { return await writerCallback(db,w => callback(catalogCallback ? catalogDefinition.writer({db,stmt,writer:w,root,store}) : w)); } finally { db.close(); } },metrics); }
+            try { return await locked(root,async () => { fixtureRoot(root); const current = currentDescriptor(); if (current.storeId !== d.storeId) fail('UNSUPPORTED_STORE','Store changed while acquiring lock'); const db = connection(root,current,true,metrics); let failed = false; try { return await writerCallback(db,w => callback(catalogCallback ? catalogDefinition.writer({db,stmt,writer:w,root,store}) : w)); } catch (error) { failed = true; throw error; } finally { try { db.close(); } catch (error) { if (!failed) throw error; } } },metrics); }
             finally { inWriter = false; }
         },
         async withReadSnapshot(options = {},callback) {

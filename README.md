@@ -200,6 +200,15 @@ not compose two adapter calls or enable production dispatch. See the
 [M2e qualification record](docs/architecture/replay-storage-v3-m2e-2026-10-06.md)
 for measured status, independent oracles and bounded synthetic limitations.
 
+`tools/replay-review-fixture.js` provides M2f's asynchronous
+`updateFixtureReviewCheckpoint({root, schemaVersion, collection, replayId, fingerprint, taskId, action})`.
+The only actions are `claim` and `examined`, for one exact log/score record in a
+marked temporary fixture. The writer lock protects validation and the atomic
+checkpoint update; repeated checkpoints are generation-neutral. A claim does
+not verify artifacts, and examination is an explicit caller assertion. See the
+[M2f qualification record](docs/architecture/replay-storage-v3-m2f-2026-10-06.md)
+for results, retained failures and the post-commit cleanup boundary.
+
 ### Managed replay-score sources
 
 ADR 0005 Milestone 1 adds optional manifest-version-2 `scoreRecords` and

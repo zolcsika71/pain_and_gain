@@ -42,6 +42,13 @@ file-intent execution or generation increment for recovery itself. Subsequent
 operations reacquire/revalidate normally; open does not reserve the lock for the
 returned handle. This remains a synthetic-root interface, not production repair.
 
+The [M2f restart correction](replay-storage-v3-m2f-2026-10-06.md#restart-recovery-correction)
+also handles a retained non-hot DELETE journal after checked writable validation.
+Under the same explicit recovery lock, SQLite commits a same-value `user_version`
+header write to finish its journal lifecycle. The existing header value, logical
+tables and generation are preserved. Ordinary opens still reject that journal;
+there is no manual journal deletion, implicit retry or new recovery option.
+
 Cross-kind ownership uses exact indexed path checks across maps, outputs and
 payloads under the writer lock, at reservation and publication. Pending rows
 reserve ownership even when no final file exists. Evidence-only prepublication

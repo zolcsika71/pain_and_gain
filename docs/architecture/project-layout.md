@@ -79,6 +79,13 @@ M2c/M2d loaders feed the storage-neutral `analyzeLoadedCombinedReplay` boundary;
 existing analysis algorithms, CLI dispatch and lifecycle callers are unchanged.
 See the [M2e record](replay-storage-v3-m2e-2026-10-06.md).
 
+`tools/replay-review-fixture.js` is the fixture-only M2f claim/examined adapter.
+It reads fixed checkpoint facts on the writer's locked connection, changes only
+the selected review's authorized properties, and returns a bounded detached
+receipt. It never opens evidence or invokes completion/cleanup policy. Repeated
+checkpoints do not start a write transaction. See the
+[M2f record](replay-storage-v3-m2f-2026-10-06.md) for qualification and limitations.
+
 `tools/replay-analysis.js` implements the deterministic M4 analyzer outside the
 Arena runtime. Its importable
 `analyzeReplay({ root, replayId, fingerprints?, scoreFingerprints?, reportMode? })`
