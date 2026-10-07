@@ -30,6 +30,12 @@ In the Screeps Arena client, set this arena's code directory to the project's `s
 
 Game rules are in `docs/pain_and_gain_rules.md`. The API and squad references are in `docs/architecture/`; code examples are in `docs/examples/`.
 
+For local storage accounting, run `node tools/storage-inventory.js --dry-run`.
+It reads only filesystem metadata in evidence and temporary trees, counts shared
+Git storage once, and never deletes or archives anything. See the
+[storage maintenance procedure](docs/architecture/local-storage-maintenance.md)
+for exclusions, retention, restoration and the focused validation command.
+
 An armed creep considers the nearest living enemy within five tiles, breaking equal-distance ties by ID. It approaches until that enemy is within range 1 for ATTACK or range 3 for RANGED_ATTACK, then holds position. A creep with both functioning weapon types closes to range 1. Without a nearby enemy or functioning weapon, it moves toward the first ScoreFlag. Each creep receives at most one movement command per tick. Attack and healing eligibility still uses the observed positions before movement.
 
 The optional one-scout flag-allocation experiment is **off by default** (`oneScoutFlagExperiment = false` in `src/config.js`). To test it, set that constant to `true`, run `npm run build-id:generate` and `npm run build-id:check`, then verify Arena selects this project's `src/` before starting a match. The changed build ID distinguishes this configuration from the baseline. Only one full-health MOVE-only scout can make one bounded attempt at a neutral attack-reduction flag after the first flag is owned; combat and healer movement keep priority. The [experiment policy](docs/architecture/combat-positioning-validation.md#one-scout-flag-allocation-experiment--2026-09-28) defines safety gates and measurement. Return the switch to `false` and regenerate/check the build ID for baseline runs. Captured flags continue to score and impose their army-wide penalty after the scout leaves; a second capture is not automatically beneficial.
