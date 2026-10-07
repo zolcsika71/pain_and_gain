@@ -402,12 +402,16 @@ async function openVersionedStore({ root, mode, fault, recover = false } = {},sc
                     }
                 }
             },
-            setStatus({ recordKey:k, status }) {
+            setStatus({ recordKey:k, status, propertyOrdinal }) {
                 recordKey(k); const row = record(db,k); if (!row) fail('MISSING_OWNER','Record unavailable');
                 if (status === 'claim') fail('INVALID_STATE','Use finishPublication for readiness');
-                run('UPDATE records SET status=? WHERE key=?',[status,recordKey(k)]);
                 const original = stmt(db,'SELECT ordinal FROM properties WHERE owner_kind=? AND owner_key=? AND pointer=?',['record',recordKey(k),'/status']);
-                api.setProperty({owner:recordOwner(k),pointer:'/status',ordinal:original?.ordinal ?? 0,value:status});
+                if (propertyOrdinal !== undefined) {
+                    integer(propertyOrdinal,'status property ordinal');
+                    if (original && BigInt(original.ordinal) !== BigInt(propertyOrdinal)) fail('INVALID_REFERENCE','Existing status ordinal cannot change');
+                }
+                run('UPDATE records SET status=? WHERE key=?',[status,recordKey(k)]);
+                api.setProperty({owner:recordOwner(k),pointer:'/status',ordinal:propertyOrdinal ?? original?.ordinal ?? 0,value:status});
             },
             finishPublication({ recordKey:k, operationId, payloadRefs = [], retire = false }) {
                 recordKey(k); const r = record(db,k); if (!r) fail('MISSING_OWNER','Missing record');
@@ -459,8 +463,44 @@ async function openVersionedStore({ root, mode, fault, recover = false } = {},sc
         let active = true, transactionActive = false; const ensure = () => { if (!active) fail('CLOSED','Writer callback ended'); };
         const published = new Map(), payloadPaths = new Set();
         const outstanding = new Set(), temporaryCloses = new Set();
+        const completionCursors = new WeakMap();
         const inject = boundary => fault?.(boundary);
         const writer = {
+            readScoreCompletionFacts({recordKey:k,taskId}) {
+                ensure(); if (k?.collection !== 'score') fail('INVALID_IDENTITY','Score completion requires score identity');
+                const facts = writer.readReviewCheckpoint({recordKey:k,taskId});
+                if (facts.current) facts.recordPropertyTail = stmt(db,'SELECT ordinal FROM properties WHERE owner_kind=? AND owner_key=? ORDER BY ordinal DESC,pointer DESC LIMIT 1',['record',recordKey(k)]);
+                if (Buffer.byteLength(JSON.stringify(facts,(_,v)=>typeof v === 'bigint' ? String(v) : v)) > 16_384) fail('RESOURCE_LIMIT','Completion facts exceed 16 KiB');
+                return facts;
+            },
+            pageScoreReviewCheckpoints({recordKey:k,after = null}) {
+                ensure(); const key = recordKey(k);
+                if (k.collection !== 'score') fail('INVALID_IDENTITY','Score completion requires score identity');
+                const gen = String(generation(db));
+                const previous = after === null ? null : completionCursors.get(after);
+                if (after !== null && (!previous || previous.key !== key || previous.generation !== gen)) fail('STALE_CURSOR','Foreign, expired or stale completion cursor');
+                const names = ['claimedAt','examinedAt','completedAt'];
+                const sql = `SELECT r.collection,r.replay_id,r.fingerprint,r.task,r.ordinal,r.owner_key,${names.map((n,i)=>`p${i}.ordinal AS ${n}Ordinal,p${i}.value AS ${n}Value,p${i}.payload_pointer AS ${n}Payload`).join(',')}
+                    FROM reviews AS r ${names.map((n,i)=>`LEFT JOIN properties AS p${i} ON p${i}.owner_kind='review' AND p${i}.owner_key=r.owner_key AND p${i}.pointer='/${n}'`).join(' ')}
+                    WHERE r.collection=? AND r.replay_id=? AND r.fingerprint=? AND (r.ordinal,r.task)>(?,?) ORDER BY r.ordinal,r.task LIMIT 128`;
+                metrics.sql++; const statement = db.prepare(sql); statement.setReadBigInts(true);
+                const rows = []; let bytes = 0;
+                for (const raw of statement.iterate(k.collection,k.replayId,k.fingerprint,previous?.ordinal ?? -1,previous?.task ?? '')) {
+                    metrics.rows++; const row = rowBudget(normalizeRow(raw));
+                    bytes += Buffer.byteLength(rowJson(row));
+                    if (bytes > 1_048_576) fail('RESOURCE_LIMIT','Completion page exceeds 1 MiB');
+                    rows.push(row);
+                }
+                let cursor = null;
+                if (rows.length === 128) {
+                    const last = rows.at(-1);
+                    cursor = Object.freeze({storeId:d.storeId,generation:gen,record:key,query:'score-checkpoints-v1',ordinal:String(last.ordinal),task:last.task});
+                    completionCursors.set(cursor,{key,generation:gen,ordinal:last.ordinal,task:last.task});
+                }
+                const result = {rows,cursor};
+                if (Buffer.byteLength(JSON.stringify(result,(_,v)=>typeof v === 'bigint' ? String(v) : v)) > 1_048_576) fail('RESOURCE_LIMIT','Completion page exceeds 1 MiB');
+                return result;
+            },
             readReviewCheckpoint({recordKey:k,taskId}) {
                 ensure(); const key = recordKey(k); text(taskId,'task ID');
                 // Fixed point/header queries only. Never select reviews.value,
