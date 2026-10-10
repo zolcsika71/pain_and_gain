@@ -74,7 +74,7 @@ test('ranged combat prefers the nearest enemy over input order and ID', () => {
     ]);
 });
 
-test('ally healing prefers the nearest damaged ally over input order and ID', () => {
+test('direct healing beats ranged healing when both targets exceed capacity', () => {
     const actor = creep('actor', 0, 0, [['heal', 10]]);
     const farther = creep('a', 3, 0, [], { hits: 50 });
     const nearer = creep('z', 1, 0, [], { hits: 50 });
@@ -84,7 +84,7 @@ test('ally healing prefers the nearest damaged ally over input order and ID', ()
     });
 });
 
-test('self-healing wins priority; adjacent allies use heal and range 3 uses rangedHeal', () => {
+test('self wins equal capped scores; adjacent allies use heal and range 3 uses rangedHeal', () => {
     const actor = creep('actor', 0, 0, [['heal', 10]], { hits: 50 });
     const adjacent = creep('adjacent', 1, 0, [], { hits: 50 });
     const atThree = creep('three', 3, 0, [], { hits: 50 });
