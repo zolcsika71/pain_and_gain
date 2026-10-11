@@ -30,7 +30,28 @@ The opt-in allocation uses `searchPath` with a bounded operation count to requir
 
 Local Node.js tests import the pure selection and execution modules. Arena-specific imports stay at the observation and tick-orchestration boundaries (`observe.js` and the optional route search in `loop.js`); `package.json` and Node.js test APIs are for local tooling only. Relative imports remain inside `src/`, because Arena uses the directory containing `main.mjs` as the code root.
 
-## Local replay imports
+## Explicit transport and local replay imports
+
+`tools/retrieve-intent.js` is the explicitly selected single-intent handoff.
+It verifies discovery evidence/eligibility under the spool lock, retains a
+separate durable association and delegates to the existing worker. It does not
+enumerate a backlog or activate watching; see [its contract](explicit-intent-handoff.md).
+
+`tools/discover-matches.js` is the bounded one-shot discovery and durable handoff
+command. It reconciles account/arena history from the head, retains raw responses
+and unique account/match intents, and explicitly reports coverage gaps. It never
+invokes retrieval or starts matches; see [its contract](one-shot-discovery.md).
+`tests/fixtures/discovery-qualified.json` retains the partial discovery probe's
+exact response bodies; missing positions 40–46 are not synthesized.
+
+`tools/retrieve-match.js` is the explicit finished-match retrieval worker.
+`tools/arena-retrieval-session.js` isolates Steam ticket/cookie handling in a
+short-lived child with suppressed native output; `tools/retrieval-files.js`
+provides residency guards, atomic durable publication and a kernel-held writer
+lock. Outputs are a separate per-match raw-response job, never the managed-v2
+manifest. The worker reuses only pure validation helpers from `replay-logs.js`;
+it invokes no import/review/cleanup entrypoint. See the
+[transport/retention contract](explicit-match-retrieval.md).
 
 The local `tools/build-id.js` command generates and verifies `src/debug/build-id.js`. It hashes sorted project-relative paths and exact bytes of runtime `.js`/`.mjs` files under `src/` with NUL separators, excluding the generated file itself and `src/typings/`. The runtime logger emits this ID with pre-action map and game-state entries. The importer records tagged response IDs and a replay association independently of map identity; conflicting tags are rejected, while legacy untagged response provenance stays unknown. See the README for the pre-launch commands and precise hash rule.
 

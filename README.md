@@ -112,6 +112,77 @@ In replay `6ab8419fe03513801491e8c6` against あぶらむし v3, the replay repo
 
 In replay `6ab84434e0351372bc91e8fe` against AlbaVika v1, the replay UI reported defeat at tick 72. With “Show current tick only” off, the console showed pre-action `game-state` entries for ticks 1–71 and no separate runtime-error entries. Owned `pg_player1_melee_1` rose from 990/1600 hits at tick 52 to 1134/1600 at tick 53. Owned `pg_player1_ranged_2` rose from 177/1200 at tick 64 to 249/1200 at tick 65 and 321/1200 at tick 66. At tick 66, owned `pg_player1_healer_3` was at (48,48), one tile from `ranged_2` at (47,48), with four functioning HEAL parts; the healer itself was damaged (936/1200), so self-healing was also possible. These health increases are observed recovery and consistent with healing, but the snapshots do not record issued heal actions, and the console view did not expose the complete tick 64–65 healer records. A specific heal action and its target therefore remain unconfirmed. The selected code-directory path was not independently visible in the replay view.
 
+## Explicit finished-match retrieval
+
+See the [consolidation checkpoint](docs/architecture/replay-progress-2026-10-11.md)
+for verified collection/alignment and backup milestones, deferred storage work,
+qualification limits, and the reference-repository review guideline. Publication
+does not activate automatic collection or production SQLite storage.
+
+`tools/retrieve-match.js` retrieves one explicitly named finished match through
+the installed Steamworks library and Arena authentication, without replay
+playback. It neither discovers nor starts matches, imports managed evidence,
+changes review claims, nor runs continuously.
+
+On the qualified macOS/Node 24 setup, keep Steam signed in to the intended
+account. Arena was running during qualification; operation with it closed,
+Steam restart recovery and session-expiry renewal remain unqualified. Supply an
+empty/new job directory under an existing resident parent, outside Chromium
+cache and managed `replay_logs/`:
+
+```sh
+node tools/retrieve-match.js <match-id> <absolute-job-directory> \
+  --account <username> --code-id <own-code-id> --code-version <version>
+```
+
+Rerun the identical command to resume: retained bytes and receipts are verified
+before reuse, without repeating successful evidence requests. Credentials stay
+in memory in an isolated authentication process. All decoded response bodies,
+including HTTP errors, remain with a resumable `ledger.json`; changed successful
+responses and corruption block success rather than overwrite evidence.
+
+See [the worker contract](docs/architecture/explicit-match-retrieval.md) for
+prerequisites, retry limits, interruption recovery, explicit `--refresh`,
+coverage semantics and verification receipts. Shutdown now waits for child exit,
+escalates to SIGKILL within a bounded grace period, and reports unconfirmed
+ticket cancellation separately from the original operation error. Focused offline checks:
+`node --test tests/unit/retrieve-match.test.js tests/unit/retrieval-lifecycle.test.js`. This is not automatic post-match
+collection, managed admission, or proof of runtime-emission completeness.
+
+## One-shot discovery and retrieval intents
+
+The separate [explicit single-intent handoff](docs/architecture/explicit-intent-handoff.md)
+is available as `node tools/retrieve-intent.js <spool> <account-id> <game-id>`.
+It revalidates one selected inactive intent and delegates to the resumable worker
+under the discovery lock. One selected match and verified resume were live-qualified;
+this does not qualify unattended operation. No automatic consumer is active.
+Focused tests: `node --test tests/unit/retrieve-intent.test.js`.
+
+`tools/discover-matches.js` performs one bounded account/arena history reconciliation
+and retains unique account + `game._id` retrieval intents. It does **not** execute
+the retrieval worker, watch for matches, operate playback, or start matches.
+
+```sh
+node tools/discover-matches.js /absolute/resident/discovery-spool \
+  --account bushdoctor2008 \
+  --account-id 60ce13d2df54262f119a12d8 \
+  --arena-id 6a86d8c454a3948a1e35f90c
+```
+
+Reuse the same dedicated spool outside the repository/cache. Each invocation starts
+at the history head, verifies retained evidence and reconciles duplicate/crash-retried
+handoffs. Default limits are 100 GETs, three sweeps and ten minutes. Retention,
+mode coverage and pagination guarantees remain unqualified: even CLI success means
+only `enumerated-with-coverage-gaps`, never lossless catch-up. Unknown/unavailable
+pages, unfinished matches and exhausted budgets remain explicit.
+
+See [the discovery contract](docs/architecture/one-shot-discovery.md) for handoff
+format, publication ordering, resume rules and authentication prerequisites.
+Focused tests: `node --test tests/unit/discover-matches.test.js`.
+Implementation validation uses retained responses and mocks. Separate bounded
+live qualifications are summarized in the consolidation checkpoint; no automatic
+processing has been activated.
+
 ## Local replay-log importer
 
 Before manually launching a match, run `npm run build-id:generate` after the last runtime-source edit, then `npm run build-id:check` immediately before launch. The latter only verifies: it fails if the generated module is missing, edited, or stale and never regenerates it. Confirm Arena selects this project's `src/` directory and leave its runtime files unchanged during the match. These commands do **not** control or attest to a manual Arena launch. The generated `src/debug/build-id.js` is imported by the loggers, so map, game-state, membership, action, CPU, and coverage records emit the running build ID.
