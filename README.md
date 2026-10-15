@@ -1,5 +1,9 @@
 # Pain and Gain
 
+Synthetic storage-authority selection and bounded post-write v2 rollback are
+documented in [the explicit authority contract](docs/architecture/replay-synthetic-authority.md).
+These fixture-only commands do not activate production SQLite storage.
+
 Screeps Arena code for the Pain and Gain arena. Armed creeps approach nearby enemies to reach weapon range; other movement falls back to the first ScoreFlag returned by the game API. Creeps use available attacks or healing against targets in range at the start of the tick.
 
 ## Layout
@@ -249,6 +253,16 @@ explicit temporary-fixture-only v3 API; see the
 [M2a qualification](docs/architecture/replay-storage-v3-m2a-2026-10-04.md).
 This does not enable production v3 dispatch or bound the legacy manifest loader.
 
+The separate [fixture-only legacy member reader](docs/architecture/replay-legacy-members.md)
+streams bounded record/review/link metadata using the existing scanner, without
+opening SQLite or a production manifest. Oversized members fail explicitly;
+it is not a production converter or storage activation.
+
+The opt-in [synthetic conversion slice](docs/architecture/replay-conversion-slice.md)
+uses the existing SQLite core for one selected synthetic log and score record,
+links and active reviews. It requires resident Node 24.19+ within major 24 and
+marked temporary roots; it does not read or migrate production evidence.
+
 An independent fixture-only `writeFixtureV2Other` adapter now exercises bounded
 legacy manifest selection through that same consumer. It is not connected to
 the CLI: deployed commands still use their existing loaders. See the
@@ -259,7 +273,7 @@ synthetic compatibility, full-file scanning costs and resource limits.
 `analyzeFixtureReplay({root, schemaVersion, replayId, fingerprints, reportMode})`
 for marked temporary v3 fixtures only. It pins the selected metadata, map, logs
 and diagnostic dependencies before invoking the shared analyzer. The synchronous
-v2 analyzer/CLI and scoring path remain unchanged and SQLite-free. See the
+ordinary v2 analyzer/CLI and scoring path remain unchanged and SQLite-free. See the
 [M2c qualification record](docs/architecture/replay-storage-v3-m2c-2026-10-05.md)
 for measured results, transport-error boundaries and exclusions; this is not
 production dispatch or completion of M2.
@@ -268,7 +282,7 @@ production dispatch or completion of M2.
 `analyzeFixtureScoreReplay({root, schemaVersion, replayId, scoreFingerprints, reportMode})`.
 Only explicit score selections in marked temporary schema-1/2 fixtures are
 accepted. It never selects logs or reads optional maps, changes lifecycle state,
-or enables v3 CLI dispatch. See the [M2d qualification record](docs/architecture/replay-storage-v3-m2d-2026-10-05.md)
+or enables production v3 CLI dispatch. See the [M2d qualification record](docs/architecture/replay-storage-v3-m2d-2026-10-05.md)
 for exact scope, independent score-only oracles and retained limitations.
 
 `tools/replay-combined-analysis-fixture.js` provides M2e's asynchronous
@@ -387,6 +401,42 @@ intended scope, analyze all current records for a replay with:
 ```sh
 npm run replay:analyze -- <replay-id>
 ```
+
+Generated schema-1 SQLite fixtures have a separate
+[explicit synthetic analysis route](docs/architecture/replay-analysis.md#explicit-synthetic-sqlite-route).
+It requires named fingerprints, preserves existing bounded selected arrays and
+never changes reviews or production authority. It is not end-to-end streaming.
+
+[Production authority wiring](docs/architecture/replay-production-authority.md)
+now connects the existing SQLite consumers to an explicitly approved v3 descriptor
+and administrative cutover/current-state recovery path. It is tested with
+generated fixtures only. V2 remains deployed/default; no production transition,
+write enablement or renewed M2h qualification is authorized by this implementation.
+
+Selected, newly generated Chromium-cache fixtures also have a separate
+[synthetic SQLite import route](docs/architecture/replay-synthetic-imports.md).
+It reuses the existing transport parsers and publication contracts under explicit
+fixture guards. It does not admit raw HTTP downloads or activate production storage.
+
+`node tools/replay-logs.js --synthetic-sqlite <fixture-root> list` provides
+[bounded synthetic listing and reconciliation](docs/architecture/replay-log-checkpoint-integration.md#bounded-synthetic-list-and-reconciliation).
+It can migrate waiting statuses and delete eligible done-log payloads; it is not
+read-only. It rejects exceeded bounds instead of truncating results. Production
+dispatch, repair and authority selection remain unchanged or fenced.
+
+Generated cache fixtures also support
+[bounded synthetic scan/watch](docs/architecture/replay-synthetic-imports.md#bounded-synthetic-scan-and-watch):
+`node tools/replay-logs.js --synthetic-sqlite <fixture-root> scan <cache-fixture-root>`
+(or `watch`). Watch is finite and cancellable; it does not activate automatic
+collection or permit real Arena-cache access.
+
+Generated stores also support [bounded map/output and local maintenance commands](docs/architecture/replay-synthetic-maintenance.md):
+`maps`, selected `other`, `migrate-status`, and `register-local` through the same
+explicit `--synthetic-sqlite <fixture-root>` route. `upgrade-map-checksums` repairs
+valid missing checksums through a map-owned journal in newly created capable
+synthetic stores, retaining exact originals and recovery state. Older stores
+reject that capability without automatic migration. Production authority and
+routing remain unchanged.
 
 Append one or more full response fingerprints to restrict the report to those
 log records. To analyze scoring evidence, append `--score` and one or more full

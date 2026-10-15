@@ -1,3 +1,4 @@
+import * as evidence from '../fixtures/qualification-evidence.js';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -15,9 +16,9 @@ const key = (i = 0, collection = 'log') => ({ collection, replayId, fingerprint:
 const moduleUrl = new URL('../../tools/replay-store.js',import.meta.url).href;
 const rootPrefix = path.join(fs.realpathSync(os.tmpdir()),'pain-gain-store-v3-fixture-');
 async function fixture(t, options = {}) {
-    const root = fs.mkdtempSync(rootPrefix);
+    const root = evidence.evidenceTemp(rootPrefix);
     const store = await createFixtureStore({root,filesystem:'local-apfs',...options});
-    t.after(() => { store.close(); fs.rmSync(root,{recursive:true,force:true}); });
+    t.after(() => { store.close(); evidence.disposeFixture(root,{recursive:true,force:true}); });
     await store.withWriter(w => w.transaction(tx => {
         tx.insertEntity({kind:'map',key:mapId,ordinal:0,value:{unknown:null}});
         tx.insertEntity({kind:'replay',key:replayId,ordinal:0,value:{mapId}});
@@ -33,7 +34,7 @@ function properties(store, owner) {
     return Object.fromEntries(rows.map(r=>[r.pointer, r.value === null ? {payloadPointer:r.payload_pointer} : JSON.parse(r.value)]));
 }
 async function child(code, args = [], timeout = 15_000) {
-    const process = spawn(globalThis.process.execPath,['--input-type=module','-e',code,...args],{stdio:['ignore','pipe','pipe']});
+    const process = evidence.captureSpawn(globalThis.process.execPath,['--input-type=module','-e',code,...args],{stdio:['ignore','pipe','pipe']});
     let output = '', errors = ''; process.stdout.on('data',c=>output+=c); process.stderr.on('data',c=>errors+=c);
     const timer = setTimeout(()=>process.kill('SIGKILL'),timeout);
     const result = await new Promise((resolve,reject)=>{process.once('error',reject);process.once('exit',(code,signal)=>resolve({code,signal,output,errors,pid:process.pid}));});
@@ -48,7 +49,7 @@ test('M1 runtime gate and explicit temporary roots; no creation on rejected path
         await assert.rejects(createFixtureStore({root,filesystem:'local-apfs'}));
         await assert.rejects(openStore({root,mode:'read'}));
     }
-    const root = fs.mkdtempSync(rootPrefix);t.after(()=>fs.rmSync(root,{recursive:true,force:true}));
+    const root = evidence.evidenceTemp(rootPrefix);t.after(()=>evidence.disposeFixture(root,{recursive:true,force:true}));
     await assert.rejects(createFixtureStore({root,filesystem:'network'}),{code:'UNSAFE_PATH'});assert.deepEqual(fs.readdirSync(root),[]);
     fs.writeFileSync(path.join(root,'unmanaged'),'keep');await assert.rejects(createFixtureStore({root,filesystem:'local-apfs'}));assert.equal(fs.readFileSync(path.join(root,'unmanaged'),'utf8'),'keep');
     const alias = rootPrefix+'alias-'+Date.now();fs.symlinkSync(root,alias);t.after(()=>fs.unlinkSync(alias));await assert.rejects(openStore({root:alias,mode:'read'}),{code:'UNSAFE_PATH'});
@@ -724,9 +725,9 @@ test('process death leaves pending and read-only hot journal fails without recov
 
 // Restart recovery must not rely on any handle surviving the crashed writer.
 for(const schema of [1,2])test(`F3 restart recovery: schema ${schema} hot journal, live lock and committed state`,{timeout:25000},async t=>{
-    const root=fs.mkdtempSync(rootPrefix),catalog=schema===2;
+    const root=evidence.evidenceTemp(rootPrefix),catalog=schema===2;
     const handle=await (catalog?createCatalogFixture:createFixtureStore)({root,filesystem:'local-apfs'}),s=catalog?handle.evidence:handle;
-    t.after(()=>{handle.close();fs.rmSync(root,{recursive:true,force:true});});
+    t.after(()=>{handle.close();evidence.disposeFixture(root,{recursive:true,force:true});});
     const k=key(),score=key(1,'score'),expected=digestChunks(jsonChunks({pending:true}));
     await s.withWriter(w=>w.transaction(tx=>{
         tx.insertEntity({kind:'map',key:mapId,ordinal:0,value:{unknown:null}});

@@ -1,3 +1,4 @@
+import * as evidence from '../fixtures/qualification-evidence.js';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { crc32, gzipSync } from 'node:zlib';
@@ -17,10 +18,10 @@ const replayId = '6abd7222b72ca0c20fa0bce2';
 const sha256 = value => createHash('sha256').update(value).digest('hex');
 
 function workspace(t) {
-    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'pain-gain-score-'));
+    const root = evidence.evidenceTemp(path.join(os.tmpdir(), 'pain-gain-score-'));
     const cache = path.join(root, 'cache');
     fs.mkdirSync(cache);
-    t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+    t.after(() => evidence.disposeFixture(root, { recursive: true, force: true }));
     return { root, cache };
 }
 

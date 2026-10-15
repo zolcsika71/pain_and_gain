@@ -1,5 +1,7 @@
 // M2f: explicit synthetic fixtures only; no production dispatch or completion.
 import {fail} from './replay-store-payloads.js';
+import {withCleanup} from './retrieval-files.js';
+import {rehearsalDestination,rehearsalLineage,rehearsalOptions} from './replay-rehearsal-scope.js';
 
 const MAX_INTEGER = 9_223_372_036_854_775_807n;
 const names = ['claimedAt','examinedAt','completedAt'];
@@ -22,6 +24,7 @@ function checkFacts(f,k,taskId) {
     if (r.status !== 'claim' || f.intent) fail('NOT_READY','Checkpoint requires claim status without an active intent');
     if (k.collection === 'log') {
         if (!f.replay || !f.map || f.replay.key !== k.replayId || !r.map_id || f.map.key !== r.map_id || f.replay.map_id !== r.map_id || f.replay.status !== 'active' || f.map.status !== 'validated') fail('INVALID_REFERENCE','Checkpoint log association mismatch');
+        if (r.build_id !== null && f.replay.build_id !== null && r.build_id !== f.replay.build_id) fail('INVALID_REFERENCE','Checkpoint log build association conflict');
         originals(f.replayProperties,f.replay,{'/replayId':'key','/mapId':'map_id','/buildId':'build_id','/status':'status'});
         originals(f.mapProperties,f.map,{'/mapId':'key','/id':'key','/checksum':'key','/path':'path','/file':'path','/hash':'hash','/status':'status'});
     }
@@ -36,7 +39,13 @@ function checkFacts(f,k,taskId) {
     }
     if (Boolean(f.review) !== Boolean(f.binding) || (f.review && (f.review.owner_key !== f.owner.key || f.review.task !== taskId || f.binding.task !== taskId || f.binding.collection !== k.collection || f.binding.replay_id !== k.replayId || f.binding.fingerprint !== k.fingerprint)) || (!f.review && f.propertyTail)) fail('OWNERSHIP_CONFLICT','Review owner-key binding mismatch');
 }
-export async function updateFixtureReviewCheckpoint(options) {
+export const updateFixtureReviewCheckpoint = options => updateCheckpoint(options);
+export function updateRehearsalReviewCheckpoint(scope,options){
+    rehearsalLineage(scope);
+    const o=rehearsalOptions(options,['collection','replayId','fingerprint','taskId','action']);
+    return updateCheckpoint({...o,root:rehearsalDestination(scope),schemaVersion:1},scope);
+}
+async function updateCheckpoint(options,rehearsal) {
     if (options === null || typeof options !== 'object' || ![Object.prototype,null].includes(Object.getPrototypeOf(options))) fail('INVALID_ARGUMENT','Explicit plain options required');
     const allowed = ['root','schemaVersion','collection','replayId','fingerprint','taskId','action'];
     const descriptors = Object.getOwnPropertyDescriptors(options);
@@ -48,8 +57,8 @@ export async function updateFixtureReviewCheckpoint(options) {
     if (!['log','score'].includes(collection) || typeof replayId !== 'string' || !/^[a-f0-9]{24}$/.test(replayId) || typeof fingerprint !== 'string' || !/^[a-f0-9]{64}$/.test(fingerprint) || typeof taskId !== 'string' || !/^[A-Za-z0-9][A-Za-z0-9._/-]{0,199}$/.test(taskId)) fail('INVALID_IDENTITY','Invalid exact checkpoint identity/task');
     if (action !== 'claim' && action !== 'examined') fail('UNSUPPORTED_OPTION','Expected claim or examined');
     const k = {collection,replayId,fingerprint};
-    const handle = schemaVersion === 1 ? await (await import('./replay-store.js')).openStore({root,mode:'write'}) : await (await import('./replay-catalog.js')).openCatalog({root,mode:'write'});
-    let failed = false;
+    const handle = rehearsal ? await (await import('./replay-store.js')).openRehearsalStore(rehearsal,'write') : schemaVersion === 1 ? await (await import('./replay-store.js')).openStore({root,mode:'write'}) : await (await import('./replay-catalog.js')).openCatalog({root,mode:'write'});
+    let failed = false, primary;
     try {
         return await (handle.evidence ?? handle).withWriter(w=>{
             const f = w.readReviewCheckpoint({recordKey:k,taskId});
@@ -86,6 +95,10 @@ export async function updateFixtureReviewCheckpoint(options) {
             });
             return result;
         });
-    } catch (error) { failed = true; throw error; }
-    finally { try { handle.close(); } catch (error) { if (!failed) throw error; } }
+    } catch (error) { failed = true; primary = error; throw error; }
+    finally { try { handle.close(); } catch (error) {
+        if (!failed) throw error;
+        if (primary instanceof Error) withCleanup(primary,error);
+        else throw new AggregateError([primary,error],'Checkpoint operation and owner cleanup failed',{cause:primary});
+    } }
 }

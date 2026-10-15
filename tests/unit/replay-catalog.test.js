@@ -1,3 +1,4 @@
+import * as evidence from '../fixtures/qualification-evidence.js';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -9,9 +10,13 @@ import nativeTest from 'node:test';
 import { createCatalogFixture, openCatalog, aggregateVerdicts } from '../../tools/replay-catalog.js';
 import { openStore, createFixtureStore, recordKey, recordOwner } from '../../tools/replay-store.js';
 import { jsonChunks, digestChunks } from '../../tools/replay-store-payloads.js';
+import {inventory} from '../fixtures/replay-analysis-m2c-store.js';
 
 const prefix=path.join(fs.realpathSync(os.tmpdir()),'pain-gain-store-v3-fixture-');
-const test=process.argv[2]==='catalog-scale-worker'?()=>{}:nativeTest;
+const test=['catalog-scale-worker','evidence-producer-import'].includes(process.argv[2])?()=>{}:nativeTest;
+export function retainScaleInventory(root,moment){if(!evidence.evidenceEnabled())return;evidence.registerRoot(root);evidence.observe('c1-inventory',()=>({root,moment,files:inventory(root)}));}
+export async function observeScaleCall(c,count,op,action){try{return await action();}finally{evidence.observe('c1-call',()=>({root:c.root,count,op,metrics:c.metrics}));}}
+export function catalogFixtureCounts(c,count,db){const tableCounts=Object.fromEntries(db.prepare("SELECT name FROM sqlite_schema WHERE type='table' AND name LIKE 'catalog_%' ORDER BY name").all().map(({name})=>[name,db.prepare(`SELECT count(*) n FROM ${name}`).get().n]));const value={root:c.root,count,tableCounts};evidence.observe('c1-fixture-counts',value);return{count,tableCounts};}
 const moduleUrl=new URL('../../tools/replay-catalog.js',import.meta.url).href;
 const id=n=>`00000000-0000-4000-8000-${n.toString(16).padStart(12,'0')}`;
 const replayId='a'.repeat(24),mapId='b'.repeat(64),taskId='codex/synthetic-C1/Á';
@@ -28,7 +33,7 @@ const revision=(n=1,verdict='passed')=>({conclusionId:id(30),revisionSubjectId:i
 const transaction=(c,fn)=>c.withWriter(w=>w.transaction(fn));
 function dbFile(c){return path.join(c.root,JSON.parse(fs.readFileSync(path.join(c.root,'manifest.json'))).database);}
 async function fixture(t,options={}){
-    const root=fs.mkdtempSync(prefix),c=await createCatalogFixture({root,filesystem:'local-apfs',...options});t.after(()=>{c.close();fs.rmSync(root,{recursive:true,force:true});});
+    const root=evidence.evidenceTemp(prefix),c=await createCatalogFixture({root,filesystem:'local-apfs',...options});t.after(()=>{c.close();evidence.disposeFixture(root,{recursive:true,force:true});});
     await c.evidence.withWriter(w=>w.transaction(tx=>{tx.insertEntity({kind:'map',key:mapId,ordinal:0});tx.insertEntity({kind:'replay',key:replayId,ordinal:0,value:{mapId}});}));
     let artifact;
     await c.evidence.withWriter(async w=>{artifact=await w.publishPayload({owner:recordOwner(cap(0)),pointer:'/positions',role:'extensions',source:jsonChunks({positions:[0,false,null,'Á😀']}),evidenceOnly:true,...digestChunks(jsonChunks({positions:[0,false,null,'Á😀']}))});w.transaction(tx=>{tx.insertEntity({kind:'record',key:recordKey(cap(0)),ordinal:0,value:{mapId}});tx.finishPublication({recordKey:cap(0),payloadRefs:[artifact]});});});
@@ -46,12 +51,12 @@ async function completed(c,n=20,event=24,f=finding()){
     await transaction(c,tx=>{tx.createRun(runInput(n));tx.appendRunSources({runId:id(n),sources:[{ordinal:0,captureKey:recordKey(cap(0)),availability:'not-checked',reason:'synthetic retained',fingerprints:{evidence:'d'.repeat(64),map:mapId},validation:{state:'verified',validator:'synthetic-v1'}}]});tx.sealRun({runId:id(n),semanticsVersion:'selection-v1'});tx.transitionRun(transition(n,n+3));});
     await transaction(c,tx=>tx.publishRunResult(result(n,event,f)));
 }
-async function child(code,args=[],timeout=15_000){const p=spawn(process.execPath,['--input-type=module','-e',code,...args],{stdio:['ignore','pipe','pipe']});let output='',errors='';p.stdout.on('data',b=>output+=b);p.stderr.on('data',b=>errors+=b);let expired=false;const timer=setTimeout(()=>{expired=true;p.kill('SIGKILL');},timeout);const r=await new Promise((resolve,reject)=>{p.once('error',reject);p.once('exit',(code,signal)=>resolve({code,signal,pid:p.pid}));});clearTimeout(timer);return {...r,output,errors,expired};}
+async function child(code,args=[],timeout=15_000){const p=evidence.captureSpawn(process.execPath,['--input-type=module','-e',code,...args],{stdio:['ignore','pipe','pipe']});let output='',errors='';p.stdout.on('data',b=>output+=b);p.stderr.on('data',b=>errors+=b);let expired=false;const timer=setTimeout(()=>{expired=true;p.kill('SIGKILL');},timeout);const r=await new Promise((resolve,reject)=>{p.once('error',reject);p.once('exit',(code,signal)=>resolve({code,signal,pid:p.pid}));});clearTimeout(timer);return {...r,output,errors,expired};}
 
 test('C1 runtime, root and schema separation; no production or schema-1 upgrades',async t=>{
     for(const root of [undefined,process.cwd(),path.join(process.cwd(),'replay_logs')]){await assert.rejects(createCatalogFixture({root,filesystem:'local-apfs'}));await assert.rejects(openCatalog({root,mode:'read'}));}
     const {c}=await fixture(t);await assert.rejects(openStore({root:c.root,mode:'write'}),{code:'UNSUPPORTED_STORE'});
-    const root=fs.mkdtempSync(prefix),s=await createFixtureStore({root,filesystem:'local-apfs'});t.after(()=>{s.close();fs.rmSync(root,{recursive:true,force:true});});await assert.rejects(openCatalog({root,mode:'write'}),{code:'UNSUPPORTED_STORE'});
+    const root=evidence.evidenceTemp(prefix),s=await createFixtureStore({root,filesystem:'local-apfs'});t.after(()=>{s.close();evidence.disposeFixture(root,{recursive:true,force:true});});await assert.rejects(openCatalog({root,mode:'write'}),{code:'UNSUPPORTED_STORE'});
     const alias=prefix+'alias-'+Date.now();fs.symlinkSync(c.root,alias);t.after(()=>fs.unlinkSync(alias));await assert.rejects(openCatalog({root:alias,mode:'read'}),{code:'UNSAFE_PATH'});
     const db=new DatabaseSync(dbFile(c),{readOnly:true});try{assert.equal(db.prepare('SELECT catalog_version FROM store_meta').get().catalog_version,1);assert.ok(db.prepare("PRAGMA table_list").all().filter(r=>r.name.startsWith('catalog_')).every(r=>r.strict===1));assert.equal(db.prepare('PRAGMA foreign_key_check').all().length,0);}finally{db.close();}
 });
@@ -416,25 +421,26 @@ if(process.argv[2]==='catalog-scale-worker'){
         try{
         await transaction(c,tx=>{tx.registerIdentity({kind:'replay',id:replayId,subjectId:id(2)});tx.registerIdentity({kind:'task',id:taskId,subjectId:id(1)});tx.createQuestion(question);tx.registerIdentity(conclusion);});
         for(let start=0;start<count;start+=100)await transaction(c,tx=>{for(let i=start;i<Math.min(start+100,count);i++)tx.registerIdentity({kind:'capture',capture:cap(i),subjectId:id(1000+i),ordinal:i});});
-        const db=new DatabaseSync(dbFile(c),{readOnly:true});try{assert.equal(db.prepare('SELECT count(*) n FROM catalog_captures').get().n,count);const plan=db.prepare('EXPLAIN QUERY PLAN SELECT * FROM catalog_captures WHERE replay_id=? AND ordinal>? ORDER BY ordinal,capture_key LIMIT 128').all(replayId,-1);assert.ok(plan.some(r=>r.detail.includes('catalog_capture_page')));assert.ok(plan.every(r=>!r.detail.includes('SCAN catalog_captures')));}finally{db.close();}
+        const db=new DatabaseSync(dbFile(c),{readOnly:true});try{const actual=db.prepare('SELECT count(*) n FROM catalog_captures').get().n;evidence.observe('c1-anchor-count',{root,count,actual});assert.equal(actual,count);const plan=db.prepare('EXPLAIN QUERY PLAN SELECT * FROM catalog_captures WHERE replay_id=? AND ordinal>? ORDER BY ordinal,capture_key LIMIT 128').all(replayId,-1);evidence.observe('c1-query-plan',()=>({root,plan}));assert.ok(plan.some(r=>r.detail.includes('catalog_capture_page')));assert.ok(plan.every(r=>!r.detail.includes('SCAN catalog_captures')));}finally{db.close();}
         await transaction(c,tx=>tx.appendEvidenceRef({evidenceRefId:id(8),captureKey:recordKey(cap(0)),range:{start:1,end:2}}));await completed(c,20,24,finding(26,'unknown'));await transaction(c,tx=>tx.appendConclusionRevision(revision(1,'unknown')));
         const reviewTask='scale/'+count;await transaction(c,tx=>tx.registerIdentity({kind:'task',id:reviewTask,subjectId:id(6000+count)}));
-        for(const op of ['list','lookup','support','history','review']){c.resetMetrics();const t=performance.now();if(op==='list')assert.equal(c.pageCaptures(replayId,null,10).rows.length,10);if(op==='lookup')assert.equal(c.getCapture(cap(0)).capture_key,recordKey(cap(0)));if(op==='support')assert.equal(c.pageSupport(id(30),1).rows.length,1);if(op==='history')assert.equal(c.pageConclusionHistory(id(30)).rows.length,1);if(op==='review')await transaction(c,tx=>tx.appendReviewEvent({eventId:id(5000+count),targetSubjectId:id(31),taskId:reviewTask,expectedState:'unclaimed',checkpoint:'claimed',reason:'bounded review'}));assert.equal(c.metrics.payloadOpens,0);assert.equal(c.metrics.payloadReadBytes,0);assert.equal(c.metrics.payloadWriteBytes,0);measurements.push({count,op,ms:performance.now()-t,metrics:{...c.metrics}});}
+        retainScaleInventory(root,'before');
+        for(const op of ['list','lookup','support','history','review']){c.resetMetrics();const t=performance.now();await observeScaleCall(c,count,op,async()=>{if(op==='list')assert.equal(c.pageCaptures(replayId,null,10).rows.length,10);if(op==='lookup')assert.equal(c.getCapture(cap(0)).capture_key,recordKey(cap(0)));if(op==='support')assert.equal(c.pageSupport(id(30),1).rows.length,1);if(op==='history')assert.equal(c.pageConclusionHistory(id(30)).rows.length,1);if(op==='review')await transaction(c,tx=>tx.appendReviewEvent({eventId:id(5000+count),targetSubjectId:id(31),taskId:reviewTask,expectedState:'unclaimed',checkpoint:'claimed',reason:'bounded review'}));});assert.equal(c.metrics.payloadOpens,0);assert.equal(c.metrics.payloadReadBytes,0);assert.equal(c.metrics.payloadWriteBytes,0);measurements.push({count,op,ms:performance.now()-t,metrics:{...c.metrics}});}
     const inspection=new DatabaseSync(dbFile(c),{readOnly:true});let tableCounts;
     try{
-        tableCounts=Object.fromEntries(inspection.prepare("SELECT name FROM sqlite_schema WHERE type='table' AND name LIKE 'catalog_%' ORDER BY name").all().map(({name})=>[name,inspection.prepare(`SELECT count(*) n FROM ${name}`).get().n]));
+        tableCounts=catalogFixtureCounts(c,count,inspection).tableCounts;
         for(const [sql,args]of [
             ['SELECT * FROM catalog_captures WHERE capture_key=?',[recordKey(cap(0))]],
             ['SELECT * FROM catalog_conclusion_support WHERE conclusion_id=? AND revision=? ORDER BY ordinal,link_key LIMIT 128',[id(30),1]],
             ['SELECT * FROM catalog_conclusion_revisions WHERE conclusion_id=? ORDER BY ordinal,subject_id LIMIT 128',[id(30)]],
             ['SELECT * FROM catalog_reviews WHERE target_subject_id=? ORDER BY ordinal,review_key LIMIT 128',[id(31)]]
-        ]){const plan=inspection.prepare('EXPLAIN QUERY PLAN '+sql).all(...args);assert.ok(plan.some(v=>v.detail.startsWith('SEARCH ')&&v.detail.includes('INDEX')),JSON.stringify(plan));assert.ok(plan.every(v=>!v.detail.startsWith('SCAN ')),JSON.stringify(plan));}
+        ]){const plan=inspection.prepare('EXPLAIN QUERY PLAN '+sql).all(...args);evidence.observe('c1-query-plan',()=>({root,plan}));assert.ok(plan.some(v=>v.detail.startsWith('SEARCH ')&&v.detail.includes('INDEX')),JSON.stringify(plan));assert.ok(plan.every(v=>!v.detail.startsWith('SCAN ')),JSON.stringify(plan));}
     }finally{inspection.close();}
     fixtureCounts.push({count,tableCounts});
-    }finally{c.close();}
+    }finally{try{retainScaleInventory(root,'after');}finally{c.close();}}
     }
     for(const op of ['list','lookup','support','history','review']){const a=measurements.find(v=>v.count===10&&v.op===op),b=measurements.find(v=>v.count===1000&&v.op===op);assert.equal(a.metrics.sql,b.metrics.sql);assert.equal(a.metrics.rows,b.metrics.rows);}
     assert.ok(process.resourceUsage().maxRSS*1024<=256*1024*1024);console.log(JSON.stringify({elapsedMs:performance.now()-started,maxRssBytes:process.resourceUsage().maxRSS*1024,fixtureCounts,measurements}));
 }else test('C1 10/1000-anchor metadata resource gate under 192 MiB heap / 256 MiB RSS',{timeout:35_000},async t=>{
-    const roots=[fs.mkdtempSync(prefix),fs.mkdtempSync(prefix)];t.after(()=>roots.forEach(root=>fs.rmSync(root,{recursive:true,force:true})));const p=spawn(process.execPath,['--max-old-space-size=192',new URL(import.meta.url).pathname,'catalog-scale-worker',...roots],{stdio:['ignore','pipe','pipe']});let output='',errors='',expired=false;p.stdout.on('data',b=>output+=b);p.stderr.on('data',b=>errors+=b);const timer=setTimeout(()=>{expired=true;p.kill('SIGKILL');},30_000);const code=await new Promise((r,j)=>{p.once('error',j);p.once('exit',r);});clearTimeout(timer);assert.equal(expired,false);assert.equal(code,0,errors+output);const receipt=JSON.parse(output.trim());assert.ok(receipt.maxRssBytes<=256*1024*1024);t.diagnostic(JSON.stringify(receipt));
+    const roots=[evidence.evidenceTemp(prefix),evidence.evidenceTemp(prefix)];t.after(()=>roots.forEach(root=>evidence.disposeFixture(root,{recursive:true,force:true})));const p=evidence.captureSpawn(process.execPath,['--max-old-space-size=192',new URL(import.meta.url).pathname,'catalog-scale-worker',...roots],{stdio:['ignore','pipe','pipe']});let output='',errors='',expired=false;p.stdout.on('data',b=>output+=b);p.stderr.on('data',b=>errors+=b);const timer=setTimeout(()=>{expired=true;p.kill('SIGKILL');},30_000);const code=await new Promise((r,j)=>{p.once('error',j);p.once('exit',r);});clearTimeout(timer);assert.equal(expired,false);assert.equal(code,0,errors+output);const receipt=JSON.parse(output.trim());assert.ok(receipt.maxRssBytes<=256*1024*1024);t.diagnostic(JSON.stringify(receipt));
 });

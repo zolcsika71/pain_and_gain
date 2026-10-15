@@ -1,4 +1,6 @@
 import fs from 'node:fs';
+import {assertAuthorityAccess,authorityV2Boundary} from './replay-authority-guard.js';
+import {productionSelection,dispatchProduction} from './replay-production-scope.js';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { analyzeReplay } from './replay-analysis.js';
@@ -17,10 +19,10 @@ function managedBytes(root, name) {
     }
     const file = path.join(root, 'replay_logs', name);
     if (!fs.lstatSync(file).isFile()) throw new Error(`Unavailable managed evidence file: ${name}`);
-    return fs.readFileSync(file);
+    return authorityV2Boundary(root,'read',{file,kind:'artifact'})??fs.readFileSync(file);
 }
 
-function validateSelection(selection) {
+export function validateSelection(selection) {
     if (selection?.version !== 1 || !/^codex\/[a-z0-9-]+$/.test(selection.taskId ?? '') ||
         !Array.isArray(selection.matches) || !selection.matches.length ||
         selection.matches.length > 8) throw new Error('Expected version-1 selection with a task ID and 1–8 matches');
@@ -59,7 +61,7 @@ function sourceStatus(manifest, match, logRecords, scoreRecords) {
         : item.retired ? 'retired' : 'missing' }));
 }
 
-function cacheInput(root, manifest, match, selected) {
+function cacheInput(root, manifest, match, selected,codeRoot=root) {
     const replay = manifest.replays.find(r => r.replayId === match.replayId) ?? null;
     const source = selected.filter(x => x.record).map(item => {
         const { reviews, status, importedAt, ...record } = item.record;
@@ -75,7 +77,7 @@ function cacheInput(root, manifest, match, selected) {
         const record = manifest.maps.find(m => m.id === id) ?? null;
         return { record, bytesHash: record ? sha256(managedBytes(root, record.file)) : null };
     });
-    const code = dependencies.map(file => [file, sha256(fs.readFileSync(path.join(root, file)))]);
+    const code = dependencies.map(file => [file, sha256(authorityV2Boundary(root,'read',{file:path.join(codeRoot,file),kind:'code'})??fs.readFileSync(path.join(codeRoot,file)))]);
     return sha256(canonical({ match, source, replay, maps, code }));
 }
 
@@ -150,7 +152,7 @@ function cachedReport(root, match, key, current, analyze) {
     const dir = path.join(root, 'replay_logs/analysis_cache');
     const file = path.join(dir, name);
     try {
-        const cached = JSON.parse(fs.readFileSync(file, 'utf8'));
+        const cached = JSON.parse((authorityV2Boundary(root,'read',{file,kind:'cache-report'})??fs.readFileSync(file)).toString('utf8'));
         if (cached.key === key && cached.report?.reportMode === 'compact' &&
             cached.report.replayId === match.replayId &&
             cached.reportHash === sha256(canonical(cached.report))) {
@@ -165,24 +167,44 @@ function cachedReport(root, match, key, current, analyze) {
         ...(scores.length ? { scoreFingerprints: scores } : {}), reportMode: 'compact' });
     fs.mkdirSync(dir, { recursive: true });
     const temp = `${file}.${process.pid}.tmp`;
-    fs.writeFileSync(temp, `${JSON.stringify({ key, reportHash: sha256(canonical(report)), report })}\n`);
+    const content=`${JSON.stringify({ key, reportHash: sha256(canonical(report)), report })}\n`;
+    authorityV2Boundary(root,'cache-write',{file,content});
+    fs.writeFileSync(temp,content);
     fs.renameSync(temp, file);
     return { report, cache: 'miss' };
 }
 
-export function buildHistoricalIndex({ root = projectRoot, selection, analyze = analyzeReplay }) {
+export function buildHistoricalIndex({ root = projectRoot, selection, analyze = analyzeReplay,codeRoot=root,cache=true }) {
+    if(productionSelection(path.resolve(root))){if(analyze!==analyzeReplay||codeRoot!==root)throw new Error('Unsupported production analyzer overrides');return dispatchProduction(path.resolve(root),'index',{selection,cache});}
+    assertAuthorityAccess(path.resolve(root),'v2');
     validateSelection(selection);
-    const manifest = JSON.parse(fs.readFileSync(path.join(root, 'replay_logs/manifest.json')));
+    const manifestFile=path.join(root,'replay_logs/manifest.json');
+    const manifest = JSON.parse(authorityV2Boundary(root,'read',{file:manifestFile,kind:'manifest'})??fs.readFileSync(manifestFile));
     if (manifest.version !== 2 || !Array.isArray(manifest.records) ||
         !Array.isArray(manifest.replays) || !Array.isArray(manifest.maps)) {
         throw new Error('Expected managed manifest version 2');
     }
+    return buildLoadedHistoricalIndex({ selection, manifest, reportFor(match, selected, current) {
+        let key;
+        try { key = cacheInput(root, manifest, match, selected,codeRoot); }
+        catch (error) { return { error }; }
+        if(cache)return cachedReport(root, match, key, current, analyze);
+        const logs=current.filter(x=>x.kind==='log').map(x=>x.fingerprint),scores=current.filter(x=>x.kind==='score').map(x=>x.fingerprint);
+        return{report:analyze({root,replayId:match.replayId,fingerprints:logs,...(scores.length?{scoreFingerprints:scores}:{}),reportMode:'compact'}),cache:'disabled'};
+    } });
+}
+
+// Pure selected-input projection shared with the guarded synthetic route.
+// Availability and artifact verification belong to the caller's reader.
+export function buildLoadedHistoricalIndex({ selection, manifest, reportFor,
+    isClaimed = (record, taskId) => Boolean(record.reviews?.[taskId]?.claimedAt) }) {
+    validateSelection(selection);
     const matches = selection.matches.map(match => {
         const logs = manifest.records.filter(r => r.replayId === match.replayId);
         const scores = (manifest.scoreRecords ?? []).filter(r => r.replayId === match.replayId);
         const selected = sourceStatus(manifest, match, logs, scores);
         const current = selected.filter(x => x.availability === 'current');
-        for (const item of current) if (!item.record.reviews?.[selection.taskId]?.claimedAt) {
+        for (const item of current) if (!isClaimed(item.record, selection.taskId)) {
             throw new Error(`Claim ${match.replayId}/${item.fingerprint} for ${selection.taskId} before analysis`);
         }
         const unavailable = selected.filter(x => x.availability !== 'current').map(x => ({
@@ -208,16 +230,16 @@ export function buildHistoricalIndex({ root = projectRoot, selection, analyze = 
         if (!current.length) return { ...base, status: 'unavailable', cache: 'none',
             coverage: null, supportedFindings: [], unknowns: [],
             ...(match.scoreFingerprints?.length ? { scoreSummary: summarizeScores(null, selected) } : {}) };
-        let key;
-        try { key = cacheInput(root, manifest, match, selected); }
-        catch (error) {
+        const result = reportFor(match, selected, current);
+        if (result.error) {
+            const error = result.error;
             return { ...base, status: error.code === 'ENOENT' ? 'unavailable' : 'invalid', cache: 'none',
                 unavailable: [...unavailable, { reason: error.message }], coverage: null,
                 supportedFindings: [], unknowns: [],
                 ...(match.scoreFingerprints?.length ? { scoreSummary: summarizeScores(null, selected,
                     error.code === 'ENOENT' ? 'unavailable' : 'invalid') } : {}) };
         }
-        const { report, cache } = cachedReport(root, match, key, current, analyze);
+        const { report, cache } = result;
         const trusted = report.evidenceSummary?.trustedLogRecords ===
             current.filter(x => x.kind === 'log').length;
         const currentScores = current.filter(x => x.kind === 'score').map(x => x.fingerprint);
@@ -252,13 +274,25 @@ export function buildHistoricalIndex({ root = projectRoot, selection, analyze = 
         matches };
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+async function main() {
     try {
-        if (process.argv.length !== 3) throw new Error('Usage: node tools/historical-index.js <selection.json>');
-        const selection = JSON.parse(fs.readFileSync(path.resolve(process.argv[2]), 'utf8'));
-        process.stdout.write(`${JSON.stringify(buildHistoricalIndex({ selection }), null, 2)}\n`);
+        if (process.argv[2] === '--synthetic-sqlite') {
+            if (process.argv.length !== 5 && !(process.argv.length===6&&process.argv[5]==='--cache')) throw new Error('Usage: node tools/historical-index.js --synthetic-sqlite <fixture-root> <selection.json> [--cache]');
+            const { buildSyntheticHistoricalIndex, readSyntheticSelection } = await import('./replay-evidence-consumers-fixture.js');
+            const selection = readSyntheticSelection(path.resolve(process.argv[4]),process.argv[3]);
+            const result = await buildSyntheticHistoricalIndex({synthetic:true,root:process.argv[3],selection,cache:process.argv[5]==='--cache'});
+            process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+        } else {
+            const argv=process.argv.slice(2),explicit=argv[0]==='--storage-root',root=explicit?argv[1]:projectRoot;
+            if(argv.length!==(explicit?3:1))throw new Error('Expected selection file, optionally --storage-root <project>');
+            const selected=productionSelection(root);if(explicit&&!selected)throw new Error('Explicit root requires production SQLite authority');
+            const file=path.resolve(argv[explicit?2:0]);
+            const selection=selected?(await import('./replay-production-authority.js')).readProductionSelection(file):JSON.parse(fs.readFileSync(file,'utf8'));
+            process.stdout.write(`${JSON.stringify(await buildHistoricalIndex({root,selection,cache:!selected||selected.descriptor.production.mode==='read-write'}),null,2)}\n`);
+        }
     } catch (error) {
         process.stderr.write(`${error.message}\n`);
         process.exitCode = 1;
     }
 }
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) void main();

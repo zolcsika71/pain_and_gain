@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 
 import fs from 'node:fs';
+import {assertAuthorityAccess} from './replay-authority-guard.js';
+import {productionSelection,dispatchProduction} from './replay-production-scope.js';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
@@ -1168,6 +1170,8 @@ export function analyzeLoadedCombinedReplay({replayId,fingerprints,scoreFingerpr
 
 export function analyzeReplay({ root = projectRoot, replayId, fingerprints, scoreFingerprints,
     reportMode = 'full' } = {}) {
+    if(productionSelection(path.resolve(root)))return dispatchProduction(path.resolve(root),'analyze',{replayId,fingerprints:fingerprints??[],...(scoreFingerprints===undefined?{}:{scoreFingerprints}),reportMode});
+    assertAuthorityAccess(path.resolve(root),'v2');
     if (!replayIdPattern.test(replayId ?? '')) throw new Error('Expected a verified 24-character replay ID');
     if (!['compact', 'full'].includes(reportMode)) {
         throw new Error('Report mode must be compact or full');
@@ -1328,8 +1332,19 @@ export function parseReplayAnalysisArgs(argv) {
 }
 
 async function main() {
-    const selection = parseReplayAnalysisArgs(process.argv.slice(2));
-    const report = analyzeReplay({ root: projectRoot, ...selection });
+    const argv=process.argv.slice(2);
+    if(argv[0]==='--synthetic-sqlite'){
+        if(argv.length<4)throw new Error('Usage: --synthetic-sqlite <fixture-root> <replay-id> <log-fingerprint...|--score score-fingerprint...> [--full-detail]');
+        const root=argv[1],selection=parseReplayAnalysisArgs(argv.slice(2));
+        const {analyzeSyntheticReplay}=await import('./replay-analysis-command-fixture.js');
+        const report=await analyzeSyntheticReplay({synthetic:true,root,replayId:selection.replayId,fingerprints:selection.fingerprints??[],...(selection.scoreFingerprints===undefined?{}:{scoreFingerprints:selection.scoreFingerprints}),reportMode:selection.reportMode});
+        await writeJsonReport(report);if(report.summary.fail)process.exitCode=1;return;
+    }
+    if(argv.includes('--synthetic-sqlite'))throw new Error('Synthetic SQLite mode must be first');
+    const explicit=argv[0]==='--storage-root',root=explicit?argv[1]:projectRoot;
+    if(explicit&&!productionSelection(root))throw new Error('Explicit root requires production SQLite authority');
+    const selection = parseReplayAnalysisArgs(argv.slice(explicit?2:0));
+    const report = await analyzeReplay({ root, ...selection });
     await writeJsonReport(report);
     if (report.summary.fail) process.exitCode = 1;
 }

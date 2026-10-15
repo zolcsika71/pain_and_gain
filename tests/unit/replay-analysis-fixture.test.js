@@ -1,3 +1,4 @@
+import * as evidence from '../fixtures/qualification-evidence.js';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -17,11 +18,11 @@ const emptyGolden=JSON.parse(fs.readFileSync(new URL('../fixtures/replay-analysi
 const dbPath=f=>path.join(f.root,JSON.parse(fs.readFileSync(path.join(f.root,'manifest.json'))).database);
 async function fixture(t,schema=1,variant='scale',options) {
     const f=await makeFixture(schema,variant,options);
-    t.after(()=>{f.h.close();fs.rmSync(f.root,{recursive:true,force:true});});return f;
+    t.after(()=>{f.h.close();evidence.disposeFixture(f.root,{recursive:true,force:true});});return f;
 }
 function v2(t,f) {
-    const root=fs.mkdtempSync(path.join(fs.realpathSync(os.tmpdir()),'pain-gain-m2c-v2-'));
-    t.after(()=>fs.rmSync(root,{recursive:true,force:true})); fs.mkdirSync(path.join(root,'replay_logs'));
+    const root=evidence.evidenceTemp(path.join(fs.realpathSync(os.tmpdir()),'pain-gain-m2c-v2-'));
+    t.after(()=>evidence.disposeFixture(root,{recursive:true,force:true})); fs.mkdirSync(path.join(root,'replay_logs'));
     for(const [name,content] of Object.entries(f.data.files))fs.writeFileSync(path.join(root,'replay_logs',name),content);
     fs.writeFileSync(path.join(root,'replay_logs/manifest.json'),JSON.stringify(f.data.manifest));return root;
 }
@@ -161,11 +162,11 @@ test('actual synchronous v2 CLI, missing selection and score API stay SQLite-fre
     fs.writeFileSync(path.join(root,'package.json'),'{"type":"module"}');
     const deny='data:text/javascript,'+encodeURIComponent("import {registerHooks} from 'node:module';registerHooks({resolve(s,c,n){if(s==='node:sqlite')throw Error('SQLITE_FORBIDDEN');return n(s,c)}})");
     for(const reportMode of ['compact','full']) {
-        const p=spawnSync(process.execPath,['--import',deny,path.join(root,'tools/replay-analysis.js'),replayId,...f.options.fingerprints,...(reportMode==='full'?['--full-detail']:[])],{encoding:'utf8',timeout:15000,maxBuffer:1048576});
+        const p=evidence.captureSpawnSync(process.execPath,['--import',deny,path.join(root,'tools/replay-analysis.js'),replayId,...f.options.fingerprints,...(reportMode==='full'?['--full-detail']:[])],{encoding:'utf8',timeout:15000,maxBuffer:1048576});
         assert.equal(p.status,0,p.stderr);assert.deepEqual(JSON.parse(p.stdout),golden.scenarios.scale.reports[reportMode]);
     }
     const code=`import assert from 'node:assert/strict';import {analyzeReplay} from ${JSON.stringify(new URL('../../tools/replay-analysis.js',import.meta.url).href)};const opts={root:process.argv[1],replayId:${JSON.stringify(replayId)},fingerprints:['f'.repeat(64)]};const report=analyzeReplay(opts);assert.ok(report.findings.some(f=>f.rule==='manifest.record-selection'&&f.verdict==='unknown'));const scores=analyzeReplay({...opts,scoreFingerprints:['e'.repeat(64)]});assert.deepEqual(scores.selectedScoreFingerprints,[]);`;
-    const p=spawnSync(process.execPath,['--import',deny,'--input-type=module','-e',code,root],{encoding:'utf8',timeout:15000});assert.equal(p.status,0,p.stderr);
+    const p=evidence.captureSpawnSync(process.execPath,['--import',deny,'--input-type=module','-e',code,root],{encoding:'utf8',timeout:15000});assert.equal(p.status,0,p.stderr);
 });
 
 test('request selection is fixed before awaiting open; done/reviewer metadata is not lifecycle orchestration',async t=>{
@@ -264,7 +265,7 @@ test('local provenance bounds, unsafe aliases and explicit schema identity remai
 test('adapter read-side recovery refusal preserves a fresh hot-journal fixture',async t=>{
     const f=await fixture(t,1,'m2');f.h.close();
     const code="import {DatabaseSync} from 'node:sqlite';const db=new DatabaseSync(process.argv[1]);db.exec('PRAGMA synchronous=FULL;PRAGMA cache_size=8;BEGIN IMMEDIATE');const q=db.prepare('INSERT INTO properties VALUES (?,?,?,?,?,NULL)');for(let i=0;i<1000;i++)q.run('root','root','/crash'+i,i,JSON.stringify('x'.repeat(60000)));process.kill(process.pid,'SIGKILL');";
-    const p=spawnSync(process.execPath,['--input-type=module','-e',code,dbPath(f)],{timeout:15000});assert.equal(p.signal,'SIGKILL');
+    const p=evidence.captureSpawnSync(process.execPath,['--input-type=module','-e',code,dbPath(f)],{timeout:15000});assert.equal(p.signal,'SIGKILL');
     const before=inventory(f.root);await assert.rejects(analyzeFixtureReplay(f.options),{code:'RECOVERY_REQUIRED'});assert.deepEqual(inventory(f.root),before);
 });
 
@@ -309,7 +310,7 @@ test('session requires ordered complete input and single finish',async t=>{
 // Real subprocess barriers and accessor/session instrumentation live in a worker;
 // no instrumentation API is added to the implementation.
 async function child(args,deadline) {
-    const start=performance.now(),p=spawn(process.execPath,args,{stdio:['ignore','pipe','pipe']});let out='',err='',expired=false,killer,reaper,rejectReap;
+    const start=performance.now(),p=evidence.captureSpawn(process.execPath,args,{stdio:['ignore','pipe','pipe']});let out='',err='',expired=false,killer,reaper,rejectReap;
     const stop=()=>{if(expired)return;expired=true;p.kill('SIGTERM');killer=setTimeout(()=>{p.kill('SIGKILL');reaper=setTimeout(()=>rejectReap(Error('Worker did not reap within shutdown budget')),3000);},2000);};
     const timer=setTimeout(stop,deadline);
     for(const [stream,which] of [[p.stdout,'out'],[p.stderr,'err']])stream.on('data',c=>{const next=Buffer.concat([Buffer.from(which==='out'?out:err),c]);if(next.length>1048576)stop();const retained=next.subarray(0,1048576).toString();if(which==='out')out=retained;else err=retained;});
@@ -323,8 +324,8 @@ test('callback/session failures and real competing cleanup keep pinned artifacts
 });
 
 for(const schema of [1,2])test(`M2c schema ${schema} independent 10/1000 and 600 MiB fixed-selection gate`,{timeout:155000},async t=>{
-    const roots=[10,1000].map(()=>fs.mkdtempSync(path.join(fs.realpathSync(os.tmpdir()),'pain-gain-store-v3-fixture-')));
-    t.after(()=>roots.forEach(root=>fs.rmSync(root,{recursive:true,force:true})));
+    const roots=[10,1000].map(()=>evidence.evidenceTemp(path.join(fs.realpathSync(os.tmpdir()),'pain-gain-store-v3-fixture-')));
+    t.after(()=>roots.forEach(root=>evidence.disposeFixture(root,{recursive:true,force:true})));
     const runs=[];
     for(const phase of ['generate','operations','preservation'])runs.push(await child(['--experimental-test-module-mocks','--max-old-space-size=192',new URL('../fixtures/replay-analysis-m2c-worker.js',import.meta.url).pathname,phase,String(schema),...roots],phase==='operations'?30000:60000));
     assert.deepEqual(runs[2].result.inventoryHashes,runs[0].result.stores.map(s=>s.inventoryHash));

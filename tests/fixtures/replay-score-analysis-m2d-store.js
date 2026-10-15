@@ -5,9 +5,10 @@ import * as helpers from '../../tools/replay-logs.js';
 import {createFixtureStore,recordKey,recordOwner} from '../../tools/replay-store.js';
 import {createCatalogFixture} from '../../tools/replay-catalog.js';
 import {digestChunks,payloadPath} from '../../tools/replay-store-payloads.js';
-import {recipe,replayId,hash} from './replay-score-analysis-m2d-recipe.js';
+import {loadFrozenInputs} from './replay-score-metadata-contract-v2.js';
 export {inventory,chunks} from './replay-analysis-m2c-store.js';
 import {chunks} from './replay-analysis-m2c-store.js';
+const {recipe,replayId,hash}=await loadFrozenInputs();
 export const key=r=>({collection:'score',replayId:r.replayId,fingerprint:r.fingerprint});
 export async function makeFixture(schema=1,variant='scale',{root,count=4,large=false,transform}={}) {
     root??=fs.mkdtempSync(path.join(fs.realpathSync(os.tmpdir()),'pain-gain-store-v3-fixture-'));

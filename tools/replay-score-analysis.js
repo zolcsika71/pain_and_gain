@@ -523,7 +523,7 @@ function legacyIdentityRepresentations(value) {
     }));
 }
 
-function nestedMetadataIdentity(value) {
+function nestedMetadataIdentity(value, replayId) {
     const wrapper = value?.game;
     if (!plainObject(wrapper) || !Object.hasOwn(wrapper, 'user') && !Object.hasOwn(wrapper, 'users') &&
         !Object.hasOwn(wrapper, 'codes') && !plainObject(wrapper.game)) return { status: 'absent' };
@@ -532,7 +532,15 @@ function nestedMetadataIdentity(value) {
     const codes = Array.isArray(wrapper.codes) ? wrapper.codes : [];
     const usersCode = Array.isArray(wrapper.game?.usersCode) ? wrapper.game.usersCode : [];
     if (!currentUser || users.length !== 2 || codes.length !== 2 || usersCode.length !== 2 ||
-        wrapper.game?.firstPlayerIndex !== 0) return { status: 'unknown', reason: 'unsupported-shape' };
+        ![0, 1].includes(wrapper.game?.firstPlayerIndex)) {
+        return { status: 'unknown', reason: 'unsupported-shape' };
+    }
+    // Legacy bodies may omit these IDs; any present ID must agree with the
+    // already hash-verified source's exact request/record identity.
+    if ([wrapper, wrapper.game].some(item => Object.hasOwn(item, '_id') && item._id !== replayId ||
+        Object.hasOwn(item, 'id') && item.id !== replayId)) {
+        return { status: 'conflicting', reason: 'match-identity-disagrees' };
+    }
     const nestedId = item => {
         if (!plainObject(item) || typeof item._id !== 'string' || !item._id.length) return null;
         if (Object.hasOwn(item, 'id') && (typeof item.id !== 'string' || item.id !== item._id)) return null;
@@ -541,7 +549,9 @@ function nestedMetadataIdentity(value) {
     const userIds = users.map(nestedId);
     const codeEntries = codes.map(item => {
         const id = nestedId(item);
-        return id && typeof item.user === 'string' && item.user.length ? { id, user: item.user } : null;
+        return id && typeof item.user === 'string' && item.user.length &&
+            (!Object.hasOwn(item, 'version') || nonnegativeInteger(item.version)) ?
+            { id, user: item.user, ...(Object.hasOwn(item, 'version') ? { version: item.version } : {}) } : null;
     });
     if (userIds.includes(null) || codeEntries.includes(null) ||
         new Set(userIds).size !== 2 || new Set(codeEntries.map(item => item.id)).size !== 2 ||
@@ -549,11 +559,13 @@ function nestedMetadataIdentity(value) {
         !userIds.includes(currentUser) || codeEntries.some(item => !userIds.includes(item.user))) {
         return { status: 'unknown', reason: 'invalid-references' };
     }
-    const codeById = new Map(codeEntries.map(item => [item.id, item.user]));
-    const slotUsers = usersCode.map(codeId => codeById.get(codeId) ?? null);
-    if (slotUsers.includes(null) || new Set(slotUsers).size !== 2) {
+    const codeById = new Map(codeEntries.map(item => [item.id, item]));
+    const slotCodes = usersCode.map(codeId => codeById.get(codeId) ?? null);
+    if (slotCodes.includes(null)) {
         return { status: 'unknown', reason: 'invalid-slot-references' };
     }
+    if (wrapper.game.firstPlayerIndex === 1) slotCodes.reverse();
+    const slotUsers = slotCodes.map(code => code.user);
     const legacy = legacyIdentityRepresentations(value);
     if (legacy.some(item => item.status === 'malformed')) {
         return { status: 'unknown', reason: 'malformed-identity-representation', slotUsers };
@@ -563,18 +575,28 @@ function nestedMetadataIdentity(value) {
     }
     const oursSlot = slotUsers.indexOf(currentUser) === 0 ? 'player1' : 'player2';
     return { status: 'established', oursSlot,
-        opponentSlot: oursSlot === 'player1' ? 'player2' : 'player1', slotUsers };
+        opponentSlot: oursSlot === 'player1' ? 'player2' : 'player1', slotUsers, slotCodes };
 }
 
 function establishMetadataIdentity(sources, add) {
-    const entries = sources.filter(source => source.record.kind === 'game-metadata').map(source => ({
-        result: nestedMetadataIdentity(source.value), source: source.outputRef,
-    }));
+    const entries = sources.filter(source => source.record.kind === 'game-metadata').map(source => {
+        const { slotCodes, ...result } = nestedMetadataIdentity(source.value, source.record.replayId);
+        return { result, slotCodes, source: source.outputRef };
+    });
     const established = entries.filter(item => item.result.status === 'established');
     const explicitConflict = entries.some(item => item.result.status === 'conflicting');
     const signatures = [...new Set(established.map(item => canonical({ oursSlot: item.result.oursSlot,
-        slotUsers: item.result.slotUsers })))];
-    const status = explicitConflict || signatures.length > 1 ? 'conflicting' :
+        slotUsers: item.result.slotUsers, slotCodeIds: item.slotCodes.map(code => code.id) })))];
+    // Missing versions remain unknown, not inferred. Two known versions for the
+    // same code conflict even when both sources resolve to the same account.
+    const versions = new Map();
+    let versionConflict = false;
+    for (const entry of established) for (const code of entry.slotCodes) {
+        if (!Object.hasOwn(code, 'version')) continue;
+        if (versions.has(code.id) && versions.get(code.id) !== code.version) versionConflict = true;
+        versions.set(code.id, code.version);
+    }
+    const status = explicitConflict || signatures.length > 1 || versionConflict ? 'conflicting' :
         signatures.length === 1 ? 'established' : 'unknown';
     const selected = status === 'established' ? established[0].result : null;
     const result = { status, oursSlot: selected?.oursSlot ?? null,

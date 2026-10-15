@@ -1,3 +1,4 @@
+import * as evidence from '../fixtures/qualification-evidence.js';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -21,9 +22,9 @@ const database = s => path.join(s.root, JSON.parse(fs.readFileSync(path.join(s.r
 const chunks = function* (bytes) { for (let i = 0; i < bytes.length; i += 65536) yield bytes.subarray(i, i + 65536); };
 const output = async f => { const parts = []; await writeFixtureOther(options(f), c => parts.push(c)); return Buffer.concat(parts).toString(); };
 const oracle = values => values.map(v => JSON.stringify(v) + '\n').join('');
-async function fixture(t, schema = 1, root = fs.mkdtempSync(prefix)) {
+async function fixture(t, schema = 1, root = evidence.evidenceTemp(prefix)) {
     const h = await (schema === 1 ? createFixtureStore : createCatalogFixture)({root, filesystem: 'local-apfs'}), s = h.evidence ?? h;
-    t?.after(() => { h.close(); fs.rmSync(root, {recursive: true, force: true}); });
+    t?.after(() => { h.close(); evidence.disposeFixture(root, {recursive: true, force: true}); });
     fs.writeFileSync(path.join(root, 'map.json'), '{}');
     await s.withWriter(w => w.transaction(tx => {
         tx.insertEntity({kind: 'map', key: mapId, ordinal: 0, value: {path: 'map.json', hash: hash('{}')}});
@@ -73,7 +74,7 @@ async function rejectedUnchanged(f, expected) {
     await f.s.withWriter(() => {});
 }
 async function runChild(args, timeout = 15000) {
-    const p = spawn(process.execPath, args, {stdio: ['ignore', 'pipe', 'pipe']}); let stdout = '', stderr = '', expired = false;
+    const p = evidence.captureSpawn(process.execPath, args, {stdio: ['ignore', 'pipe', 'pipe']}); let stdout = '', stderr = '', expired = false;
     p.stdout.on('data', c => stdout += c); p.stderr.on('data', c => stderr += c);
     const timer = setTimeout(() => { expired = true; p.kill('SIGKILL'); }, timeout);
     const code = await new Promise((resolve, reject) => { p.once('error', reject); p.once('close', resolve); }); clearTimeout(timer);
@@ -144,12 +145,12 @@ if (process.argv[2] === 'm2a-scale') {
             const selected = db.prepare('SELECT path,bytes FROM payloads WHERE owner_key=?').all(recordKey(key())); db.close();
             const beforeDb = hash(fs.readFileSync(database(s))), beforeFiles = {};
             function inventory(dir) { for (const name of fs.readdirSync(dir)) { const p = path.join(dir, name), st = fs.statSync(p); if (st.isDirectory()) inventory(p); else beforeFiles[p] = [st.ino, st.size, st.mtimeMs, st.ctimeMs]; } }
-            inventory(path.join(root, 'store-v3'));
+            inventory(path.join(root, 'store-v3'));evidence.observe('m2a-before',{root,beforeDb,beforeFiles});
             const measured = instrument(), outHash = createHash('sha256'); let bytes = 0, calls = 0, active = 0, maxChunk = 0;
             const at = performance.now();
             try {
                 await writeFixtureOther(options(f), async chunk => { assert.equal(++active, 1); maxChunk = Math.max(maxChunk, chunk.length); assert.ok(chunk.length <= 65536); outHash.update(chunk); bytes += chunk.length; calls++; await Promise.resolve(); active--; });
-            } finally { measured.restore(); }
+            } finally { try{measured.restore();}finally{evidence.observe('m2a-call',()=>({root,count,metrics:measured.metrics,core:reader?.metrics,bytes,calls,maxChunk}));} }
             const elapsedMs = performance.now() - at;
             assert.equal(outHash.digest('hex'), expectedHash); assert.equal(bytes, expectedBytes); assert.equal(hash(fs.readFileSync(database(s))), beforeDb);
             for (const [file, identity] of Object.entries(beforeFiles)) { const st = fs.statSync(file); assert.deepEqual([st.ino, st.size, st.mtimeMs, st.ctimeMs], identity); }
@@ -187,13 +188,13 @@ test('Writable completion/backpressure and EPIPE propagate without an unhandled 
 });
 
 test('isolated v2 CLI parity, pretty/compact manifests and SQLite-free imports', t => {
-    const root = fs.mkdtempSync(path.join(fs.realpathSync(os.tmpdir()), 'pain-gain-other-cli-')); t.after(() => fs.rmSync(root, {recursive: true, force: true}));
+    const root = evidence.evidenceTemp(path.join(fs.realpathSync(os.tmpdir()), 'pain-gain-other-cli-')); t.after(() => evidence.disposeFixture(root, {recursive: true, force: true}));
     fs.cpSync(new URL('../../tools/', import.meta.url), path.join(root, 'tools'), {recursive: true});
     fs.writeFileSync(path.join(root, 'package.json'), '{"type":"module"}'); fs.mkdirSync(path.join(root, 'replay_logs'));
     // Fixed committed baseline; no production evidence is copied or read.
     fs.writeFileSync(path.join(root, 'tools/legacy.js'), execFileSync('git', ['show', '84753ca921367cc4252aab9c3c1996171d2ac8c1:tools/replay-logs.js']));
     const deny = 'data:text/javascript,' + encodeURIComponent("import {registerHooks} from 'node:module';registerHooks({resolve(s,c,n){if(s==='node:sqlite')throw Error('SQLITE_FORBIDDEN');return n(s,c)}})");
-    const invoke = (name, args) => spawnSync(process.execPath, ['--import', deny, path.join(root, 'tools', name), ...args], {encoding: 'utf8'});
+    const invoke = (name, args) => evidence.captureSpawnSync(process.execPath, ['--import', deny, path.join(root, 'tools', name), ...args], {encoding: 'utf8'});
     for (const space of [undefined, 2]) for (const values of [[], [{raw: 'Á😀\n', x: null, zero: 0, no: false}, {raw: 'repeat'}, {raw: 'repeat'}]]) {
         const manifest = {version: 2, records: [{...key(), otherEntries: values}], maps: [], replays: [], retired: []};
         fs.writeFileSync(path.join(root, 'replay_logs/manifest.json'), JSON.stringify(manifest, null, space).replace('"zero":0', '"zero":1e400').replace('"zero": 0', '"zero": 1e400'));
@@ -207,11 +208,11 @@ test('isolated v2 CLI parity, pretty/compact manifests and SQLite-free imports',
 });
 
 test('v2 CLI reports a broken stdout pipe with nonzero exit', {timeout: 10000}, async t => {
-    const root = fs.mkdtempSync(path.join(fs.realpathSync(os.tmpdir()), 'pain-gain-other-cli-')); t.after(() => fs.rmSync(root, {recursive: true, force: true}));
+    const root = evidence.evidenceTemp(path.join(fs.realpathSync(os.tmpdir()), 'pain-gain-other-cli-')); t.after(() => evidence.disposeFixture(root, {recursive: true, force: true}));
     fs.cpSync(new URL('../../tools/', import.meta.url), path.join(root, 'tools'), {recursive: true});
     fs.writeFileSync(path.join(root, 'package.json'), '{"type":"module"}'); fs.mkdirSync(path.join(root, 'replay_logs'));
     fs.writeFileSync(path.join(root, 'replay_logs/manifest.json'), JSON.stringify({version: 2, records: [{...key(), otherEntries: [{raw: 'x'.repeat(1000000)}]}], maps: [], replays: []}));
-    const p = spawn(process.execPath, [path.join(root, 'tools/replay-logs.js'), 'other', replayId, key().fingerprint], {stdio: ['ignore', 'pipe', 'pipe']});
+    const p = evidence.captureSpawn(process.execPath, [path.join(root, 'tools/replay-logs.js'), 'other', replayId, key().fingerprint], {stdio: ['ignore', 'pipe', 'pipe']});
     t.after(() => { if (p.exitCode === null) p.kill('SIGKILL'); });
     let errors = ''; p.stderr.on('data', c => errors += c); p.stdout.destroy();
     const code = await new Promise((resolve, reject) => { p.once('error', reject); p.once('close', resolve); });
@@ -300,7 +301,7 @@ test('pending output, corrupted late overflow and safe-integer item counts rejec
 test('hot journal is recovery-required and read attempts preserve database/journal bytes', async t => {
     const f = await fixture(t); await publish(f, [{}]); f.h.close();
     const code = `import {DatabaseSync} from 'node:sqlite';const db=new DatabaseSync(process.argv[1]);db.exec('PRAGMA synchronous=FULL;PRAGMA cache_size=8;BEGIN IMMEDIATE');const q=db.prepare('INSERT INTO properties VALUES (?,?,?,?,?,NULL)');for(let i=0;i<1000;i++)q.run('root','root','/crash'+i,i,JSON.stringify('x'.repeat(60000)));process.kill(process.pid,'SIGKILL');`;
-    const crashed = spawnSync(process.execPath, ['--input-type=module', '-e', code, database(f.s)], {timeout: 15000}); assert.equal(crashed.signal, 'SIGKILL');
+    const crashed = evidence.captureSpawnSync(process.execPath, ['--input-type=module', '-e', code, database(f.s)], {timeout: 15000}); assert.equal(crashed.signal, 'SIGKILL');
     assert.ok(fs.statSync(database(f.s) + '-journal').size > 0);
     const before = state(f.s.root); let calls = 0;
     await assert.rejects(writeFixtureOther(options(f), () => calls++), {code: 'RECOVERY_REQUIRED'});
@@ -361,7 +362,7 @@ test('I/O failure during emission rejects after a prefix and permits a subsequen
 });
 
 for (const schema of [1, 2]) test(`M2a schema ${schema} 600 MiB streaming gate at exactly 10/1000 records`, {timeout: 100000}, async t => {
-    const root = fs.mkdtempSync(prefix); t.after(() => fs.rmSync(root, {recursive: true, force: true}));
+    const root = evidence.evidenceTemp(prefix); t.after(() => evidence.disposeFixture(root, {recursive: true, force: true}));
     const results = [];
     for (const phase of ['generate', 'operations']) {
         const text = await runChild(['--experimental-test-module-mocks', '--max-old-space-size=192', new URL(import.meta.url).pathname, 'm2a-scale', root, phase, String(schema)], phase === 'generate' ? 60000 : 30000);

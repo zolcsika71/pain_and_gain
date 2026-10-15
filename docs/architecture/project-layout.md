@@ -65,6 +65,11 @@ The explicit `upgrade-map-checksums` command locks the manifest, verifies legacy
 
 ## Read-only replay analysis
 
+`tools/replay-conversion-fixture.js` is a separate opt-in, synthetic-only
+v2-to-schema-1 conversion slice. It reuses core record/review/payload APIs and
+durable publication without adding production dispatch or a migration CLI.
+See the [slice contract and limitations](replay-conversion-slice.md).
+
 `tools/replay-other.js` supplies the legacy `other` command's native JSONL
 serializer and a separately invoked synthetic v3 diagnostic reader. Only the
 fixture entrypoint dynamically loads SQLite storage. Its pinned preflight,
@@ -72,7 +77,10 @@ bounded output and limitations are documented in the
 [M2a record](replay-storage-v3-m2a-2026-10-04.md).
 
 `tools/replay-legacy-reader.js` exposes the separate fixture-only M2b v2
-adapter. Its private `tools/replay-legacy-json.js` scanner validates a pinned
+adapter and the opt-in [bounded member stream](replay-legacy-members.md).
+The latter exposes complete bounded metadata members, retains unknown values,
+and rejects unsupported oversized members; it does not wire production conversion.
+The original M2b adapter's private `tools/replay-legacy-json.js` scanner validates a pinned
 manifest and selects one diagnostic array without materializing the corpus.
 It feeds the same native serializer, imports no SQLite, and changes no existing
 command or lifecycle behavior. See the
@@ -129,6 +137,13 @@ to a compact deterministic summary and accepts `--full-detail` for the original
 exhaustive contract; the importable API defaults to full mode for compatibility.
 Details and report semantics are in
 [deterministic replay analysis](replay-analysis.md).
+
+`tools/replay-production-scope.js`, `tools/replay-production-authority.js` and
+`tools/replay-sqlite-consumers.js` provide descriptor-selected leases and shared
+SQLite dispatch; `tools/replay-store-migrate.js` connects explicit administrative
+preparation, cutover, write enablement and current-state recovery. See the
+[production authority contract](replay-production-authority.md). These paths are
+validated on generated fixtures only; ordinary deployed storage remains v2.
 
 `tools/historical-index.js` is a bounded, local orchestration layer over that
 compact analyzer. Its version-1 selection file names exact managed sources and

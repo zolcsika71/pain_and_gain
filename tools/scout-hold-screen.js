@@ -1,20 +1,22 @@
 import fs from 'node:fs';
+import {assertAuthorityAccess,authorityV2Boundary} from './replay-authority-guard.js';
+import {productionSelection,dispatchProduction} from './replay-production-scope.js';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { analyzeReplay } from './replay-analysis.js';
 import { canonical, sha256 } from './replay-logs.js';
 
-const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const holdReason = 'scout-owned-flag-hold';
 const range = (a, b) => Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y));
 
-function managedBytes(name) {
+function managedBytes(name,root=projectRoot) {
     if (typeof name !== 'string' || path.basename(name) !== name) {
         throw new Error(`Unsafe managed evidence path: ${name}`);
     }
     const file = path.join(root, 'replay_logs', name);
     if (!fs.lstatSync(file).isFile()) throw new Error(`Unsafe managed evidence file: ${name}`);
-    return fs.readFileSync(file);
+    return authorityV2Boundary(root,'read',{file,kind:'artifact'})??fs.readFileSync(file);
 }
 
 function reportSource(snapshot, decisions) {
@@ -134,7 +136,8 @@ export function summarizeHoldRelease(snapshots, entries, scoutIds, completeTicks
                 : enemyReleaseCandidates.pass ? 'pass' : 'unexercised' };
 }
 
-function selectedEvidence(replayId, taskId) {
+function selectedEvidence(replayId, taskId,root=projectRoot,fingerprints,codeRoot=root) {
+    assertAuthorityAccess(path.resolve(root),'v2');
     const directory = path.join(root, 'replay_logs');
     const manifestFile = path.join(directory, 'manifest.json');
     if (!fs.lstatSync(directory).isDirectory() ||
@@ -142,20 +145,21 @@ function selectedEvidence(replayId, taskId) {
         !fs.lstatSync(manifestFile).isFile()) {
         throw new Error('Unsafe managed evidence directory or manifest');
     }
-    const manifest = JSON.parse(fs.readFileSync(manifestFile));
+    const manifest = JSON.parse(authorityV2Boundary(root,'read',{file:manifestFile,kind:'manifest'})??fs.readFileSync(manifestFile));
     if (manifest?.version !== 2 || !Array.isArray(manifest.records) ||
         !Array.isArray(manifest.replays) || !Array.isArray(manifest.maps)) {
         throw new Error('Unsupported managed evidence manifest');
     }
-    const records = manifest.records.filter(r => r.replayId === replayId)
+    const records = manifest.records.filter(r => r.replayId === replayId&&(!fingerprints||fingerprints.includes(r.fingerprint)))
         .sort((a, b) => a.fingerprint.localeCompare(b.fingerprint));
+    if(fingerprints&&records.length!==fingerprints.length)throw new Error('Every screened log must be current');
     if (!records.length) throw new Error(`No managed log records for ${replayId}`);
     for (const record of records) if (!record.reviews?.[taskId]?.claimedAt) {
         throw new Error(`Claim ${record.fingerprint} for ${taskId} before screening`);
     }
     const source = records.map(r => {
-        const bytes = r.outputPath ? managedBytes(r.outputPath) : null;
-        const mapBytes = managedBytes(r.mapFile);
+        const bytes = r.outputPath ? managedBytes(r.outputPath,root) : null;
+        const mapBytes = managedBytes(r.mapFile,root);
         // Mirror selected manifest validation inputs, not unrelated review/annotation data.
         return { fingerprint: r.fingerprint, sourceKey: r.sourceKey, buildId: r.buildId,
             requestedTick: r.requestedTick, sourceEntry: r.sourceEntry,
@@ -179,16 +183,17 @@ function selectedEvidence(replayId, taskId) {
         checksum: registration.checksum, file: registration.file } : null };
     const dependencies = ['tools/scout-hold-screen.js', 'tools/replay-analysis.js',
         'tools/replay-logs.js', 'tools/replay-score-analysis.js', 'src/config.js',
-        'src/debug/build-id.js'].map(file => [file, sha256(fs.readFileSync(path.join(root, file)))]);
+        'src/debug/build-id.js'].map(file => [file, sha256(authorityV2Boundary(root,'read',{file:path.join(codeRoot,file),kind:'code'})??fs.readFileSync(path.join(codeRoot,file)))]);
     return { records, key: sha256(canonical({ replayId, source, linkage, dependencies })) };
 }
 
-export function screenReplay(replayId, taskId, expectedBuildId) {
+export function screenReplay(replayId, taskId, expectedBuildId,{root=projectRoot,fingerprints,codeRoot=root,cache=true}={}) {
+    if(productionSelection(path.resolve(root))){if(codeRoot!==root)throw new Error('Unsupported production code root override');return dispatchProduction(path.resolve(root),'screen',{replayId,taskId,expectedBuildId,fingerprints,cache});}
     if (!/^[a-f0-9]{24}$/.test(replayId) || !/^codex\/[a-z0-9-]+$/.test(taskId) ||
         !/^[a-f0-9]{64}$/.test(expectedBuildId)) {
         throw new Error('Usage: node tools/scout-hold-screen.js <replay-id> <codex/task-id> <expected-build-id>');
     }
-    const { records, key } = selectedEvidence(replayId, taskId);
+    const { records, key } = selectedEvidence(replayId, taskId,root,fingerprints,codeRoot);
     if (records.some(r => r.buildId !== expectedBuildId)) {
         throw new Error(`Replay log build does not match ${expectedBuildId}`);
     }
@@ -196,8 +201,8 @@ export function screenReplay(replayId, taskId, expectedBuildId) {
     // Legacy replay-only entries lack current validation dependencies. Retain them;
     // key-addressed entries also preserve earlier reports when selected inputs change.
     const cacheFile = path.join(cacheDir, `scout-hold-${replayId}-${key}.json`);
-    if (fs.existsSync(cacheFile)) {
-        const cached = JSON.parse(fs.readFileSync(cacheFile));
+    if (cache&&fs.existsSync(cacheFile)) {
+        const cached = JSON.parse(authorityV2Boundary(root,'read',{file:cacheFile,kind:'cache-report'})??fs.readFileSync(cacheFile));
         if (cached.key === key) return { report: cached.report, cache: 'hit' };
     }
     const analysis = analyzeReplay({ root, replayId,
@@ -205,6 +210,19 @@ export function screenReplay(replayId, taskId, expectedBuildId) {
     if (analysis.summary.fail || analysis.evidenceSummary.trustedLogRecords !== records.length) {
         throw new Error('Managed evidence did not pass replay analyzer validation');
     }
+    const report = screenLoadedEvidence({replayId, records, analysis, outputBytes: r => managedBytes(r.outputPath,root)});
+    if(!cache)return{report,cache:'disabled'};
+    fs.mkdirSync(cacheDir, { recursive: true });
+    const temp = `${cacheFile}.${process.pid}.tmp`;
+    const content=`${JSON.stringify({ key, report }, null, 2)}\n`;
+    authorityV2Boundary(root,'cache-write',{file:cacheFile,content});
+    fs.writeFileSync(temp,content);
+    fs.renameSync(temp, cacheFile);
+    return { report, cache: 'miss' };
+}
+
+// Pure screening projection: both routes supply already-validated selected inputs.
+export function screenLoadedEvidence({replayId, records, analysis, outputBytes}) {
     const states = new Map(), diagnostics = new Map(), completeTicks = new Set();
     for (const r of records) {
         const coveredTypes = r.diagnosticCoverage?.coveredTypes ?? [];
@@ -212,7 +230,7 @@ export function screenReplay(replayId, taskId, expectedBuildId) {
             for (const tick of r.diagnosticCoverage.completeTicks) completeTicks.add(tick);
         }
         if (r.outputPath) {
-            for (const line of managedBytes(r.outputPath).toString('utf8').trim().split('\n')) {
+            for (const line of outputBytes(r).toString('utf8').trim().split('\n')) {
                 const state = JSON.parse(line), old = states.get(state.tick);
                 if (old && canonical(old.state) !== canonical(state)) throw new Error(`Conflicting tick ${state.tick}`);
                 states.set(state.tick, { tick: state.tick, state, fingerprint: r.fingerprint });
@@ -237,16 +255,21 @@ export function screenReplay(replayId, taskId, expectedBuildId) {
     const report = { replayId, evidence: { fingerprints: records.map(r => r.fingerprint),
         builds, maps, analyzer: analysis.summary, snapshotTicks: analysis.evidenceSummary.snapshots,
         completeDiagnosticTicks: analysis.evidenceSummary.completeDiagnosticTicks }, ...result };
-    fs.mkdirSync(cacheDir, { recursive: true });
-    const temp = `${cacheFile}.${process.pid}.tmp`;
-    fs.writeFileSync(temp, `${JSON.stringify({ key, report }, null, 2)}\n`);
-    fs.renameSync(temp, cacheFile);
-    return { report, cache: 'miss' };
+    return report;
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+async function main() {
     try {
-        const { report, cache } = screenReplay(process.argv[2], process.argv[3], process.argv[4]);
+        let result;
+        if (process.argv[2] === '--synthetic-sqlite') {
+            const { screenSyntheticReplay } = await import('./replay-evidence-consumers-fixture.js');
+            const fingerprints=process.argv.slice(7),cache=fingerprints.at(-1)==='--cache';if(cache)fingerprints.pop();
+            result = await screenSyntheticReplay({synthetic:true,root:process.argv[3],replayId:process.argv[4],taskId:process.argv[5],expectedBuildId:process.argv[6],fingerprints,cache});
+        } else{const argv=process.argv.slice(2),explicit=argv[0]==='--storage-root',root=explicit?argv[1]:projectRoot;
+            if(explicit&&!productionSelection(root))throw new Error('Explicit root requires production SQLite authority');
+            const [replayId,taskId,build,...fingerprints]=argv.slice(explicit?2:0);
+            const selected=productionSelection(root);result=await screenReplay(replayId,taskId,build,{root,cache:!selected||selected.descriptor.production.mode==='read-write',...(fingerprints.length?{fingerprints}:{})});}
+        const { report, cache } = result;
         process.stderr.write(`scout-hold cache: ${cache}\n`);
         process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
     } catch (error) {
@@ -254,3 +277,4 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
         process.exitCode = 1;
     }
 }
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) void main();

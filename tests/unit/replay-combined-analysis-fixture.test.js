@@ -1,3 +1,4 @@
+import * as evidence from '../fixtures/qualification-evidence.js';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -15,7 +16,7 @@ import {scoreSourceFingerprint,validateScoreBody} from '../../tools/replay-logs.
 import {chunks} from '../fixtures/replay-combined-analysis-m2e-store.js';
 const golden=JSON.parse(fs.readFileSync(new URL('../fixtures/replay-combined-analysis-m2e-oracle.json',import.meta.url)));
 const equal=(actual,expected)=>assert.equal(JSON.stringify(actual),JSON.stringify(expected));
-async function fixture(t,schema,variant='scale',options){const f=await makeFixture(schema,variant,options);t.after(()=>{f.h.close();fs.rmSync(f.root,{recursive:true,force:true});});return f;}
+async function fixture(t,schema,variant='scale',options){const f=await makeFixture(schema,variant,options);t.after(()=>{f.h.close();evidence.disposeFixture(f.root,{recursive:true,force:true});});return f;}
 async function rejectsUnchanged(f,expected,options=f.options){const before=inventory(f.root);await assert.rejects(analyzeFixtureCombinedReplay(options),expected);assert.deepEqual(inventory(f.root),before);assert.equal(fs.existsSync(path.join(f.root,'.manifest.lock')),false);await f.s.withWriter(()=>{});}
 function corrupt(f,sql,args=[]){const db=new DatabaseSync(path.join(f.root,JSON.parse(fs.readFileSync(path.join(f.root,'manifest.json'))).database));try{db.prepare(sql).run(...args);}finally{db.close();}}
 for(const schema of [1,2])for(const fault of ['binding-pointer','binding-role','binding-encoding','ownership-root','ownership-child','ownership-map','valid-extensions','valid-summaries'])test(`M2e validation schema ${schema}: ${fault}`,async()=>{
@@ -133,10 +134,10 @@ for(const schema of [1,2])test(`M2e schema ${schema}: union handle cap and indiv
 });
 
 test('M2e v2 synchronous combined API and actual CLI remain SQLite-free',t=>{
-    const root=fs.mkdtempSync(path.join(fs.realpathSync(os.tmpdir()),'pain-gain-m2e-v2-'));t.after(()=>fs.rmSync(root,{recursive:true,force:true}));
+    const root=evidence.evidenceTemp(path.join(fs.realpathSync(os.tmpdir()),'pain-gain-m2e-v2-'));t.after(()=>evidence.disposeFixture(root,{recursive:true,force:true}));
     // Rebuild synthetic inputs, not retained production evidence or oracle-root dependencies.
     const script=`import fs from 'node:fs';import {recipe,replayId} from ${JSON.stringify(new URL('../fixtures/replay-combined-analysis-m2e-recipe.js',import.meta.url).href)};import * as h from ${JSON.stringify(new URL('../../tools/replay-logs.js',import.meta.url).href)};const d=recipe(h);fs.mkdirSync(process.argv[1]+'/replay_logs');fs.writeFileSync(process.argv[1]+'/replay_logs/manifest.json',JSON.stringify(d.manifest));for(const [p,b]of Object.entries(d.files))fs.writeFileSync(process.argv[1]+'/replay_logs/'+p,b);`;
-    const setup=spawnSync(process.execPath,['--input-type=module','-e',script,root],{encoding:'utf8',timeout:15000});assert.equal(setup.status,0,setup.stderr);
+    const setup=evidence.captureSpawnSync(process.execPath,['--input-type=module','-e',script,root],{encoding:'utf8',timeout:15000});assert.equal(setup.status,0,setup.stderr);
     // CLI root is module-relative, not cwd. Execute copied code inside this
     // fixture and omit the repository build input (the oracle uses null).
     fs.cpSync(new URL('../../tools',import.meta.url),path.join(root,'tools'),{recursive:true});
@@ -146,15 +147,15 @@ test('M2e v2 synchronous combined API and actual CLI remain SQLite-free',t=>{
     const analyzer=path.join(root,'tools/replay-analysis.js'),before=inventory(root);
     for(const reportMode of ['full','compact']){
         const args=[golden.scenarios.scale.reports.full.replayId,...['0'.repeat(64),'0'.repeat(63)+'1'],'--score',...golden.scenarios.scale.reports.full.selectedScoreFingerprints,...(reportMode==='full'?['--full-detail']:[])];
-        const p=spawnSync(process.execPath,['--import',deny,analyzer,...args],{cwd:root,encoding:'utf8',timeout:15000,maxBuffer:8*1048576});assert.equal(p.status,Number(golden.scenarios.scale.reports[reportMode].summary.fail>0),p.stderr);assert.ok(p.stdout.length,p.stderr||'CLI did not run');equal(JSON.parse(p.stdout),golden.scenarios.scale.reports[reportMode]);
+        const p=evidence.captureSpawnSync(process.execPath,['--import',deny,analyzer,...args],{cwd:root,encoding:'utf8',timeout:15000,maxBuffer:8*1048576});assert.equal(p.status,Number(golden.scenarios.scale.reports[reportMode].summary.fail>0),p.stderr);assert.ok(p.stdout.length,p.stderr||'CLI did not run');equal(JSON.parse(p.stdout),golden.scenarios.scale.reports[reportMode]);
     }
     assert.deepEqual(inventory(root),before);
 });
 
 for(const schema of [1,2])test(`M2e schema ${schema}: exact 10/1000 and 600 MiB corpus gate`,async t=>{
-    const roots=[10,1000].map(()=>fs.mkdtempSync(path.join(fs.realpathSync(os.tmpdir()),'pain-gain-store-v3-fixture-'))),receipts=fs.mkdtempSync(path.join(os.tmpdir(),'pain-gain-m2e-gate-'));
+    const roots=[10,1000].map(()=>evidence.evidenceTemp(path.join(fs.realpathSync(os.tmpdir()),'pain-gain-store-v3-fixture-'))),receipts=evidence.evidenceTemp(path.join(os.tmpdir(),'pain-gain-m2e-gate-'));
     const worker=new URL('../fixtures/replay-combined-analysis-m2e-worker.js',import.meta.url).pathname;let passed=false;
-    t.after(()=>{if(passed)for(const root of [...roots,receipts])fs.rmSync(root,{recursive:true,force:true});else t.diagnostic(JSON.stringify({retainedFailedFixtures:[...roots,receipts]}));});
+    t.after(()=>{if(passed)for(const root of [...roots,receipts])evidence.disposeFixture(root,{recursive:true,force:true});else t.diagnostic(JSON.stringify({retainedFailedFixtures:[...roots,receipts]}));});
     try{
         const generate=await child(['--max-old-space-size=192',worker,'generate',String(schema),...roots],60000),receipt=path.join(receipts,'generation.json');fs.writeFileSync(receipt,JSON.stringify(generate.result));
         const operations=await child(['--max-old-space-size=192',worker,'operations',String(schema),...roots,receipt],30000);

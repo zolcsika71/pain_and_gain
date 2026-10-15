@@ -1,3 +1,4 @@
+import * as retainedEvidence from '../fixtures/qualification-evidence.js';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -6,15 +7,20 @@ import { createHash } from 'node:crypto';
 import { spawn } from 'node:child_process';
 import { DatabaseSync } from 'node:sqlite';
 import { performance } from 'node:perf_hooks';
-import test from 'node:test';
+import nativeTest from 'node:test';
+import {inventory} from '../fixtures/replay-analysis-m2c-store.js';
 import { createFixtureStore, openStore, recordKey, recordOwner } from '../../tools/replay-store.js';
 import { diagnosticChunks, digestChunks, inlineJson, iterateDiagnostics, iterateJson,
     jsonChunks, LIMITS, payloadChunks, payloadPath, streamOriginalValue } from '../../tools/replay-store-payloads.js';
 
 const mapId='a'.repeat(64),replayId='b'.repeat(24);
+// Import-only access to the same producers for tiny safeguards, never a scale recipe.
+const test=process.argv[2]==='evidence-producer-import'?()=>{}:nativeTest;
+export function retainScaleInventory(root,moment){if(!retainedEvidence.evidenceEnabled())return;retainedEvidence.registerRoot(root);retainedEvidence.observe('m1-inventory',()=>({root,moment,files:inventory(root)}));}
+export async function observeScaleCall(s,count,operation,action){try{return await action();}finally{retainedEvidence.observe('m1-call',()=>({root:s.root,count,operation,metrics:s.metrics}));}}
 const key=(i=0)=>({collection:'log',replayId,fingerprint:i.toString(16).padStart(64,'0')});
 const prefix=path.join(fs.realpathSync(os.tmpdir()),'pain-gain-store-v3-fixture-');
-async function fixture(t){const root=fs.mkdtempSync(prefix),s=await createFixtureStore({root,filesystem:'local-apfs'});t.after(()=>{s.close();fs.rmSync(root,{recursive:true,force:true});});await associations(s);return s;}
+async function fixture(t){const root=retainedEvidence.evidenceTemp(prefix),s=await createFixtureStore({root,filesystem:'local-apfs'});t.after(()=>{s.close();retainedEvidence.disposeFixture(root,{recursive:true,force:true});});await associations(s);return s;}
 async function associations(s){await s.withWriter(w=>w.transaction(tx=>{tx.insertEntity({kind:'map',key:mapId,ordinal:0});tx.insertEntity({kind:'replay',key:replayId,ordinal:0,value:{mapId}});}));}
 async function evidence(s,k,p,role,source,expected){let ref;await s.withWriter(async w=>{ref=await w.publishPayload({owner:recordOwner(k),pointer:p,role,source:source(),evidenceOnly:true,...expected});w.transaction(tx=>{tx.insertEntity({kind:'record',key:recordKey(k),ordinal:Number.parseInt(k.fingerprint,16),value:{mapId}});tx.finishPublication({recordKey:k,payloadRefs:[ref]});tx.setProperty({owner:recordOwner(k),pointer:p,ordinal:2,payloadRef:ref});});});return ref;}
 async function collect(generator){const result=[];for await(const item of generator)result.push(item);return result;}
@@ -23,7 +29,8 @@ if(process.argv[2]==='scale-worker'){
     const root=process.argv[3],phase=process.argv[4];
     const s=phase==='generate'?await createFixtureStore({root,filesystem:'local-apfs'}):await openStore({root,mode:'write'});
     const started=performance.now();
-    if(phase==='generate'){
+    let result;
+    try{retainScaleInventory(root,'before');if(phase==='generate'){
         await associations(s);
         // Ten distinct 60 MiB ASCII JSON strings, generated a chunk at a time.
         for(let i=0;i<10;i++){
@@ -31,7 +38,7 @@ if(process.argv[2]==='scale-worker'){
             const source=function*(){yield Buffer.from('"');let remain=size-2;const block=Buffer.alloc(65_536,65+i);while(remain){const n=Math.min(remain,block.length);yield block.subarray(0,n);remain-=n;}yield Buffer.from('"');};
             await evidence(s,key(i),'/large','extensions',source,digestChunks(source()));
         }
-        console.log(JSON.stringify({phase,bytes:600*1024*1024,elapsedMs:performance.now()-started,maxRssBytes:process.resourceUsage().maxRSS*1024,metrics:s.metrics}));
+        result={phase,bytes:600*1024*1024,metrics:s.metrics};
     }else{
         // Audit file identities without reading the large payload bodies.
         const files=[];const walk=directory=>{for(const name of fs.readdirSync(directory)){const file=path.join(directory,name),stat=fs.lstatSync(file);if(stat.isDirectory())walk(file);else if(name.endsWith('.json')||name.endsWith('.jsonl'))files.push([file,stat.ino,stat.size,stat.mtimeMs,stat.ctimeMs]);}};walk(path.join(root,'store-v3'));
@@ -39,9 +46,10 @@ if(process.argv[2]==='scale-worker'){
         for(const count of [10,1000]){
             // The first measured import added one row: add 989, not 990.
             if(count===1000)await s.withWriter(w=>w.transaction(tx=>{for(let i=10;i<999;i++)tx.insertEntity({kind:'record',key:recordKey(key(i)),ordinal:i,value:{mapId,status:'claim'}});}));
-            const native=new DatabaseSync(path.join(root,JSON.parse(fs.readFileSync(path.join(root,'manifest.json'))).database),{readOnly:true});assert.equal(native.prepare('SELECT count(*) AS count FROM records').get().count,count);native.close();
+            const native=new DatabaseSync(path.join(root,JSON.parse(fs.readFileSync(path.join(root,'manifest.json'))).database),{readOnly:true});try{const actual=native.prepare('SELECT count(*) AS count FROM records').get().count;retainedEvidence.observe('m1-record-count',{root,count,actual});assert.equal(actual,count);}finally{native.close();}
             for(const operation of ['list','lookup','review','import']){
                 s.resetMetrics();const before=performance.now();
+                await observeScaleCall(s,count,operation,async()=>{
                 if(operation==='list'){const page=s.pageRecords({collection:'log',limit:10});assert.equal(page.rows.length,10);}
                 if(operation==='lookup')assert.equal(s.getRecord(key()).fingerprint,key().fingerprint);
                 if(operation==='review')await s.withWriter(w=>w.transaction(tx=>tx.putReview({recordKey:key(),taskId:'scale',ordinal:0,value:{examined:null,completed:null}})));
@@ -49,15 +57,16 @@ if(process.argv[2]==='scale-worker'){
                     // Separate identity each time; write one new payload only.
                     const k=key(count+10000),source=()=>jsonChunks({fresh:count});await evidence(s,k,'/summary','summaries',source,digestChunks(source()));
                 }
-                runs.push({count,operation,elapsedMs:performance.now()-before,metrics:{...s.metrics}});
+                });runs.push({count,operation,elapsedMs:performance.now()-before,metrics:{...s.metrics}});
                 if(operation!=='import'){assert.equal(s.metrics.payloadOpens,0);assert.equal(s.metrics.payloadReadBytes,0);assert.equal(s.metrics.payloadWriteBytes,0);}
             }
         }
         for(const operation of ['list','lookup','review','import'])assert.equal(runs.find(r=>r.count===10&&r.operation===operation).metrics.sql,runs.find(r=>r.count===1000&&r.operation===operation).metrics.sql);
         for(const [file,ino,size,mtime,ctime]of files){const stat=fs.statSync(file);assert.deepEqual([stat.ino,stat.size,stat.mtimeMs,stat.ctimeMs],[ino,size,mtime,ctime]);}
-        console.log(JSON.stringify({phase,elapsedMs:performance.now()-started,maxRssBytes:process.resourceUsage().maxRSS*1024,runs}));
-    }
-    assert.ok(process.resourceUsage().maxRSS*1024<=256*1024*1024,'256 MiB RSS budget');s.close();
+        result={phase,runs};
+    }}finally{try{retainScaleInventory(root,'after');}finally{s.close();}}
+    assert.ok(process.resourceUsage().maxRSS*1024<=256*1024*1024,'256 MiB RSS budget');
+    console.log(JSON.stringify({...result,elapsedMs:performance.now()-started,maxRssBytes:process.resourceUsage().maxRSS*1024}));
 }else{
 test('bounded JSON encoding preserves Unicode/types and rejects lossy JSON',()=>{
     const value={unicode:'Á😀',bool:false,zero:0,null:null,empty:[],object:{},unknown:[1,'x']};
@@ -185,9 +194,9 @@ test('large unknown reviewer values spill without replacing identity or checkpoi
 });
 
 test('600 MiB streaming scale gate: fixed selections at 10/1000 metadata records', {timeout:100_000},async t=>{
-    const root=fs.mkdtempSync(prefix);t.after(()=>fs.rmSync(root,{recursive:true,force:true}));
+    const root=retainedEvidence.evidenceTemp(prefix);t.after(()=>retainedEvidence.disposeFixture(root,{recursive:true,force:true}));
     async function run(phase,timeout){
-        const proc=spawn(process.execPath,['--max-old-space-size=192',new URL(import.meta.url).pathname,'scale-worker',root,phase],{stdio:['ignore','pipe','pipe']});
+        const proc=retainedEvidence.captureSpawn(process.execPath,['--max-old-space-size=192',new URL(import.meta.url).pathname,'scale-worker',root,phase],{stdio:['ignore','pipe','pipe']});
         let stdout='',stderr='',timedOut=false;proc.stdout.on('data',c=>stdout+=c);proc.stderr.on('data',c=>stderr+=c);
         const timer=setTimeout(()=>{timedOut=true;proc.kill('SIGKILL');},timeout);
         const code=await new Promise((resolve,reject)=>{proc.once('error',reject);proc.once('exit',resolve);});clearTimeout(timer);

@@ -1,3 +1,4 @@
+import * as evidence from './qualification-evidence.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import assert from 'node:assert/strict';
@@ -15,7 +16,7 @@ if(phase==='generate'){
  for(const [i,root]of roots.entries()){
   const count=[10,1000][i],f=await makeFixture(schema,'scale',{root,count,large:true});
   await f.s.withWriter(w=>w.transaction(tx=>{for(const {key}of f.refs)tx.putReview({recordKey:key,taskId:'codex/m2f-existing',ordinal:7,value:{claimedAt:'2026-10-06T00:00:00.000Z',examinedAt:null,completedAt:null,note:{zero:0,flag:false}}});}));
-  f.h.close();const db=logical(root),files=artifacts(root);assert.equal(db.records.length,count);assert.equal(db.retired.length,0);assert.equal(db.records.filter(r=>r.status==='pending').length,count-4);assert.equal(db.operations.length,6);assert.equal(db.operation_files.length,12);assert.equal(db.reviews.length,4);
+  f.h.close();const db=retainedlogical(root),files=retainedartifacts(root);assert.equal(db.records.length,count);assert.equal(db.retired.length,0);assert.equal(db.records.filter(r=>r.status==='pending').length,count-4);assert.equal(db.operations.length,6);assert.equal(db.operation_files.length,12);assert.equal(db.reviews.length,4);
   for(const a of golden.artifacts){const p=a.logical??f.refs.find(r=>r.key.collection===a.collection&&r.key.fingerprint===a.fingerprint).refs.find(r=>r.pointer===a.pointer).path;assert.equal(files[p].bytes,a.bytes);assert.equal(files[p].hash,a.hash);}
   const inodes=new Set();let bytes=0;for(const [j,ref]of f.largeRefs.entries()){const st=files[ref.path];assert.equal(st.bytes,golden.large[j].bytes);assert.equal(st.hash,golden.large[j].hash);assert.equal(st.nlink,1);assert.ok(st.blocks*512>=st.bytes);inodes.add(`${st.dev}:${st.ino}`);bytes+=st.bytes;}assert.equal(inodes.size,12);assert.equal(bytes,629145600);
   save(`before-${i}.json`,{db,files});stores.push({count,generation:db.store_meta[0].generation,logicalHash:hash(json(db)),artifactsHash:hash(json(files)),selectedArtifacts:golden.artifacts.length,unrelatedBytes:bytes});
@@ -25,7 +26,7 @@ if(phase==='generate'){
  const generation=load('generation.json'),runs=[];
  for(const [i,root]of roots.entries())for(const [q,step]of golden.scale.entries()){
   const restore=clock(step.clock),m=measure(),at=performance.now();let result;
-  try{result=await updateFixtureReviewCheckpoint({root,schemaVersion:schema,...step.request});}finally{m.restore();restore();}
+  try{result=await updateFixtureReviewCheckpoint({root,schemaVersion:schema,...step.request});}finally{try{m.restore();}finally{restore();evidence.observe('call-observation',()=>({root,result,metrics:m.m,plans:m.plans}));}}
   const normalized={...result,generation:String(BigInt(result.generation)-BigInt(generation.stores[i].generation))};assert.deepEqual(normalized,step.result);assert.equal(m.m.transactions,result.changed?1:0);assert.equal(m.m.payloadOpens+m.m.payloadReadBytes+m.m.payloadWrites+m.m.corpusScans,0);
   runs.push({count:generation.stores[i].count,q,result,normalizedHash:hash(json(normalized)),...m.m,elapsedMs:performance.now()-at});
   save(`plans-${i}-${q}.json`,m.plans);
@@ -35,7 +36,7 @@ if(phase==='generate'){
 }else if(phase==='preservation'){
  const operations=load('operations.json'),stores=[];
  for(const [i,root]of roots.entries()){
-  const before=load(`before-${i}.json`),after=logical(root),files=artifacts(root),expected=before.db;
+  const before=load(`before-${i}.json`),after=retainedlogical(root),files=retainedartifacts(root),expected=before.db;
   for(const {result:r}of operations.runs.filter(r=>r.count===[10,1000][i]&&r.result.changed)){
    const key=recordKey(r),owner=JSON.stringify([key,r.taskId]);
    const existing=expected.reviews.find(v=>v.owner_key===owner);
@@ -47,3 +48,7 @@ if(phase==='generate'){
  }
  output({stores});
 }else throw Error('Unknown phase');
+
+function retainedlogical(root){const value=logical(root);evidence.observe('phase-logical',()=>({phase,schema,root,value}));return value;}
+
+function retainedartifacts(root){const value=artifacts(root);evidence.observe('phase-artifacts',()=>({phase,schema,root,value}));return value;}

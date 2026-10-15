@@ -1,3 +1,4 @@
+import * as evidence from '../fixtures/qualification-evidence.js';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -151,8 +152,8 @@ function rawCoverage(gameStates) {
 }
 
 function workspace(t, inputs, { localBuild = null } = {}) {
-    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'pain-gain-analysis-'));
-    t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+    const root = evidence.evidenceTemp(path.join(os.tmpdir(), 'pain-gain-analysis-'));
+    t.after(() => evidence.disposeFixture(root, { recursive: true, force: true }));
     const directory = path.join(root, 'replay_logs');
     fs.mkdirSync(directory);
     if (localBuild) {

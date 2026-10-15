@@ -17,7 +17,8 @@ async function cacheFixture(t) {
     t.after(() => fs.rmSync(root, { recursive: true, force: true }));
     // Execute unmodified modules in a synthetic project; never redirect production evidence.
     for (const file of ['scout-hold-screen.js', 'replay-analysis.js',
-        'replay-logs.js', 'replay-score-analysis.js']) {
+        'replay-logs.js', 'replay-score-analysis.js', 'replay-authority-guard.js',
+        'replay-store-payloads.js', 'retrieval-files.js']) {
         fs.mkdirSync(path.join(root, 'tools'), { recursive: true });
         fs.copyFileSync(new URL(`../../tools/${file}`, import.meta.url), path.join(root, 'tools', file));
     }

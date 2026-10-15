@@ -4,6 +4,8 @@ import path from 'node:path';
 import {createHash} from 'node:crypto';
 import {createReplayAnalysisSession} from './replay-analysis.js';
 import {fail, LIMITS, iterateDiagnostics, iterateJson, jsonChunks, payloadChunks} from './replay-store-payloads.js';
+import {productionAccess} from './replay-production-scope.js';
+import {resident,withCleanup} from './retrieval-files.js';
 
 const MiB = 1024 * 1024;
 const plain = value => value !== null && typeof value === 'object' &&
@@ -23,26 +25,29 @@ function encodedSize(value, limit, field) {
 
 // This provenance file is not a capture and is not a fallback to main's build.
 export function localBuild(root) {
-    let current = root;
+    const production=productionAccess(root);let current = production?.projectRoot??root,before;
     for (const name of ['src','debug','build-id.js']) {
         current = path.join(current,name);
         let st;
         try { st = fs.lstatSync(current); } catch (e) { if (e.code === 'ENOENT') return null; throw e; }
         if (st.isSymbolicLink() || (name === 'build-id.js' ? !st.isFile() : !st.isDirectory())) fail('UNSAFE_PATH','Unsafe local build input');
+        if(production){before=resident(current,name!=='build-id.js');if(fs.realpathSync(current)!==current||name==='build-id.js'&&before.nlink!==1)fail('UNSAFE_PATH','Canonical resident build reference required');}
     }
-    const fd = fs.openSync(current,fs.constants.O_RDONLY | fs.constants.O_NOFOLLOW); let failed = false;
+    const fd = fs.openSync(current,fs.constants.O_RDONLY | fs.constants.O_NOFOLLOW); let failed = false,primary;
     try {
         const st = fs.fstatSync(fd);
         if (!st.isFile() || st.size > 16384) fail('RESOURCE_LIMIT','Local build input exceeds 16 KiB');
+        if(production&&(st.dev!==before.dev||st.ino!==before.ino||st.size!==before.size))fail('CHANGED_INPUT','Build reference changed on open');
         const buffer = Buffer.alloc(st.size); let offset = 0;
         while (offset < buffer.length) {
             const n = fs.readSync(fd,buffer,offset,buffer.length-offset,offset);
             if (!n) fail('INVALID_ARTIFACT','Local build input ended early');
             offset += n;
         }
+        if(production){const end=fs.fstatSync(fd),named=resident(current);if(end.size!==before.size||end.mtimeMs!==before.mtimeMs||end.ctimeMs!==before.ctimeMs||named.dev!==before.dev||named.ino!==before.ino)fail('CHANGED_INPUT','Build reference changed during read');}
         return buffer.toString('utf8').match(/export const buildId = '([a-f0-9]{64})'/)?.[1] ?? null;
-    } catch (error) { failed = true; throw error; }
-    finally { try { fs.closeSync(fd); } catch (error) { if (!failed) throw error; } }
+    } catch (error) { failed = true; primary=error; throw error; }
+    finally { try { fs.closeSync(fd); } catch (error) { if (!failed) throw error;if(primary instanceof Error)withCleanup(primary,error);else throw new AggregateError([primary,error],'Build reference and cleanup',{cause:primary}); } }
 }
 
 async function bytes(view, ref, limit, field, jsonl = false) {

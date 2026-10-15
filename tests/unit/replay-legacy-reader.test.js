@@ -1,3 +1,4 @@
+import * as evidence from '../fixtures/qualification-evidence.js';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -20,8 +21,8 @@ const digest = bytes => createHash('sha256').update(bytes).digest('hex');
 const oracle = values => values.map(v => JSON.stringify(v) + '\n').join('');
 function initialize(root) { fs.mkdirSync(path.join(root, 'replay_logs')); fs.writeFileSync(path.join(root, '.replay-v2-reader-fixture.json'), marker); }
 function fixture(t, input = JSON.stringify(manifest([record([])]))) {
-    const root = fs.mkdtempSync(prefix); initialize(root); fs.writeFileSync(file(root), input);
-    t.after(() => fs.rmSync(root, {recursive: true, force: true})); return root;
+    const root = evidence.evidenceTemp(prefix); initialize(root); fs.writeFileSync(file(root), input);
+    t.after(() => evidence.disposeFixture(root, {recursive: true, force: true})); return root;
 }
 const run = (root, sink) => writeFixtureV2Other({root, ...identity}, sink);
 async function output(root) { const parts = []; await run(root, chunk => parts.push(chunk)); return Buffer.concat(parts).toString(); }
@@ -33,7 +34,7 @@ async function rejectsUnchanged(root, code) {
 }
 function nativeFind(text) { const m = JSON.parse(text); return m.records.find(r => r.replayId === replayId && r.fingerprint === fingerprint); }
 async function child(args, timeout) {
-    const p = spawn(process.execPath, args, {stdio: ['ignore', 'pipe', 'pipe']}); let stdout = '', stderr = '', expired = false;
+    const p = evidence.captureSpawn(process.execPath, args, {stdio: ['ignore', 'pipe', 'pipe']}); let stdout = '', stderr = '', expired = false;
     p.stdout.on('data', c => stdout += c); p.stderr.on('data', c => stderr += c);
     const timer = setTimeout(() => { expired = true; p.kill('SIGKILL'); }, timeout);
     const code = await new Promise((resolve, reject) => { p.once('error', reject); p.once('close', resolve); }); clearTimeout(timer);
@@ -91,7 +92,7 @@ if (process.argv[2] === 'm2b-scale') {
             Scanner.prototype.raw = function(fn) { const raw = originals.raw.call(this, fn); metrics.peakElement = Math.max(metrics.peakElement, raw.length); return raw; };
             const elapsed = performance.now();
             try { await run(root, async b => { assert.equal(active++, 0); assert.ok(b.length <= CHUNK); await Promise.resolve(); hash.update(b); bytes += b.length; maxChunk = Math.max(maxChunk, b.length); calls++; active--; }); }
-            finally { fs.openSync = originals.open; fs.closeSync = originals.close; fs.readSync = originals.read; fs.writeSync = originals.write; Scanner.prototype.value = originals.value; Scanner.prototype.raw = originals.raw; }
+            finally { fs.openSync = originals.open; fs.closeSync = originals.close; fs.readSync = originals.read; fs.writeSync = originals.write; Scanner.prototype.value = originals.value; Scanner.prototype.raw = originals.raw;evidence.observe('m2b-call',()=>({root,metrics,bytes,calls,maxChunk,before,stamp,markerBefore})); }
             const elapsedMs = performance.now() - elapsed;
             assert.equal(metrics.records, index ? 1000 : 10); assert.equal(metrics.opens, 2); assert.equal(metrics.closes, 2); assert.equal(fds.size, 0); assert.ok(metrics.peakHandles <= 2);
             assert.equal(hash.digest('hex'), digest(expected)); assert.equal(bytes, Buffer.byteLength(expected));
@@ -117,11 +118,11 @@ test('native serialization, duplicate keys and arbitrary order agree with actual
     const hook = path.join(root, 'no-sqlite.mjs'); fs.writeFileSync(hook, "import {registerHooks} from 'node:module'; registerHooks({resolve(s,c,n){if(s==='node:sqlite')throw Error('SQLite imported');return n(s,c)}});");
     for (const input of [text, JSON.stringify(JSON.parse(text), null, 2)]) {
         fs.writeFileSync(file(root), input);
-        const cli = spawnSync(process.execPath, ['--import', hook, path.join(toolsDir, 'replay-logs.js'), 'other', replayId, fingerprint], {encoding: 'utf8'});
+        const cli = evidence.captureSpawnSync(process.execPath, ['--import', hook, path.join(toolsDir, 'replay-logs.js'), 'other', replayId, fingerprint], {encoding: 'utf8'});
         assert.equal(cli.status, 0, cli.stderr); assert.equal(cli.stdout, expected); assert.equal(await output(root), cli.stdout);
     }
     const moduleURL = new URL('../../tools/replay-legacy-reader.js', import.meta.url).href;
-    const probe = spawnSync(process.execPath, ['--import', hook, '--input-type=module', '-e', `const {writeFixtureV2Other}=await import(${JSON.stringify(moduleURL)});await writeFixtureV2Other(${JSON.stringify({root,...identity})},()=>{});`], {encoding:'utf8'});
+    const probe = evidence.captureSpawnSync(process.execPath, ['--import', hook, '--input-type=module', '-e', `const {writeFixtureV2Other}=await import(${JSON.stringify(moduleURL)});await writeFixtureV2Other(${JSON.stringify({root,...identity})},()=>{});`], {encoding:'utf8'});
     assert.equal(probe.status, 0, probe.stderr);
 });
 
@@ -198,7 +199,7 @@ test('fixture gates reject unsafe paths, declarations and unavailable input with
 test('pinned reads survive child-process replacement/unlink at pin and sink barriers', async t => {
     for(const phase of ['pin','sink']) for(const action of ['rename','unlink']) {
         const root=fixture(t,JSON.stringify(manifest([record([1,2])]))), open=fs.openSync;let acted=false;
-        const act=()=>{if(acted)return;acted=true;const code=action==='rename'?`fs.writeFileSync(p+'.next',${JSON.stringify(JSON.stringify(manifest([record([9])])))});fs.renameSync(p+'.next',p);`:'fs.unlinkSync(p);';const child=spawnSync(process.execPath,['--input-type=module','-e',`import fs from 'node:fs';const p=${JSON.stringify(file(root))};${code}`]);assert.equal(child.status,0);};
+        const act=()=>{if(acted)return;acted=true;const code=action==='rename'?`fs.writeFileSync(p+'.next',${JSON.stringify(JSON.stringify(manifest([record([9])])))});fs.renameSync(p+'.next',p);`:'fs.unlinkSync(p);';const child=evidence.captureSpawnSync(process.execPath,['--input-type=module','-e',`import fs from 'node:fs';const p=${JSON.stringify(file(root))};${code}`]);assert.equal(child.status,0);};
         fs.openSync=(p,...a)=>{const fd=open(p,...a);if(String(p)===file(root)&&phase==='pin')act();return fd;};
         let text='';try{await run(root,async b=>{if(phase==='sink')act();await new Promise(resolve=>setImmediate(resolve));text+=b;});}finally{fs.openSync=open;}
         assert.equal(text,'1\n2\n');assert.equal(acted,true);
@@ -224,7 +225,7 @@ test('in-place mutation, interrupted emission and sink failures reject and close
 });
 
 for(const pretty of [false,true]) test(`600 MiB legacy gate: ${pretty?'pretty':'compact'}, exactly 10/1000 records`,{timeout:195000},async t=>{
-    const roots=[fs.mkdtempSync(prefix),fs.mkdtempSync(prefix)];t.after(()=>roots.forEach(root=>fs.rmSync(root,{recursive:true,force:true})));
+    const roots=[evidence.evidenceTemp(prefix),evidence.evidenceTemp(prefix)];t.after(()=>roots.forEach(root=>evidence.disposeFixture(root,{recursive:true,force:true})));
     const results=[];for(const phase of ['generate','operations']){const result=await child(['--max-old-space-size=192',new URL(import.meta.url).pathname,'m2b-scale',JSON.stringify({roots,pretty}),phase],phase==='generate'?60000:120000);assert.ok(result.maxRssBytes<=256*1024*1024);results.push(result);}
     t.diagnostic(JSON.stringify(results));
 });

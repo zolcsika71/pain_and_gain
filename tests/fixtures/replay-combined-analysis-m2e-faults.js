@@ -1,3 +1,4 @@
+import * as evidence from './qualification-evidence.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import assert from 'node:assert/strict';
@@ -16,7 +17,7 @@ function retire(collection){
     if(record.outputPath)refs.push({path:record.outputPath,hash:record.outputFingerprint,bytes:current.data.files[record.outputPath].length});
     const name=schema===1?'openStore':'openCatalog',module=new URL(schema===1?'../../tools/replay-store.js':'../../tools/replay-catalog.js',import.meta.url).href;
     const code=`import {${name}} from ${JSON.stringify(module)};const h=await ${name}({root:process.argv[1],mode:'write'}),s=h.evidence??h,k=JSON.parse(process.argv[2]),refs=JSON.parse(process.argv[3]);await s.withWriter(async w=>{w.transaction(tx=>tx.setStatus({recordKey:k,status:'done'}));w.transaction(tx=>{if(k.collection==='score')tx.setStatus({recordKey:k,status:'retiring'});tx.appendIntent({id:'retire',recordKey:k,phase:'cleanup',files:refs.map((r,ordinal)=>({...r,ordinal}))});});for(let ordinal=0;ordinal<refs.length;ordinal++)await w.deleteFile({operationId:'retire',ordinal});w.transaction(tx=>tx.finishPublication({recordKey:k,operationId:'retire',retire:true}));});h.close();`;
-    const result=spawnSync(process.execPath,['--input-type=module','-e',code,current.root,JSON.stringify(k),JSON.stringify(refs)],{encoding:'utf8',timeout:15000});assert.equal(result.status,0,result.stderr);
+    const result=evidence.captureSpawnSync(process.execPath,['--input-type=module','-e',code,current.root,JSON.stringify(k),JSON.stringify(refs)],{encoding:'utf8',timeout:15000});assert.equal(result.status,0,result.stderr);
 }
 const wrap=opener=>async options=>{
     const h=await opener(options),s=h.evidence??h,snapshot=s.withReadSnapshot.bind(s),close=h.close.bind(h);
@@ -75,4 +76,4 @@ try{
         await current.s.withWriter(()=>{});current.h.close();
     }
     passed=true;console.log(JSON.stringify({passed,schema,analyzerEntries:entered}));
-}finally{current.h.close();if(passed)for(const root of roots)fs.rmSync(root,{recursive:true,force:true});else console.error(JSON.stringify({retainedFailedFixtures:roots}));}
+}finally{current.h.close();if(passed)for(const root of roots)evidence.disposeFixture(root,{recursive:true,force:true});else console.error(JSON.stringify({retainedFailedFixtures:roots}));}

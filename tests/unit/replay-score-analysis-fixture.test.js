@@ -1,3 +1,4 @@
+import * as evidence from '../fixtures/qualification-evidence.js';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -10,16 +11,17 @@ import {recordOwner,recordKey} from '../../tools/replay-store.js';
 import {digestChunks,payloadPath} from '../../tools/replay-store-payloads.js';
 import {validateScoreBody,scoreSourceFingerprint} from '../../tools/replay-logs.js';
 import {makeFixture,key,inventory,chunks} from '../fixtures/replay-score-analysis-m2d-store.js';
-import {variants,replayId,hash} from '../fixtures/replay-score-analysis-m2d-recipe.js';
+import {loadFrozenInputs,supplementalCaseIds} from '../fixtures/replay-score-metadata-contract-v2.js';
 import {child} from '../fixtures/replay-score-analysis-m2d-process.js';
-const golden=JSON.parse(fs.readFileSync(new URL('../fixtures/replay-score-analysis-m2d-oracle.json',import.meta.url)));
-const compatibility=JSON.parse(fs.readFileSync(new URL('../fixtures/replay-score-analysis-m2d-compat-oracle.json',import.meta.url)));
+// Historical bytes stay frozen; only the explicit versioned match-ID rejection
+// delta is applied. Every other report field/hash remains an exact comparison.
+const {variants,replayId,hash,expected:golden,compatibility}=await loadFrozenInputs();
 // Compare every JSON report field without traversing the analyzer's repeated
 // shared object graph repeatedly in Node's deep-strict-equality bookkeeping.
 const reportEqual=(actual,expected)=>assert.equal(JSON.stringify(actual),JSON.stringify(expected));
 const worker=new URL('../fixtures/replay-score-analysis-m2d-worker.js',import.meta.url).pathname;
 const dbPath=f=>path.join(f.root,JSON.parse(fs.readFileSync(path.join(f.root,'manifest.json'))).database);
-async function fixture(t,schema=1,variant='scale',options){const f=await makeFixture(schema,variant,options);t.after(()=>{f.h.close();fs.rmSync(f.root,{recursive:true,force:true});});return f;}
+async function fixture(t,schema=1,variant='scale',options){const f=await makeFixture(schema,variant,options);t.after(()=>{f.h.close();evidence.disposeFixture(f.root,{recursive:true,force:true});});return f;}
 function corrupt(f,sql,args=[]){const db=new DatabaseSync(dbPath(f));try{db.prepare(sql).run(...args);}finally{db.close();}}
 async function rejectsUnchanged(f,expected){const before=inventory(f.root);await assert.rejects(analyzeFixtureScoreReplay(f.options),expected);assert.deepEqual(inventory(f.root),before);assert.equal(fs.existsSync(path.join(f.root,'.manifest.lock')),false);await f.s.withWriter(()=>{});}
 
@@ -87,11 +89,11 @@ for(const schema of [1,2])for(const primary of ['error','null','none'])test(`M2d
 });
 
 test('M2d v2 API and actual CLI stay SQLite-free and match the frozen oracle',async t=>{
-    const f=await fixture(t),root=fs.mkdtempSync(path.join(fs.realpathSync(os.tmpdir()),'pain-gain-m2d-v2-'));t.after(()=>fs.rmSync(root,{recursive:true,force:true}));
+    const f=await fixture(t),root=evidence.evidenceTemp(path.join(fs.realpathSync(os.tmpdir()),'pain-gain-m2d-v2-'));t.after(()=>evidence.disposeFixture(root,{recursive:true,force:true}));
     fs.mkdirSync(path.join(root,'replay_logs'));for(const [p,b]of Object.entries(f.data.files))fs.writeFileSync(path.join(root,'replay_logs',p),b);
     fs.writeFileSync(path.join(root,'replay_logs/manifest.json'),JSON.stringify(f.data.manifest));fs.cpSync(new URL('../../tools/',import.meta.url),path.join(root,'tools'),{recursive:true});fs.writeFileSync(path.join(root,'package.json'),'{"type":"module"}');
     const deny='data:text/javascript,'+encodeURIComponent("import {registerHooks} from 'node:module';registerHooks({resolve(s,c,n){if(s==='node:sqlite')throw Error('SQLITE_FORBIDDEN');return n(s,c)}})");
-    for(const reportMode of ['full','compact']){const p=spawnSync(process.execPath,['--import',deny,path.join(root,'tools/replay-analysis.js'),replayId,'--score',...f.options.scoreFingerprints,...(reportMode==='full'?['--full-detail']:[])],{encoding:'utf8',timeout:15000,maxBuffer:16*1048576});assert.equal(p.status,0,p.stderr);assert.deepEqual(JSON.parse(p.stdout),golden.scenarios.scale.reports[reportMode]);}
+    for(const reportMode of ['full','compact']){const p=evidence.captureSpawnSync(process.execPath,['--import',deny,path.join(root,'tools/replay-analysis.js'),replayId,'--score',...f.options.scoreFingerprints,...(reportMode==='full'?['--full-detail']:[])],{encoding:'utf8',timeout:15000,maxBuffer:16*1048576});assert.equal(p.status,0,p.stderr);assert.deepEqual(JSON.parse(p.stdout),golden.scenarios.scale.reports[reportMode]);}
 });
 
 for(const schema of [1,2])test(`M2d schema ${schema}: callback/analysis faults and concurrent committed retirement`,async()=>{
@@ -153,9 +155,9 @@ for(const schema of [1,2])test(`M2d schema ${schema}: expanded metadata exact 8 
 });
 
 for(const schema of [1,2])test(`M2d schema ${schema}: exact 10/1000 and 600 MiB corpus gate`,async t=>{
-    const roots=[10,1000].map(()=>fs.mkdtempSync(path.join(fs.realpathSync(os.tmpdir()),'pain-gain-store-v3-fixture-'))),receipts=fs.mkdtempSync(path.join(fs.realpathSync(os.tmpdir()),'pain-gain-m2d-gate-'));
+    const roots=[10,1000].map(()=>evidence.evidenceTemp(path.join(fs.realpathSync(os.tmpdir()),'pain-gain-store-v3-fixture-'))),receipts=evidence.evidenceTemp(path.join(fs.realpathSync(os.tmpdir()),'pain-gain-m2d-gate-'));
     let passed=false;
-    t.after(()=>{if(passed){for(const root of [...roots,receipts])fs.rmSync(root,{recursive:true,force:true});}else t.diagnostic(JSON.stringify({retainedFailedFixtures:[...roots,receipts]}));});
+    t.after(()=>{if(passed){for(const root of [...roots,receipts])evidence.disposeFixture(root,{recursive:true,force:true});}else t.diagnostic(JSON.stringify({retainedFailedFixtures:[...roots,receipts]}));});
     const generate=await child(['--max-old-space-size=192',worker,'generate',String(schema),...roots],60000);
     const receipt=path.join(receipts,'generation.json');fs.writeFileSync(receipt,JSON.stringify(generate.result));
     const operations=await child(['--max-old-space-size=192',worker,'operations',String(schema),...roots,receipt],30000);
@@ -173,16 +175,17 @@ test('M2d worker deadline rejects instead of accepting a late or nonterminating 
 
 // Supplemental expectations were frozen from the unmodified published v2
 // implementation, not this loader or its shared analysis boundary.
-for(const [name,expected]of Object.entries(compatibility.cases))test(`M2d compatibility: v2 ${name} preserves occurrence loading and native raw numbers`,t=>{
-    const root=fs.mkdtempSync(path.join(fs.realpathSync(os.tmpdir()),'pain-gain-m2d-compat-v2-'));
-    t.after(()=>fs.rmSync(root,{recursive:true,force:true}));
+for(const name of supplementalCaseIds)test(`M2d compatibility: v2 ${name} preserves occurrence loading and native raw numbers`,t=>{
+    const expected=compatibility.cases[name];
+    const root=evidence.evidenceTemp(path.join(fs.realpathSync(os.tmpdir()),'pain-gain-m2d-compat-v2-'));
+    t.after(()=>evidence.disposeFixture(root,{recursive:true,force:true}));
     fs.mkdirSync(path.join(root,'replay_logs'));
     fs.writeFileSync(path.join(root,'replay_logs/manifest.json'),JSON.stringify(expected.manifest));
     for(const [file,body]of Object.entries(expected.bodies))fs.writeFileSync(path.join(root,'replay_logs',file),Buffer.from(body,'base64'));
     const before=inventory(root),deny='data:text/javascript,'+encodeURIComponent("import {registerHooks} from 'node:module';registerHooks({resolve(s,c,n){if(s==='node:sqlite')throw Error('SQLITE_FORBIDDEN');return n(s,c)}})");
     const module=new URL('../../tools/replay-analysis.js',import.meta.url).href;
     const script=`import assert from 'node:assert/strict';import {analyzeReplay} from ${JSON.stringify(module)};const options=JSON.parse(process.argv[1]);console.log(JSON.stringify(['full','compact'].map(reportMode=>{const r=analyzeReplay({...options,reportMode});assert.equal(typeof r?.then,'undefined');return r;})));`;
-    const result=spawnSync(process.execPath,['--import',deny,'--input-type=module','-e',script,JSON.stringify({root,replayId,fingerprints:[],scoreFingerprints:expected.selected})],{encoding:'utf8',timeout:15000,maxBuffer:4*1048576});
+    const result=evidence.captureSpawnSync(process.execPath,['--import',deny,'--input-type=module','-e',script,JSON.stringify({root,replayId,fingerprints:[],scoreFingerprints:expected.selected})],{encoding:'utf8',timeout:15000,maxBuffer:4*1048576});
     assert.equal(result.status,0,result.stderr);
     const reports=JSON.parse(result.stdout);
     for(const [i,mode]of ['full','compact'].entries()){

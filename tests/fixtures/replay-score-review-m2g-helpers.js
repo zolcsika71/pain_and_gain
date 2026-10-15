@@ -20,14 +20,15 @@ export function expectedChange(before,q,step){
 }
 export function measure(){
  const native={prepare:DatabaseSync.prototype.prepare,exec:DatabaseSync.prototype.exec,dbClose:DatabaseSync.prototype.close},saved={},fds=new Set(),dbs=new Set(),plans=[];
- const m={sql:0,pragmas:0,statements:0,rows:0,pages:0,reviewerRows:0,metadataOpens:0,connections:0,transactions:0,commits:0,rollbacks:0,payloadOpens:0,payloadReadBytes:0,payloadWrites:0,corpusScans:0};
+ const writing=new WeakSet();
+ const m={sql:0,pragmas:0,statements:0,rows:0,pages:0,reviewerRows:0,metadataOpens:0,connections:0,transactions:0,commits:0,readTransactions:0,readCommits:0,rollbacks:0,payloadOpens:0,payloadReadBytes:0,payloadWrites:0,corpusScans:0};
  const evidence=p=>typeof p==='string'&&(/\/(extensions|summaries|diagnostics)\//.test(p)||/\.(response|jsonl)$/.test(p)||p.includes('/pain_and_gain_map_'));
  for(const name of ['openSync','readFileSync','writeFileSync','appendFileSync','statSync','lstatSync','unlinkSync','renameSync','linkSync','createReadStream','createWriteStream']){
   saved[name]=fs[name];fs[name]=function(...args){assert.ok(!evidence(args[0])&&!(['renameSync','linkSync'].includes(name)&&evidence(args[1])),'Completion evidence access '+name);const r=saved[name].apply(this,args);if(name==='openSync'){fds.add(r);m.metadataOpens++;}return r;};
  }
  saved.closeSync=fs.closeSync;fs.closeSync=fd=>{const r=saved.closeSync(fd);fds.delete(fd);return r;};
  const count=sql=>{if(/^PRAGMA /i.test(sql))m.pragmas++;else m.sql++;m.statements+=sql.split(';').filter(s=>s.trim()).length;assert.ok(m.sql+m.pragmas<=160,'absolute SQL limit');};
- DatabaseSync.prototype.exec=function(sql){dbs.add(this);count(sql);if(sql==='BEGIN IMMEDIATE')m.transactions++;if(sql==='COMMIT')m.commits++;if(sql==='ROLLBACK')m.rollbacks++;return native.exec.call(this,sql);};
+ DatabaseSync.prototype.exec=function(sql){dbs.add(this);count(sql);if(sql==='BEGIN IMMEDIATE'){m.transactions++;writing.add(this);}if(sql==='BEGIN')m.readTransactions++;if(sql==='COMMIT'){if(writing.has(this))m.commits++;else m.readCommits++;writing.delete(this);}if(sql==='ROLLBACK'){m.rollbacks++;writing.delete(this);}return native.exec.call(this,sql);};
  DatabaseSync.prototype.prepare=function(sql){dbs.add(this);count(sql);const isPage=sql.includes('FROM reviews AS r');if(isPage)m.pages++;
   if(/^SELECT /i.test(sql)&&/ FROM /i.test(sql)&&!sql.includes('FROM store_meta')){const plan=native.prepare.call(this,'EXPLAIN QUERY PLAN '+sql).all(...Array((sql.match(/\?/g)??[]).length).fill(null));for(const p of plan){if(/\bSCAN\b/.test(p.detail))m.corpusScans++;assert.ok(!/\bSCAN\b|USE TEMP B-TREE/.test(p.detail),p.detail);}plans.push({sql,plan});}
   assert.ok(!/SELECT .*\bvalue\b.* FROM reviews/i.test(sql),'No review value hydration');

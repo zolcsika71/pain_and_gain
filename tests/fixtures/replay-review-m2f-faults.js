@@ -1,3 +1,4 @@
+import * as evidence from './qualification-evidence.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import {spawnSync} from 'node:child_process';
@@ -18,7 +19,8 @@ const wrap=opener=>async options=>{
 };
 mock.module(new URL('../../tools/replay-store.js',import.meta.url).href,{namedExports:{...core,openStore:wrap(core.openStore)}});
 mock.module(new URL('../../tools/replay-catalog.js',import.meta.url).href,{namedExports:{...catalog,openCatalog:wrap(catalog.openCatalog)}});
-const {updateFixtureReviewCheckpoint:update}=await import('../../tools/replay-review-fixture.js');
+const {updateFixtureReviewCheckpoint:rawOperation}=await import('../../tools/replay-review-fixture.js');
+const update=async q=>{let result,error,failed=false;try{return result=await rawOperation(q);}catch(e){failed=true;error=e;throw e;}finally{evidence.observe('fault-call',()=>({root:q.root,mode,result,error,failed,attempts:{...attempts},files:evidence.fileState(q.root)}));}};
 const q={root:f.root,schemaVersion:schema,collection:'log',replayId:f.options.replayId,fingerprint:f.options.fingerprints[0],taskId:'fault',action:'claim'};
 const native={exec:DatabaseSync.prototype.exec,close:DatabaseSync.prototype.close,unlink:fs.unlinkSync};let writerDb;
 DatabaseSync.prototype.exec=function(sql){if(sql==='BEGIN IMMEDIATE')writerDb=this;const r=native.exec.call(this,sql);if(sql==='COMMIT'&&this===writerDb)changed=true;if(sql==='ROLLBACK'){attempts.rollback=(attempts.rollback??0)+1;if(['body','recovery'].includes(mode))throw Error('rollback-after-rollback');}return r;};
@@ -27,26 +29,30 @@ fs.unlinkSync=p=>{const r=native.unlink(p),cleanupFault=['body','postcommit','cl
 const receipts=[];
 try{
  for(const fault of ['transaction-begin','transaction-commit','body'])for(const value of [null,new Error('primary')]){
-  mode=fault;primary=value;attempts={};changed=false;const before=logical(f.root);await assert.rejects(update(q),e=>e===primary);assert.equal(changed,false);assert.deepEqual(logical(f.root),before);assert.equal(attempts.owner,1);assert.equal(attempts.lock,1);assert.equal(attempts.ownerFile,1);assert.throws(()=>escaped.readReviewCheckpoint({recordKey:q,taskId:q.taskId}),{code:'CLOSED'});mode='none';await f.s.withWriter(()=>{});receipts.push({fault,primary:value===null?'null':'Error',attempts,precommitUnchanged:true});
+  mode=fault;primary=value;attempts={};changed=false;const before=observedLogical(f.root);await assert.rejects(update(q),e=>e===primary);assert.equal(changed,false);assert.deepEqual(observedLogical(f.root),before);assert.equal(attempts.owner,1);assert.equal(attempts.lock,1);assert.equal(attempts.ownerFile,1);assert.throws(()=>escaped.readReviewCheckpoint({recordKey:q,taskId:q.taskId}),{code:'CLOSED'});mode='none';await f.s.withWriter(()=>{});retainReceipt({fault,primary:value===null?'null':'Error',attempts,precommitUnchanged:true});
  }
- mode='postcommit';attempts={};changed=false;const before=logical(f.root);const restore=clock('2026-10-06T00:01:00.000Z');try{await assert.rejects(update(q),{message:'database-close'});}finally{restore();}assert.equal(changed,true);const after=logical(f.root);assert.equal(BigInt(after.store_meta[0].generation),BigInt(before.store_meta[0].generation)+1n);assert.equal(attempts.database,1);assert.equal(attempts.owner,1);assert.equal(attempts.lock,1);assert.equal(attempts.ownerFile,1);
- mode='none';const retry=await update(q);assert.equal(retry.changed,false);assert.deepEqual(logical(f.root),after);assert.equal(retry.checkpoints.claimedAt.value,'2026-10-06T00:01:00.000Z');receipts.push({fault:'postcommit',committed:true,attempts,retry});
+ mode='postcommit';attempts={};changed=false;const before=observedLogical(f.root);const restore=clock('2026-10-06T00:01:00.000Z');try{await assert.rejects(update(q),{message:'database-close'});}finally{restore();}assert.equal(changed,true);const after=observedLogical(f.root);assert.equal(BigInt(after.store_meta[0].generation),BigInt(before.store_meta[0].generation)+1n);assert.equal(attempts.database,1);assert.equal(attempts.owner,1);assert.equal(attempts.lock,1);assert.equal(attempts.ownerFile,1);
+ mode='none';evidence.observe('pre-retry',()=>({root:f.root,attempts}));const retry=await update(q);assert.equal(retry.changed,false);assert.deepEqual(observedLogical(f.root),after);assert.equal(retry.checkpoints.claimedAt.value,'2026-10-06T00:01:00.000Z');retainReceipt({fault:'postcommit',committed:true,attempts,retry});
  // No-op owner/lock cleanup rejection is not an attempted write.
- mode='cleanup';attempts={};await assert.rejects(update(q),{message:'lock-release'});assert.deepEqual(logical(f.root),after);mode='none';assert.equal((await update({...q,action:'examined'})).changed,true);
+ mode='cleanup';attempts={};await assert.rejects(update(q),{message:'lock-release'});assert.deepEqual(observedLogical(f.root),after);mode='none';assert.equal((await update({...q,action:'examined'})).changed,true);
  // Recovery is explicit and locked. A pre-commit failure, including null,
  // survives secondary rollback/close/unlink errors; logical state is unchanged.
  const opener=schema===1?core.openStore:catalog.openCatalog;
  for(const value of [null,new Error('recovery-primary')]){
-  const recoveryRequest={...q,taskId:value===null?'recovery-null':'recovery-error'},before=logical(f.root);
-  const crash=spawnSync(process.execPath,['--experimental-test-module-mocks',new URL('./replay-review-m2f-restart.js',import.meta.url).pathname,'before',JSON.stringify(recoveryRequest)],{encoding:'utf8',timeout:15000});assert.equal(crash.signal,'SIGKILL',crash.stderr);
-  fs.utimesSync(path.join(f.root,'.manifest.lock'),new Date(0),new Date(0));
+  const recoveryRequest={...q,taskId:value===null?'recovery-null':'recovery-error'},before=observedLogical(f.root);
+  const crash=evidence.captureSpawnSync(process.execPath,['--experimental-test-module-mocks',new URL('./replay-review-m2f-restart.js',import.meta.url).pathname,'before',JSON.stringify(recoveryRequest)],{encoding:'utf8',timeout:15000});assert.equal(crash.signal,'SIGKILL',crash.stderr);
+  evidence.snapshot(f.root,'pre-recovery');fs.utimesSync(path.join(f.root,'.manifest.lock'),new Date(0),new Date(0));
   await assert.rejects(update(recoveryRequest),{code:'RECOVERY_REQUIRED'});
   mode='recovery';primary=value;attempts={};changed=false;
-  await assert.rejects(opener({root:f.root,mode:'write',recover:true,fault:boundary=>{if(boundary==='recovery-commit')throw primary;}}),e=>e===primary);
+  await assert.rejects(opener({root:f.root,mode:'write',recover:true,fault:boundary=>{if(boundary==='recovery-commit')throw primary;}}),e=>e===primary).finally(()=>evidence.observe('recovery-call',()=>({root:f.root,mode,attempts:{...attempts},files:evidence.fileState(f.root)})));
   assert.equal(changed,false);assert.equal(attempts.rollback,1);assert.equal(attempts.database,1);assert.equal(attempts.lock,2);assert.equal(attempts.ownerFile,1);
-  mode='none';const recovered=await opener({root:f.root,mode:'write',recover:true});recovered.close();assert.deepEqual(logical(f.root),before);
+  mode='none';evidence.snapshot(f.root,'failed-recovery');evidence.observe('pre-retry',()=>({root:f.root,attempts}));const recovered=await opener({root:f.root,mode:'write',recover:true});recovered.close();assert.deepEqual(observedLogical(f.root),before);
   assert.equal((await update(recoveryRequest)).changed,true);assert.equal((await update(recoveryRequest)).changed,false);
-  receipts.push({fault:'recovery-commit',primary:value===null?'null':'Error',attempts,precommitUnchanged:true,subsequentCheckpoint:true});
+  retainReceipt({fault:'recovery-commit',primary:value===null?'null':'Error',attempts,precommitUnchanged:true,subsequentCheckpoint:true});
  }
  console.log(json({passed:true,schema,roots,receipts}));
 }finally{Object.assign(DatabaseSync.prototype,{exec:native.exec,close:native.close});fs.unlinkSync=native.unlink;f.h.close();}
+
+function retainReceipt(value){evidence.observe('fault-receipt',value);return receipts.push(value);}
+
+function observedLogical(root){const value=logical(root);evidence.observe('logical',()=>({root,value,files:evidence.fileState(root)}));return value;}

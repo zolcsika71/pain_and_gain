@@ -2,6 +2,8 @@
 
 import { createHash, randomUUID } from 'node:crypto';
 import fs from 'node:fs';
+import {assertAuthorityAccess,authorityV2Boundary} from './replay-authority-guard.js';
+import {productionSelection,dispatchProduction} from './replay-production-scope.js';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -38,7 +40,7 @@ export const mapPayload = map => {
     return payload;
 };
 export const mapChecksum = map => sha256(mapContent(mapPayload(map)));
-const savedMapContent = map => mapContent({ ...mapPayload(map), checksum: mapChecksum(map) });
+export const savedMapContent = map => mapContent({ ...mapPayload(map), checksum: mapChecksum(map) });
 const validSha256 = value => typeof value === 'string' && /^[a-f0-9]{64}$/.test(value);
 export const validBuildId = validSha256;
 const membershipDiagnosticTypes = ['membership-baseline', 'membership-change'];
@@ -384,7 +386,7 @@ function readCacheEof(bytes, offset, label) {
         streamSize: bytes.readUInt32LE(offset + 16) };
 }
 
-function parseSimpleCacheV5(bytes, keyLength) {
+export function parseSimpleCacheV5(bytes, keyLength) {
     const payloadStart = 24 + keyLength;
     if (bytes.length < payloadStart + cacheEofSize * 2) throw new Error('Incomplete cache streams');
     const stream0EofOffset = bytes.length - cacheEofSize;
@@ -416,7 +418,9 @@ function parseSimpleCacheV5(bytes, keyLength) {
     return { stream0, stream1 };
 }
 
-export function parseCacheEntry(bytes) {
+export function parseCacheEntry(bytes, { maxDecodedBytes = 100_000_000, maxTickSpan = null, strictUtf8 = false } = {}) {
+    if (!Number.isSafeInteger(maxDecodedBytes) || maxDecodedBytes < 1 || maxDecodedBytes > 100_000_000 ||
+        typeof strictUtf8!=='boolean'||maxTickSpan !== null && (!Number.isSafeInteger(maxTickSpan) || maxTickSpan < 1)) throw new Error('Invalid parser limits');
     if (bytes.length < 24 || !bytes.subarray(0, 8).equals(cacheMagic)) {
         return issue('unrelated', 'Not a supported cache frame');
     }
@@ -451,7 +455,8 @@ export function parseCacheEntry(bytes) {
 
     let body;
     try {
-        body = gunzipSync(bytes.subarray(payloadStart, payloadStart + length), { maxOutputLength: 100_000_000 }).toString('utf8');
+        const decoded = gunzipSync(bytes.subarray(payloadStart, payloadStart + length), { maxOutputLength: maxDecodedBytes });
+        body = strictUtf8 ? new TextDecoder('utf-8',{fatal:true}).decode(decoded) : decoded.toString('utf8');
     } catch (error) {
         return issue('malformed', `Cannot decompress ${key}: ${error.message}`);
     }
@@ -597,6 +602,7 @@ export function parseCacheEntry(bytes) {
     const firstTick = ticks.length ? Math.min(...ticks) : null;
     const lastTick = ticks.length ? Math.max(...ticks) : null;
     const gaps = [];
+    if (maxTickSpan !== null && firstTick !== null && lastTick - firstTick > maxTickSpan) return issue('unsupported', `Tick span exceeds ${maxTickSpan} for ${key}`);
     if (firstTick !== null) {
         for (let tick = firstTick; tick <= lastTick; tick++) if (!counts.has(tick)) gaps.push(tick);
     }
@@ -881,7 +887,7 @@ export function scoreSourceFingerprint(sourceKey, body) {
         Buffer.from([0]), Buffer.from(body)]));
 }
 
-function parseScoreHttpMetadata(stream0, key) {
+export function parseScoreHttpMetadata(stream0, key) {
     const text = stream0.toString('latin1');
     const statuses = [...text.matchAll(/HTTP\/1\.[01] ([0-9]{3})(?:[^\x00]*)\x00/g)];
     if (statuses.length !== 1) {
@@ -916,7 +922,8 @@ function parseScoreHttpMetadata(stream0, key) {
     return { kind: 'http-metadata', contentLength: lengths.length ? Number(lengths[0]) : null };
 }
 
-export function parseScoreCacheEntry(bytes) {
+export function parseScoreCacheEntry(bytes, { maxDecodedBytes = 100_000_000 } = {}) {
+    if (!Number.isSafeInteger(maxDecodedBytes) || maxDecodedBytes < 1 || maxDecodedBytes > 100_000_000) throw new Error('Invalid parser limits');
     if (!Buffer.isBuffer(bytes)) bytes = Buffer.from(bytes);
     if (bytes.length < 24 || !bytes.subarray(0, 8).equals(cacheMagic)) {
         return issue('unrelated', 'Not a supported cache frame');
@@ -952,7 +959,7 @@ export function parseScoreCacheEntry(bytes) {
     let body;
     try {
         const decoded = gunzipSync(streams.stream1,
-            { maxOutputLength: 100_000_000, info: true });
+            { maxOutputLength: maxDecodedBytes, info: true });
         if (decoded.engine.bytesWritten !== length) {
             return issue('incomplete', `Declared payload length mismatch for ${key}`);
         }
@@ -973,6 +980,7 @@ export function parseScoreCacheEntry(bytes) {
 }
 
 function outputDirectory(root) {
+    assertAuthorityAccess(path.resolve(root),'v2');
     const directory = path.join(path.resolve(root), 'replay_logs');
     fs.mkdirSync(directory, { recursive: true });
     if (fs.lstatSync(directory).isSymbolicLink() ||
@@ -1009,7 +1017,11 @@ function readMapFile(root, name) {
     const file = mapPath(root, name);
     const stat = fs.lstatSync(file);
     if (!stat.isFile() || stat.isSymbolicLink()) throw new Error(`Unsafe existing map file: ${file}`);
-    return JSON.parse(fs.readFileSync(file, 'utf8'));
+    return JSON.parse(legacyBytes(root,file,'map').toString('utf8'));
+}
+
+function legacyBytes(root,file,kind='artifact'){
+    return authorityV2Boundary(root,'read',{file,kind})??fs.readFileSync(file);
 }
 
 function pathOccupied(file) {
@@ -1037,7 +1049,7 @@ function readManifest(root, cache = null) {
     const stamp = cache && manifestStamp(file);
     if (cache?.manifest && cache.stamp === stamp) return cache.manifest;
     if (!fs.existsSync(file)) return { version: 2, maps: [], replays: [], records: [] };
-    const manifest = JSON.parse(fs.readFileSync(file, 'utf8'));
+    const manifest = JSON.parse(legacyBytes(root,file,'manifest').toString('utf8'));
     if (manifest.version === 1 && Array.isArray(manifest.records) && manifest.records.length === 0) {
         return { version: 2, maps: [], replays: [], records: [] };
     }
@@ -1071,6 +1083,7 @@ function atomicReplace(file, content) {
 }
 
 function saveManifest(root, manifest) {
+    authorityV2Boundary(root,'save',manifest);
     // Omit indentation to postpone the whole-string limit without changing data.
     atomicReplace(path.join(outputDirectory(root), 'manifest.json'), `${JSON.stringify(manifest)}\n`);
 }
@@ -1092,6 +1105,7 @@ function validateRegisteredMap(root, registration, allowMissingChecksum = false)
 
 // Explicit, retry-safe migration. Never rewrite registrations or bless changed payloads.
 export async function upgradeMapChecksums(root) {
+    if(productionSelection(path.resolve(root)))return dispatchProduction(path.resolve(root),'upgrade-map-checksums');
     return withManifestLock(root, () => {
         const manifest = readManifest(root);
         return manifest.maps.map(registration => {
@@ -1103,6 +1117,7 @@ export async function upgradeMapChecksums(root) {
                 return { file: registration.file, checksum: registration.checksum,
                     status: updated ? 'updated' : 'verified' };
             } catch (error) {
+                authorityV2Boundary(root,'error',error);
                 return { file: registration?.file, status: 'error', message: error.message };
             }
         });
@@ -1120,7 +1135,7 @@ function ensureMap(root, manifest, map) {
     }
     const directory = outputDirectory(root);
     let file = null;
-    for (const name of fs.readdirSync(directory)) {
+    for (const name of authorityV2Boundary(root,'directory',directory)??fs.readdirSync(directory)) {
         if (!/^pain_and_gain_map_\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-\d{3}Z(?:-[a-f0-9]{12,64})?\.json$/.test(name)) continue;
         const existing = readMapFile(root, name);
         if (validMap(mapPayload(existing)) && mapChecksum(existing) === checksum) {
@@ -1257,6 +1272,7 @@ function migrateWaitingRecords(root, manifest) {
 }
 
 export async function migrateReviewStatuses(root) {
+    if(productionSelection(path.resolve(root)))return (await dispatchProduction(path.resolve(root),'migrate-status')).migrated;
     return withManifestLock(root, () => {
         const manifest = readManifest(root);
         return migrateWaitingRecords(root, manifest);
@@ -1265,9 +1281,13 @@ export async function migrateReviewStatuses(root) {
 
 function chooseOutputName(root, manifest, replayId, fingerprint) {
     const reserved = new Set(manifest.records.map(record => record.outputPath).filter(Boolean));
+    const candidates = logOutputNames(replayId, fingerprint);
+    return candidates.find(name => !reserved.has(name) && !pathOccupied(managedPath(root, name))) ?? null;
+}
+export function logOutputNames(replayId, fingerprint) {
     const candidates = [`${replayId}.jsonl`, `${replayId}-${fingerprint.slice(0, 12)}.jsonl`, `${replayId}-${fingerprint}.jsonl`];
     for (let suffix = 2; suffix < 100; suffix++) candidates.push(`${replayId}-${fingerprint}-${suffix}.jsonl`);
-    return candidates.find(name => !reserved.has(name) && !pathOccupied(managedPath(root, name))) ?? null;
+    return candidates;
 }
 
 function ensureOutput(root, record, lines) {
@@ -1277,7 +1297,7 @@ function ensureOutput(root, record, lines) {
     if (expected !== record.outputFingerprint) throw new Error('Manifest output fingerprint mismatch');
     const existing = pathOccupied(target);
     if (existing) {
-        if (!existing.isFile() || existing.isSymbolicLink() || sha256(fs.readFileSync(target)) !== expected) {
+        if (!existing.isFile() || existing.isSymbolicLink() || sha256(legacyBytes(root,target)) !== expected) {
             throw new Error(`Managed output differs from source: ${target}`);
         }
         return;
@@ -1323,21 +1343,22 @@ function scoreMapId(manifest, replayId) {
 
 function chooseScoreOutputName(root, manifest, replayId, fingerprint, responseFingerprint) {
     const reserved = new Set((manifest.scoreRecords ?? []).map(record => record.outputPath).filter(Boolean));
-    const prefix = `replay-score-source-${replayId}-`;
-    const candidates = [`${prefix}${fingerprint.slice(0, 12)}.response`,
-        `${prefix}${fingerprint}.response`];
-    for (let suffix = 2; suffix < 100; suffix++) {
-        candidates.push(`${prefix}${fingerprint}-${suffix}.response`);
-    }
+    const candidates = scoreOutputNames(replayId, fingerprint);
     for (const name of candidates) {
         if (reserved.has(name)) continue;
         const file = scoreManagedPath(root, name);
         const existing = pathOccupied(file);
         if (!existing) return name;
         if (existing.isFile() && !existing.isSymbolicLink() &&
-            sha256(fs.readFileSync(file)) === responseFingerprint) return name;
+            sha256(legacyBytes(root,file)) === responseFingerprint) return name;
     }
     return null;
+}
+export function scoreOutputNames(replayId, fingerprint) {
+    const prefix = `replay-score-source-${replayId}-`;
+    const candidates = [`${prefix}${fingerprint.slice(0, 12)}.response`, `${prefix}${fingerprint}.response`];
+    for (let suffix = 2; suffix < 100; suffix++) candidates.push(`${prefix}${fingerprint}-${suffix}.response`);
+    return candidates;
 }
 
 function validateScoreOutputOwnership(root, manifest, record) {
@@ -1366,7 +1387,7 @@ function verifyScoreOutput(root, record, body) {
     }
     const stat = fs.lstatSync(target);
     if (!stat.isFile() || stat.isSymbolicLink() || stat.size !== body.length ||
-        sha256(fs.readFileSync(target)) !== expected) {
+        sha256(legacyBytes(root,target)) !== expected) {
         throw new Error(`Managed replay-score output failed final verification: ${target}`);
     }
     return target;
@@ -1405,10 +1426,11 @@ function validateScoreRecordIdentity(root, manifest, record, parsed) {
 }
 
 export async function importScoreCacheFile(root, sourceFile, options = {}) {
+    if(productionSelection(path.resolve(root))){if(Object.keys(options).length)throw new Error('Unsupported production import overrides');const file=path.resolve(sourceFile);return dispatchProduction(path.resolve(root),'score-import',{sourceRoot:path.dirname(file),sourceFile:path.basename(file)});}
     const source = path.resolve(sourceFile);
     const stat = fs.lstatSync(source);
     if (!stat.isFile() || stat.isSymbolicLink()) throw new Error(`Unsafe replay-score cache source: ${source}`);
-    const parsed = parseScoreCacheEntry(fs.readFileSync(source));
+    const parsed = parseScoreCacheEntry(legacyBytes(root,source,'cache'));
     if (parsed.kind !== 'score-source') return parsed;
     return withManifestLock(root, () => {
         const manifest = readManifest(root);
@@ -1449,17 +1471,7 @@ export async function importScoreCacheFile(root, sourceFile, options = {}) {
         const outputPath = chooseScoreOutputName(root, manifest, parsed.replayId,
             parsed.fingerprint, parsed.responseFingerprint);
         if (!outputPath) throw new Error(`No safe replay-score output filename for ${parsed.replayId}`);
-        record = {
-            formatVersion: 1, kind: parsed.sourceKind, replayId: parsed.replayId,
-            requestedGameTime: parsed.requestedGameTime, sourceEntry: source,
-            sourceKey: parsed.key, requestUrl: parsed.requestUrl,
-            cacheEntryFingerprint: parsed.cacheEntryFingerprint,
-            responseFingerprint: parsed.responseFingerprint, fingerprint: parsed.fingerprint,
-            outputPath, outputFingerprint: parsed.responseFingerprint,
-            embeddedBuildId: null, mapId: scoreMapId(manifest, parsed.replayId),
-            coverage: parsed.coverage, validation: parsed.validation,
-            importedAt: new Date().toISOString(), status: 'pending', reviews: {},
-        };
+        record = scoreImportRecord(parsed, source, outputPath, scoreMapId(manifest, parsed.replayId));
         collections.records.push(record);
         saveManifest(root, manifest);
         validateScoreOutputOwnership(root, manifest, record);
@@ -1470,7 +1482,23 @@ export async function importScoreCacheFile(root, sourceFile, options = {}) {
     });
 }
 
+// Pure metadata construction shared by the explicit synthetic admission route.
+export function scoreImportRecord(parsed, source, outputPath, mapId, importedAt = new Date().toISOString()) {
+    return {
+            formatVersion: 1, kind: parsed.sourceKind, replayId: parsed.replayId,
+            requestedGameTime: parsed.requestedGameTime, sourceEntry: source,
+            sourceKey: parsed.key, requestUrl: parsed.requestUrl,
+            cacheEntryFingerprint: parsed.cacheEntryFingerprint,
+            responseFingerprint: parsed.responseFingerprint, fingerprint: parsed.fingerprint,
+            outputPath, outputFingerprint: parsed.responseFingerprint,
+            embeddedBuildId: null, mapId,
+            coverage: parsed.coverage, validation: parsed.validation,
+            importedAt, status: 'pending', reviews: {},
+        };
+}
+
 export function verifyScoreSource(root, replayId, fingerprint) {
+    if(productionSelection(path.resolve(root)))return dispatchProduction(path.resolve(root),'score-verify',{replayId,fingerprint});
     if (!/^[a-f0-9]{24}$/.test(replayId) || !validSha256(fingerprint)) {
         throw new Error('Expected replay ID and full replay-score fingerprint');
     }
@@ -1481,7 +1509,7 @@ export function verifyScoreSource(root, replayId, fingerprint) {
     const file = validateScoreOutputOwnership(root, manifest, record);
     const stat = fs.lstatSync(file);
     if (!stat.isFile() || stat.isSymbolicLink()) throw new Error('Unsafe managed replay-score source');
-    const body = fs.readFileSync(file);
+    const body = legacyBytes(root,file);
     const responseFingerprint = sha256(body);
     if (responseFingerprint !== record.responseFingerprint ||
         responseFingerprint !== record.outputFingerprint ||
@@ -1497,6 +1525,7 @@ export function verifyScoreSource(root, replayId, fingerprint) {
 }
 
 export async function updateScoreReview(root, action, replayId, fingerprint, taskId) {
+    if(productionSelection(path.resolve(root)))return dispatchProduction(path.resolve(root),'score-'+action,{replayId,fingerprint,taskId});
     if (!['claim', 'examined', 'complete', 'done'].includes(action)) {
         throw new Error(`Unknown replay-score review action: ${action}`);
     }
@@ -1544,8 +1573,9 @@ export async function updateScoreReview(root, action, replayId, fingerprint, tas
     });
 }
 
-export async function cleanupScoreSource(root, replayId, fingerprint,
-    { deleteFile = file => fs.unlinkSync(file) } = {}) {
+export async function cleanupScoreSource(root, replayId, fingerprint, options = {}) {
+    if(productionSelection(path.resolve(root))){if(Object.keys(options).length)throw new Error('Production retirement uses the journaled deletion API');return dispatchProduction(path.resolve(root),'score-cleanup',{replayId,fingerprint});}
+    const {deleteFile=file=>fs.unlinkSync(file)}=options;
     if (!/^[a-f0-9]{24}$/.test(replayId) || !validSha256(fingerprint)) {
         throw new Error('Expected replay ID and full replay-score fingerprint');
     }
@@ -1567,11 +1597,12 @@ export async function cleanupScoreSource(root, replayId, fingerprint,
         if (!['done', 'retiring'].includes(record.status)) {
             throw new Error(`Replay-score source is not ready for cleanup: ${record.status}`);
         }
+        authorityV2Boundary(root,'retire-score',{manifest,record,tombstone:scoreTombstone(replayId,fingerprint)});
         let existing = pathOccupied(file);
         if (record.status === 'done') {
             if (!existing) throw new Error('Done replay-score source is missing before retirement intent');
             if (!existing.isFile() || existing.isSymbolicLink() ||
-                sha256(fs.readFileSync(file)) !== record.outputFingerprint) {
+                sha256(legacyBytes(root,file)) !== record.outputFingerprint) {
                 throw new Error(`Refusing to retire changed or unsafe replay-score source: ${file}`);
             }
             record.status = 'retiring';
@@ -1580,7 +1611,7 @@ export async function cleanupScoreSource(root, replayId, fingerprint,
         existing = pathOccupied(file);
         if (existing) {
             if (!existing.isFile() || existing.isSymbolicLink() ||
-                sha256(fs.readFileSync(file)) !== record.outputFingerprint) {
+                sha256(legacyBytes(root,file)) !== record.outputFingerprint) {
                 throw new Error(`Refusing to delete changed or unsafe replay-score source: ${file}`);
             }
             deleteFile(file);
@@ -1606,11 +1637,12 @@ function hasManagedOutput(record) {
     return true;
 }
 
-const hasRetainedDiagnostics = parsed =>
+export const hasRetainedDiagnostics = parsed =>
     parsed.otherEntries.some(entry => retainedDiagnosticTypes.includes(entry.type));
 
 export async function importCacheFile(root, sourceFile, manifestCache = null) {
-    const parsed = parseCacheEntry(fs.readFileSync(sourceFile));
+    if(productionSelection(path.resolve(root))){if(manifestCache!==null)throw new Error('Legacy manifest caches cannot cross production authority');const file=path.resolve(sourceFile);return dispatchProduction(path.resolve(root),'import',{sourceRoot:path.dirname(file),sourceFile:path.basename(file)});}
+    const parsed = parseCacheEntry(legacyBytes(root,sourceFile,'cache'));
     if (parsed.kind !== 'log') return parsed;
     return withManifestLock(root, () => {
         const manifest = readManifest(root, manifestCache);
@@ -1662,17 +1694,7 @@ export async function importCacheFile(root, sourceFile, manifestCache = null) {
         const outputPath = evidenceOnly ? null
             : chooseOutputName(root, manifest, parsed.replayId, parsed.fingerprint);
         if (!evidenceOnly && !outputPath) throw new Error(`No safe output filename for ${parsed.replayId}`);
-        const content = evidenceOnly ? null : `${parsed.gameState.join('\n')}\n`;
-        record = {
-            replayId: parsed.replayId, requestedTick: parsed.requestedTick, sourceEntry: sourceFile,
-            sourceKey: parsed.key, fingerprint: parsed.fingerprint, outputPath,
-            outputFingerprint: content === null ? null : sha256(content), mapId: active.registration.id,
-            mapChecksum: active.registration.checksum, mapFile: active.registration.file,
-            buildId: parsed.buildId,
-            importedAt: new Date().toISOString(), status: evidenceOnly ? 'claim' : 'pending',
-            coverage: parsed.coverage, diagnosticCoverage: parsed.diagnosticCoverage,
-            otherEntries: parsed.otherEntries, reviews: {},
-        };
+        record = logImportRecord(parsed, sourceFile, outputPath, active.registration);
         manifest.records.push(record);
         saveManifest(root, manifest);
         if (!evidenceOnly) {
@@ -1684,9 +1706,45 @@ export async function importCacheFile(root, sourceFile, manifestCache = null) {
     }, manifestCache);
 }
 
+export function logImportRecord(parsed, sourceFile, outputPath, registration, importedAt = new Date().toISOString()) {
+    const content = outputPath === null ? null : `${parsed.gameState.join('\n')}\n`;
+    return {
+            replayId: parsed.replayId, requestedTick: parsed.requestedTick, sourceEntry: sourceFile,
+            sourceKey: parsed.key, fingerprint: parsed.fingerprint, outputPath,
+            outputFingerprint: content === null ? null : sha256(content), mapId: registration.id,
+            mapChecksum: registration.checksum, mapFile: registration.file,
+            buildId: parsed.buildId,
+            importedAt, status: outputPath === null ? 'claim' : 'pending',
+            coverage: parsed.coverage, diagnosticCoverage: parsed.diagnosticCoverage,
+            otherEntries: parsed.otherEntries, reviews: {},
+        };
+}
+
 // Adopt an explicitly identified local capture only for a replay already linked to a validated map.
 // JSONL has no replay ID of its own, so the caller must verify its provenance independently.
+export function parseLocalLog(bytes, expectedFlags, {lines: maxLines = Infinity, lineBytes = Infinity, tickSpan = Infinity} = {}) {
+    const content = new TextDecoder('utf-8', {fatal:true}).decode(bytes);
+    if (!content.endsWith('\n')) throw new Error('Local JSONL must end with a newline');
+    const lines = content.slice(0,-1).split('\n');
+    if (lines.length > maxLines) throw Object.assign(new Error('Local JSONL line budget exceeded'),{code:'RESOURCE_LIMIT'});
+    if (!expectedFlags.length) throw new Error('Associated map has no ScoreFlags');
+    const ticks = []; let buildId;
+    for (const [index,line] of lines.entries()) {
+        if (Buffer.byteLength(line) > lineBytes) throw Object.assign(new Error('Local JSONL line budget exceeded'),{code:'RESOURCE_LIMIT'});
+        let entry;try {entry=JSON.parse(line);}catch {throw new Error(`Invalid JSONL line ${index+1}`);}
+        if (entry?.type !== 'game-state' || entry.phase !== 'before-actions' || !Number.isSafeInteger(entry.tick) ||
+            !Array.isArray(entry.creeps) || !Array.isArray(entry.flags)) throw new Error(`Invalid game-state line ${index+1}`);
+        buildId=consistentBuildId(buildId,entryBuildId(entry,`line ${index+1}`),'local JSONL');
+        const flags=entry.flags.map(({id,x,y,effectType,scorePerTick})=>({id,x,y,effectType,scorePerTick})).sort((a,b)=>a.id.localeCompare(b.id));
+        if (canonical(flags)!==canonical(expectedFlags)) throw new Error(`Log flags do not match the associated map at line ${index+1}`);
+        ticks.push(entry.tick);
+    }
+    if (tickSpan!==Infinity && Math.max(...ticks)-Math.min(...ticks)>tickSpan) throw Object.assign(new Error('Local JSONL tick span exceeded'),{code:'RESOURCE_LIMIT'});
+    return {content,lines,ticks,buildId};
+}
+
 export async function registerLocalFile(root, replayId, name) {
+    if(productionSelection(path.resolve(root)))return dispatchProduction(path.resolve(root),'register-local',{replayId,sourceFile:name});
     if (!/^[a-f0-9]{24}$/.test(replayId)) throw new Error('Expected a verified replay ID');
     const file = managedPath(root, name);
     if (name !== `${replayId}.jsonl` && !name.startsWith(`${replayId}-`)) {
@@ -1699,33 +1757,12 @@ export async function registerLocalFile(root, replayId, name) {
         if (!active) throw new Error(`No validated active map for replay ${replayId}`);
         const stat = fs.lstatSync(file);
         if (!stat.isFile() || stat.isSymbolicLink()) throw new Error(`Unsafe local log file: ${file}`);
-        const bytes = fs.readFileSync(file);
-        const content = new TextDecoder('utf-8', { fatal: true }).decode(bytes);
-        if (!content.endsWith('\n')) throw new Error('Local JSONL must end with a newline');
-        const lines = content.slice(0, -1).split('\n');
+        const bytes = legacyBytes(root,file);
         const expectedFlags = mapPayload(validateRegisteredMap(root, active.registration)).objects
             .filter(object => object.type === 'ScoreFlag')
             .map(({ id, x, y, effectType, scorePerTick }) => ({ id, x, y, effectType, scorePerTick }))
             .sort((a, b) => a.id.localeCompare(b.id));
-        if (!expectedFlags.length) throw new Error('Associated map has no ScoreFlags');
-        const ticks = [];
-        let buildId;
-        for (const [index, line] of lines.entries()) {
-            let entry;
-            try { entry = JSON.parse(line); }
-            catch { throw new Error(`Invalid JSONL line ${index + 1}`); }
-            if (entry?.type !== 'game-state' || entry.phase !== 'before-actions' ||
-                !Number.isSafeInteger(entry.tick) || !Array.isArray(entry.creeps) || !Array.isArray(entry.flags)) {
-                throw new Error(`Invalid game-state line ${index + 1}`);
-            }
-            buildId = consistentBuildId(buildId, entryBuildId(entry, `line ${index + 1}`), 'local JSONL');
-            const flags = entry.flags.map(({ id, x, y, effectType, scorePerTick }) =>
-                ({ id, x, y, effectType, scorePerTick })).sort((a, b) => a.id.localeCompare(b.id));
-            if (canonical(flags) !== canonical(expectedFlags)) {
-                throw new Error(`Log flags do not match the associated map at line ${index + 1}`);
-            }
-            ticks.push(entry.tick);
-        }
+        const {content,lines,ticks,buildId}=parseLocalLog(bytes,expectedFlags);
         const fingerprint = sha256(`manual-jsonl:${replayId}\n${content}`);
         if (associateBuildId(active.association, buildId ?? null)) saveManifest(root, manifest);
         if (active.association.retiredFingerprints.includes(fingerprint)) {
@@ -1760,6 +1797,10 @@ export async function registerLocalFile(root, replayId, name) {
 }
 
 export async function scanCache(root, cacheDir, seen = null, onResult = null) {
+    if(productionSelection(path.resolve(root))){
+        if(seen!==null||onResult!==null)throw Object.assign(new Error('Use the selected bounded scan route; legacy callbacks/seen maps cannot cross authority'),{code:'UNSUPPORTED_OPTION'});
+        const result=await dispatchProduction(path.resolve(root),'scan',{sourceRoot:path.resolve(cacheDir)});return result.events;
+    }
     const results = [];
     const report = result => { results.push(result); onResult?.(result); };
     const manifestCache = {};
@@ -1817,12 +1858,13 @@ function cleanup(root, manifest, record) {
     }
     const association = manifest.replays.find(item => item.replayId === record.replayId && item.mapId === record.mapId);
     if (!association) throw new Error(`Missing replay/map association for ${record.replayId}`);
+    authorityV2Boundary(root,'retire-log',{manifest,record,association});
     if (hasManagedOutput(record)) {
         const file = managedPath(root, record.outputPath);
         const existing = pathOccupied(file);
         if (existing) {
             if (!existing.isFile() || existing.isSymbolicLink() ||
-                sha256(fs.readFileSync(file)) !== record.outputFingerprint) {
+                sha256(legacyBytes(root,file)) !== record.outputFingerprint) {
                 throw new Error(`Refusing to delete changed or unsafe output: ${file}`);
             }
             fs.unlinkSync(file);
@@ -1835,6 +1877,7 @@ function cleanup(root, manifest, record) {
 }
 
 export async function updateReview(root, action, replayId, fingerprint, taskId) {
+    if(productionSelection(path.resolve(root)))return dispatchProduction(path.resolve(root),action,{replayId,fingerprint,taskId});
     if (!['claim', 'examined', 'complete', 'done'].includes(action)) throw new Error(`Unknown review action: ${action}`);
     validateTaskId(taskId);
     if (!/^[a-f0-9]{24}$/.test(replayId)) throw new Error('Expected a verified replay ID');
@@ -1877,6 +1920,7 @@ export async function updateReview(root, action, replayId, fingerprint, taskId) 
 }
 
 export async function reconcileCleanup(root) {
+    if(productionSelection(path.resolve(root)))return dispatchProduction(path.resolve(root),'list');
     return withManifestLock(root, () => {
         const manifest = readManifest(root);
         migrateWaitingRecords(root, manifest);
@@ -1885,9 +1929,69 @@ export async function reconcileCleanup(root) {
     });
 }
 
+// Exact log recovery uses the same v2 cleanup implementation without retiring
+// unrelated eligible logs. Corpus reconciliation remains reconcileCleanup.
+export async function reconcileSelectedLog(root,replayId,fingerprint){
+    if(productionSelection(path.resolve(root)))return dispatchProduction(path.resolve(root),'reconcile',{replayId,fingerprint});
+    if(typeof replayId!=='string'||!/^[a-f0-9]{24}$/.test(replayId)||typeof fingerprint!=='string'||!/^[a-f0-9]{64}$/.test(fingerprint))throw new Error('Expected exact log identity');
+    return withManifestLock(root,()=>{
+        const manifest=readManifest(root),record=manifest.records.find(r=>r.replayId===replayId&&r.fingerprint===fingerprint);
+        if(!record){if(manifest.replays.find(r=>r.replayId===replayId)?.retiredFingerprints?.includes(fingerprint))return{kind:'already-retired',replayId,fingerprint};throw new Error('Imported game-state log not found');}
+        if(record.status!=='done')throw new Error('Log is not ready for retirement');
+        cleanup(root,manifest,record);return{kind:'retired',replayId,fingerprint};
+    });
+}
+
 async function main() {
-    const [command, ...args] = process.argv.slice(2);
-    const root = projectRoot;
+    const argv=process.argv.slice(2),explicitRoot=argv[0]==='--storage-root';
+    const root=explicitRoot?argv[1]:projectRoot;
+    const [command, ...args] = argv.slice(explicitRoot?2:0);
+    if(command!=='--synthetic-sqlite'&&args.includes('--synthetic-sqlite'))throw new Error('Synthetic SQLite mode must be the first argument');
+    const production=command==='--synthetic-sqlite'&&!explicitRoot?null:productionSelection(root);
+    if(explicitRoot&&!production)throw new Error('Explicit storage root requires selected production authority');
+    if(production){const {productionLogCli}=await import('./replay-production-authority.js');await productionLogCli(root,command,args);return;}
+    if(command==='--synthetic-sqlite'){
+        if(['maps','other','migrate-status','register-local','upgrade-map-checksums'].includes(args[1])){
+            const action=args[1],expected=action==='other'||action==='register-local'?4:2;
+            if(args.length!==expected)throw Object.assign(new Error('Exact synthetic maintenance selection required'),{code:'UNSUPPORTED_OPTION'});
+            const {listSyntheticMaps,writeSyntheticOtherToStream,migrateSyntheticStatuses,registerSyntheticLocalLog,checkSyntheticMapChecksums}=await import('./replay-maintenance-command-fixture.js');
+            const request={synthetic:true,root:args[0]};
+            if(action==='maps'||action==='upgrade-map-checksums'){for(const row of await (action==='maps'?listSyntheticMaps:checkSyntheticMapChecksums)(request))console.log(JSON.stringify(row));}
+            else if(action==='migrate-status')console.log(JSON.stringify(await migrateSyntheticStatuses(request)));
+            else if(action==='register-local'){const r=await registerSyntheticLocalLog({...request,replayId:args[2],sourceFile:args[3]});console.log(JSON.stringify({event:r.kind,replayId:r.record?.replayId??r.replayId,fingerprint:r.record?.fingerprint??r.fingerprint,outputPath:r.record?.outputPath,status:r.record?.status}));}
+            else{await writeSyntheticOtherToStream({...request,replayId:args[2],fingerprint:args[3]},process.stdout);}return;
+        }
+        if(args[1]==='scan'||args[1]==='watch'){
+            if(args.length!==3)throw Object.assign(new Error('Exact synthetic store and cache roots required'),{code:'UNSUPPORTED_OPTION'});
+            const {scanSyntheticCache,watchSyntheticCache}=await import('./replay-scan-command-fixture.js');
+            const controller=new AbortController(),stop=()=>controller.abort();process.on('SIGINT',stop);process.on('SIGTERM',stop);
+            try{const result=await (args[1]==='scan'?scanSyntheticCache:watchSyntheticCache)({synthetic:true,root:args[0],sourceRoot:args[2],signal:controller.signal});console.log(JSON.stringify(result));if(result.stopReason==='cancelled')process.exitCode=130;}
+            finally{process.off('SIGINT',stop);process.off('SIGTERM',stop);}return;
+        }
+        if(args[1]==='list'){
+            if(args.length!==2)throw Object.assign(new Error('Exact synthetic list root required'),{code:'UNSUPPORTED_OPTION'});
+            const {listSyntheticLogs}=await import('./replay-lifecycle-command-fixture.js');
+            const result=await listSyntheticLogs({synthetic:true,root:args[0]});
+            for(const record of result.records)console.log(JSON.stringify(record));return;
+        }
+        if(['complete','done','reconcile','score-done','score-cleanup','score-verify'].includes(args[1])){
+            const completion=['complete','done','score-done'].includes(args[1]);
+            if(args.length!==(completion?5:4))throw Object.assign(new Error('Exact synthetic lifecycle selection required'),{code:'UNSUPPORTED_OPTION'});
+            const {runSyntheticLifecycle}=await import('./replay-lifecycle-command-fixture.js');
+            console.log(JSON.stringify(await runSyntheticLifecycle({synthetic:true,root:args[0],action:args[1],replayId:args[2],fingerprint:args[3],...(completion?{taskId:args[4]}:{})})));return;
+        }
+        if(args[1]==='import'||args[1]==='score-import'){
+            if(args.length!==4)throw Object.assign(new Error('Usage: --synthetic-sqlite <fixture-root> <import|score-import> <cache-fixture-root> <cache-basename>'),{code:'UNSUPPORTED_OPTION'});
+            const {importSyntheticCache}=await import('./replay-import-command-fixture.js');
+            console.log(JSON.stringify(await importSyntheticCache({synthetic:true,root:args[0],collection:args[1]==='import'?'log':'score',sourceRoot:args[2],sourceFile:args[3]})));return;
+        }
+        if(args.length!==5)throw new Error('Usage: --synthetic-sqlite <fixture-root> <claim|examined|score-claim|score-examined> <replay-id> <fingerprint> <task-id>');
+        const {updateSyntheticLogReview,updateSyntheticScoreReview}=await import('./replay-log-review-fixture.js');
+        const score=args[1]==='score-claim'||args[1]==='score-examined',update=score?updateSyntheticScoreReview:updateSyntheticLogReview;
+        console.log(JSON.stringify(await update({synthetic:true,root:args[0],action:score?args[1].slice(6):args[1],replayId:args[2],fingerprint:args[3],taskId:args[4]})));
+        return;
+    }
+    if(args.includes('--synthetic-sqlite'))throw new Error('Synthetic SQLite mode must be the first argument');
     if (command === 'score-import') {
         if (args.length !== 1) throw new Error('Usage: score-import <cache-file>');
         const result = await importScoreCacheFile(root, args[0]);
@@ -1902,7 +2006,7 @@ async function main() {
         else console.log(JSON.stringify(result));
     } else if (command === 'score-verify') {
         if (args.length !== 2) throw new Error('Usage: score-verify <replay-id> <fingerprint>');
-        const result = verifyScoreSource(root, args[0], args[1]);
+        const result = await verifyScoreSource(root, args[0], args[1]);
         console.log(JSON.stringify({ replayId: result.record.replayId,
             fingerprint: result.record.fingerprint, responseFingerprint: result.responseFingerprint,
             outputPath: result.record.outputPath, bytes: result.bytes,
@@ -1969,5 +2073,12 @@ async function main() {
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-    main().catch(error => { console.error(error.message); process.exitCode = 1; });
+    main().catch(error => {
+        if(process.argv.slice(2).includes('--synthetic-sqlite')||process.argv.slice(2).includes('--storage-root')||error?.productionAuthority)console.error(JSON.stringify({code:error?.code??'CHECKPOINT_FAILED',message:error?.message??String(error),
+            ...(error?.scanState?{scanState:error.scanState}:{}),
+            cleanupFailures:error?.cleanupFailures??(error instanceof AggregateError?error.errors.slice(1).map(e=>({reason:'cleanup-failed',...(typeof e?.code==='string'?{systemCode:e.code}:{})})):undefined),
+            ...(error instanceof AggregateError?{operationFailure:error.cause}: {})}));
+        else console.error(error.message);
+        process.exitCode = 1;
+    });
 }

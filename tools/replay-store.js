@@ -7,6 +7,14 @@ import { DatabaseSync, backup } from 'node:sqlite';
 import { setTimeout as sleep } from 'node:timers/promises';
 import { LIMITS, fail, inlineJson, payloadPath } from './replay-store-payloads.js';
 import { catalogDefinition } from './replay-catalog.js';
+import { scoreRetirementWriter } from './replay-store-retirement.js';
+import {logListWriter} from './replay-store-list.js';
+import {MAP_REPAIR_SCHEMA,mapRepairWriter,mapRepairOptions,mapRepairCapability,rejectPendingMapRepair} from './replay-store-map-repair.js';
+import { withCleanup, resident } from './retrieval-files.js';
+import {REHEARSAL_MARKER,rehearsalDestination,rehearsalDetails,verifyRehearsalDestination,rehearsalOperationRoot,rehearsalLineage} from './replay-rehearsal-scope.js';
+import {assertAuthorityAccess,authorityControl,MEMBER_FILE} from './replay-authority-guard.js';
+import {snapshotRecoveryDatabase,expectedRecoverySchema,verifyRecoveryState} from './replay-sqlite-recovery-data.js';
+import {productionAccess,hasProductionLease,assertProductionFiles,assertProductionWrite,canonicalDirectory} from './replay-production-scope.js';
 
 const MARKER = '.storage-v3-fixture';
 const MAX_INTEGER = 9_223_372_036_854_775_807n;
@@ -48,23 +56,29 @@ function pointer(value) { text(value, 'JSON pointer'); if (value && !/^(?:\/(?:[
 export function runtimeCapabilities() {
     const [major, minor, patch] = process.versions.node.split('.').map(Number);
     if (major !== 24 || minor < 19 || (minor === 19 && patch < 0) || process.platform !== 'darwin' || typeof backup !== 'function') fail('UNSUPPORTED_RUNTIME', 'M1 requires qualified Node 24.19+ on local macOS APFS');
-    const db = new DatabaseSync(':memory:'); let failed = false;
+    const db = new DatabaseSync(':memory:'); let failed = false, primary;
     try {
         const stmt = db.prepare('SELECT sqlite_version() AS version');
         const version = stmt.get().version;
         const n = version.split('.').map(Number);
         if (n[0] < 3 || (n[0] === 3 && (n[1] < 53 || (n[1] === 53 && n[2] < 3))) || typeof stmt.iterate !== 'function') fail('UNSUPPORTED_RUNTIME', 'SQLite 3.53.3+ required');
         return { node: process.version, sqlite: version, filesystem: 'declared-local-apfs', backup: true };
-    } catch (error) { failed = true; throw error; }
-    finally { try { db.close(); } catch (error) { if (!failed) throw error; } }
+    } catch (error) { failed = true; primary = error; throw error; }
+    finally { try { db.close(); } catch (error) {
+        if (!failed) throw error;
+        if (primary instanceof Error) withCleanup(primary,error);
+        else throw new AggregateError([primary,error],'Runtime check and database cleanup failed',{cause:primary});
+    } }
 }
 
-function fixtureRoot(root) {
+function fixtureRoot(root, authorityLock = false) {
+    if(productionAccess(root)){assertProductionFiles(root);return root;}
     if (typeof root !== 'string' || !path.isAbsolute(root) || path.resolve(root) !== root) fail('UNSAFE_PATH', 'Explicit canonical temporary root required');
     const tmp = fs.realpathSync(os.tmpdir());
     if (path.dirname(root) !== tmp || !path.basename(root).startsWith('pain-gain-store-v3-fixture-')) fail('UNSAFE_PATH', 'M1 only permits direct temporary fixture roots');
     const st = fs.lstatSync(root);
     if (!st.isDirectory() || st.isSymbolicLink() || fs.realpathSync(root) !== root) fail('UNSAFE_PATH', 'Unsafe fixture root');
+    if(!authorityLock)assertAuthorityAccess(root,'sqlite');
     return root;
 }
 function safePath(root, relative, mkdir = false) {
@@ -78,20 +92,32 @@ function safePath(root, relative, mkdir = false) {
             if (mkdir && i < parts.length - 1) { fs.mkdirSync(current, { mode: 0o700 }); syncDir(path.dirname(current)); st = fs.lstatSync(current); }
         }
         if (st && (st.isSymbolicLink() || (i < parts.length - 1 ? !st.isDirectory() : !st.isFile()))) fail('UNSAFE_PATH', 'Unsafe path component');
+        if(st&&hasProductionLease(root))resident(current,i<parts.length-1);
         if (!st && i < parts.length - 1 && !mkdir) fail('UNAVAILABLE', 'Missing path component');
     }
     return current;
 }
-function syncDir(directory) { const fd = fs.openSync(directory, fs.constants.O_RDONLY); try { fs.fsyncSync(fd); } finally { fs.closeSync(fd); } }
-function boundedFile(root, relative, budget) {
-    const file = safePath(root, relative); const fd = fs.openSync(file, fs.constants.O_RDONLY | fs.constants.O_NOFOLLOW);
-    try { const st = fs.fstatSync(fd); if (!st.isFile() || st.size > budget) fail('RESOURCE_LIMIT', `${relative} exceeds budget`); return fs.readFileSync(fd, 'utf8'); }
-    finally { fs.closeSync(fd); }
+function syncDir(directory) {
+    const fd = fs.openSync(directory, fs.constants.O_RDONLY); let failed = false, primary;
+    try { fs.fsyncSync(fd); } catch (error) { failed = true; primary = error; throw error; }
+    finally { try { fs.closeSync(fd); } catch (error) { if (!failed) throw error; if(primary instanceof Error)withCleanup(primary,error);else throw new AggregateError([primary,error],'Directory sync and close failed',{cause:primary}); } }
 }
-function descriptor(root, schemaVersion = 1) {
-    const marker = JSON.parse(boundedFile(root, MARKER, 16_384));
+function boundedFile(root, relative, budget, rehearsal) {
+    const file = safePath(root, relative); if(rehearsal||hasProductionLease(root))resident(file);
+    const fd = fs.openSync(file, fs.constants.O_RDONLY | fs.constants.O_NOFOLLOW);
+    let failed = false,primary;
+    try { const st = fs.fstatSync(fd); if (!st.isFile() || st.size > budget) fail('RESOURCE_LIMIT', `${relative} exceeds budget`); return fs.readFileSync(fd, 'utf8'); }
+    catch (error) { failed = true; primary=error; throw error; }
+    finally { try { fs.closeSync(fd); } catch (error) { if (!failed) throw error;if(primary instanceof Error)withCleanup(primary,error);else throw new AggregateError([primary,error],'File operation and cleanup',{cause:primary}); } }
+}
+function descriptor(root, schemaVersion = 1, rehearsal) {
+    const selected=productionAccess(root);
+    if(selected){if(schemaVersion!==1||rehearsal)fail('UNSUPPORTED_STORE','Production requires its exact schema capability');assertProductionFiles(root);return selected.descriptor;}
+    if(rehearsal){rehearsalDestination(rehearsal);for(const name of [REHEARSAL_MARKER,'manifest.json'])resident(safePath(root,name));}
+    const marker = JSON.parse(boundedFile(root, rehearsal?REHEARSAL_MARKER:MARKER, 16_384,rehearsal));
     if (marker.root !== root || marker.filesystem !== 'local-apfs' || !UUID.test(marker.storeId)) fail('UNSAFE_PATH', 'Fixture marker mismatch');
-    const d = JSON.parse(boundedFile(root, 'manifest.json', 16_384));
+    const d = JSON.parse(boundedFile(root, 'manifest.json', 16_384,rehearsal));
+    if(rehearsal && (JSON.stringify(marker.rehearsal)!==JSON.stringify(rehearsalDetails(rehearsal).binding)||JSON.stringify(d.rehearsal)!==JSON.stringify(marker.rehearsal)))fail('UNSUPPORTED_STORE','Rehearsal snapshot binding mismatch');
     if (d.version !== 3 || d.schemaVersion !== schemaVersion || (schemaVersion === 2 && d.catalogVersion !== 1) || d.payloadVersion !== 1 || d.storage !== 'sqlite-sidecars' || d.storeId !== marker.storeId || d.database !== `store-v3/${d.storeId}/index.sqlite`) fail('UNSUPPORTED_STORE', 'Descriptor/store identity mismatch');
     const database = safePath(root, d.database);
     if (!fs.existsSync(database)) fail('UNAVAILABLE', 'Missing database; open never creates it');
@@ -100,21 +126,28 @@ function descriptor(root, schemaVersion = 1) {
     }
     return d;
 }
-function writeExclusive(file, bytes) { const fd = fs.openSync(file, 'wx', 0o600); try { fs.writeFileSync(fd, bytes); fs.fsyncSync(fd); } finally { fs.closeSync(fd); } syncDir(path.dirname(file)); }
+function writeExclusive(file, bytes) {
+    const fd = fs.openSync(file, 'wx', 0o600); let failed = false;
+    try { fs.writeFileSync(fd, bytes); fs.fsyncSync(fd); }
+    catch (error) { failed = true; throw error; }
+    finally { try { fs.closeSync(fd); } catch (error) { if (!failed) throw error; } }
+    syncDir(path.dirname(file));
+}
 
 // Fully written lock owner, hard-link publication, inode-checked stale removal.
-async function locked(root, action, metrics) {
-    const lock = path.join(root, '.manifest.lock'), token = randomUUID(), owner = `${lock}.${token}.tmp`;
-    writeExclusive(owner, JSON.stringify({ pid: process.pid, token })); let acquired = false;
-    let failed = false;
+async function locked(root, action, metrics, rehearsal, lockName = '.manifest.lock') {
+    const lock = path.join(root, lockName), token = randomUUID(), owner = `${lock}.${token}.tmp`;
+    let acquired = false;
+    let failed = false, primary;
     try {
+        writeExclusive(owner, JSON.stringify({ pid: process.pid, token }));
         for (let attempt = 0; attempt < 50; attempt++) {
             try { fs.linkSync(owner, lock); acquired = true; metrics.locks++; break; }
             catch (error) {
                 if (error.code !== 'EEXIST') throw error;
                 let st; try { st = fs.lstatSync(lock); } catch (e) { if (e.code === 'ENOENT') continue; throw e; }
                 if (!st.isFile() || st.isSymbolicLink() || st.size > 16_384) fail('UNSAFE_LOCK', 'Unsafe lock owner');
-                const raw = boundedFile(root, '.manifest.lock', 16_384); let abandoned = false;
+                const raw = boundedFile(root, lockName, 16_384,rehearsal); let abandoned = false;
                 if (raw) {
                     let other; try { other = JSON.parse(raw); } catch { fail('UNSAFE_LOCK', 'Malformed nonempty owner'); }
                     if (!Number.isSafeInteger(other.pid) || other.pid <= 0 || typeof other.token !== 'string' || !other.token) fail('UNSAFE_LOCK', 'Invalid lock owner');
@@ -126,19 +159,40 @@ async function locked(root, action, metrics) {
         }
         if (!acquired) fail('LOCKED', 'Fixture store is locked; retry after owner exits');
         return await action();
-    } catch (error) { failed = true; throw error; }
+    } catch (error) { failed = true; primary = error; throw error; }
     finally {
-        let cleanupFailed = false, cleanupError;
+        const cleanupErrors = [];
         try {
             if (acquired) {
-                const current = JSON.parse(boundedFile(root, '.manifest.lock', 16_384));
+                const current = JSON.parse(boundedFile(root, lockName, 16_384,rehearsal));
                 if (current.token === token) fs.unlinkSync(lock);
             }
-        } catch (error) { cleanupFailed = true; cleanupError = error; }
+        } catch (error) { cleanupErrors.push(error); }
         try { fs.unlinkSync(owner); }
-        catch (error) { if (!cleanupFailed) { cleanupFailed = true; cleanupError = error; } }
-        if (!failed && cleanupFailed) throw cleanupError;
+        catch (error) { cleanupErrors.push(error); }
+        if (cleanupErrors.length) {
+            if (!failed) { const first=cleanupErrors.shift();for(const e of cleanupErrors)withCleanup(first,e);throw first; }
+            if (primary instanceof Error) { for(const e of cleanupErrors)withCleanup(primary,e); }
+            else throw new AggregateError([primary,...cleanupErrors],'Operation and lock cleanup failed',{cause:primary});
+        }
     }
+}
+
+// Same owner-token protocol, separate outer lock; backend locks remain nested
+// strictly inside this lock. No database is opened by the authority lock itself.
+export async function withFixtureAuthorityLock(root,callback){
+    fixtureRoot(root,true);
+    resident(path.join(root,'.storage-v3-fixture'));
+    return locked(root,callback,newMetrics(),true,'.authority.lock');
+}
+export async function withRehearsalAuthorityLock(scope,callback){
+    const root=verifyRehearsalDestination(scope);resident(path.join(root,REHEARSAL_MARKER));
+    return locked(root,callback,newMetrics(),scope,'.authority.lock');
+}
+// Same owner-token protocol; no database open or missing-root initialization.
+export async function withProductionLock(projectRoot,callback,writer=false){
+    canonicalDirectory(projectRoot);const root=path.join(projectRoot,'replay_logs');canonicalDirectory(root);
+    return locked(root,callback,newMetrics(),true,writer?'.manifest.lock':'.authority.lock');
 }
 
 const SCHEMA = `
@@ -148,8 +202,9 @@ CREATE TABLE maps (key TEXT PRIMARY KEY, path TEXT UNIQUE, hash TEXT, status TEX
 CREATE INDEX map_status ON maps(status);
 CREATE TABLE replays (key TEXT PRIMARY KEY, map_id TEXT REFERENCES maps(key), build_id TEXT, status TEXT, ordinal INTEGER NOT NULL CHECK(ordinal>=0)) STRICT;
 CREATE INDEX replay_map ON replays(map_id); CREATE INDEX replay_status ON replays(status);
-CREATE TABLE records (collection TEXT NOT NULL CHECK(collection IN ('log','score')), replay_id TEXT NOT NULL REFERENCES replays(key), fingerprint TEXT NOT NULL, key TEXT NOT NULL UNIQUE, map_id TEXT REFERENCES maps(key), build_id TEXT, status TEXT NOT NULL,
+CREATE TABLE records (collection TEXT NOT NULL CHECK(collection IN ('log','score')), replay_id TEXT NOT NULL, fingerprint TEXT NOT NULL, key TEXT NOT NULL UNIQUE, map_id TEXT REFERENCES maps(key), build_id TEXT, status TEXT NOT NULL,
  output_path TEXT, output_hash TEXT, ordinal INTEGER NOT NULL CHECK(ordinal>=0),
+ association_id TEXT GENERATED ALWAYS AS (CASE WHEN collection='score' AND map_id IS NULL AND build_id IS NULL THEN NULL ELSE replay_id END) VIRTUAL REFERENCES replays(key),
  PRIMARY KEY(collection,replay_id,fingerprint), CHECK((collection='log' AND status IN ('pending','claim','done','waiting')) OR (collection='score' AND status IN ('pending','claim','done','retiring')))) STRICT;
 CREATE INDEX record_page ON records(collection,ordinal,key); CREATE INDEX record_replay ON records(collection,replay_id,ordinal,key); CREATE INDEX record_status ON records(collection,status,ordinal,key);
 CREATE INDEX record_map ON records(map_id); CREATE INDEX record_build ON records(build_id); CREATE INDEX record_output_hash ON records(output_hash);
@@ -170,8 +225,21 @@ CREATE INDEX operation_file_path ON operation_files(path);
 CREATE TABLE migration_progress (source_hash TEXT PRIMARY KEY, ordinal INTEGER NOT NULL CHECK(ordinal>=0), receipt TEXT CHECK(length(CAST(receipt AS BLOB))<=65536)) STRICT;
 `;
 
-function connection(root, d, write, metrics, create = false) {
+export const recoverySchemaHash = () => expectedRecoverySchema(SCHEMA + MAP_REPAIR_SCHEMA);
+
+function connection(root, d, write, metrics, create = false, rehearsal) {
+    const production=productionAccess(root);
+    if(production){assertProductionFiles(root);if(create)fail('UNSUPPORTED_STORE','Production open never initializes storage');if(production.descriptor.production.mode!=='read-write')write=false;}
     const file = safePath(root, d.database);
+    if(rehearsal){
+        rehearsalDestination(rehearsal);if(resident(file).nlink!==1)fail('UNSAFE_PATH','Independent rehearsal database required');
+        for(const suffix of ['-journal','-wal','-shm']){
+            const sidecar=safePath(root,d.database+suffix);
+            // Only ENOENT means absent. Permission/stat failures must propagate.
+            let present=true;try{fs.lstatSync(sidecar);}catch(e){if(e.code==='ENOENT')present=false;else throw e;}
+            if(present&&resident(sidecar).nlink!==1)fail('UNSAFE_PATH','Independent rehearsal sidecar required');
+        }
+    }
     if (!write && fs.existsSync(file + '-journal') && fs.statSync(file + '-journal').size > 0) fail('RECOVERY_REQUIRED', 'Read-only open cannot recover a journal; invoke an isolated writer');
     const db = new DatabaseSync(file, { readOnly: !write }); metrics.connections++;
     try {
@@ -184,32 +252,58 @@ function connection(root, d, write, metrics, create = false) {
         if (!create) {
             const meta = db.prepare('SELECT store_id,schema_version,payload_version FROM store_meta').get();
             if (!meta || meta.store_id !== d.storeId || meta.schema_version !== d.schemaVersion || meta.payload_version !== 1) fail('UNSUPPORTED_STORE', 'Database identity/version mismatch');
+            if(production){
+                const schema=db.prepare('SELECT type,name,tbl_name,sql FROM sqlite_schema ORDER BY type,name LIMIT 65').all();
+                if(schema.length>=65||createHash('sha256').update(JSON.stringify(schema)).digest('hex')!==d.production.schemaHash)fail('UNSUPPORTED_STORE','Production schema capability changed');
+                const receipt=db.prepare('SELECT receipt FROM store_meta').get().receipt;
+                if(receipt!==JSON.stringify({productionProofHash:d.production.proofHash,releaseHash:d.production.releaseHash}))fail('INVALID_REFERENCE','Production database/receipt binding changed');
+            }
             if (d.schemaVersion === 2 && db.prepare('SELECT catalog_version FROM store_meta').get().catalog_version !== 1) fail('UNSUPPORTED_STORE','Catalog version mismatch');
         }
         return db;
-    } catch (e) { try { db.close(); } catch {} throw e; }
+    } catch (e) {
+        try { db.close(); } catch (cleanup) {
+            if (e instanceof Error) withCleanup(e,cleanup);
+            else throw new AggregateError([e,cleanup],'Connection check and database cleanup failed',{cause:e});
+        }
+        throw e;
+    }
 }
 
 export const createFixtureStore = options => createVersionedFixture(options, 1);
+export const createRehearsalStore = scope => createVersionedFixture({root:rehearsalDestination(scope),filesystem:'local-apfs'},1,scope);
+export const openRehearsalStore = (scope,mode='read') => openVersionedStore({root:rehearsalDestination(scope),mode},1,scope);
+// A restricted synthetic recovery handle; never exposes general writer APIs.
+export async function openMapRepairStore(options={}) {
+    if(!options||![Object.prototype,null].includes(Object.getPrototypeOf(options)))fail('INVALID_ARGUMENT','Explicit map repair options required');
+    const o={};for(const k of Reflect.ownKeys(options)){const p=Object.getOwnPropertyDescriptor(options,k);if(!['root','fault'].includes(k)||!Object.hasOwn(p,'value'))fail('INVALID_ARGUMENT','Unknown/accessor map repair option');o[k]=p.value;}
+    const {assertSyntheticFixtureAccess}=await import('./replay-log-review-fixture.js');
+    const check=()=>{assertSyntheticFixtureAccess(o.root);assertProductionWrite(o.root);};check();
+    return openVersionedStore({...o,mode:'write'},1,undefined,check);
+}
 // Typed schema-2 entry points; no caller-supplied schema or raw SQL hook.
 export const createCatalogFoundation = options => createVersionedFixture(options, 2);
 export const openCatalogFoundation = options => openVersionedStore(options, 2);
-async function createVersionedFixture({ root, filesystem, fault } = {}, schemaVersion) {
-    runtimeCapabilities(); root = fixtureRoot(root);
+async function createVersionedFixture({ root, filesystem, fault } = {}, schemaVersion, rehearsal) {
+    if(productionAccess(root))fail('UNSUPPORTED_STORE','Fixture creation cannot initialize production');
+    if(rehearsal)verifyRehearsalDestination(rehearsal);
+    runtimeCapabilities(); root = rehearsal?rehearsalDestination(rehearsal):fixtureRoot(root);
     if (filesystem !== 'local-apfs' || fs.readdirSync(root).length) fail('UNSAFE_PATH', 'Empty local-apfs fixture root required');
     // Exercise the declared primitives in this fixture, not elsewhere.
-    const storeId = randomUUID(); writeExclusive(path.join(root, MARKER), JSON.stringify({ root, storeId, filesystem }));
+    const binding=rehearsal?{rehearsal:rehearsalDetails(rehearsal).binding}:{};
+    const storeId = randomUUID(); writeExclusive(path.join(root, rehearsal?REHEARSAL_MARKER:MARKER), JSON.stringify({ root, storeId, filesystem,...binding }));
     const probe = path.join(root, '.probe'); writeExclusive(probe, 'fixture');
     fs.linkSync(probe, probe + '.link'); fs.renameSync(probe + '.link', probe + '.renamed'); syncDir(root);
     const fd = fs.openSync(probe, 'r'); fs.unlinkSync(probe); try { if (fs.readFileSync(fd, 'utf8') !== 'fixture') fail('UNSUPPORTED_FILESYSTEM', 'Open-after-unlink failed'); } finally { fs.closeSync(fd); }
     fs.unlinkSync(probe + '.renamed'); syncDir(root);
-    const d = { version:3, storage:'sqlite-sidecars', schemaVersion, payloadVersion:1, storeId, database:`store-v3/${storeId}/index.sqlite`, ...(schemaVersion === 2 ? {catalogVersion:1} : {}) };
+    const d = { version:3, storage:'sqlite-sidecars', schemaVersion, payloadVersion:1, storeId, database:`store-v3/${storeId}/index.sqlite`, ...(schemaVersion === 2 ? {catalogVersion:1} : {}),...binding };
     const file = safePath(root, d.database, true); writeExclusive(file, Buffer.alloc(0));
     const metrics = newMetrics();
     await locked(root, async () => {
-        const db = connection(root, d, true, metrics, true);
+        const db = connection(root, d, true, metrics, true,rehearsal);
         try {
             db.exec(`BEGIN IMMEDIATE; ${SCHEMA}`);
+            if (schemaVersion === 1) db.exec(MAP_REPAIR_SCHEMA);
             db.prepare('INSERT INTO store_meta VALUES (?,?,1,0,NULL)').run(storeId,schemaVersion);
             if (schemaVersion === 2) db.exec('ALTER TABLE store_meta ADD COLUMN catalog_version INTEGER NOT NULL DEFAULT 1;'+catalogDefinition.schema);
             db.exec('COMMIT');
@@ -217,34 +311,57 @@ async function createVersionedFixture({ root, filesystem, fault } = {}, schemaVe
         catch (error) { if (db.isTransaction) db.exec('ROLLBACK'); throw error; } finally { db.close(); }
         syncDir(path.dirname(file));
         writeExclusive(path.join(root, 'manifest.json.tmp'), JSON.stringify(d)); fs.renameSync(path.join(root, 'manifest.json.tmp'), path.join(root, 'manifest.json')); syncDir(root);
-    }, metrics);
-    return openVersionedStore({ root, mode:'write', fault },schemaVersion);
+    }, metrics,rehearsal);
+    return openVersionedStore({ root, mode:'write', fault },schemaVersion,rehearsal);
 }
 function newMetrics() { return { sql:0, rows:0, connections:0, locks:0, payloadOpens:0, payloadReadBytes:0, payloadWriteBytes:0, fsReads:0, fsWrites:0 }; }
 
 export const openStore = options => openVersionedStore(options,1);
-async function openVersionedStore({ root, mode, fault, recover = false } = {},schemaVersion) {
-    runtimeCapabilities(); root = fixtureRoot(root);
+// Schema-only authority dispatch gate. Pending map repairs must remain
+// recoverable, but no ordinary evidence handle is exposed by this entrypoint.
+export async function inspectFixtureAuthorityCapabilities(root){
+    const store=await openVersionedStore({root,mode:'read'},1,undefined,undefined,true);let failed=false,primary;
+    try{return store.authorityCapabilities();}catch(e){failed=true;primary=e;throw e;}finally{try{store.close();}catch(e){if(!failed)throw e;if(primary instanceof Error)withCleanup(primary,e);else throw new AggregateError([primary,e],'Authority capability/cleanup',{cause:primary});}}
+}
+async function openVersionedStore({ root, mode, fault, recover = false } = {},schemaVersion,rehearsal,mapRepair,authorityCheck=false) {
+    if(rehearsal)verifyRehearsalDestination(rehearsal);
+    const validateRoot=()=>{if(mapRepair)mapRepair();if(rehearsal){const p=rehearsalDestination(rehearsal);assertAuthorityAccess(p,'sqlite');return p;}return fixtureRoot(root);};
+    runtimeCapabilities(); root = validateRoot();
     if (!['read','write'].includes(mode)) fail('INVALID_MODE', 'Explicit read/write mode required');
     if (typeof recover !== 'boolean' || (recover && mode !== 'write')) fail('INVALID_MODE', 'Recovery requires explicit write mode and boolean opt-in');
-    const currentDescriptor = () => descriptor(root,schemaVersion);
+    const currentDescriptor = () => descriptor(root,schemaVersion,rehearsal);
     const d = currentDescriptor(), metrics = newMetrics(); let closed = false, inWriter = false;
-    const assertOpen = () => { if (closed) fail('CLOSED', 'Store is closed'); fixtureRoot(root); };
+    const assertOpen = () => { if (closed) fail('CLOSED', 'Store is closed'); validateRoot(); };
     const stmt = (db, sql, params = [], type = 'get') => {
         metrics.sql++; const statement = db.prepare(sql); statement.setReadBigInts(true);
         if (type === 'run') return statement.run(...params);
         if (type === 'all') { const rows = [...statement.iterate(...params)].map(normalizeRow).map(rowBudget); metrics.rows += rows.length; return rows; }
         const row = normalizeRow(statement.get(...params)); if (row) rowBudget(row); metrics.rows += row ? 1 : 0; return row;
     };
+    // New isolated stores can retain map-independent scores. Legacy stores
+    // remain readable and are never altered on open or by import.
+    const mapIndependentScores = db => stmt(db,"SELECT hidden FROM pragma_table_xinfo('records') WHERE name='association_id' LIMIT 1")?.hidden === 2;
     const generation = db => stmt(db, 'SELECT generation FROM store_meta').generation;
-    const read = action => { assertOpen(); const current = currentDescriptor(); if(current.storeId !== d.storeId) fail('UNSUPPORTED_STORE','Store handle identity changed'); const db = connection(root, current, false, metrics); let failed = false; try { db.exec('BEGIN'); const result = action(db); db.exec('COMMIT'); return result; } catch (error) { failed = true; throw error; } finally { try { db.close(); } catch (error) { if (!failed) throw error; } } };
+    const checkLineage = db => {
+        const lineage=rehearsal&&rehearsalDetails(rehearsal).lineage;if(!lineage)return;
+        const row=stmt(db,"SELECT value,payload_pointer FROM properties WHERE owner_kind='root' AND owner_key='root' AND pointer='/boundedFixtureConversionV1'");
+        if(!row||row.value===null||row.payload_pointer!==null)fail('INVALID_CHECKPOINT','Missing rehearsal conversion commitment');
+        const cp=JSON.parse(row.value);
+        if(cp.phase!=='verified'||cp.storeId!==d.storeId||createHash('sha256').update(JSON.stringify(cp)).digest('hex')!==lineage.conversionHash)fail('INVALID_CHECKPOINT','Rehearsal conversion commitment changed');
+    };
+    const checkMapRepairs = db => {checkLineage(db);return rejectPendingMapRepair((sql,args,method)=>stmt(db,sql,args,method));};
+    const read = (action,capabilitiesOnly=false) => { assertOpen(); const current = currentDescriptor(); if(current.storeId !== d.storeId) fail('UNSUPPORTED_STORE','Store handle identity changed'); const db = connection(root, current, false, metrics,false,rehearsal); let failed = false, primary; try { db.exec('BEGIN'); if(!mapRepair&&!capabilitiesOnly)checkMapRepairs(db); const result = action(db); db.exec('COMMIT'); return result; } catch (error) { failed = true; primary = error; throw error; } finally { try { db.close(); } catch (error) {
+        if (!failed) throw error;
+        if (primary instanceof Error) withCleanup(primary,error);
+        else throw new AggregateError([primary,error],'Read operation and database cleanup failed',{cause:primary});
+    } } };
     // Normal opens remain nonmutating. A fresh process may explicitly request
     // native journal recovery without first obtaining a read-validated handle.
     if (recover) await locked(root,async () => {
-        fixtureRoot(root);
+        validateRoot();
         const current = currentDescriptor();
         if (current.storeId !== d.storeId) fail('UNSUPPORTED_STORE','Store changed while acquiring recovery lock');
-        const db = connection(root,current,true,metrics); let failed = false;
+        const db = connection(root,current,true,metrics,false,rehearsal); let failed = false;
         try {
             // SQLite rolls back hot journals during connection validation. A
             // crash before the journal header is synced can leave a non-hot
@@ -266,8 +383,8 @@ async function openVersionedStore({ root, mode, fault, recover = false } = {},sc
             try { if (db.isTransaction) db.exec('ROLLBACK'); } catch {}
             throw error;
         } finally { try { db.close(); } catch (error) { if (!failed) throw error; } }
-    },metrics);
-    else read(() => null);
+    },metrics,rehearsal);
+    else read(() => null,authorityCheck);
     function entity(db, owner) {
         const [kind, key] = ownerTuple(owner); let row;
         if (kind === 'root') row = key === 'root' ? stmt(db, 'SELECT store_id AS key FROM store_meta') : null;
@@ -288,10 +405,12 @@ async function openVersionedStore({ root, mode, fault, recover = false } = {},sc
     function refRow(row) { return row && Object.freeze({ owner:Object.freeze({kind:row.owner_kind,key:row.owner_key}),pointer:row.pointer,parentPointer:row.parent,role:row.role,encoding:row.encoding,path:row.path,hash:row.hash,bytes:row.bytes,items:row.items,state:row.state }); }
     function payload(db, owner, p) { const [kind,key] = ownerTuple(owner); return refRow(stmt(db, 'SELECT * FROM payloads WHERE owner_kind=? AND owner_key=? AND pointer=?', [kind,key,p])); }
     function checkedExpected(bytes, hash) { integer(bytes, 'artifact length'); if (!HEX.test(hash)) fail('INVALID_IDENTITY', 'Invalid artifact hash'); if (BigInt(bytes) > BigInt(Number.MAX_SAFE_INTEGER)) fail('RESOURCE_LIMIT', 'Artifact positional-read limit'); }
-    async function hashFile(file) {
-        const fd = fs.openSync(file, fs.constants.O_RDONLY | fs.constants.O_NOFOLLOW); metrics.fsReads++; const hash = createHash('sha256'); let bytes = 0;
-        try { if (!fs.fstatSync(fd).isFile()) fail('UNSAFE_PATH', 'Artifact is not regular'); const b = Buffer.allocUnsafe(LIMITS.chunk); for (;;) { const n = fs.readSync(fd,b,0,b.length,null); if (!n) break; hash.update(b.subarray(0,n)); bytes += n; metrics.payloadReadBytes += n; } }
-        finally { fs.closeSync(fd); }
+    async function hashFile(file, maxBytes = Infinity) {
+        if(rehearsal||productionAccess(root))resident(file);
+        const fd = fs.openSync(file, fs.constants.O_RDONLY | fs.constants.O_NOFOLLOW); metrics.fsReads++; const hash = createHash('sha256'); let bytes = 0, failed = false, primary;
+        try { if (!fs.fstatSync(fd).isFile()) fail('UNSAFE_PATH', 'Artifact is not regular'); const b = Buffer.allocUnsafe(LIMITS.chunk); for (;;) { const n = fs.readSync(fd,b,0,b.length,null); if (!n) break; hash.update(b.subarray(0,n)); bytes += n; metrics.payloadReadBytes += n;if(bytes>maxBytes)fail('CHANGED_INPUT','Artifact grew beyond verified size'); } }
+        catch (error) { failed = true; primary=error;throw error; }
+        finally { try { fs.closeSync(fd); } catch (error) { if (!failed) throw error;if(primary instanceof Error)withCleanup(primary,error);else throw new AggregateError([primary,error],'Artifact hash and close failed',{cause:primary}); } }
         return { bytes, hash:hash.digest('hex') };
     }
     function assertPathKind(db, p, table, payloadPaths) {
@@ -302,15 +421,31 @@ async function openVersionedStore({ root, mode, fault, recover = false } = {},sc
         for (const other of ['maps','outputs','payloads']) {
             if (other !== table && stmt(db,`SELECT path FROM ${other} WHERE path=?`,[p])) fail('OWNERSHIP_CONFLICT','Cross-kind artifact path conflict');
         }
+        if(mapRepairCapability((sql,args)=>stmt(db,sql,args))&&stmt(db,'SELECT map_id FROM map_repairs WHERE old_path=? OR new_path=? LIMIT 1',[p,p]))fail('OWNERSHIP_CONFLICT','Path belongs to retained map repair bytes');
     }
-    function txApi(db, published, payloadPaths) {
+    function txApi(db, published, payloadPaths, localAdoptions) {
         const run = (sql, params) => stmt(db, sql, params, 'run');
+        const reserve = (k,p,expectedBytes,expectedHash) => {
+            assertPathKind(db,p,'outputs',payloadPaths);
+            const r=record(db,k);if(!r||r.status!=='pending')fail('INVALID_STATE','Output reservation requires pending record');
+            run('INSERT INTO outputs VALUES (?,?,?,?,?,?,?)',[p,k.collection,k.replayId,k.fingerprint,expectedHash,expectedBytes,'pending']);
+            run('UPDATE records SET output_path=?,output_hash=? WHERE key=?',[p,expectedHash,recordKey(k)]);
+            for(const [name,value]of [['outputPath',p],['outputFingerprint',expectedHash]])api.setProperty({owner:recordOwner(k),pointer:'/'+name,ordinal:stmt(db,'SELECT COALESCE(MAX(ordinal),-1)+1 AS n FROM properties WHERE owner_kind=? AND owner_key=?',['record',recordKey(k)]).n,value});
+        };
         const api = {
-            insertEntity({ kind, key, ordinal, value = {}, payloadRefs = {} }) {
+            insertEntity({ kind, key, ordinal, value = {}, payloadRefs = {}, mapArtifact }) {
                 ownerTuple({kind,key}); integer(ordinal,'ordinal');
                 if (!value || typeof value !== 'object' || Array.isArray(value)) fail('INVALID_JSON', 'Entity value must be an object');
+                // Conversion-only caller supplies a verified artifact projection without
+                // inventing legacy path/hash properties. All ordinary inserts are unchanged.
+                if (mapArtifact !== undefined && (kind !== 'map' || !mapArtifact ||
+                    Object.keys(mapArtifact).sort().join(',') !== 'hash,path' ||
+                    mapArtifact.path !== value.file || !HEX.test(mapArtifact.hash) ||
+                    (Object.hasOwn(value,'path') && value.path !== mapArtifact.path) ||
+                    (Object.hasOwn(value,'hash') && value.hash !== mapArtifact.hash)))
+                    fail('INVALID_REFERENCE','Map artifact/original disagreement');
                 if (kind === 'collection') { if (typeof value.present !== 'boolean') fail('INVALID_JSON','Collection presence required'); run('INSERT INTO collections VALUES (?,?,?)',[key,Number(value.present),ordinal]); }
-                else if (kind === 'map') { if (!HEX.test(key)) fail('INVALID_IDENTITY','Invalid map ID'); if (value.path) { safePath(root,value.path); assertPathKind(db,value.path,'maps',payloadPaths); if(!HEX.test(value.hash)) fail('INVALID_IDENTITY','Map file needs exact body hash'); } if (value.hash && !HEX.test(value.hash)) fail('INVALID_IDENTITY','Invalid map hash'); run('INSERT INTO maps VALUES (?,?,?,?,?)',[key,value.path??null,value.hash??null,value.status??null,ordinal]); }
+                else if (kind === 'map') { const artifact=mapArtifact??value; if (!HEX.test(key)) fail('INVALID_IDENTITY','Invalid map ID'); if (artifact.path) { safePath(root,artifact.path); assertPathKind(db,artifact.path,'maps',payloadPaths); if(!HEX.test(artifact.hash)) fail('INVALID_IDENTITY','Map file needs exact body hash'); } if (artifact.hash && !HEX.test(artifact.hash)) fail('INVALID_IDENTITY','Invalid map hash'); run('INSERT INTO maps VALUES (?,?,?,?,?)',[key,artifact.path??null,artifact.hash??null,value.status??null,ordinal]); }
                 else if (kind === 'replay') { if (!ID.test(key)) fail('INVALID_IDENTITY','Invalid replay ID'); if (value.buildId && !HEX.test(value.buildId)) fail('INVALID_IDENTITY','Invalid build ID'); run('INSERT INTO replays VALUES (?,?,?,?,?)',[key,value.mapId??null,value.buildId??null,value.status??null,ordinal]); }
                 else if (kind === 'record' || kind === 'retired') {
                     const k = parseKey(key); const opposite = stmt(db, `SELECT key FROM ${kind === 'record' ? 'retired' : 'records'} WHERE key=?`,[key]);
@@ -319,10 +454,14 @@ async function openVersionedStore({ root, mode, fault, recover = false } = {},sc
                     else {
                         if (value.buildId && !HEX.test(value.buildId)) fail('INVALID_IDENTITY','Invalid build ID');
                         const association = stmt(db,'SELECT map_id,build_id FROM replays WHERE key=?',[k.replayId]);
-                        if (!association || (k.collection === 'log' && (!value.mapId || value.mapId !== association.map_id))) fail('INVALID_ASSOCIATION','Log needs its validated map association');
-                        if (value.buildId && association.build_id && value.buildId !== association.build_id) fail('INVALID_ASSOCIATION','Build association conflict');
+                        const independentScore = k.collection === 'score' && value.mapId === null &&
+                            !Object.hasOwn(value,'buildId') && value.formatVersion === 1 && ['replay-frames','game-metadata'].includes(value.kind);
+                        if ((!association && !independentScore) || (k.collection === 'log' && (!value.mapId || value.mapId !== association?.map_id)) ||
+                            (k.collection === 'score' && value.mapId != null && value.mapId !== association?.map_id)) fail('INVALID_ASSOCIATION','Record needs its matching map/replay association');
+                        if (!association && independentScore && !mapIndependentScores(db)) fail('UNSUPPORTED_STORE','Legacy fixture schema cannot insert association-free scores');
+                        if (value.buildId && association?.build_id && value.buildId !== association.build_id) fail('INVALID_ASSOCIATION','Build association conflict');
                         if (value.outputPath != null || value.outputFingerprint != null) fail('INVALID_REFERENCE','Use output reservation, not arbitrary path projections');
-                        run('INSERT INTO records VALUES (?,?,?,?,?,?,?,?,?,?)',[k.collection,k.replayId,k.fingerprint,key,value.mapId??null,value.buildId??null,value.status??'pending',null,null,ordinal]);
+                        run('INSERT INTO records (collection,replay_id,fingerprint,key,map_id,build_id,status,output_path,output_hash,ordinal) VALUES (?,?,?,?,?,?,?,?,?,?)',[k.collection,k.replayId,k.fingerprint,key,value.mapId??null,value.buildId??null,value.status??'pending',null,null,ordinal]);
                     }
                 } else fail('INVALID_IDENTITY','Unsupported insert entity kind');
                 for (const [i,p] of Object.keys(value).entries()) api.setProperty({owner:{kind,key},pointer:'/'+p.replaceAll('~','~0').replaceAll('/','~1'),ordinal:i,value:value[p]});
@@ -347,6 +486,18 @@ async function openVersionedStore({ root, mode, fault, recover = false } = {},sc
                 // direct original-property update must never leave it stale.
                 if (owner.kind === 'review') run('UPDATE reviews SET value=NULL WHERE owner_key=?',[owner.key]);
             },
+            associateReplayBuild({ replayId, buildId }) {
+                if (typeof replayId!=='string'||typeof buildId!=='string'||!ID.test(replayId) || !HEX.test(buildId)) fail('INVALID_IDENTITY','Exact replay/build required');
+                const r=stmt(db,'SELECT * FROM replays WHERE key=?',[replayId]);
+                if (!r || r.status!=='active' || r.build_id!==null && r.build_id!==buildId ||
+                    stmt(db,'SELECT key FROM records WHERE collection=? AND replay_id=? AND build_id IS NOT NULL AND build_id!=? LIMIT 1',['log',replayId,buildId])) fail('IDENTITY_CONFLICT','Replay build conflict');
+                if (r.build_id===buildId) return;
+                const old=stmt(db,'SELECT ordinal,value,payload_pointer FROM properties WHERE owner_kind=? AND owner_key=? AND pointer=?',['replay',replayId,'/buildId']);
+                if (old && (old.payload_pointer!==null || JSON.parse(old.value)!==null)) fail('INVALID_REFERENCE','Unknown replay build projection mismatch');
+                const ordinal=old?.ordinal??BigInt(stmt(db,'SELECT COALESCE(MAX(ordinal),-1) AS n FROM properties WHERE owner_kind=? AND owner_key=?',['replay',replayId]).n)+1n;
+                run('UPDATE replays SET build_id=? WHERE key=?',[buildId,replayId]);
+                api.setProperty({owner:{kind:'replay',key:replayId},pointer:'/buildId',ordinal,value:buildId});
+            },
             putReview({ recordKey:k, taskId, ordinal, value, payloadRefs = {} }) {
                 recordKey(k); text(taskId,'task ID'); integer(ordinal,'review ordinal');
                 if (!value || typeof value !== 'object' || Array.isArray(value)) fail('INVALID_JSON','Review must be an object');
@@ -369,11 +520,15 @@ async function openVersionedStore({ root, mode, fault, recover = false } = {},sc
             reserveOutput({ recordKey:k, path:p, expectedBytes, expectedHash }) {
                 recordKey(k); safePath(root,p,true); checkedExpected(expectedBytes,expectedHash);
                 if (fs.existsSync(path.join(root,p))) fail('OWNERSHIP_CONFLICT','Cannot reserve/adopt an existing unowned file');
-                assertPathKind(db,p,'outputs',payloadPaths);
-                const r = record(db,k); if (!r || r.status !== 'pending') fail('INVALID_STATE','Output reservation requires pending record');
-                run('INSERT INTO outputs VALUES (?,?,?,?,?,?,?)',[p,k.collection,k.replayId,k.fingerprint,expectedHash,expectedBytes,'pending']);
-                run('UPDATE records SET output_path=?,output_hash=? WHERE key=?',[p,expectedHash,recordKey(k)]);
-                for (const [name,value] of [['outputPath',p],['outputFingerprint',expectedHash]]) api.setProperty({owner:recordOwner(k),pointer:'/'+name,ordinal:stmt(db,'SELECT COALESCE(MAX(ordinal),-1)+1 AS n FROM properties WHERE owner_kind=? AND owner_key=?',['record',recordKey(k)]).n,value});
+                reserve(k,p,expectedBytes,expectedHash);
+            },
+            adoptLocalLogOutput(proof) {
+                const p=localAdoptions?.get(proof);if(!p)fail('OWNERSHIP_CONFLICT','Exact writer-owned local adoption proof required');localAdoptions.delete(proof);
+                const st=resident(safePath(root,p.path));
+                if(st.dev!==p.dev||st.ino!==p.ino||st.size!==p.bytes||st.mtimeMs!==p.mtimeMs||st.ctimeMs!==p.ctimeMs||st.nlink!==1)fail('CHANGED_INPUT','Local adoption source changed');
+                const source=stmt(db,'SELECT value,payload_pointer FROM properties WHERE owner_kind=? AND owner_key=? AND pointer=?',['record',recordKey(p.key),'/sourceKey']);
+                if(!source||source.payload_pointer!==null||source.value!==inlineJson('manual-jsonl'))fail('INVALID_REFERENCE','Adoption requires explicit manual-log provenance');
+                reserve(p.key,p.path,p.bytes,p.hash);
             },
             appendIntent({ id, recordKey:k, phase = 'publish', ordinal = 0, files = [] }) {
                 text(id,'operation ID'); recordKey(k); integer(ordinal,'operation ordinal'); if (!['publish','cleanup'].includes(phase)) fail('INVALID_STATE','Invalid operation phase');
@@ -460,22 +615,124 @@ async function openVersionedStore({ root, mode, fault, recover = false } = {},sc
         return api;
     }
     async function writerCallback(db, callback) {
-        let active = true, transactionActive = false; const ensure = () => { if (!active) fail('CLOSED','Writer callback ended'); };
+        if(!mapRepair)checkMapRepairs(db);
+        let active = true, transactionActive = false, listGuard = null; const ensure = () => { if (!active) fail('CLOSED','Writer callback ended'); listGuard?.(); };
         const published = new Map(), payloadPaths = new Set();
+        const localAdoptions = new WeakMap();
         const outstanding = new Set(), temporaryCloses = new Set();
         const completionCursors = new WeakMap();
         const inject = boundary => fault?.(boundary);
         const writer = {
+            verifyRecoverySnapshot({snapshot,b}){ensure();if(rehearsal)rehearsalLineage(rehearsal);if(schemaVersion!==1||transactionActive)fail('UNSUPPORTED_STORE','Scoped snapshot verification required');return verifyRecoveryState({db,root,schemaHash:recoverySchemaHash(),snapshot,b});},
+            async backupRecoverySnapshot({backupRoot,b,fault=()=>{}}){
+                ensure();assertAuthorityAccess(root,'sqlite');
+                if(schemaVersion!==1||transactionActive)fail('UNSUPPORTED_STORE','Scoped recovery snapshot required');
+                if(productionAccess(root)){canonicalDirectory(backupRoot);if(backupRoot===root||backupRoot.startsWith(root+path.sep)||root.startsWith(backupRoot+path.sep))fail('UNSAFE_PATH','Independent backup root required');}
+                else if(rehearsal)rehearsalOperationRoot(backupRoot,rehearsalLineage(rehearsal).binding.origin,'backup');
+                else if(typeof backupRoot!=='string'||path.dirname(backupRoot)!==fs.realpathSync(os.tmpdir())||!path.basename(backupRoot).startsWith('pain-gain-sqlite-backup-fixture-')||fs.realpathSync(backupRoot)!==backupRoot)fail('UNSAFE_PATH','Synthetic recovery package required');
+                return snapshotRecoveryDatabase({db,root,descriptor:d,backupRoot,schemaHash:recoverySchemaHash(),b,fault});
+            },
+            async backupAuthorityIndex(destination){
+                ensure();assertAuthorityAccess(root,'sqlite');
+                if(rehearsal||schemaVersion!==1||transactionActive||typeof destination!=='string'||path.dirname(destination)!==fs.realpathSync(os.tmpdir())||!path.basename(destination).startsWith('pain-gain-authority-v2-fixture-')||fs.realpathSync(destination)!==destination)fail('UNSAFE_PATH','Bound synthetic rollback destination required');
+                const member=authorityControl(path.join(destination,MEMBER_FILE)).value;
+                if(member.anchor!==root||member.storeId!==d.storeId||member.productionAuthority!==false)fail('AUTHORITY_CONFLICT','Rollback snapshot binding mismatch');
+                const facts=writer.authorityExportFacts(),directory=path.join(destination,'recovery');
+                if(!fs.existsSync(directory)){fs.mkdirSync(directory,{mode:0o700});syncDir(destination);}resident(directory,true);
+                if(fs.realpathSync(directory)!==directory)fail('UNSAFE_PATH','Unsafe recovery directory');
+                const target=path.join(directory,'index.sqlite');
+                const size=db.prepare('PRAGMA page_count').get().page_count*db.prepare('PRAGMA page_size').get().page_size;
+                if(!Number.isSafeInteger(size)||size>32*1048576)fail('RESOURCE_LIMIT','Rollback index exceeds 32 MiB');
+                if(!fs.existsSync(target))await backup(db,target,{rate:64});
+                const st=resident(target);if(st.nlink!==1||fs.realpathSync(target)!==target||st.size>32*1048576)fail('UNSAFE_PATH','Unsafe recovery index');
+                for(const suffix of ['-journal','-wal','-shm'])if(fs.existsSync(target+suffix))fail('RECOVERY_REQUIRED','Recovery snapshot has a sidecar');
+                const restored=new DatabaseSync(target,{readOnly:true});let primary;
+                try{
+                    if(restored.prepare('PRAGMA integrity_check').get().integrity_check!=='ok'||restored.prepare('PRAGMA foreign_key_check').get())fail('INVALID_ARTIFACT','Invalid rollback database snapshot');
+                    const meta=restored.prepare('SELECT store_id,generation FROM store_meta').get();if(meta.store_id!==facts.storeId||String(meta.generation)!==facts.generation)fail('CHANGED_DESTINATION','Rollback snapshot changed');
+                    for(const [table,rows]of Object.entries(facts.tables)){
+                        const statement=restored.prepare(`SELECT * FROM ${table} LIMIT ?`);statement.setReadBigInts(true);
+                        const actual=[...statement.iterate(rows.length+1)].map(normalizeRow);
+                        if(JSON.stringify(actual)!==JSON.stringify(rows))fail('CHANGED_DESTINATION','Rollback snapshot differs from current state');
+                    }
+                }catch(e){primary=e;throw e;}finally{try{restored.close();}catch(e){if(primary instanceof Error)withCleanup(primary,e);else if(primary!==undefined)throw new AggregateError([primary,e],'Backup verification/cleanup',{cause:primary});else throw e;}}
+                const fd=fs.openSync(target,'r');let syncError;try{fs.fsyncSync(fd);}catch(e){syncError=e;throw e;}finally{try{fs.closeSync(fd);}catch(e){if(syncError)withCleanup(syncError,e);else throw e;}}syncDir(directory);
+                return{path:'recovery/index.sqlite',storeId:facts.storeId,generation:facts.generation};
+            },
+            authorityExportFacts() {
+                ensure();
+                if(rehearsal||schemaVersion!==1||transactionActive||!mapIndependentScores(db))fail('UNSUPPORTED_STORE','Synthetic current schema required for rollback');
+                mapRepairCapability((sql,args,method)=>stmt(db,sql,args,method),true);
+                checkMapRepairs(db);
+                const tables={},caps={store_meta:1,collections:5,maps:8,replays:8,records:32,reviews:128,retired:512,properties:2048,payloads:64,outputs:32,operations:1,operation_files:1,map_repairs:8,migration_progress:8};
+                const schemaTables=db.prepare("SELECT name FROM sqlite_master WHERE type='table' LIMIT 32").all();
+                if(schemaTables.length!==Object.keys(caps).length||schemaTables.some(r=>!Object.hasOwn(caps,r.name)))fail('UNSUPPORTED_STORE','Unknown rollback schema tables');
+                let bytes=0;
+                for(const [table,cap]of Object.entries(caps)){
+                    const rows=[];
+                    // Fixed allowlist, a bounded iterator, and an aggregate byte cap.
+                    const statement=db.prepare(`SELECT * FROM ${table} LIMIT ?`);statement.setReadBigInts(true);
+                    for(const raw of statement.iterate(cap+1)){
+                        const row=normalizeRow(raw);rowBudget(row);bytes+=Buffer.byteLength(rowJson(row));
+                        if(Object.values(row).some(value=>typeof value==='bigint'))fail('RESOURCE_LIMIT','Synthetic rollback requires safe integer ordinals and counters');
+                        if(rows.length===cap||bytes>4*1048576)fail('RESOURCE_LIMIT','Synthetic rollback metadata cap exceeded');
+                        rows.push(row);
+                    }
+                    tables[table]=rows;
+                }
+                if(tables.operations.length||tables.operation_files.length||tables.migration_progress.length||tables.records.some(r=>['pending','retiring'].includes(r.status)))fail('RECOVERY_REQUIRED','Finish existing publication before rollback');
+                return{storeId:d.storeId,generation:String(generation(db)),tables};
+            },
+            async prepareLocalLogAdoption(input) {
+                const copy=(value,keys)=>{if(!value||![Object.prototype,null].includes(Object.getPrototypeOf(value)))fail('INVALID_ARGUMENT','Plain adoption proof options required');const out={};for(const name of Reflect.ownKeys(value)){const property=Object.getOwnPropertyDescriptor(value,name);if(!keys.includes(name)||!Object.hasOwn(property,'value'))fail('INVALID_ARGUMENT','Accessor/unknown adoption option');Object.defineProperty(out,name,{value:property.value,enumerable:true});}if(keys.some(name=>!Object.hasOwn(out,name)))fail('INVALID_ARGUMENT','Exact adoption proof fields required');return out;};
+                const {recordKey:selected,path:p,expectedBytes,expectedHash}=copy(input,['recordKey','path','expectedBytes','expectedHash']);
+                const k=copy(selected,['collection','replayId','fingerprint']);
+                ensure();if(rehearsal||transactionActive)fail('UNSUPPORTED_STORE','Local adoption requires a synthetic writer outside a transaction');recordKey(k);checkedExpected(expectedBytes,expectedHash);
+                if(k.collection!=='log'||expectedBytes>4*1048576||typeof p!=='string'||!new RegExp(`^${k.replayId}(?:-[a-f0-9]{12,64}(?:-\\d+)?)?\\.jsonl$`).test(p))fail('UNSUPPORTED_OPTION','Bounded explicit local log required');
+                if(writer.artifactOwner(p))fail('OWNERSHIP_CONFLICT','Local file already owned');const file=safePath(root,p),st=resident(file);
+                if(st.nlink!==1||fs.realpathSync(file)!==file||st.size!==expectedBytes)fail('UNSAFE_PATH','Independent exact local file required');
+                const got=await hashFile(file,expectedBytes);ensure();const end=resident(file);
+                if(got.hash!==expectedHash||got.bytes!==expectedBytes||end.dev!==st.dev||end.ino!==st.ino||end.size!==st.size||end.mtimeMs!==st.mtimeMs||end.ctimeMs!==st.ctimeMs)fail('CHANGED_INPUT','Local file changed before adoption');
+                const proof=Object.freeze({});localAdoptions.set(proof,{key:{...k},path:p,bytes:expectedBytes,hash:expectedHash,dev:st.dev,ino:st.ino,mtimeMs:st.mtimeMs,ctimeMs:st.ctimeMs});return proof;
+            },
+            // Import orchestration needs append ordinals and exact cross-kind path
+            // ownership under this same writer lock, not a corpus reconstruction.
+            importOrdinals(collection) {
+                ensure(); if (!['log','score'].includes(collection)) fail('INVALID_IDENTITY','Import collection required');
+                const tail=(table,where='',args=[])=>stmt(db,`SELECT ordinal FROM ${table}${where} ORDER BY ordinal DESC LIMIT 1`,args)?.ordinal;
+                const next=n=>{const v=n===undefined?0n:BigInt(n)+1n;integer(v,'Import ordinal');return v;};
+                return {record:next(tail('records',' WHERE collection=?',[collection])),map:next(tail('maps')),replay:next(tail('replays')),root:next(tail('properties',' WHERE owner_kind=? AND owner_key=?',['root','root'])),mapIndependentScores:mapIndependentScores(db)};
+            },
+            artifactOwner(relative) {
+                ensure(); safePath(root,relative);
+                for (const table of ['maps','outputs','payloads']) if (stmt(db,`SELECT path FROM ${table} WHERE path=?`,[relative])) return table;
+                if(mapRepairCapability((sql,args)=>stmt(db,sql,args))&&stmt(db,'SELECT map_id FROM map_repairs WHERE old_path=? OR new_path=? LIMIT 1',[relative,relative]))return 'map_repairs';
+                return null;
+            },
+            readImportIntent(operationId) {
+                ensure();text(operationId,'Import intent ID');
+                const rows=stmt(db,'SELECT * FROM operation_files WHERE operation_id=? ORDER BY ordinal LIMIT 3',[operationId],'all');
+                if(rows.length>2)fail('INVALID_REFERENCE','Selected import has unexpected intent files');
+                for(const row of rows)rowBudget(row);return rows;
+            },
             readScoreCompletionFacts({recordKey:k,taskId}) {
                 ensure(); if (k?.collection !== 'score') fail('INVALID_IDENTITY','Score completion requires score identity');
+                return writer.readCompletionFacts({recordKey:k,taskId});
+            },
+            readCompletionFacts({recordKey:k,taskId}) {
+                ensure(); recordKey(k);
                 const facts = writer.readReviewCheckpoint({recordKey:k,taskId});
                 if (facts.current) facts.recordPropertyTail = stmt(db,'SELECT ordinal FROM properties WHERE owner_kind=? AND owner_key=? ORDER BY ordinal DESC,pointer DESC LIMIT 1',['record',recordKey(k)]);
                 if (Buffer.byteLength(JSON.stringify(facts,(_,v)=>typeof v === 'bigint' ? String(v) : v)) > 16_384) fail('RESOURCE_LIMIT','Completion facts exceed 16 KiB');
                 return facts;
             },
             pageScoreReviewCheckpoints({recordKey:k,after = null}) {
-                ensure(); const key = recordKey(k);
+                ensure(); recordKey(k);
                 if (k.collection !== 'score') fail('INVALID_IDENTITY','Score completion requires score identity');
+                return writer.pageReviewCheckpoints({recordKey:k,after});
+            },
+            pageReviewCheckpoints({recordKey:k,after = null}) {
+                ensure(); const key = recordKey(k);
                 const gen = String(generation(db));
                 const previous = after === null ? null : completionCursors.get(after);
                 if (after !== null && (!previous || previous.key !== key || previous.generation !== gen)) fail('STALE_CURSOR','Foreign, expired or stale completion cursor');
@@ -517,9 +774,11 @@ async function openVersionedStore({ root, mode, fault, recover = false } = {},sc
                 const originals = (kind,key,names) => get(`SELECT pointer,ordinal,value,payload_pointer FROM properties WHERE owner_kind=? AND owner_key=? AND pointer IN (${names.map(()=>'?').join(',')})`,[kind,key,...names],true);
                 const identity = [k.collection,k.replayId,k.fingerprint];
                 const current = get('SELECT * FROM records WHERE collection=? AND replay_id=? AND fingerprint=?',identity);
-                const retired = get('SELECT key FROM retired WHERE collection=? AND replay_id=? AND fingerprint=?',identity);
+                const retired = get('SELECT collection,replay_id,fingerprint,key,ordinal FROM retired WHERE collection=? AND replay_id=? AND fingerprint=?',identity);
                 const gen = get('SELECT generation FROM store_meta').generation;
-                if (!current) return {current,retired,generation:gen};
+                if (!current) return {current,retired,generation:gen,...(retired?{
+                    retiredPayload:get('SELECT pointer FROM payloads WHERE owner_kind=? AND owner_key=? LIMIT 1',['retired',key])
+                }:{})};
                 const recordProperties = originals('record',key,['/collection','/replayId','/fingerprint','/mapId','/buildId','/status','/outputPath','/outputFingerprint',...(k.collection === 'log' ? ['/mapChecksum','/mapFile'] : [])]);
                 const intent = get('SELECT id FROM operations WHERE collection=? AND replay_id=? AND fingerprint=? LIMIT 1',identity);
                 const output = get('SELECT * FROM outputs WHERE collection=? AND replay_id=? AND fingerprint=?',identity);
@@ -543,18 +802,20 @@ async function openVersionedStore({ root, mode, fault, recover = false } = {},sc
                 return facts;
             },
             transaction(callback) {
-                ensure(); if (transactionActive) fail('INVALID_STATE','Nested transactions prohibited'); transactionActive = true;
+                ensure(); assertProductionWrite(root); if (transactionActive) fail('INVALID_STATE','Nested transactions prohibited'); transactionActive = true;
                 try {
                     inject('transaction-begin'); db.exec('BEGIN IMMEDIATE');
                     let txActive = true;
-                    const api = Object.fromEntries(Object.entries(txApi(db,published,payloadPaths)).map(([name,method]) => [name,(...args) => {
+                    const api = Object.fromEntries(Object.entries(txApi(db,published,payloadPaths,localAdoptions)).map(([name,method]) => [name,(...args) => {
                         ensure(); if (!txActive) fail('CLOSED','Transaction callback ended'); return method(...args);
                     }]));
                     let result; try { result = callback(api); } finally { txActive = false; }
                     if (result && typeof result.then === 'function') { result.catch(() => {}); fail('INVALID_STATE','Transaction callback must be synchronous'); }
                     const gen = generation(db); if (BigInt(gen) >= MAX_INTEGER) fail('RESOURCE_LIMIT','Generation exhausted');
                     stmt(db,'UPDATE store_meta SET generation=generation+1',[],'run'); inject('transaction-commit'); db.exec('COMMIT'); return result;
-                } catch (e) { try { if (db.isTransaction) db.exec('ROLLBACK'); } catch {} throw e; } finally { transactionActive = false; }
+                } catch (e) { try { if (db.isTransaction) db.exec('ROLLBACK'); } catch (cleanup) {
+                    if(e instanceof Error)withCleanup(e,cleanup);else throw new AggregateError([e,cleanup],'Transaction and rollback failed',{cause:e});
+                } throw e; } finally { transactionActive = false; }
             },
             async publishPayload({ owner, pointer:p, role, source, expectedBytes, expectedHash, parentPointer = null, evidenceOnly = false, items = null }) {
                 ensure(); pointer(p); ownerTuple(owner); const relative = payloadPath(d.storeId,owner,p,role,expectedHash);
@@ -583,7 +844,7 @@ async function openVersionedStore({ root, mode, fault, recover = false } = {},sc
                 return {path:p,bytes:expectedBytes,hash:expectedHash};
             },
             async deleteFile({ operationId, ordinal }) {
-                ensure(); if (transactionActive) fail('INVALID_STATE','File IO must stay outside transactions');
+                ensure(); assertProductionWrite(root); if (transactionActive) fail('INVALID_STATE','File IO must stay outside transactions');
                 const row = stmt(db,'SELECT operation_files.*,operations.phase,records.collection,records.status FROM operation_files JOIN operations ON id=operation_id JOIN records USING(collection,replay_id,fingerprint) WHERE operation_id=? AND operation_files.ordinal=?',[operationId,ordinal]);
                 if (!row || row.phase !== 'cleanup' || row.status !== (row.collection === 'score' ? 'retiring' : 'done')) fail('INVALID_STATE','No collection-specific synthetic cleanup authorization');
                 const file = safePath(root,row.path); if (fs.existsSync(file)) { const got = await hashFile(file); ensure(); if (got.hash !== row.hash || got.bytes !== row.bytes) fail('INVALID_ARTIFACT','Changed cleanup artifact'); fs.unlinkSync(file); }
@@ -593,7 +854,11 @@ async function openVersionedStore({ root, mode, fault, recover = false } = {},sc
                 writer.transaction(() => stmt(db,'UPDATE operation_files SET state=? WHERE operation_id=? AND ordinal=?',['deleted',operationId,ordinal],'run'));
             },
         };
+        if(mapRepair)writer.repairMapChecksums=mapRepairWriter({root,storeId:d.storeId,
+            query:(sql,args,method)=>stmt(db,sql,args,method),transaction:fn=>writer.transaction(fn),ensure,inject,
+            safePath:relative=>safePath(root,relative),syncDir,metrics});
         async function publish(relative, source, bytes, hash) {
+            assertProductionWrite(root);
             ensure(); if (transactionActive) fail('INVALID_STATE','File IO must stay outside transactions'); checkedExpected(bytes,hash);
             const destination = safePath(root,relative,true);
             if (fs.existsSync(destination)) {
@@ -630,7 +895,21 @@ async function openVersionedStore({ root, mode, fault, recover = false } = {},sc
         // wait indefinitely. Revoke at callback exit, close owned descriptors,
         // and guard every await-to-mutation/success continuation instead. Attach
         // rejection handlers now so abandoned operations cannot be unhandled.
-        for (const name of ['publishPayload','publishOutput','deleteFile']) {
+        Object.assign(writer,scoreRetirementWriter({storeId:d.storeId,ensure,
+            transaction:callback=>writer.transaction(callback),transactionActive:()=>transactionActive,
+            checkpoints:options=>writer.pageScoreReviewCheckpoints(options),
+            query:(sql,args,method)=>stmt(db,sql,args,method),rowBudget,
+            safePath:relative=>safePath(root,relative),syncDir,metrics,inject}));
+        Object.assign(writer,scoreRetirementWriter({storeId:d.storeId,ensure:()=>{ensure();if(rehearsal)fail('UNSUPPORTED_STORE','Log lifecycle is synthetic-only');},collection:'log',
+            transaction:callback=>writer.transaction(callback),transactionActive:()=>transactionActive,
+            checkpoints:options=>writer.pageReviewCheckpoints(options),
+            query:(sql,args,method)=>stmt(db,sql,args,method),rowBudget,
+            safePath:relative=>safePath(root,relative),syncDir,metrics,inject}));
+        Object.assign(writer,logListWriter({ensure,neutralOnly:Boolean(rehearsal),transactionActive:()=>transactionActive,
+            query:(sql,args,method)=>stmt(db,sql,args,method),page:(...args)=>page(db,...args),
+            transaction:callback=>writer.transaction(callback),retire:k=>writer.retireLog(k),metrics,
+            setGuard:guard=>{listGuard=guard;},inject}));
+        for (const name of ['publishPayload','publishOutput','prepareLocalLogAdoption','deleteFile','retireScore','retireLog','reconcileLogList','migrateLogStatuses','backupAuthorityIndex','backupRecoverySnapshot',...(mapRepair?['repairMapChecksums']:[])]) {
             const method = writer[name];
             writer[name] = (...args) => {
                 const operation = method(...args);
@@ -656,8 +935,16 @@ async function openVersionedStore({ root, mode, fault, recover = false } = {},sc
     }
     const store = {
         root, storeId:d.storeId, metrics,
+        authorityCapabilities(){return read(db=>{
+            checkLineage(db);
+            if(schemaVersion!==1||!mapIndependentScores(db))fail('UNSUPPORTED_STORE','Authority requires current score capability');
+            mapRepairCapability((sql,args,method)=>stmt(db,sql,args,method),true);
+            return{storeId:d.storeId,schemaVersion:1,mapIndependentScores:true,mapRepair:true};
+        },true);},
         resetMetrics() { Object.assign(metrics,newMetrics()); },
         close() { if (inWriter) fail('INVALID_STATE','Cannot close during writer callback'); closed = true; },
+        getCollection(key) { text(key,'collection key'); return read(db => stmt(db,'SELECT * FROM collections WHERE key=?',[key]) ?? {kind:'missing'}); },
+        entityCounts() { return read(db => Object.fromEntries(['collections','maps','replays','records','reviews','retired'].map(table=>[table,stmt(db,`SELECT COUNT(*) AS n FROM ${table}`).n]))); },
         getRecord(k) { recordKey(k); return read(db => record(db,k) ?? (stmt(db,'SELECT * FROM retired WHERE key=?',[recordKey(k)]) ? {kind:'retired',key:recordKey(k)} : {kind:'missing'})); },
         getReplay(id) { if (!ID.test(id)) fail('INVALID_IDENTITY','Invalid replay ID'); return read(db => stmt(db,'SELECT * FROM replays WHERE key=?',[id]) ?? {kind:'missing'}); },
         getMap(id) { if (!HEX.test(id)) fail('INVALID_IDENTITY','Invalid map ID'); return read(db => stmt(db,'SELECT * FROM maps WHERE key=?',[id]) ?? {kind:'missing'}); },
@@ -686,17 +973,26 @@ async function openVersionedStore({ root, mode, fault, recover = false } = {},sc
             });
         },
         pageRecords({collection,replayId = null,status = null,after = null,limit} = {}) { if (!['log','score'].includes(collection)) fail('INVALID_IDENTITY','Collection required'); return read(db => page(db,'SELECT * FROM records WHERE collection=?'+(replayId ? ' AND replay_id=?' : '')+(status ? ' AND status=?' : ''),[collection,...(replayId?[replayId]:[]),...(status?[status]:[])],'key',after,limit,['records',collection,replayId,status])); },
+        pageMaps({after = null,limit} = {}) { return read(db => page(db,'SELECT * FROM maps WHERE 1=1',[],'key',after,limit,['maps'])); },
+        pageReplays({after = null,limit} = {}) { return read(db => page(db,'SELECT * FROM replays WHERE 1=1',[],'key',after,limit,['replays'])); },
         pageReviews(k,cursor) { recordKey(k); return read(db => page(db,'SELECT task,ordinal,value FROM reviews WHERE collection=? AND replay_id=? AND fingerprint=?',[k.collection,k.replayId,k.fingerprint],'task',cursor,LIMITS.page,['reviews',recordKey(k)])); },
         pageOperations(cursor) { return read(db => page(db,'SELECT * FROM operations WHERE 1=1',[],'id',cursor,LIMITS.page,['operations'])); },
         pageProperties(owner,cursor) { ownerTuple(owner); return read(db => page(db,'SELECT pointer,ordinal,value,payload_pointer FROM properties WHERE owner_kind=? AND owner_key=?',[owner.kind,owner.key],'pointer',cursor,LIMITS.page,['properties',owner])); },
         pagePayloads(owner,parentPointer = null,cursor) { ownerTuple(owner); return read(db => page(db,'SELECT * FROM payloads WHERE owner_kind=? AND owner_key=? AND parent IS ?',[owner.kind,owner.key,parentPointer],'pointer',cursor,LIMITS.page,['payloads',owner,parentPointer])); },
         async withWriter(callback) {
             assertOpen(); if (mode !== 'write' || inWriter) fail('INVALID_STATE','Writable nonnested handle required'); inWriter = true;
-            try { return await locked(root,async () => { fixtureRoot(root); const current = currentDescriptor(); if (current.storeId !== d.storeId) fail('UNSUPPORTED_STORE','Store changed while acquiring lock'); const db = connection(root,current,true,metrics); let failed = false; try { return await writerCallback(db,w => callback(catalogCallback ? catalogDefinition.writer({db,stmt,writer:w,root,store}) : w)); } catch (error) { failed = true; throw error; } finally { try { db.close(); } catch (error) { if (!failed) throw error; } } },metrics); }
+            try { return await locked(root,async () => { validateRoot(); const current = currentDescriptor(); if (current.storeId !== d.storeId) fail('UNSUPPORTED_STORE','Store changed while acquiring lock'); const db = connection(root,current,true,metrics,false,rehearsal); let failed = false, primary; try { return await writerCallback(db,w => callback(catalogCallback ? catalogDefinition.writer({db,stmt,writer:w,root,store}) : w)); } catch (error) { failed = true; primary = error; throw error; } finally { try { db.close(); } catch (error) {
+                if (!failed) throw error;
+                if (primary instanceof Error) withCleanup(primary,error);
+                else throw new AggregateError([primary,error],'Writer operation and database cleanup failed',{cause:primary});
+            } } },metrics,rehearsal); }
             finally { inWriter = false; }
         },
         async withReadSnapshot(options = {},callback) {
             let {recordKeys = [],mapIds = [],reviewKeys = [],payloadRoles = ['diagnostics','summaries','extensions'],scoreSelection,combinedSelection} = options;
+            const claimOption=Object.getOwnPropertyDescriptor(options,'claimTaskId');
+            if(claimOption&&(!Object.hasOwn(claimOption,'value')||typeof claimOption.value!=='string'||!/^[A-Za-z0-9][A-Za-z0-9._/-]{0,199}$/.test(claimOption.value)))fail('INVALID_IDENTITY','Exact data-property claim task required');
+            const claimTaskId=claimOption?.value;
             let scoreFacts,combinedFacts,logKeys;
             if (combinedSelection !== undefined) {
                 if (['recordKeys','mapIds','reviewKeys','payloadRoles','scoreSelection'].some(k=>Object.hasOwn(options,k))) fail('INVALID_REFERENCE','Combined snapshot mode is exclusive');
@@ -740,6 +1036,7 @@ async function openVersionedStore({ root, mode, fault, recover = false } = {},sc
                 if (handles.has(ref.path)) return;
                 if (handles.size >= LIMITS.handles) fail('RESOURCE_LIMIT','Snapshot handle budget exceeded');
                 const file = safePath(root,ref.path); let fd;
+                if(rehearsal||productionAccess(root))resident(file);
                 try { fd = fs.openSync(file,fs.constants.O_RDONLY|fs.constants.O_NOFOLLOW); } catch(e) { if(e.code === 'ENOENT') fail('UNAVAILABLE','Missing selected artifact'); throw e; }
                 try {
                     const st = fs.fstatSync(fd); if (!st.isFile() || st.size !== ref.bytes) fail('INVALID_ARTIFACT','Selected artifact identity/size mismatch');
@@ -787,10 +1084,11 @@ async function openVersionedStore({ root, mode, fault, recover = false } = {},sc
             let failed = false;
             try {
                 await locked(root,async () => {
-                    const current = currentDescriptor(); if (current.storeId !== d.storeId) fail('UNSUPPORTED_STORE','Snapshot store changed'); const db = connection(root,current,false,metrics);
+                    const current = currentDescriptor(); if (current.storeId !== d.storeId) fail('UNSUPPORTED_STORE','Snapshot store changed'); const db = connection(root,current,false,metrics,false,rehearsal);
                     let setupFailed = false;
                     try {
                         db.exec('BEGIN');
+                        checkMapRepairs(db);
                         if (scoreSelection) {
                             const collections = {};
                             for (const [name,table] of [['scoreRecords','records'],['retiredScoreSources','retired']]) {
@@ -817,7 +1115,12 @@ async function openVersionedStore({ root, mode, fault, recover = false } = {},sc
                             if (stmt(db,'SELECT id FROM operations WHERE collection=? AND replay_id=? AND fingerprint=? LIMIT 1',[k.collection,k.replayId,k.fingerprint])) fail('UNAVAILABLE','Selected record has an unresolved file intent');
                             records.set(recordKey(k),r); collectProperties(db,recordOwner(k)); collect(db,recordOwner(k));
                             const scorePolicy=scoreSelection && k.collection==='score';
-                            if (!replays.has(k.replayId)) { const replay = addMeta(stmt(db,'SELECT * FROM replays WHERE key=?',[k.replayId])); if(!replay) fail('UNAVAILABLE','Replay association absent'); replays.set(k.replayId,replay); if (!scorePolicy) collectProperties(db,{kind:'replay',key:k.replayId}); }
+                            if (!replays.has(k.replayId)) {
+                                const replay = addMeta(stmt(db,'SELECT * FROM replays WHERE key=?',[k.replayId]));
+                                if (!replay && !(scorePolicy && r.map_id === null && r.build_id === null)) fail('UNAVAILABLE','Replay association absent');
+                                if (replay) { replays.set(k.replayId,replay); if (!scorePolicy) collectProperties(db,{kind:'replay',key:k.replayId}); }
+                            }
+                            if (scorePolicy && r.map_id !== null && replays.get(k.replayId)?.map_id !== r.map_id) fail('INVALID_REFERENCE','Score map/replay association mismatch');
                             if (!scorePolicy && r.map_id && !mapIds.includes(r.map_id)) mapIds = [...mapIds,r.map_id];
                             // Resolve by unique owner, not only projected path: a
                             // null projection must not conceal a reservation.
@@ -852,6 +1155,16 @@ async function openVersionedStore({ root, mode, fault, recover = false } = {},sc
                             } else mapRefs.set(id,null);
                         }
                         for (const {recordKey:k,taskId} of reviewKeys) { recordKey(k); const row = addMeta(stmt(db,'SELECT * FROM reviews WHERE collection=? AND replay_id=? AND fingerprint=? AND task=?',[k.collection,k.replayId,k.fingerprint,taskId])); if(!row) fail('UNAVAILABLE','Selected review absent'); reviews.set(inlineJson([k,taskId]),row); const owner={kind:'review',key:inlineJson([recordKey(k),taskId])}; collectProperties(db,owner); collect(db,owner); }
+                        // Optional claim facts share this exact metadata transaction,
+                        // including combined/score selections. Missing relational rows
+                        // remain missing; callers may support preserved legacy reviews.
+                        if(claimTaskId!==undefined)for(const r of records.values()){
+                            const k={collection:r.collection,replayId:r.replay_id,fingerprint:r.fingerprint},owner={kind:'review',key:inlineJson([r.key,claimTaskId])};
+                            const row=addMeta(stmt(db,'SELECT * FROM reviews WHERE collection=? AND replay_id=? AND fingerprint=? AND task=?',[k.collection,k.replayId,k.fingerprint,claimTaskId]));
+                            if(!row)continue;
+                            if(row.owner_key!==owner.key)fail('OWNERSHIP_CONFLICT','Selected claim owner binding mismatch');
+                            reviews.set(inlineJson([k,claimTaskId]),row);collectProperties(db,owner);collect(db,owner);
+                        }
                         // Check represented identity/link projections while the
                         // same metadata transaction and owner lock are held.
                         const originals = (owner,row,fields) => {
@@ -873,7 +1186,7 @@ async function openVersionedStore({ root, mode, fault, recover = false } = {},sc
                         try { db.close(); }
                         catch (error) { if (!setupFailed) throw error; }
                     }
-                },metrics);
+                },metrics,rehearsal);
                 return await callback(view);
             } catch (error) { failed = true; throw error; }
             finally {
@@ -889,6 +1202,9 @@ async function openVersionedStore({ root, mode, fault, recover = false } = {},sc
         },
     };
     let catalogCallback = false;
+    if(mapRepair)return Object.freeze({close:()=>store.close(),repairMapChecksums:input=>{
+        const limits=mapRepairOptions(input);return store.withWriter(w=>w.repairMapChecksums({limits}));
+    }});
     if (schemaVersion === 1) return store;
     return catalogDefinition.attach({root,store,stmt,read,generation,
         write: async callback => {
@@ -901,9 +1217,9 @@ async function openVersionedStore({ root, mode, fault, recover = false } = {},sc
         snapshot: async action => {
             assertOpen(); return locked(root,async () => {
                 const current = currentDescriptor(); if(current.storeId !== d.storeId) fail('UNSUPPORTED_STORE','Snapshot store changed');
-                const db=connection(root,current,false,metrics);
+                const db=connection(root,current,false,metrics,false,rehearsal);
                 try { db.exec('BEGIN'); const result=action(db); db.exec('COMMIT'); return result; }
                 finally { db.close(); }
-            },metrics);
+            },metrics,rehearsal);
         }});
 }

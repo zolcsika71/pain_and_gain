@@ -1,3 +1,4 @@
+import * as evidence from '../fixtures/qualification-evidence.js';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -75,7 +76,7 @@ function productionGameState(tick, frame, oursSlot = 'player1') {
 }
 
 function productionMetadata(ours = 'user-b') {
-    return { game: { _id: 'game', user: ours,
+    return { game: { _id: replayId, user: ours,
         users: [{ _id: 'user-a', username: 'untrusted-a' },
             { _id: 'user-b', username: 'untrusted-b' }],
         codes: [{ _id: 'code-a', user: 'user-a', version: 1 },
@@ -145,8 +146,8 @@ function rawCoverage(gameStates) {
 }
 
 function workspace(t, { scoreSources = [], gameStates = [], diagnostics = [] } = {}) {
-    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'pain-gain-score-analysis-'));
-    t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+    const root = evidence.evidenceTemp(path.join(os.tmpdir(), 'pain-gain-score-analysis-'));
+    t.after(() => evidence.disposeFixture(root, { recursive: true, force: true }));
     const directory = path.join(root, 'replay_logs');
     fs.mkdirSync(directory);
     fs.mkdirSync(path.join(root, 'src/debug'), { recursive: true });

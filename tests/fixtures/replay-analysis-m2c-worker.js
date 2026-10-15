@@ -1,3 +1,4 @@
+import * as evidence from './qualification-evidence.js';
 // Synthetic qualification subprocesses; never a production entrypoint.
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -37,7 +38,7 @@ if(phase==='generate') {
     const stores=[];
     for(const [i,root] of roots.entries()) {
         const count=[10,1000][i], f=await makeFixture(schema,'scale',{root,count,large:true});rowCount(root,count);
-        const inv=inventory(root), ino=new Set();
+        const inv=retainedInventory(root), ino=new Set();
         assert.equal(f.largeRefs.length,12);assert.equal(new Set(f.largeRefs.map(r=>r.hash)).size,12);
         for(const ref of f.largeRefs){const st=fs.statSync(path.join(root,ref.path));assert.equal(st.size,50*1024*1024);assert.equal(st.nlink,1);ino.add(`${st.dev}:${st.ino}`);assert.equal(inv[ref.path].hash,ref.hash);}
         assert.equal(ino.size,12);
@@ -57,7 +58,7 @@ if(phase==='generate') {
         assert.equal(selected.length,12);const paths=new Set(selected.map(r=>path.join(root,r.path))),size=selected.reduce((sum,r)=>sum+r.bytes,0);
         for(const reportMode of ['full','compact']) {
             const beforeDb=hash(fs.readFileSync(dbPath(root))),measurement=instrument(paths),at=performance.now();let report;
-            try{report=await analyzeFixtureReplay({...options(root),reportMode});}finally{measurement.restore();}
+            try{report=await analyzeFixtureReplay({...options(root),reportMode});}finally{try{measurement.restore();}finally{evidence.observe('call-observation',()=>({root,report,metrics:measurement.metrics}));}}
             const reportHash=hash(JSON.stringify(report)+'\n');assert.equal(reportHash,golden.scenarios.scale.hashes[reportMode]);
             assert.equal(hash(fs.readFileSync(dbPath(root))),beforeDb);
             const m=measurement.metrics;assert.equal(m.opens,12);assert.equal(m.writes,0);assert.ok(m.maxChunk<=65536);assert.ok(m.bytes<=8*size);
@@ -70,7 +71,7 @@ if(phase==='generate') {
     for(const reportMode of ['full','compact']){const a=runs.filter(r=>r.reportMode===reportMode);for(const name of ['sql','pragmas','rows','opens','reads','bytes','maxChunk','writes','metadataOpens','reportHash'])assert.equal(a[0][name],a[1][name],name);}
     console.log(JSON.stringify({phase,schema,runs,elapsedMs:performance.now()-started,maxRssBytes:rss()}));
 } else if(phase==='preservation') {
-    console.log(JSON.stringify({phase,schema,inventoryHashes:roots.map(root=>hash(JSON.stringify(inventory(root)))),elapsedMs:performance.now()-started,maxRssBytes:rss()}));
+    console.log(JSON.stringify({phase,schema,inventoryHashes:roots.map(root=>hash(JSON.stringify(retainedInventory(root)))),elapsedMs:performance.now()-started,maxRssBytes:rss()}));
 } else if(phase==='ordinals') {
     const f=await makeFixture(schema),kind=roots[0],high=9007199254740992n,max=9223372036854775807n;
     const ordinals=kind==='mixed'?[high+1n,high,3,4]:[high+1n,high,max,max-1n];
@@ -81,14 +82,14 @@ if(phase==='generate') {
         assert.deepEqual([0,1,2,3].map(i=>f.s.getRecord(key(i)).ordinal),ordinals);
         let observed;
         mock.module(new URL('../../tools/replay-analysis.js',import.meta.url).href,{namedExports:{...analysis,createReplayAnalysisSession:opts=>{observed=opts.logicalManifest.records.map(r=>r.fingerprint);return analysis.createReplayAnalysisSession(opts);}}});
-        const {analyzeFixtureReplay}=await import('../../tools/replay-analysis-fixture.js'),before=inventory(f.root);
+        const {analyzeFixtureReplay}=await import('../../tools/replay-analysis-fixture.js'),before=retainedInventory(f.root);
         for(const reportMode of ['full','compact']) {
             const report=await analyzeFixtureReplay({...f.options,fingerprints:[...f.options.fingerprints].reverse(),reportMode});
             assert.deepEqual(observed,expected.map(fingerprint));assert.deepEqual(report.selectedFingerprints,f.options.fingerprints);
         }
-        assert.deepEqual(inventory(f.root),before);await f.s.withWriter(()=>{});
+        assert.deepEqual(retainedInventory(f.root),before);await f.s.withWriter(()=>{});
         console.log(JSON.stringify({passed:true,schema,kind}));
-    } finally {f.h.close();fs.rmSync(f.root,{recursive:true,force:true});}
+    } finally {f.h.close();evidence.disposeFixture(f.root,{recursive:true,force:true});}
 } else if(phase==='faults') {
     let mode='none', current, sessions=0;
     const wrap=opener=>async args=>{
@@ -99,7 +100,7 @@ if(phase==='generate') {
                 const module=new URL(current.schema===1?'../../tools/replay-store.js':'../../tools/replay-catalog.js',import.meta.url).href;
                 const name=current.schema===1?'openStore':'openCatalog';
                 const script=`import {${name}} from ${JSON.stringify(module)};const h=await ${name}({root:process.argv[1],mode:'write'}),s=h.evidence??h,k=JSON.parse(process.argv[2]),refs=JSON.parse(process.argv[3]);await s.withWriter(async w=>{w.transaction(tx=>{tx.setStatus({recordKey:k,status:'done'});tx.appendIntent({id:'cleanup',recordKey:k,phase:'cleanup',files:refs.map((r,ordinal)=>({...r,ordinal}))});});for(let ordinal=0;ordinal<refs.length;ordinal++)await w.deleteFile({operationId:'cleanup',ordinal});w.transaction(tx=>tx.finishPublication({recordKey:k,operationId:'cleanup',retire:true}));});h.close();console.log('retired');`;
-                const p=spawnSync(process.execPath,['--input-type=module','-e',script,current.root,JSON.stringify(key(0)),JSON.stringify(refs)],{encoding:'utf8',timeout:15000});assert.equal(p.status,0,p.stderr);assert.equal(p.stdout.trim(),'retired');
+                const p=evidence.captureSpawnSync(process.execPath,['--input-type=module','-e',script,current.root,JSON.stringify(key(0)),JSON.stringify(refs)],{encoding:'utf8',timeout:15000});assert.equal(p.status,0,p.stderr);assert.equal(p.stdout.trim(),'retired');
             }
             if(mode==='callback-null')throw null;
             return callback(view);
@@ -114,24 +115,26 @@ if(phase==='generate') {
         current=await makeFixture(schema);
         try {
             for(mode of ['callback-null','session-null','session-null-close','handle-close']) {
-                const before=inventory(current.root);await assert.rejects(analyzeFixtureReplay(current.options),e=>mode.includes('null')?e===null:e.message==='handle-close');
-                assert.deepEqual(inventory(current.root),before);await current.s.withWriter(()=>{});
+                const before=retainedInventory(current.root);await assert.rejects(analyzeFixtureReplay(current.options),e=>mode.includes('null')?e===null:e.message==='handle-close');
+                assert.deepEqual(retainedInventory(current.root),before);await current.s.withWriter(()=>{});
             }
             mode='none';await analyzeFixtureReplay(current.options);
             const beforeSessions=sessions;
             await assert.rejects(analyzeFixtureReplay({...current.options,fingerprints:[fingerprint(99)]}),{code:'UNAVAILABLE'});assert.equal(sessions,beforeSessions);
-            const before=inventory(current.root), retained=[1,2,3].map(i=>current.s.getRecord(key(i)));
+            const before=retainedInventory(current.root), retained=[1,2,3].map(i=>current.s.getRecord(key(i)));
             const removed=[...current.refs[0].map(r=>r.path),current.data.manifest.records[0].outputPath];
             mode='cleanup';const report=await analyzeFixtureReplay(current.options);assert.deepEqual(report,golden.scenarios.scale.reports.full);
-            const after=inventory(current.root),database=path.relative(current.root,dbPath(current.root));
+            const after=retainedInventory(current.root),database=path.relative(current.root,dbPath(current.root));
             assert.deepEqual(Object.keys(before).filter(p=>!Object.hasOwn(after,p)).sort(),removed.sort());
             for(const p of Object.keys(after))if(p!==database)assert.deepEqual(after[p],before[p]);
             assert.deepEqual([1,2,3].map(i=>current.s.getRecord(key(i))),retained);
             assert.equal(current.s.pageOperations().rows.length,0);
             mode='none';assert.equal(current.s.getRecord(key(0)).kind,'retired');await assert.rejects(analyzeFixtureReplay(current.options),{code:'UNAVAILABLE'});
             await analyzeFixtureReplay({...current.options,fingerprints:[fingerprint(1)]});
-        }finally{current.h.close();fs.rmSync(current.root,{recursive:true,force:true});}
+        }finally{current.h.close();evidence.disposeFixture(current.root,{recursive:true,force:true});}
     }
     console.log(JSON.stringify({passed:true}));
 } else throw Error('Unknown synthetic worker phase');
 assert.ok(rss()<=256*1024*1024,`256 MiB RSS: ${rss()}`);
+
+function retainedInventory(root){const value=inventory(root);evidence.observe('phase-inventory',()=>({phase,schema,root,value}));return value;}

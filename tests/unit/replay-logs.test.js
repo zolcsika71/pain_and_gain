@@ -1,3 +1,4 @@
+import * as evidence from '../fixtures/qualification-evidence.js';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
@@ -97,10 +98,10 @@ function cacheFrame(values, { id = replayId, tick = 72, encoding = 'gzip', malfo
 }
 
 function workspace(t) {
-    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'pain-gain-replay-'));
+    const root = evidence.evidenceTemp(path.join(os.tmpdir(), 'pain-gain-replay-'));
     const cache = path.join(root, 'cache');
     fs.mkdirSync(cache);
-    t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+    t.after(() => evidence.disposeFixture(root, { recursive: true, force: true }));
     return { root, cache };
 }
 
@@ -890,7 +891,7 @@ test('watch announces startup before a failed initial scan in an isolated checko
         path.join(toolsDir, 'replay-logs.js'));
     fs.writeFileSync(path.join(realRoot, 'package.json'), '{"type":"module"}\n');
     const missingCache = path.join(realRoot, 'missing-cache');
-    const child = spawnSync(process.execPath,
+    const child = evidence.captureSpawnSync(process.execPath,
         [path.join(toolsDir, 'replay-logs.js'), 'watch', missingCache],
         { encoding: 'utf8', timeout: 5000 });
     assert.equal(child.status, 1);
@@ -966,7 +967,7 @@ test('scan reloads manifest after another locked writer changes review state', a
     fs.writeFileSync(path.join(realRoot, 'package.json'), '{"type":"module"}\n');
     const events = await scanCache(root, cache, new Map(), result => {
         if (result.kind !== 'mapped') return;
-        const child = spawnSync(process.execPath,
+        const child = evidence.captureSpawnSync(process.execPath,
             [path.join(toolsDir, 'replay-logs.js'), 'claim', replayId,
                 first.fingerprint, 'codex/concurrent-cache-test'],
             { encoding: 'utf8', timeout: 5000 });

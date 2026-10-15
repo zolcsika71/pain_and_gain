@@ -10,8 +10,9 @@ cleanup, or write report files.
 The separate [M2c fixture adapter](replay-storage-v3-m2c-2026-10-05.md) exercises
 v3 input through `createReplayAnalysisSession`, the same synchronous validators,
 merge logic and report finalization used below. Its asynchronous fixture-only
-API does not replace `analyzeReplay`, enable CLI dispatch or add SQLite to the
-v2 dependency path. Strict v3 transport errors reject; admitted semantic evidence
+API does not replace `analyzeReplay` or add SQLite to the ordinary v2 dependency
+path. The separately guarded synthetic command route below connects the existing
+log, score and combined adapters without enabling production storage. Strict v3 transport errors reject; admitted semantic evidence
 problems retain the analyzer's fail/unknown findings. Qualification is scoped
 to synthetic fixtures, not production integration or general analyzer memory.
 
@@ -67,6 +68,153 @@ importer's `list` command or `reconcileCleanup()`, because those lifecycle paths
 may migrate or remove records. It requires `replay_logs/`, the manifest, saved
 map, and any selected JSONL to be real non-symlink files within the supplied
 root. Source cache entries are provenance metadata and are not reopened.
+
+### Explicit synthetic SQLite route
+
+On supported resident Node 24.19+ within major 24, an existing schema-1 synthetic
+fixture can be selected explicitly:
+
+```text
+node tools/replay-analysis.js --synthetic-sqlite <fixture-root> <replay-id> <log-fingerprint...> [--full-detail]
+node tools/replay-analysis.js --synthetic-sqlite <fixture-root> <replay-id> --score <score-fingerprint...> [--full-detail]
+node tools/replay-analysis.js --synthetic-sqlite <fixture-root> <replay-id> <log-fingerprint...> --score <score-fingerprint...> [--full-detail]
+```
+
+The flag must be first. Unlike the ordinary production CLI, **no source means
+rejection**, never selection of every log. `--score` without named logs is
+score-only; named logs and scores use the existing combined adapter. At least
+one explicit source is required, with at most 64 sources in total. Empty score
+lists, duplicates within a collection and invalid full fingerprints reject
+before store access. Full/compact defaults match the existing CLI (compact);
+the new API defaults to full.
+
+[analyzeSyntheticReplay](../../tools/replay-analysis-command-fixture.js) accepts
+`{synthetic:true,root,replayId,fingerprints?,scoreFingerprints?,reportMode?}`.
+Inputs and nested selection arrays are copied into private state before awaits;
+accessors, sparse/custom arrays, unknown options and caller-supplied schema/
+recovery/task overrides reject. It reuses the unchanged
+[fixture access checks](replay-log-checkpoint-integration.md), not another backend:
+canonical direct temporary `pain-gain-store-v3-fixture-` root, resident fixture
+controls/database/sidecars, bound schema-1 descriptor and independent control files.
+Production, backup, cache, trial and rehearsal roots are not accepted. This is
+not an OS-level no-hydration guarantee; metadata-check/open races remain.
+
+Dispatch uses the existing pinned log/score/combined snapshots and payload readers.
+It never calls review commands or reads the monolithic v2 manifest. It builds
+only the adapters' bounded selected logical inputs. All unselected diagnostic
+and body payloads stay excluded; indexed global ownership/collection facts may
+still be consulted. The original v2 API/argument parser and production command
+route remain unchanged and ordinary imports remain SQLite-free.
+
+The adapters **materialize selected arrays**, as explicitly authorized for this
+integration: 16 MiB aggregate decoded diagnostic-wrapper bytes, 16 MiB aggregate
+log JSONLs, 8 MiB expanded metadata and existing 1 MiB field/wrapper/line bounds;
+score bodies retain their 4 MiB per-source / 16 MiB aggregate limits. No limits
+were raised. Oversized inputs reject without truncation. The analyzer retains
+decoded diagnostic/context arrays for overlap and correlation; these loading
+caps do not qualify arbitrary derived memory use or end-to-end streaming.
+Incremental JSON report output does not change that distinction.
+
+Supported transport-valid selections retain exact v2 analytical results,
+provenance, independent ownership/alignment gates and conflict/unknown semantics.
+Invalid transport, unavailable selected identities/files, wrong ownership or
+corrupt hashes reject without a partial report. Transport-valid semantic failures
+remain findings. CLI analytical failures return a JSON report and exit 1;
+transport rejection returns no report and a nonzero exit. No winner or action
+timing inference is added. No claim/examined state is automatically changed.
+
+Verification on Node 24.19.0: 45 retained synthetic route checks plus 106 unchanged
+database-free versioned score-contract checks. Coverage includes both report modes,
+log/score/combined parity, selection isolation, ordered wrappers, empty/over-limit
+requests, corruption/unavailability and unchanged generation, review properties
+and retained file hashes. No large cases, historical Git-object tests or full
+database-backed qualification suites ran. Frozen recipe/oracles and the 24
+authorized expectation deltas remain unchanged. WebStorm tracing confirms the
+three existing adapters; errors/warnings and preservation limits are retained in
+`/Users/zoltanka/.local/share/pain-and-gain-evidence/synthetic-analysis-routes-20261013-1z3RVZ/report.json`.
+This is synthetic consumer integration only, not production authority, general
+analysis capacity or renewed M2h qualification.
+
+### Synthetic historical index and scout screen
+
+The two remaining derived-report commands have explicit schema-1 fixture routes:
+
+```text
+node tools/historical-index.js --synthetic-sqlite <fixture-root> <selection.json>
+node tools/scout-hold-screen.js --synthetic-sqlite <fixture-root> <replay-id> <codex/task-id> <expected-build-id> <log-fingerprint...>
+```
+
+[The shared route](../../tools/replay-evidence-consumers-fixture.js) reuses the
+same fixture access guard, bounded loaders and detached compact analyzer. Ordinary
+v2 commands, caching and imports remain unchanged; SQLite is lazily loaded only
+for the explicit flag. Production, backup, cache, trial and rehearsal roots reject.
+Neither route writes reviews, reports or caches. The normal short snapshot owner
+lock is still used; generation, relational reviews and retained file hashes remain
+unchanged. Transport corruption/unavailability rejects the operation, rather than
+being converted into an analytical finding or a partially successful index.
+
+The [synthetic import seam](replay-synthetic-imports.md) additionally exercises
+these readers after actual fixture checkpoint commands. The selected task's
+relational review is optionally pinned in the same metadata snapshot; its owner
+binding and inline/original `claimedAt` must agree. Null inline projections use the
+original checkpoint. A missing relational row retains the legacy original-review
+gate; an existing conflicting or unclaimed row never falls back to stale metadata.
+This validates a claim, not every unknown review field or gameplay conclusion.
+Neither reader changes the record's original `reviews` property or relational rows.
+
+Historical input retains the existing version-1 selection schema: a task ID and
+1–8 ordered matches with explicit log/score fingerprints, opponent, configuration
+label/basis/expected build and optional reported final tick. At most **64 sources
+across the whole request** are allowed. Each current record must already be claimed
+by that task. Selected missing and retired identities remain distinct unavailable
+rows, in the requested order; missing records do not imply retirement. Available
+log selections check original association history against indexed retirement facts.
+Score-only selections retain their separate identity/collection checks. Matches are
+processed one at a time, never pooled into one corpus analysis or cross-match view.
+
+Screening requires **explicit nonempty log fingerprints**, at most 64, rather than
+implicitly selecting all current logs. Every selected log must be current, claimed,
+of the exact expected build and accepted by the analyzer. Existing fingerprint
+ordering, membership/scout selection, hold/release decisions, diagnostic closures,
+conflict rejection and following-position observations are unchanged. Analysis and
+screening consume the same pinned, verified selected inputs; no second pathname
+read or controller evaluation is added. Scheduling, observed displacement and
+gameplay benefit remain separate conclusions.
+
+Options and nested values are privately snapshotted before awaits; accessor,
+inherited/custom-prototype, sparse, duplicate and coercible identity inputs reject.
+Selection controls are at most **64 KiB**, depth 16, 2,048 values and 128 properties
+or array members per object. The existing adapter limits remain: 8 MiB expanded
+metadata, 16 MiB selected diagnostic wrappers, 16 MiB JSONLs, 1 MiB individual
+metadata/wrapper/JSONL line and map, 4 MiB per score body / 16 MiB aggregate, and
+256 pinned handles. Selected arrays and analyzer correlation structures remain
+materialized; this is not end-to-end streaming or a general heap bound.
+There is a **60-second cooperative deadline**, checked around loading/analysis and
+between matches, not a hard interruption of synchronous analyzer work. Normal
+finite lock/busy limits remain. No budgets are automatically increased.
+
+Indexed availability is read before pinning; a monotonically changing store
+generation across assembly causes `CHANGED_INPUT`, with no retry. Generation is
+used only as a coherence fence, never as evidence identity or a cache key. This
+does not make separate matches one global snapshot or prevent metadata-check/open
+races and unsupported out-of-protocol filesystem mutation. Those existing access
+limitations remain. Control-reader operation errors retain separate cleanup errors;
+no broader fault qualification of unchanged adapters/core is implied.
+
+Synthetic results use **`cache: "disabled"`** (or the existing `"none"` for an
+unavailable-only historical row). All analytical report fields remain equivalent
+to supported v2 inputs. No old cache is consulted or written. ADR 0006's versioned
+v3 cache domains are **deferred**, not implemented by this read-only seam; production
+cache integration/invalidation still needs its own gate.
+
+Focused retained fixtures verify v2 parity, ordered current/missing/retired
+selections, selection isolation, claim/build/link gates, an exercised hold/release,
+payload corruption, finite limits, generation-change rejection and unchanged
+store/review/evidence state. The new task receipt is
+`/Users/zoltanka/.local/share/pain-and-gain-evidence/synthetic-history-screen-20261013-ct8IC1/report.json`.
+Frozen score contracts and accepted review/analysis routes are unchanged. No real
+capture, import, review command, cleanup, production activation or qualification
+is performed. Production cutover and M2h remain outside this synthetic integration.
 
 ## Report contract
 
@@ -236,9 +384,15 @@ the same ID and `my` field, with both slots supported and opposite.
 The bounded production metadata adapter separately recognizes only the observed
 `game` wrapper whose current `user`, two `_id`-identified `users`, two uniquely
 identified `codes` with user references, and nested two-entry `game.usersCode`
-form a complete reference chain. It currently requires the observed
-`firstPlayerIndex: 0`; `usersCode[0]` and `[1]` then identify `player1` and
-`player2`. Usernames and array position in `users`/`codes` have no meaning.
+form a complete reference chain. Numeric `firstPlayerIndex: 0` maps
+`usersCode[0]` and `[1]` to `player1` and `player2`; numeric `1` reverses
+that resolved code/user order. No other values or coercions are supported.
+Usernames and array position in `users`/`codes` have no meaning.
+Present wrapper/nested match IDs must agree with the hash-verified selected
+record and request. Legacy omissions remain omissions. Present code versions
+must be nonnegative safe integers; omitted versions remain unknown. Selected
+metadata sources must agree on slot code IDs and on every known version for
+the same code. Code/version identity is not a runtime build identity.
 Every present legacy identity array is assessed before mapping: a malformed
 representation prevents establishment, while valid simultaneous arrays must
 exactly agree with the derived slot order. Simultaneous `id`/`_id` fields must
@@ -246,6 +400,62 @@ agree. Absent, malformed, duplicate, unresolved, or conflicting forms remain
 unknown or conflicting.
 This analyzer result is reported as `metadataIdentity`; it neither changes nor
 replaces the retained Milestone 1 validation summary.
+
+Winner-index interpretation is deliberately separate and unsupported by this
+adapter: neither nested `game.result` nor score ordering supplies player
+identity or a terminal winner. The terminal conclusion remains unknown.
+No winner-index semantics are adopted from reference repositories. Supporting
+a winner result would require separately established payload semantics and
+validation, not reversal of an assumed score index. The reversed-slot extension
+is covered by original synthetic tests in
+`tests/unit/replay-score-metadata.test.js`, not a new live qualification.
+
+### Synthetic metadata contract v2 (2026-10-12)
+
+The historical `replay-score-analysis-m2d-recipe.js` and its two frozen JSON
+oracles remain byte-for-byte unchanged. The original recipe's metadata uses
+`_id: "game"`, whereas its request identifies `dddddddddddddddddddddddd`.
+The strict adapter must reject this contradiction; retaining the historical
+`established` expectation would weaken the identity gate.
+
+`tests/fixtures/replay-score-metadata-contract-v2.js` pins the unchanged recipe
+and both oracle SHA-256 identities before parsing or importing any input.
+Its shared loader snapshots the bytes, rejects unsupported versions/inputs,
+and checks fixed inventories of sixteen main cases, five supplemental cases
+and exactly `full`/`compact` report/hash modes before comparisons. Missing,
+extra, reordered or empty inventories fail; coverage never derives from an
+unchecked oracle. The recipe is imported from its verified byte snapshot,
+not reread from a potentially changed pathname. Detached tests, ordinary tests,
+their worker and the transitive storage-fixture helper use this same gate.
+The module derives a separate, versioned expectation in memory. It
+authorizes only the following changes for the twelve explicitly named scenarios
+that select this metadata, in full and compact modes:
+
+- `scoring.metadataIdentity`: established becomes conflicting; resolved slots
+  become null; its one source reports `match-identity-disagrees`.
+- The single `score.metadata-identity` finding: pass becomes fail, with the
+  corresponding message and observed identity (or compact representation).
+- Summary counts: one fewer pass and one additional fail. Expected report
+  hashes are recomputed from these explicit deltas, never from actual reports.
+
+All source hashes, inputs, selections, other findings, mapping/alignment,
+scores and unknown terminal conclusions retain exact historical expectations.
+The four unaffected main scenarios and all five supplemental cases stay exact.
+Both the existing compatibility test and its worker use the same versioned
+expectation layer; no parity assertion is excluded. This does not execute or
+renew the database/storage qualification suites.
+
+`tests/unit/replay-score-contract-v2.test.js` compares all sixteen main and five
+supplemental cases through the detached, database-free analyzer in both modes.
+A separate synthetic valid-ID variant recomputes all body-dependent references
+and tests both orientations. Malformed, null and mismatched IDs still conflict;
+metadata alone still cannot certify runtime ownership, alignment or a winner.
+Run this file and `tests/unit/replay-score-metadata.test.js` with resident Node
+24.19+ within major 24. `tests/unit/replay-score-contract-inputs.test.js` adds
+database-free altered-input, exact-inventory and pre-import validation checks;
+it inspects ordinary/worker integration statically, without running database
+paths. Historical receipts and qualification limitations remain
+unchanged; this contract reconciliation establishes synthetic compatibility only.
 
 Reversed mapping is valid. Metadata-derived mapping applies to a sequence group
 only when that group independently contains both slot labels; snapshot-derived
@@ -280,6 +490,44 @@ current-build replay, deterministic report, captured coverage, CPU/headroom,
 diagnostic size, timeout observations, and exercised state changes. The absent
 terminal tick, live reset behavior, exact final CPU, differential diagnostic CPU
 overhead, engine causality, and strategic benefit remain unknown.
+
+## Opt-in synthetic derived-report caches
+
+Historical indexing and scout screening accept a final `--cache` only in their
+explicit `--synthetic-sqlite` CLI routes. Their APIs accept `cache: true`; omission
+or false preserves the previously tested read-only `cache: "disabled"` behavior.
+Plain `replay:analyze` has no report cache dependency and remains read-only.
+
+The [cache adapter](../../tools/replay-analysis-cache-fixture.js) uses ADR domains
+`historical-store-v3-v1` and `scout-hold-store-v3-v1`. It binds store identity,
+ordered selected logical values, associations/history, metadata and hashes,
+selection/configuration, local build and reader/analyzer dependency hashes.
+Claims and selected payload integrity are rechecked before every hit; the current
+implementation also recomputes analysis and compares the complete report digest.
+It demonstrates cache correctness, not analyzer speedup. Unselected records and
+reviews do not enter the key. Generation guards coherent selected assembly and
+is recorded in the cache envelope, never included in the key: unrelated commits
+can reuse a fully revalidated identical report. Future/foreign generation or
+store bindings and altered report hashes reject; changed selected inputs miss.
+
+Caches are derived regular files under the guarded fixture's `analysis_cache/`.
+There are no database/review mutations. Cache inputs are bounded at 64 MiB,
+reports at 8 MiB, each fixed dependency at 1 MiB and reads at 64 KiB. Existing
+selected metadata/diagnostic limits and the 60-second cooperative consumer
+deadline remain. This is bounded materialization, not end-to-end streaming.
+Publication fsyncs an exclusively created temporary, links without overwriting,
+then syncs the directory. Only that successful operation's temporary link is
+removed; failed/concurrent temporaries remain. Earlier cache versions are not
+read or deleted. No automatic cleanup, pruning, repair or schema upgrade runs.
+Malformed, symlinked or dataless cache/control files reject before reuse.
+
+Historical/scout report parity, misses/hits, metadata invalidation, claim and
+integrity revalidation, unrelated-generation reuse and interrupted publication
+are exercised with new synthetic fixtures. See the
+[lifecycle integration](replay-log-checkpoint-integration.md#selected-synthetic-lifecycle)
+for the combined workflow and retained receipt. Ordinary production v2 cache
+behavior is unchanged. Production cache activation and fresh qualification remain
+open; no gameplay improvement is claimed.
 
 ## Synthetic report-mode benchmark
 

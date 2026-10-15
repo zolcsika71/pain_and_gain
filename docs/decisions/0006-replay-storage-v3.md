@@ -430,6 +430,17 @@ or the previous committed state; it must not leave a false claim. Unreferenced
 temporaries/sidecars remain retained until an explicit, ownership-verified
 maintenance operation; open/import does not perform garbage collection.
 
+The synthetic `map-repair-v1` capability adds a separate map-qualified
+`map_repairs` table in newly created schema-1 fixture stores. Record-qualified
+intent foreign keys remain unchanged. A checksum replacement binds exact old/new
+retained files, map identity/path/ordinal and original properties under the same
+writer lock; ordinary access rejects its reserved/published states. The final
+raw-hash projection and verified checkpoint commit atomically. No older store
+is migrated automatically. See the bounded
+[map-repair contract](../architecture/replay-synthetic-maintenance.md#map-owned-checksum-repair)
+for recovery, residency and filesystem race limits. This synthetic addition does
+not establish production lifecycle or cutover qualification.
+
 For a coherent analysis view, briefly acquire the same lock, begin a read
 transaction, select original metadata/association and the explicitly required
 review entries, and open all required immutable artifacts, including registered

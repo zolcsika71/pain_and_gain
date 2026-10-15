@@ -1,3 +1,4 @@
+import * as evidence from './qualification-evidence.js';
 // Isolated module mock proves transport rejection precedes combined analysis.
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -75,4 +76,4 @@ try{
     equal(await analyzeFixtureCombinedReplay(f.options),golden.scenarios.scale.reports.full);
     assert.deepEqual(inventory(f.root),restored);await f.s.withWriter(()=>{});
     passed=true;console.log(JSON.stringify({passed,schema,fault,entries,opened,closed}));
-}finally{f.h.close();if(passed)fs.rmSync(f.root,{recursive:true,force:true});else console.error(JSON.stringify({retainedFailedFixture:f.root,fault,entries}));}
+}finally{f.h.close();if(passed)evidence.disposeFixture(f.root,{recursive:true,force:true});else console.error(JSON.stringify({retainedFailedFixture:f.root,fault,entries}));}

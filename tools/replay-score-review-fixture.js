@@ -1,5 +1,6 @@
-// M2g: caller-asserted completion on explicit synthetic score fixtures only.
+// Caller-asserted completion on explicit synthetic fixtures; no production route.
 import {fail} from './replay-store-payloads.js';
+import {withCleanup} from './retrieval-files.js';
 
 const MAX_INTEGER = 9_223_372_036_854_775_807n;
 const names = ['claimedAt','examinedAt','completedAt'];
@@ -31,18 +32,26 @@ function validate(f,k,taskId) {
     if (!f.current) fail(f.retired ? 'RETIRED_RECORD' : 'MISSING_RECORD','Score is not current');
     const r = f.current, key = JSON.stringify([k.collection,k.replayId,k.fingerprint]);
     if (r.key !== key || r.collection !== k.collection || r.replay_id !== k.replayId || r.fingerprint !== k.fingerprint) fail('INVALID_REFERENCE','Score identity mismatch');
-    const fields = {'/collection':'collection','/replayId':'replay_id','/fingerprint':'fingerprint','/mapId':'map_id','/buildId':'build_id','/status':'status','/outputPath':'output_path','/outputFingerprint':'output_hash'};
+    const fields = {'/collection':'collection','/replayId':'replay_id','/fingerprint':'fingerprint','/mapId':'map_id','/buildId':'build_id','/status':'status','/outputPath':'output_path','/outputFingerprint':'output_hash','/mapChecksum':'map_id','/mapFile':'map_path'};
     for (const p of f.recordProperties) if (p.payload_pointer !== null || p.value === null || parse(p.value) !== r[fields[p.pointer]]) fail('INVALID_REFERENCE','Score original/projection mismatch');
     if (!['claim','done'].includes(r.status) || f.intent) fail('NOT_READY','Completion needs claim/done without an intent');
+    if (k.collection === 'log') {
+        if (!f.replay || !f.map || f.replay.key !== k.replayId || f.replay.status !== 'active' || f.map.status !== 'validated' || f.map.key !== r.map_id || f.replay.map_id !== r.map_id || r.build_id !== null && f.replay.build_id !== null && r.build_id !== f.replay.build_id) fail('INVALID_REFERENCE','Log completion linkage mismatch');
+        for(const [properties,row,columns]of [[f.replayProperties,f.replay,{'/replayId':'key','/mapId':'map_id','/buildId':'build_id','/status':'status'}],[f.mapProperties,f.map,{'/mapId':'key','/id':'key','/checksum':'key','/path':'path','/file':'path','/hash':'hash','/status':'status'}]])for(const p of properties)if(p.payload_pointer!==null||p.value===null||parse(p.value)!==row[columns[p.pointer]])fail('INVALID_REFERENCE','Log completion original/link mismatch');
+    }
     const o = f.output;
+    if (o || r.output_path !== null || r.output_hash !== null || k.collection === 'score') {
     if (!o || o.path !== r.output_path || o.hash !== r.output_hash || o.collection !== k.collection || o.replay_id !== k.replayId || o.fingerprint !== k.fingerprint) fail('INVALID_REFERENCE','Score output owner/projection mismatch');
     if (o.state !== 'ready') fail('NOT_READY','Score output reservation is not ready');
     const prefix = `replay-score-source-${k.replayId}-`, suffix = o.path.slice(prefix.length);
-    if (!o.path.startsWith(prefix) || !(suffix === k.fingerprint.slice(0,12)+'.response' || suffix === k.fingerprint+'.response' || new RegExp(`^${k.fingerprint}-[2-9]\\d*\\.response$`).test(suffix))) fail('INVALID_REFERENCE','Score output filename identity mismatch');
+    if (k.collection === 'score' && (!o.path.startsWith(prefix) || !(suffix === k.fingerprint.slice(0,12)+'.response' || suffix === k.fingerprint+'.response' || new RegExp(`^${k.fingerprint}-[2-9]\\d*\\.response$`).test(suffix)))) fail('INVALID_REFERENCE','Score output filename identity mismatch');
+    }
     if (Boolean(f.review) !== Boolean(f.binding) || (f.review && (f.review.owner_key !== f.owner.key || f.review.task !== taskId || f.binding.task !== taskId || f.binding.collection !== k.collection || f.binding.replay_id !== k.replayId || f.binding.fingerprint !== k.fingerprint)) || (!f.review && f.propertyTail)) fail('OWNERSHIP_CONFLICT','Review owner binding mismatch');
 }
 
-export async function completeFixtureScoreReview(options) {
+export const completeFixtureScoreReview = options => completeFixtureReview(options,'score');
+export const completeFixtureLogReview = options => completeFixtureReview(options,'log');
+async function completeFixtureReview(options,collection) {
     if (options === null || typeof options !== 'object' || ![Object.prototype,null].includes(Object.getPrototypeOf(options))) fail('INVALID_ARGUMENT','Explicit plain options required');
     const allowed = ['root','schemaVersion','replayId','fingerprint','taskId'], descriptors = Object.getOwnPropertyDescriptors(options);
     if (Reflect.ownKeys(descriptors).some(k=>!allowed.includes(k))) fail('UNSUPPORTED_OPTION','Unsupported completion option');
@@ -51,12 +60,13 @@ export async function completeFixtureScoreReview(options) {
     if (schemaVersion !== 1 && schemaVersion !== 2) fail('UNSUPPORTED_STORE','Expected schema 1 or 2');
     if (typeof root !== 'string') fail('INVALID_ARGUMENT','Explicit root string required');
     if (typeof replayId !== 'string' || !/^[a-f0-9]{24}$/.test(replayId) || typeof fingerprint !== 'string' || !/^[a-f0-9]{64}$/.test(fingerprint) || typeof taskId !== 'string' || !taskPattern.test(taskId)) fail('INVALID_IDENTITY','Invalid exact score/task identity');
-    const k = {collection:'score',replayId,fingerprint};
+    const k = {collection,replayId,fingerprint};
     const handle = schemaVersion === 1 ? await (await import('./replay-store.js')).openStore({root,mode:'write'}) : await (await import('./replay-catalog.js')).openCatalog({root,mode:'write'});
-    let failed = false;
+    let failed = false, primary;
     try {
         return await (handle.evidence ?? handle).withWriter(w=>{
-            const f = w.readScoreCompletionFacts({recordKey:k,taskId});
+            const f = collection==='score' ? w.readScoreCompletionFacts({recordKey:k,taskId}) : w.readCompletionFacts({recordKey:k,taskId});
+            if (collection === 'log' && f.current) f.current.map_path = f.map?.path;
             validate(f,k,taskId);
             const selected = f.review ? checkpoints(f.checkpoints) : null;
             let completionChanged = false, statusChanged = false;
@@ -66,7 +76,7 @@ export async function completeFixtureScoreReview(options) {
                 completionChanged = !selected.completedAt.present || selected.completedAt.value === null;
                 let after = null, count = 0, selectedCount = 0, allFinished = true, copiedBytes = Buffer.byteLength(json(f));
                 do {
-                    const page = w.pageScoreReviewCheckpoints({recordKey:k,after});
+                    const page = collection==='score' ? w.pageScoreReviewCheckpoints({recordKey:k,after}) : w.pageReviewCheckpoints({recordKey:k,after});
                     copiedBytes += Buffer.byteLength(json(page));
                     if (copiedBytes > 8*1_048_576) fail('RESOURCE_LIMIT','Completion cumulative metadata exceeds 8 MiB');
                     for (const row of page.rows) {
@@ -95,7 +105,7 @@ export async function completeFixtureScoreReview(options) {
                 selected.completedAt = {present:true,value:new Date().toISOString()};
             }
             if (statusChanged) statusOrdinal = f.recordProperties.find(p=>p.pointer === '/status')?.ordinal ?? next(f.recordPropertyTail?.ordinal);
-            const result = {collection:'score',replayId,fingerprint,taskId,changed,completionChanged,statusChanged,recordStatus:statusChanged ? 'done' : f.current.status,reviewOrdinal:f.review ? String(f.review.ordinal) : null,generation:String(generation),checkpoints:selected};
+            const result = {collection,replayId,fingerprint,taskId,changed,completionChanged,statusChanged,recordStatus:statusChanged ? 'done' : f.current.status,reviewOrdinal:f.review ? String(f.review.ordinal) : null,generation:String(generation),checkpoints:selected};
             if (Buffer.byteLength(JSON.stringify(result)) > 4096) fail('RESOURCE_LIMIT','Completion result exceeds 4 KiB');
             if (changed) w.transaction(tx=>{
                 if (completionChanged) tx.setProperty({owner:f.owner,pointer:'/completedAt',ordinal:completionOrdinal,value:selected.completedAt.value});
@@ -103,6 +113,6 @@ export async function completeFixtureScoreReview(options) {
             });
             return result;
         });
-    } catch (error) { failed = true; throw error; }
-    finally { try { handle.close(); } catch (error) { if (!failed) throw error; } }
+    } catch (error) { failed = true; primary = error; throw error; }
+    finally { try { handle.close(); } catch (error) { if (!failed) throw error; if(primary instanceof Error)withCleanup(primary,error);else throw new AggregateError([primary,error],'Completion and cleanup failed',{cause:primary}); } }
 }

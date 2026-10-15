@@ -128,11 +128,14 @@ export class Scanner {
         return {start, end: this.offset, kind, count, value};
     }
     eof() { this.ws(); if (this.peek() !== undefined) invalid(); }
-    *elements() {
+    *elements({ranges = false} = {}) {
         this.ws(); this.expect(91); this.ws();
         if (this.peek() !== 93) for (;;) {
-            const raw = this.raw(() => this.value());
-            yield JSON.parse(decodeBounded(raw));
+            if (ranges) yield this.value();
+            else {
+                const raw = this.raw(() => this.value());
+                yield JSON.parse(decodeBounded(raw));
+            }
             this.ws(); if (this.peek() === 93) break;
             this.expect(44); this.ws();
         }
