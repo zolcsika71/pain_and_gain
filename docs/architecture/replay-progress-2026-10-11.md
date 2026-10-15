@@ -1,5 +1,47 @@
 # Replay collection and storage: consolidation checkpoint
 
+## Current consolidation status — 2026-10-15
+
+The 2026-10-11 checkpoint below is historical, including its Git-object blockers;
+the collection selection was subsequently published as `d6952a3`. It must not be
+read as today's index or migration state. This consolidation publishes reviewed
+bounded conversion, SQLite consumer/authority/recovery wiring and compatibility
+contracts, not activation. The other repository writer explicitly handed this
+workspace to consolidation; pending unrelated work is preserved.
+
+| Area | Verified state and remaining boundary |
+| --- | --- |
+| Gameplay | Runtime source/build is unchanged. Healing/selection regressions and bounded replay observations are not demonstrated match-performance improvements. |
+| Collection | Explicit collection/resume and opening alignment are demonstrated. Automatic collection remains inactive; the pending coordinator is not part of this publication. |
+| SQLite | Guarded synthetic and receipt-bound rehearsal consumers, bounded conversion, import continuation and recovery are implemented. Production wiring is inactive and ordinary storage remains managed v2. |
+| Recovery | The recorded 432-file snapshot converted/resumed, and the separately authorized eight-phase snapshot recovery qualification passed. This is neither current-production coverage nor off-device/power-loss qualification. |
+| Next qualification | Candidate-11/harness-v8 is prepared with generated validation, not executed. Its consolidated cache/import/scan/recovery scope still requires separate authorization; see the [current plan](replay-real-data-recovery-qualification-plan-2026-10-14.md). |
+| Local handoff | `handoff-v7-smoke-20261015-01` has independently accepted handback: separate approvals and matching retrieval, exact arithmetic/preservation checks, normal shutdown and quiet joined observer. Ownership returned to maintenance with `nextTaskAuthorized:false`. This qualifies a supplied-text/no-tools smoke, not a code-edit handoff or ChatGPT desktop connection. |
+
+The archived formatter pilot remains unauthorized: its v5 prerequisite points to
+rejected v5 smoke evidence, not accepted v7. That mismatch is parked, not bypassed
+or repinned. V7 evidence remains under
+`/Users/zoltanka/.local/share/pain-and-gain-supervisor/handoff-retrieval-v7-20261015-P9kT3m/`.
+
+`docs/examples/` is local-only and ignored; its files and nested repositories are
+preserved. Reference code still requires implementation, quality, tests,
+maintenance, license and compatibility review before adoption. Large temporary
+test trees and all protected evidence/recovery releases are retained pending an
+exact retention decision; inventory size alone does not authorize deletion.
+No real payloads, qualification runs, production authority or M2h acceptance are
+changed by consolidation. Fresh-source/quiescence, lossless current-state
+recovery, durability decisions and execution approvals remain separate gates.
+
+Consolidation reused the recorded 134 Node 24.19.0 syntax checks and matching
+candidate receipts. Its explicit database-free score-contract and small synthetic
+diagnostic-descendant selections passed 133 tests, with no skipped tests or
+historical large cases. This is focused regression evidence, not a full suite or
+new qualification. Detailed inventories, staged review and preservation records
+are retained outside the repository in
+`/Users/zoltanka/.local/share/pain-and-gain-consolidation-20261015-GFGUMJ/`.
+
+## Historical checkpoint — 2026-10-11
+
 ## Priorities and publication scope
 
 Reliable collection and evidence-based analysis come first, followed by removing
