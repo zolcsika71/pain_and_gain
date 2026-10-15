@@ -26,6 +26,42 @@ required. M2h remains paused and unqualified. Converter performance tuning and
 supervisor development are stopped for this consolidation; the archived formatter
 pilot's v5/v7 smoke mismatch is parked and grants no authority.
 
+### Consolidation closeout — 2026-10-15
+
+Source/documentation publication through `1e79f5e` is retained. The separately
+approved storage retirements removed **2,759,204,864 bytes of target allocation**:
+two generated runtime copies and 48 deterministic filler files. Their six
+historical fixture roots are offline/incomplete; exact restoration is required
+before reuse. No physical free-space gain is established. The final four-runtime
+attempt deleted nothing: `S2X5Ce` was missing, its absence has unknown cause, and
+no reclamation is credited to it. See the [storage closeout and original receipts](local-storage-maintenance.md#consolidation-closeout--2026-10-15).
+No further cleanup, repinning, restoration or qualification is activated.
+
+Accepted validation remains scoped: bounded replay collection/resume and opening
+analysis, generated SQLite consumer/authority/recovery checks, synthetic
+process-crash/full-scale recovery, and the completed eight-phase backup-snapshot
+qualification below. Those results do not qualify candidate-11's new consolidated
+original-cache/import/scan continuation, current production, arbitrary power loss,
+gameplay benefit or renewed M2h. No tests or payload verification are rerun for
+this documentation closeout.
+
+The local coordinator's supplied-text/no-tools v7 smoke has independently
+accepted handback, `ownership: maintenance` and `nextTaskAuthorized: false`:
+[retained handback](/Users/zoltanka/.local/share/pain-and-gain-supervisor/handoff-retrieval-v7-20261015-P9kT3m/sessions/handoff-v7-smoke-20261015-01/40-handback.json).
+This is not qualification of a repository-writing worker or ChatGPT desktop
+connectivity. The code-edit formatter pilot remains unauthorized and parked:
+its archived v5 prerequisite binds to rejected v5 smoke, not accepted v7. The
+earlier failed documentation-task workflow is not reclassified as successful.
+
+**Recommended next milestone, not execution approval:** review the freshness and
+pins of the existing candidate-11/harness-v8 consolidated cache/import/scan and
+post-write recovery scope, then request its separate bounded execution approval.
+Do not substitute another snapshot-only run. Production remains managed v2;
+fresh-source/quiescence, compatible recovery release, durability decisions,
+production qualification and explicit cutover/write-enable/recovery approvals
+remain separate gates. M2h, tactical work and further supervisor development stay
+paused/parked.
+
 ### Inventory-bound rehearsal continuation — 2026-10-15
 
 Selected log/score imports and a bounded approved-log scan now connect through a
