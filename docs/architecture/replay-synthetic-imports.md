@@ -252,6 +252,18 @@ unrecorded historical transport commitment is invented. Scores additionally reta
 their recorded cache-entry fingerprint. Claim/waiting/done states can be verified
 without changing lifecycle state; missing managed outputs still reject.
 
+For a legacy log only, omitted `diagnosticCoverage` may remain omitted when the
+verified conversion checkpoint binds this store, unique record membership and
+collection ordinal, and its version-1 identity retains an absolute source root
+and finite source/marker SHA-256 fingerprints. Missing, incomplete or incompatible
+conversion provenance rejects; no historical import commitment is invented. A
+present value, including explicit null, still undergoes the exact comparison.
+This exception does not skip output ownership/content or diagnostic leaf/hash/
+bytes/order checks, alter reviews, infer a build ID or backfill a derived summary.
+An absent summary is not a successful analytical coverage finding. Repeated
+supported duplicates remain generation-neutral. Generated regressions cover this
+legacy omission separately from malformed/present summaries and corrupt payloads.
+
 This does not adopt arbitrary records lacking conversion/import commitments or
 broaden converter support for map-independent scores. Already committed independent
 score imports retain their existing support. Local-log adoption remains separate.

@@ -206,6 +206,15 @@ function convertedDuplicate(store,w,o,parsed,key,facts,conversion){
     expected.status=record.status;
     for(const [name,value]of Object.entries(expected)){
         if(['reviews','otherEntries','buildId'].includes(name))continue;
+        if(key.collection==='log'&&name==='diagnosticCoverage'&&!Object.hasOwn(record,name)){
+            // Legacy converted logs may predate this derived summary. Membership,
+            // ordinal and verified store binding above are required; keep absence
+            // authoritative, and still verify the original output/diagnostics below.
+            const provenance=conversion.identity;
+            need(provenance?.version===1&&typeof provenance.sourceRoot==='string'&&path.isAbsolute(provenance.sourceRoot)&&
+                [provenance.sourceHash,provenance.markerHash].every(ref=>ref&&typeof ref.expectedHash==='string'&&/^[a-f0-9]{64}$/.test(ref.expectedHash)&&Number.isSafeInteger(ref.expectedBytes)&&ref.expectedBytes>0),'INVALID_REFERENCE');
+            continue;
+        }
         need(Object.hasOwn(record,name)&&equal(record[name],value),'IDENTITY_CONFLICT');
     }
     for(const [name,column]of Object.entries({mapId:'map_id',status:'status',outputPath:'output_path',outputFingerprint:'output_hash'}))need(record[name]===current[column],'INVALID_REFERENCE');

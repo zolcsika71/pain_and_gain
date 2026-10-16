@@ -11,15 +11,29 @@ tactical work, arrival hold and unrelated storage diagnostics remain paused.
 
 ### Publication consolidation — 2026-10-15
 
-The current source/runtime dependency set matches retained candidate-11; the
+The consolidation source/runtime dependency set matched retained candidate-11; the
 qualification plan also contains the independently verified documentation edit
 from the failed coordinator task. Document verification does not convert that
 failed supervisor workflow into acceptance or authorize execution. Consolidation
 reuses retained focused validation and records current checks separately, without
 rerunning any snapshot qualification or reading protected payloads.
 
-Candidate-11/harness-v8's consolidated cache/import/scan/post-write recovery run
-is still the next separately gated project milestone. Production stays managed
+The later candidate-11/harness-v9 run-03 passed source verification, classification,
+conversion and independent preservation, then stopped at converted-log reimport.
+A separately authorized one-pass diagnosis matched the first 17 inputs and found
+input 18 / record ordinal 38 missing `/diagnosticCoverage` while the current
+constructor emits an object. The worktree now has a narrowly gated legacy-omission
+correction and focused generated regressions; immutable candidate-11 does not.
+The source pass read only the pinned 18-file prefix (1,379,784 bytes). Diagnosis,
+test results and preservation limits are retained at
+`/Users/zoltanka/.local/share/pain-and-gain-evidence/reimport-legacy-coverage-fix-20261015-z9ua6y/report.json`.
+No later qualification phase or real reimport retry is established by this fix.
+A successor candidate/control preparation and renewed explicit execution approval
+are required before another consolidated run; existing approvals remain exhausted.
+
+The consolidated cache/import/scan/post-write recovery scope remains the next
+separately gated project milestone, using a corrected successor rather than
+reusing the archived candidate-11/harness-v8/v9 attempts. Production stays managed
 v2; fresh-source inventory, quiescence/old-writer fencing, compatible retained
 release, durability decision, cutover/write-enable and recovery approvals remain
 required. M2h remains paused and unqualified. Converter performance tuning and

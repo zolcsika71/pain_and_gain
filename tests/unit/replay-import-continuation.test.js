@@ -57,6 +57,60 @@ for(const bytes of [16384,16385,65536,69624])test('converted validation '+bytes+
     for(let i=0;i<2;i++)assert.deepEqual((await unchanged(f,()=>f.admit(f.queries.score))).record,expected);
 });
 async function rejectUnchanged(f,fn,code){await unchanged(f,()=>assert.rejects(fn,code?{code}:undefined));}
+const omitDiagnosticCoverage=m=>{delete m.records[0].diagnosticCoverage;};
+for(const identity of ['known','omitted','null'])test('legacy diagnosticCoverage omission preserves '+identity+' build and exact repeated state',async t=>{
+    const f=await converted(t,{modify:m=>{omitDiagnosticCoverage(m);if(identity==='omitted')delete m.records[0].buildId;if(identity==='null')m.records[0].buildId=null;}});
+    const expected=f.manifest.records[0];
+    for(let i=0;i<2;i++){
+        const result=await unchanged(f,()=>f.admit(f.queries.log));
+        assert.equal(result.kind,'deduplicated');assert.deepEqual(result.record,expected);
+        assert.deepEqual(Object.keys(result.record),Object.keys(expected));assert(!Object.hasOwn(result.record,'diagnosticCoverage'));
+    }
+});
+for(const value of [null,false,{}])test('legacy diagnosticCoverage present '+JSON.stringify(value)+' is not omission',async t=>{
+    const f=await converted(t,{modify:m=>{m.records[0].diagnosticCoverage=value;}});
+    await rejectUnchanged(f,()=>f.admit(f.queries.log),'IDENTITY_CONFLICT');
+});
+for(const defect of ['missing','unfinished','membership','store','ordinal','source-hash','marker-hash','source-root','version'])test('legacy diagnosticCoverage omission requires conversion provenance '+defect,async t=>{
+    const f=await converted(t,{modify:omitDiagnosticCoverage}),record=f.manifest.records[0];
+    database(f.root,db=>{
+        const row=db.prepare("SELECT value FROM properties WHERE owner_kind='root' AND pointer='/boundedFixtureConversionV1'").get(),cp=JSON.parse(row.value);
+        if(defect==='missing'){db.prepare("DELETE FROM properties WHERE owner_kind='root' AND pointer='/boundedFixtureConversionV1'").run();return;}
+        if(defect==='unfinished')cp.phase='prepared';
+        if(defect==='membership')cp.records=cp.records.filter(k=>k!==recordKey({collection:'log',replayId,fingerprint:record.fingerprint}));
+        if(defect==='store')cp.storeId='unrelated-store';
+        if(defect==='ordinal')db.prepare("UPDATE records SET ordinal=ordinal+1 WHERE collection='log'").run();
+        if(defect==='source-hash')delete cp.identity.sourceHash;
+        if(defect==='marker-hash')cp.identity.markerHash.expectedHash='invalid';
+        if(defect==='source-root')cp.identity.sourceRoot='relative';
+        if(defect==='version')cp.identity.version=2;
+        db.prepare("UPDATE properties SET value=? WHERE owner_kind='root' AND pointer='/boundedFixtureConversionV1'").run(JSON.stringify(cp));
+    });await rejectUnchanged(f,()=>f.admit(f.queries.log));
+});
+for(const defect of ['output-bytes','diagnostic-bytes','diagnostic-child','source-key','coverage','build-conflict','review-owner'])test('legacy diagnosticCoverage omission retains rejection of '+defect,async t=>{
+    const f=await converted(t,{modify:omitDiagnosticCoverage}),record=f.manifest.records[0],key=recordKey({collection:'log',replayId,fingerprint:record.fingerprint});
+    if(defect==='output-bytes')fs.appendFileSync(path.join(f.root,record.outputPath),'changed');
+    else if(defect==='source-key')fs.writeFileSync(path.join(f.queries.log.sourceRoot,f.queries.log.sourceFile),cacheFrame(log(),{time:9}));
+    else database(f.root,db=>{
+        if(defect==='coverage')db.prepare("UPDATE properties SET value='{}' WHERE owner_key=? AND pointer='/coverage'").run(key);
+        if(defect==='build-conflict')db.prepare("UPDATE properties SET value=? WHERE owner_key=? AND pointer='/buildId'").run(JSON.stringify('f'.repeat(64)),key);
+        if(defect==='review-owner')db.prepare("UPDATE reviews SET owner_key='unrelated' WHERE collection='log'").run();
+        if(defect.startsWith('diagnostic')){
+            const p=db.prepare('SELECT * FROM payloads WHERE owner_key=?').get(key);
+            if(defect==='diagnostic-bytes')fs.appendFileSync(path.join(f.root,p.path),'changed');
+            else db.prepare('INSERT INTO payloads VALUES (?,?,?,?,?,?,?,?,?,?,?,?)').run(p.owner_kind,p.owner_key,p.pointer+'/unexpected',p.pointer,p.role,p.path+'.missing',p.hash,1,null,'ready',8,p.encoding);
+        }
+    });await rejectUnchanged(f,()=>f.admit(f.queries.log));
+});
+test('legacy diagnosticCoverage ordered modern then omitted converted reimports remain neutral',async t=>{
+    const f=await converted(t,{logs:2,modify:m=>{delete m.records[1].diagnosticCoverage;}});
+    fs.copyFileSync(path.join(f.archive,'log-1'),path.join(f.sourceRoot,'log-1'));
+    for(const sourceFile of ['log-0','log-1','log-0','log-1']){
+        const result=await unchanged(f,()=>f.admit({...f.queries.log,sourceFile}));
+        const expected=f.manifest.records[sourceFile==='log-0'?0:1];assert.deepEqual(result.record,expected);
+        assert.equal(Object.hasOwn(result.record,'diagnosticCoverage'),sourceFile==='log-0');
+    }
+});
 async function rootFields(f,count){await f.invoke(async()=>{const s=await openStore({root:f.root,mode:'write'});try{await s.withWriter(w=>w.transaction(tx=>{for(let i=0;i<count;i++)tx.setProperty({owner:{kind:'root',key:'root'},pointer:'/unrelated-'+i,ordinal:10+i,value:{retained:i}});}));}finally{s.close();}});}
 
 for(const collection of ['log','score'])test('converted '+collection+' reimport verifies without a historical commitment or mutation',async t=>{
