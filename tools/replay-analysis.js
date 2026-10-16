@@ -32,7 +32,7 @@ const diagnosticTypes = new Set(['membership-baseline', 'membership-change',
     'action-decision', 'action-attempt', 'runtime-cpu', 'evidence-coverage']);
 const allCoveredTypes = ['membership-baseline', 'membership-change',
     'action-decision', 'action-attempt'];
-const requiredPart = { moveTo: 'move', heal: 'heal', rangedHeal: 'heal',
+const requiredPart = { move: 'move', moveTo: 'move', heal: 'heal', rangedHeal: 'heal',
     attack: 'attack', rangedAttack: 'ranged_attack' };
 const maximumRange = { heal: 1, rangedHeal: 3, attack: 1, rangedAttack: 3 };
 
@@ -860,7 +860,7 @@ function analyzeMembership(state, merged, snapshots) {
 function attemptsCompatible(attempts) {
     const methods = attempts.map(item => item.entry.method);
     const count = method => methods.filter(item => item === method).length;
-    if (count('moveTo') > 1 || count('heal') + count('rangedHeal') > 1 ||
+    if (count('move') + count('moveTo') > 1 || count('heal') + count('rangedHeal') > 1 ||
         count('attack') > 1 || count('rangedAttack') > 1) return false;
     if (count('rangedHeal') && (count('attack') || count('rangedAttack'))) return false;
     if (count('heal') && count('attack')) return false;
@@ -991,7 +991,7 @@ function analyzeActions(state, merged, snapshots) {
                         [attempt.entry.buildId, snapshotItem.buildId]);
                 }
             }
-            if (attempt.entry.method === 'moveTo') movement.push(attempt);
+            if (['move', 'moveTo'].includes(attempt.entry.method)) movement.push(attempt);
         }
         for (const [actorId, actorAttempts] of byActor) {
             const compatible = attemptsCompatible(actorAttempts);

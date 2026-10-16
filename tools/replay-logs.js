@@ -55,7 +55,7 @@ const evidenceCountKeys = [...actionCoveredTypes,
 const channels = ['movement', 'healing', 'combat'];
 const phaseOrder = new Map(['before-actions', 'movement', 'tactics', 'after-actions']
     .map((phase, index) => [phase, index]));
-const actionMethods = ['moveTo', 'heal', 'rangedHeal', 'attack', 'rangedAttack'];
+const actionMethods = ['move', 'moveTo', 'heal', 'rangedHeal', 'attack', 'rangedAttack'];
 const targetKinds = ['creep', 'score-flag', 'position', 'game-object', 'unknown'];
 const roles = ['melee', 'ranged', 'healer', 'scout', 'mixed', 'unclassifiable'];
 const presences = ['present', 'missing', 'dead'];
@@ -164,9 +164,14 @@ function validTarget(target) {
 }
 
 function validMethodForChannel(method, channel) {
-    return actionMethods.includes(method) && (channel === 'movement' ? method === 'moveTo'
+    return actionMethods.includes(method) && (channel === 'movement' ? ['move', 'moveTo'].includes(method)
         : channel === 'healing' ? ['heal', 'rangedHeal'].includes(method)
             : ['attack', 'rangedAttack'].includes(method));
+}
+
+function validActionTarget(method, target) {
+    return validTarget(target) && (method !== 'move' || target.kind === 'position' && target.id === null &&
+        target.x >= 0 && target.y >= 0 && target.x < 100 && target.y < 100);
 }
 
 export function validActionDecision(entry) {
@@ -176,7 +181,7 @@ export function validActionDecision(entry) {
         (entry.outcome === 'selected' ? entry.actions.length === 0 : entry.actions.length !== 0)) return false;
     return entry.actions.every((action, index) => action && typeof action === 'object' &&
         !Array.isArray(action) && action.actionId === `${entry.decisionId}#${index}` &&
-        validMethodForChannel(action.method, entry.channel) && validTarget(action.target));
+        validMethodForChannel(action.method, entry.channel) && validActionTarget(action.method, action.target));
 }
 
 export function validActionAttempt(entry) {
@@ -185,7 +190,7 @@ export function validActionAttempt(entry) {
     return validActionEnvelope(entry, 'action-attempt') &&
         typeof entry.decisionId === 'string' && /^\d+:\d+$/.test(entry.decisionId) &&
         entry.decisionId.startsWith(`${entry.tick}:`) && actionMatch?.[1] === entry.decisionId &&
-        validMethodForChannel(entry.method, entry.channel) && validTarget(entry.target) &&
+        validMethodForChannel(entry.method, entry.channel) && validActionTarget(entry.method, entry.target) &&
         (entry.returnCode === null || Number.isSafeInteger(entry.returnCode));
 }
 

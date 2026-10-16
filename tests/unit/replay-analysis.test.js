@@ -132,6 +132,30 @@ function completeTick(tick, { baseline = false, actorX = tick, actorHits = 100 }
     });
 }
 
+test('direct route-step evidence is movement, preserves return semantics and rejects double movement',t=>{
+    for(const double of [false,true]){
+        const records=stream(1,api=>{
+            api.baseline();
+            const actions=[{method:'move',target:{kind:'position',id:null,x:2,y:1}}];
+            if(double)actions.push({method:'moveTo',target:actionTarget('flag',5,5)});
+            const decision=api.decision('movement','selected','contest-route-step',actions);
+            actions.forEach((_,i)=>api.attempt(decision,i,0));
+            api.decision('healing','no-action','no-injured-target-in-range');
+            api.decision('combat','no-action','no-target-in-range');
+        });
+        const f=workspace(t,[{gameStates:[gameState(1,1)],diagnostics:records},
+            {gameStates:[gameState(2,1)],diagnostics:stream(2,api=>{
+                api.decision('movement','hold','contest-route-hold');
+                api.decision('healing','no-action','no-injured-target-in-range');
+                api.decision('combat','no-action','no-target-in-range');
+            })}]);
+        const report=analyzeReplay({root:f.root,replayId});
+        assert(findings(report,'action.command-compatibility').some(item=>item.verdict===(double?'fail':'pass')));
+        const movement=findings(report,'movement.observed-displacement');assert(movement.length>0);
+        assert(movement.some(item=>item.observed?.moved===false));
+    }
+});
+
 function diagnosticItems(records, keyPrefix = 'd') {
     return records.map((entry, index) => ({ key: `${keyPrefix}:${index + 1}`,
         raw: JSON.stringify(entry), type: entry.type, formatVersion: entry.formatVersion }));

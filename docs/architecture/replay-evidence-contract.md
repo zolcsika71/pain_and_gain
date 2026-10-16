@@ -31,6 +31,16 @@ The evidence layers remain distinct:
 damage, healing, capture, survival, or strategic benefit. A missing record is
 `unknown`, not a hold, no-action, success, or failure.
 
+The default-off useful-healing close uses the existing movement decision reason
+`healer-useful-close`, one `move` action toward a position, and its correlated
+attempt/return. The existing pre-action snapshot records the actual origin;
+the adjacent target determines the direction used by the actuator. No new
+record type, extra log stream or telemetry fields are added. An unchanged hold
+retains its baseline reason and has no movement attempt. A later observed
+position—not the close decision, direction or return0—establishes displacement.
+Current-tick healing decisions continue to use pre-action ranges; a planned
+adjacent step does not imply an immediate `heal` or extra resolved healing.
+
 Replay identity never comes from a runtime diagnostic. The importer associates
 records with the replay ID verified from the cache request key or another
 supported source-provenance path. Runtime records must not contain a guessed
@@ -210,8 +220,19 @@ In addition to the common envelope, a decision contains:
 Each selected action has:
 
 - `actionId`: `<decisionId>#<zero-based action index>`;
-- `method`: `moveTo`, `heal`, `rangedHeal`, `attack`, or `rangedAttack`;
+- `method`: `move`, `moveTo`, `heal`, `rangedHeal`, `attack`, or `rangedAttack`;
 - `target`: the non-null target identity and coordinates defined above.
+
+The inactive supported-contest integration adds `move` only in the movement
+channel. Its target is the requested adjacent validated cell: kind `position`,
+ID `null`, integer in-map coordinates. Runtime converts the observed delta to
+an Arena direction; the record retains the intended cell. This is an additive
+method representation in the existing version1 envelope, not a relabelled
+`moveTo`. `contest-route-step` / `contest-route-hold` describe that ownership.
+Both movement methods count toward the same one-command compatibility gate.
+Return0 means scheduled, never observed displacement; later snapshots supply
+that observation without causal attribution. Earlier method/target records,
+coverage order and tactical compatibility are unchanged.
 
 `hold` means the selector intentionally chose not to move or act because its
 objective was already satisfied. `no-action` means there was no eligible or

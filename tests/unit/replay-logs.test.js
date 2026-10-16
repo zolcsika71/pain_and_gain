@@ -97,12 +97,23 @@ function cacheFrame(values, { id = replayId, tick = 72, encoding = 'gzip', malfo
     return Buffer.concat([header, key, payload, metadata]);
 }
 
-function workspace(t) {
-    const root = evidence.evidenceTemp(path.join(os.tmpdir(), 'pain-gain-replay-'));
+function workspace(t, tempDir = os.tmpdir()) {
+    const root = evidence.evidenceTemp(path.join(tempDir, 'pain-gain-replay-'));
     const cache = path.join(root, 'cache');
     fs.mkdirSync(cache);
     t.after(() => evidence.disposeFixture(root, { recursive: true, force: true }));
     return { root, cache };
+}
+
+function isolatedCliWorkspace(t) {
+    // Qualification owns its canonical tmp root; ordinary CLI fixtures use the
+    // canonical macOS temp root, not the /var alias returned by os.tmpdir().
+    const fixture = workspace(t, evidence.evidenceEnabled() ? os.tmpdir() : '/private/tmp');
+    const toolsDir = path.join(fixture.root, 'tools');
+    // Include static and deferred authority dependencies, as other CLI fixtures do.
+    fs.cpSync(new URL('../../tools/', import.meta.url), toolsDir, { recursive: true });
+    fs.writeFileSync(path.join(fixture.root, 'package.json'), '{"type":"module"}\n');
+    return { ...fixture, toolsDir };
 }
 
 test('extracts original complete game-state strings and reports other console entries', () => {
@@ -883,13 +894,8 @@ test('scans existing, new, and rewritten cache files without overwriting differe
 });
 
 test('watch announces startup before a failed initial scan in an isolated checkout', t => {
-    const { root } = workspace(t);
+    const { root, toolsDir } = isolatedCliWorkspace(t);
     const realRoot = fs.realpathSync(root);
-    const toolsDir = path.join(realRoot, 'tools');
-    fs.mkdirSync(toolsDir);
-    fs.copyFileSync(new URL('../../tools/replay-logs.js', import.meta.url),
-        path.join(toolsDir, 'replay-logs.js'));
-    fs.writeFileSync(path.join(realRoot, 'package.json'), '{"type":"module"}\n');
     const missingCache = path.join(realRoot, 'missing-cache');
     const child = evidence.captureSpawnSync(process.execPath,
         [path.join(toolsDir, 'replay-logs.js'), 'watch', missingCache],
@@ -898,6 +904,46 @@ test('watch announces startup before a failed initial scan in an isolated checko
     assert.match(child.stdout, /Starting replay-log watch/);
     assert.match(child.stderr, /ENOENT/);
     assert.match(child.stderr, /missing-cache/);
+});
+
+test('isolated CLI closure loads copied modules and retains authority and canonical-path guards', t => {
+    const { root, toolsDir } = isolatedCliWorkspace(t);
+    const modules = ['replay-logs.js', 'replay-authority-guard.js',
+        'replay-production-scope.js', 'retrieval-files.js', 'replay-store-payloads.js'];
+    for (const name of modules) assert.deepEqual(fs.readFileSync(path.join(toolsDir, name)),
+        fs.readFileSync(new URL(`../../tools/${name}`, import.meta.url)));
+    const code = `
+        import assert from 'node:assert/strict';
+        import fs from 'node:fs';
+        import {registerHooks} from 'node:module';
+        import {pathToFileURL} from 'node:url';
+        const root = process.argv[1], base = pathToFileURL(root + '/tools/').href;
+        const loaded = new Set();
+        registerHooks({load(url, context, next) {
+            if (url.startsWith('file:')) {
+                assert.ok(url.startsWith(base), 'Local module escaped copied tools: ' + url);
+                loaded.add(url.slice(base.length));
+            }
+            return next(url, context);
+        }});
+        const {reconcileCleanup} = await import(base + 'replay-logs.js');
+        const {canonicalDirectory} = await import(base + 'replay-production-scope.js');
+        for (const name of ${JSON.stringify(modules)}) assert.ok(loaded.has(name), name);
+        fs.writeFileSync(root + '/.synthetic-authority-member.json', '{}');
+        await assert.rejects(reconcileCleanup(root), {code: 'AUTHORITY_REQUIRED'});
+        assert.equal(fs.existsSync(root + '/replay_logs'), false);
+        fs.mkdirSync(root + '/target');
+        fs.symlinkSync(root + '/target', root + '/alias');
+        assert.throws(() => canonicalDirectory(root + '/alias'), {code: 'unsafe-path'});
+    `;
+    const probe = evidence.captureSpawnSync(process.execPath,
+        ['--input-type=module', '-e', code, root], { encoding: 'utf8', timeout: 5000 });
+    assert.equal(probe.status, 0, probe.stderr);
+    const cli = evidence.captureSpawnSync(process.execPath,
+        [path.join(toolsDir, 'replay-logs.js'), 'list'], { encoding: 'utf8', timeout: 5000 });
+    assert.equal(cli.status, 1);
+    assert.match(cli.stderr, /Use the bound synthetic authority/);
+    assert.equal(fs.existsSync(path.join(root, 'replay_logs')), false);
 });
 
 test('scan reports imports as they occur while preserving its result list', async t => {
@@ -953,18 +999,12 @@ test('scan reuses an unchanged manifest for duplicates and deferrals, including 
 });
 
 test('scan reloads manifest after another locked writer changes review state', async t => {
-    const { root, cache } = workspace(t);
+    const { root, cache, toolsDir } = isolatedCliWorkspace(t);
     const seed = path.join(root, 'seed_0');
     fs.writeFileSync(seed, cacheFrame({ 1: mappedFirst() }));
     const first = (await importCacheFile(root, seed)).record;
     fs.writeFileSync(path.join(cache, 'a_0'), cacheFrame({ 1: mapEntry() }, { tick: 1 }));
     fs.writeFileSync(path.join(cache, 'b_0'), cacheFrame({ 2: entry(2) }, { tick: 2 }));
-    const realRoot = fs.realpathSync(root);
-    const toolsDir = path.join(realRoot, 'tools');
-    fs.mkdirSync(toolsDir);
-    fs.copyFileSync(new URL('../../tools/replay-logs.js', import.meta.url),
-        path.join(toolsDir, 'replay-logs.js'));
-    fs.writeFileSync(path.join(realRoot, 'package.json'), '{"type":"module"}\n');
     const events = await scanCache(root, cache, new Map(), result => {
         if (result.kind !== 'mapped') return;
         const child = evidence.captureSpawnSync(process.execPath,
