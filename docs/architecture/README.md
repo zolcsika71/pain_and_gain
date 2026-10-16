@@ -24,8 +24,15 @@ This folder holds descriptions of the bot and its integrations, plus validation 
 - [replay-score-production-validation-2026-10-02.md](replay-score-production-validation-2026-10-02.md) — exact retained-source selection, production scoring compatibility results, bounded output verification, and standalone reproduction procedure for ADR 0005.
 - [screeps-arena-api.md](screeps-arena-api.md) — game API reference for objects, actions, and pathfinding.
 - [screeps-squads-and-pairing.md](screeps-squads-and-pairing.md) — reference material for squad and pairing behavior.
+- [supported-contest-objective-2026-10-16.md](supported-contest-objective-2026-10-16.md) — isolated-occupant stand-off design, subsequent inactive integration, shared validated travel and limited live observations.
 - [squad-pair-experiment-2026-10-02.md](squad-pair-experiment-2026-10-02.md) — disabled one-pair movement policy, precedence, bounded recovery, local validation, and limited live opening screen.
 - [combat-positioning-validation.md](combat-positioning-validation.md) — build-specific movement, healer, and flag-allocation validation, including unresolved live-evidence limits.
+- [pure-healer-pressure-retreat-2026-10-16.md](pure-healer-pressure-retreat-2026-10-16.md) — bounded healer escape preserving useful healing bands; recorded exposure, generated checks and no survival claim.
+- [healer-useful-closing-test-only-2026-10-17.md](healer-useful-closing-test-only-2026-10-17.md) — default-off runtime integration of the tested range-two close; prospective healing, convergence limits, movement priority and exact rollback contract.
+- [adjacent-ranged-retreat-support-audit-2026-10-17.md](adjacent-ranged-retreat-support-audit-2026-10-17.md) — support-preserving adjacent escape preference with the original emergency fallback; frozen build awaiting manual observation.
+- [precontact-ranged-kiting-test-only-2026-10-17.md](precontact-ranged-kiting-test-only-2026-10-17.md) — rejected test-only range-two proposal and retained support-loss/cycling counterexamples.
+- [secondary-scoped-readiness-test-only-2026-10-17.md](secondary-scoped-readiness-test-only-2026-10-17.md) — generated health-scope comparison only; runtime integration remains deferred until the frozen trial is completed and reviewed.
+- [development-publication-2026-10-17.md](development-publication-2026-10-17.md) — publication scope, reused validation, excluded local work and unchanged frozen gameplay identity.
 - [scout-hold-experiment-2026-10-02.md](scout-hold-experiment-2026-10-02.md) — disabled-default scout fallback holding policy, local checks, live charcock screening, and remaining release gap.
 - [historical-evidence-cycle-2026-10-02.md](historical-evidence-cycle-2026-10-02.md) — bounded cached cross-match index and no-change escort decision.
 - [replay-review-2026-09-27.md](replay-review-2026-09-27.md) — dated analysis of map-linked replay snapshots and strategy proposals, with coverage caveats.

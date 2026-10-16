@@ -93,6 +93,10 @@ coverage/
 # Local reference snapshots (including nested repositories), never project source
 /docs/examples/
 
+# Operator captures and a local IDE database are not project source.
+/docs/manual_evidence/
+/identifier.sqlite
+
 # Local Arena replay captures and review state
 replay_logs/*.jsonl
 replay_logs/pain_and_gain_map_*.json
