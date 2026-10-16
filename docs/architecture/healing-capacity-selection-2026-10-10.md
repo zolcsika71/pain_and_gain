@@ -124,3 +124,83 @@ project-layout blob. Before/after metadata showed allocated blocks changing from
 `.idea/workspace.xml` also changed during that task; Codex reported not editing
 it. This IDE change is excluded from the healing candidate. The exception does
 not establish deployment or live benefit; the testing limits above still apply.
+
+## Offline health-percentage tie-break experiment — 2026-10-16
+
+Status: evaluated, **reject this exact candidate for a live trial for now**.
+This is a policy experiment, not a selector defect or runtime change. The
+deployed ordering above remains unchanged. No deployment switch was changed.
+
+The [healing allocation audit](/Users/zoltanka/.local/share/pain-and-gain-evidence/healing-allocation-audit-20261016-QOEa2x/report.json)
+found all six healer decisions at ticks 44–45 of replay
+`6ad152e374ae4378a665afb2` correct, including healer 1's no-action at 45.
+The experiment uses only retained snapshots, never the original responses or
+managed manifest. `tests/fixtures/healing-health-window44-45.json` retains the
+owned rosters, actual calls and audit expectations with source SHA-256 pins.
+Every roster entry has recorded `hits` and `hitsMax`; none is inferred. A
+comparison with missing health/position information must be reported unavailable,
+not filled with a default. Functioning body counts use presence-only mock parts.
+
+The test-only candidate in `tests/fixtures/healing-health-candidate.js` orders
+by capped healing score descending, `hits / hitsMax` ascending, then existing
+range and raw lexicographic ID. Eligibility, self deduplication, nominal powers,
+action methods and combat compatibility are unchanged. This is not threat
+prediction, a cross-healer reservation or a movement change. All eligible
+targets here score 24 and both snapshots have healing modifier 1, so nominal
+and flag-adjusted capacities coincide here only. No general flag-aware selector
+or prediction of resolved healing is claimed.
+
+Action constraints stay enforced, not necessarily action availability for every
+mixed body: an equal-score switch from adjacent `heal` to `rangedHeal` can
+suppress a previously compatible ranged attack. A generated case covers that
+trade-off; the six recorded decisions concern pure healers only.
+
+In the table, M = melee, R = ranged; entries are target, remaining health %, range.
+Every nonempty entry has score/capacity 24 and method `rangedHeal`.
+
+| Tick / healer | Baseline (also recorded selection) | Offline candidate | Why it changes |
+| --- | --- | --- | --- |
+| 44 / H1 | M4, 95.875%, 2 | M2, 15.625%, 3 | Lower health beats shorter range |
+| 44 / H2 | M1, 91.75%, 2 | R5, 68.5%, 2 | Lower health beats ID tie-break |
+| 44 / H3 | M1, 91.75%, 2 | M2, 15.625%, 3 | Lower health beats shorter range |
+| 45 / H1 | No action | No action | All four injured allies are at range 4 |
+| 45 / H2 | M1, 82.375%, 3 | M3, 52.75%, 3 | Lower health beats ID tie-break |
+| 45 / H3 | M1, 82.375%, 2 | M3, 52.75%, 3 | Lower health beats shorter range |
+
+At 44, baseline scheduled capacities M1=48/M4=24 become M2=48/R5=24.
+M2 is 250/1600 with no functioning weapon; M3 is 1020/1600 with three
+functioning ATTACK parts and still receives none under either ordering.
+At 45, M1=48 becomes M3=48 (844/1600, one functioning ATTACK part).
+Total scheduled capacity stays 72 then 48; capping the combined allocation by
+each recorded deficit produces the same totals and zero excess in both policies.
+Larger injuries do not improve the primary capped score. This experiment
+changes who receives healing, not its total useful-capacity estimate.
+
+The lowest-health ally does receive more scheduled healing, but the recorded
+M2 is the first friendly casualty and is absent at 45. Its counterfactual fate
+is unknown: diverting 48 toward a unit that may still be eliminated costs M1
+and M4 their entire tick-44 allocation. M3 gains on 45 but not 44. Both are
+independent pre-action snapshots; the candidate's tick-45 roster is **not** a
+simulated consequence of its tick-44 choices. Incoming damage, body repair and
+simultaneous resolution prevent survival or gameplay conclusions. The exact
+ordering offers no measured increase in capped healing, and concentrating on
+the weaponless critical unit is an unresolved trade-off; that is the reason
+to reject this candidate for the next live trial, not proof that it is harmful.
+
+The focused experiment and existing healing/tactics checks passed 39 tests on
+Node 24.19.0. They cover all six recorded decisions (five scheduled calls),
+primary-score precedence, percentage rather than absolute HP/deficit, equal
+fraction range/ID ties, input-order stability, eligibility/no-action,
+self-deduplication, immutable inputs and mixed-body action compatibility.
+Runtime sources and build remain unchanged:
+`4896ef3596bcca45755413fa8d090a7518bb1ece2ed8d416ea17461109e89215`.
+No build regeneration, full-suite run or live match was needed or performed.
+
+Run only the explicit offline selection:
+
+```sh
+node --max-old-space-size=256 --test tests/unit/healing-health-experiment.test.js \
+  tests/unit/healing-capacity.test.js tests/unit/tactics.test.js
+```
+
+[Comparison, focused output and preservation receipt](/Users/zoltanka/.local/share/pain-and-gain-evidence/healing-health-experiment-20261016-ZqN3zB/report.json).

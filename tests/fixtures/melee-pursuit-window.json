@@ -1,0 +1,1189 @@
+{
+  "provenance": {
+    "replay": "6ad152e374ae4378a665afb2",
+    "source": {
+      "path": "/Users/zoltanka/.local/share/pain-and-gain-evidence/contact-wait-live-review-20261016-SwoCqP/cache-review.json",
+      "sha256": "d23b787672a187449a519900e2bfcd429b25bb898d98d29551c9ba2d8b8bee26"
+    },
+    "description": "Retained preaction36..40. Enemy projection restricted to acquisition radius5; no alternate outcomes. Body-part positive HP reconstructed, not original per-part HP."
+  },
+  "windows": [
+    {
+      "tick": 36,
+      "recorded": {
+        "reason": "combat-approach",
+        "target": {
+          "kind": "creep",
+          "id": "pg_player1_ranged_3",
+          "x": 50,
+          "y": 46
+        },
+        "returnCode": 0,
+        "nextPosition": [
+          52,
+          50
+        ]
+      },
+      "friends": [
+        {
+          "id": "pg_player2_scout_1",
+          "x": 53,
+          "y": 54,
+          "my": true,
+          "hits": 100,
+          "parts": {
+            "move": 1
+          }
+        },
+        {
+          "id": "pg_player2_scout_2",
+          "x": 55,
+          "y": 57,
+          "my": true,
+          "hits": 100,
+          "parts": {
+            "move": 1
+          }
+        },
+        {
+          "id": "pg_player2_melee_1",
+          "x": 53,
+          "y": 56,
+          "my": true,
+          "hits": 1600,
+          "parts": {
+            "attack": 8,
+            "move": 8
+          }
+        },
+        {
+          "id": "pg_player2_melee_2",
+          "x": 53,
+          "y": 52,
+          "my": true,
+          "hits": 1600,
+          "parts": {
+            "attack": 8,
+            "move": 8
+          }
+        },
+        {
+          "id": "pg_player2_melee_3",
+          "x": 53,
+          "y": 51,
+          "my": true,
+          "hits": 1600,
+          "parts": {
+            "attack": 8,
+            "move": 8
+          }
+        },
+        {
+          "id": "pg_player2_melee_4",
+          "x": 54,
+          "y": 51,
+          "my": true,
+          "hits": 1600,
+          "parts": {
+            "attack": 8,
+            "move": 8
+          }
+        },
+        {
+          "id": "pg_player2_ranged_1",
+          "x": 53,
+          "y": 57,
+          "my": true,
+          "hits": 1200,
+          "parts": {
+            "ranged_attack": 6,
+            "move": 6
+          }
+        },
+        {
+          "id": "pg_player2_ranged_2",
+          "x": 55,
+          "y": 58,
+          "my": true,
+          "hits": 1200,
+          "parts": {
+            "ranged_attack": 6,
+            "move": 6
+          }
+        },
+        {
+          "id": "pg_player2_ranged_3",
+          "x": 48,
+          "y": 52,
+          "my": true,
+          "hits": 1200,
+          "parts": {
+            "ranged_attack": 6,
+            "move": 6
+          }
+        },
+        {
+          "id": "pg_player2_ranged_4",
+          "x": 50,
+          "y": 51,
+          "my": true,
+          "hits": 1200,
+          "parts": {
+            "ranged_attack": 6,
+            "move": 6
+          }
+        },
+        {
+          "id": "pg_player2_ranged_5",
+          "x": 49,
+          "y": 51,
+          "my": true,
+          "hits": 1200,
+          "parts": {
+            "ranged_attack": 6,
+            "move": 6
+          }
+        },
+        {
+          "id": "pg_player2_healer_1",
+          "x": 54,
+          "y": 54,
+          "my": true,
+          "hits": 1200,
+          "parts": {
+            "heal": 6,
+            "move": 6
+          }
+        },
+        {
+          "id": "pg_player2_healer_2",
+          "x": 57,
+          "y": 58,
+          "my": true,
+          "hits": 1200,
+          "parts": {
+            "heal": 6,
+            "move": 6
+          }
+        },
+        {
+          "id": "pg_player2_healer_3",
+          "x": 51,
+          "y": 52,
+          "my": true,
+          "hits": 1200,
+          "parts": {
+            "heal": 6,
+            "move": 6
+          }
+        }
+      ],
+      "enemies": [
+        {
+          "id": "pg_player1_ranged_3",
+          "x": 50,
+          "y": 46,
+          "my": false,
+          "hits": 1200,
+          "parts": {
+            "ranged_attack": 6,
+            "move": 6
+          }
+        },
+        {
+          "id": "pg_player1_ranged_4",
+          "x": 48,
+          "y": 46,
+          "my": false,
+          "hits": 1200,
+          "parts": {
+            "ranged_attack": 6,
+            "move": 6
+          }
+        },
+        {
+          "id": "pg_player1_ranged_5",
+          "x": 49,
+          "y": 46,
+          "my": false,
+          "hits": 1200,
+          "parts": {
+            "ranged_attack": 6,
+            "move": 6
+          }
+        }
+      ]
+    },
+    {
+      "tick": 37,
+      "recorded": {
+        "reason": "combat-approach",
+        "target": {
+          "kind": "creep",
+          "id": "pg_player1_ranged_3",
+          "x": 51,
+          "y": 47
+        },
+        "returnCode": 0,
+        "nextPosition": [
+          52,
+          49
+        ]
+      },
+      "friends": [
+        {
+          "id": "pg_player2_scout_1",
+          "x": 52,
+          "y": 53,
+          "my": true,
+          "hits": 100,
+          "parts": {
+            "move": 1
+          }
+        },
+        {
+          "id": "pg_player2_scout_2",
+          "x": 54,
+          "y": 56,
+          "my": true,
+          "hits": 100,
+          "parts": {
+            "move": 1
+          }
+        },
+        {
+          "id": "pg_player2_melee_1",
+          "x": 52,
+          "y": 55,
+          "my": true,
+          "hits": 1600,
+          "parts": {
+            "attack": 8,
+            "move": 8
+          }
+        },
+        {
+          "id": "pg_player2_melee_2",
+          "x": 52,
+          "y": 51,
+          "my": true,
+          "hits": 1600,
+          "parts": {
+            "attack": 8,
+            "move": 8
+          }
+        },
+        {
+          "id": "pg_player2_melee_3",
+          "x": 52,
+          "y": 50,
+          "my": true,
+          "hits": 1600,
+          "parts": {
+            "attack": 8,
+            "move": 8
+          }
+        },
+        {
+          "id": "pg_player2_melee_4",
+          "x": 53,
+          "y": 50,
+          "my": true,
+          "hits": 1600,
+          "parts": {
+            "attack": 8,
+            "move": 8
+          }
+        },
+        {
+          "id": "pg_player2_ranged_1",
+          "x": 52,
+          "y": 56,
+          "my": true,
+          "hits": 1200,
+          "parts": {
+            "ranged_attack": 6,
+            "move": 6
+          }
+        },
+        {
+          "id": "pg_player2_ranged_2",
+          "x": 54,
+          "y": 57,
+          "my": true,
+          "hits": 1200,
+          "parts": {
+            "ranged_attack": 6,
+            "move": 6
+          }
+        },
+        {
+          "id": "pg_player2_ranged_3",
+          "x": 47,
+          "y": 51,
+          "my": true,
+          "hits": 1200,
+          "parts": {
+            "ranged_attack": 6,
+            "move": 6
+          }
+        },
+        {
+          "id": "pg_player2_ranged_4",
+          "x": 49,
+          "y": 50,
+          "my": true,
+          "hits": 1200,
+          "parts": {
+            "ranged_attack": 6,
+            "move": 6
+          }
+        },
+        {
+          "id": "pg_player2_ranged_5",
+          "x": 48,
+          "y": 50,
+          "my": true,
+          "hits": 1200,
+          "parts": {
+            "ranged_attack": 6,
+            "move": 6
+          }
+        },
+        {
+          "id": "pg_player2_healer_1",
+          "x": 53,
+          "y": 53,
+          "my": true,
+          "hits": 1200,
+          "parts": {
+            "heal": 6,
+            "move": 6
+          }
+        },
+        {
+          "id": "pg_player2_healer_2",
+          "x": 56,
+          "y": 57,
+          "my": true,
+          "hits": 1200,
+          "parts": {
+            "heal": 6,
+            "move": 6
+          }
+        },
+        {
+          "id": "pg_player2_healer_3",
+          "x": 51,
+          "y": 51,
+          "my": true,
+          "hits": 1200,
+          "parts": {
+            "heal": 6,
+            "move": 6
+          }
+        }
+      ],
+      "enemies": [
+        {
+          "id": "pg_player1_ranged_3",
+          "x": 51,
+          "y": 47,
+          "my": false,
+          "hits": 1200,
+          "parts": {
+            "ranged_attack": 6,
+            "move": 6
+          }
+        },
+        {
+          "id": "pg_player1_ranged_4",
+          "x": 49,
+          "y": 47,
+          "my": false,
+          "hits": 1200,
+          "parts": {
+            "ranged_attack": 6,
+            "move": 6
+          }
+        },
+        {
+          "id": "pg_player1_ranged_5",
+          "x": 50,
+          "y": 47,
+          "my": false,
+          "hits": 1200,
+          "parts": {
+            "ranged_attack": 6,
+            "move": 6
+          }
+        }
+      ]
+    },
+    {
+      "tick": 38,
+      "recorded": {
+        "reason": "combat-approach",
+        "target": {
+          "kind": "creep",
+          "id": "pg_player1_ranged_3",
+          "x": 51,
+          "y": 47
+        },
+        "returnCode": 0,
+        "nextPosition": [
+          51,
+          48
+        ]
+      },
+      "friends": [
+        {
+          "id": "pg_player2_scout_1",
+          "x": 51,
+          "y": 52,
+          "my": true,
+          "hits": 100,
+          "parts": {
+            "move": 1
+          }
+        },
+        {
+          "id": "pg_player2_scout_2",
+          "x": 53,
+          "y": 55,
+          "my": true,
+          "hits": 100,
+          "parts": {
+            "move": 1
+          }
+        },
+        {
+          "id": "pg_player2_melee_1",
+          "x": 51,
+          "y": 54,
+          "my": true,
+          "hits": 1600,
+          "parts": {
+            "attack": 8,
+            "move": 8
+          }
+        },
+        {
+          "id": "pg_player2_melee_2",
+          "x": 51,
+          "y": 50,
+          "my": true,
+          "hits": 1600,
+          "parts": {
+            "attack": 8,
+            "move": 8
+          }
+        },
+        {
+          "id": "pg_player2_melee_3",
+          "x": 52,
+          "y": 49,
+          "my": true,
+          "hits": 1600,
+          "parts": {
+            "attack": 8,
+            "move": 8
+          }
+        },
+        {
+          "id": "pg_player2_melee_4",
+          "x": 53,
+          "y": 50,
+          "my": true,
+          "hits": 1600,
+          "parts": {
+            "attack": 8,
+            "move": 8
+          }
+        },
+        {
+          "id": "pg_player2_ranged_1",
+          "x": 51,
+          "y": 55,
+          "my": true,
+          "hits": 1200,
+          "parts": {
+            "ranged_attack": 6,
+            "move": 6
+          }
+        },
+        {
+          "id": "pg_player2_ranged_2",
+          "x": 53,
+          "y": 56,
+          "my": true,
+          "hits": 1200,
+          "parts": {
+            "ranged_attack": 6,
+            "move": 6
+          }
+        },
+        {
+          "id": "pg_player2_ranged_3",
+          "x": 47,
+          "y": 51,
+          "my": true,
+          "hits": 1200,
+          "parts": {
+            "ranged_attack": 6,
+            "move": 6
+          }
+        },
+        {
+          "id": "pg_player2_ranged_4",
+          "x": 49,
+          "y": 50,
+          "my": true,
+          "hits": 1020,
+          "parts": {
+            "ranged_attack": 5,
+            "move": 6
+          }
+        },
+        {
+          "id": "pg_player2_ranged_5",
+          "x": 48,
+          "y": 50,
+          "my": true,
+          "hits": 1200,
+          "parts": {
+            "ranged_attack": 6,
+            "move": 6
+          }
+        },
+        {
+          "id": "pg_player2_healer_1",
+          "x": 52,
+          "y": 52,
+          "my": true,
+          "hits": 1200,
+          "parts": {
+            "heal": 6,
+            "move": 6
+          }
+        },
+        {
+          "id": "pg_player2_healer_2",
+          "x": 55,
+          "y": 56,
+          "my": true,
+          "hits": 1200,
+          "parts": {
+            "heal": 6,
+            "move": 6
+          }
+        },
+        {
+          "id": "pg_player2_healer_3",
+          "x": 50,
+          "y": 50,
+          "my": true,
+          "hits": 1200,
+          "parts": {
+            "heal": 6,
+            "move": 6
+          }
+        }
+      ],
+      "enemies": [
+        {
+          "id": "pg_player1_ranged_2",
+          "x": 48,
+          "y": 44,
+          "my": false,
+          "hits": 1200,
+          "parts": {
+            "ranged_attack": 6,
+            "move": 6
+          }
+        },
+        {
+          "id": "pg_player1_ranged_3",
+          "x": 51,
+          "y": 47,
+          "my": false,
+          "hits": 1200,
+          "parts": {
+            "ranged_attack": 6,
+            "move": 6
+          }
+        },
+        {
+          "id": "pg_player1_ranged_4",
+          "x": 49,
+          "y": 47,
+          "my": false,
+          "hits": 1200,
+          "parts": {
+            "ranged_attack": 6,
+            "move": 6
+          }
+        },
+        {
+          "id": "pg_player1_ranged_5",
+          "x": 50,
+          "y": 47,
+          "my": false,
+          "hits": 1200,
+          "parts": {
+            "ranged_attack": 6,
+            "move": 6
+          }
+        }
+      ]
+    },
+    {
+      "tick": 39,
+      "recorded": {
+        "reason": "combat-approach",
+        "target": {
+          "kind": "creep",
+          "id": "pg_player1_ranged_3",
+          "x": 50,
+          "y": 46
+        },
+        "returnCode": 0,
+        "nextPosition": [
+          50,
+          47
+        ]
+      },
+      "friends": [
+        {
+          "id": "pg_player2_scout_1",
+          "x": 52,
+          "y": 51,
+          "my": true,
+          "hits": 100,
+          "parts": {
+            "move": 1
+          }
+        },
+        {
+          "id": "pg_player2_scout_2",
+          "x": 52,
+          "y": 54,
+          "my": true,
+          "hits": 100,
+          "parts": {
+            "move": 1
+          }
+        },
+        {
+          "id": "pg_player2_melee_1",
+          "x": 50,
+          "y": 53,
+          "my": true,
+          "hits": 1600,
+          "parts": {
+            "attack": 8,
+            "move": 8
+          }
+        },
+        {
+          "id": "pg_player2_melee_2",
+          "x": 51,
+          "y": 49,
+          "my": true,
+          "hits": 1600,
+          "parts": {
+            "attack": 8,
+            "move": 8
+          }
+        },
+        {
+          "id": "pg_player2_melee_3",
+          "x": 51,
+          "y": 48,
+          "my": true,
+          "hits": 1600,
+          "parts": {
+            "attack": 8,
+            "move": 8
+          }
+        },
+        {
+          "id": "pg_player2_melee_4",
+          "x": 53,
+          "y": 49,
+          "my": true,
+          "hits": 1600,
+          "parts": {
+            "attack": 8,
+            "move": 8
+          }
+        },
+        {
+          "id": "pg_player2_ranged_1",
+          "x": 50,
+          "y": 54,
+          "my": true,
+          "hits": 1200,
+          "parts": {
+            "ranged_attack": 6,
+            "move": 6
+          }
+        },
+        {
+          "id": "pg_player2_ranged_2",
+          "x": 52,
+          "y": 55,
+          "my": true,
+          "hits": 1200,
+          "parts": {
+            "ranged_attack": 6,
+            "move": 6
+          }
+        },
+        {
+          "id": "pg_player2_ranged_3",
+          "x": 47,
+          "y": 51,
+          "my": true,
+          "hits": 1200,
+          "parts": {
+            "ranged_attack": 6,
+            "move": 6
+          }
+        },
+        {
+          "id": "pg_player2_ranged_4",
+          "x": 49,
+          "y": 50,
+          "my": true,
+          "hits": 1116,
+          "parts": {
+            "ranged_attack": 6,
+            "move": 6
+          }
+        },
+        {
+          "id": "pg_player2_ranged_5",
+          "x": 48,
+          "y": 50,
+          "my": true,
+          "hits": 1020,
+          "parts": {
+            "ranged_attack": 5,
+            "move": 6
+          }
+        },
+        {
+          "id": "pg_player2_healer_1",
+          "x": 52,
+          "y": 52,
+          "my": true,
+          "hits": 1200,
+          "parts": {
+            "heal": 6,
+            "move": 6
+          }
+        },
+        {
+          "id": "pg_player2_healer_2",
+          "x": 54,
+          "y": 55,
+          "my": true,
+          "hits": 1200,
+          "parts": {
+            "heal": 6,
+            "move": 6
+          }
+        },
+        {
+          "id": "pg_player2_healer_3",
+          "x": 50,
+          "y": 50,
+          "my": true,
+          "hits": 1200,
+          "parts": {
+            "heal": 6,
+            "move": 6
+          }
+        }
+      ],
+      "enemies": [
+        {
+          "id": "pg_player1_melee_1",
+          "x": 47,
+          "y": 43,
+          "my": false,
+          "hits": 1600,
+          "parts": {
+            "attack": 8,
+            "move": 8
+          }
+        },
+        {
+          "id": "pg_player1_melee_2",
+          "x": 47,
+          "y": 48,
+          "my": false,
+          "hits": 1514,
+          "parts": {
+            "attack": 8,
+            "move": 8
+          }
+        },
+        {
+          "id": "pg_player1_melee_3",
+          "x": 46,
+          "y": 48,
+          "my": false,
+          "hits": 1444,
+          "parts": {
+            "attack": 7,
+            "move": 8
+          }
+        },
+        {
+          "id": "pg_player1_melee_4",
+          "x": 46,
+          "y": 49,
+          "my": false,
+          "hits": 1540,
+          "parts": {
+            "attack": 8,
+            "move": 8
+          }
+        },
+        {
+          "id": "pg_player1_ranged_2",
+          "x": 49,
+          "y": 45,
+          "my": false,
+          "hits": 1200,
+          "parts": {
+            "ranged_attack": 6,
+            "move": 6
+          }
+        },
+        {
+          "id": "pg_player1_ranged_3",
+          "x": 50,
+          "y": 46,
+          "my": false,
+          "hits": 1200,
+          "parts": {
+            "ranged_attack": 6,
+            "move": 6
+          }
+        },
+        {
+          "id": "pg_player1_ranged_4",
+          "x": 49,
+          "y": 47,
+          "my": false,
+          "hits": 1200,
+          "parts": {
+            "ranged_attack": 6,
+            "move": 6
+          }
+        },
+        {
+          "id": "pg_player1_ranged_5",
+          "x": 49,
+          "y": 46,
+          "my": false,
+          "hits": 1200,
+          "parts": {
+            "ranged_attack": 6,
+            "move": 6
+          }
+        }
+      ]
+    },
+    {
+      "tick": 40,
+      "recorded": {
+        "reason": "combat-in-range",
+        "target": null,
+        "returnCode": null,
+        "nextPosition": [
+          50,
+          47
+        ]
+      },
+      "friends": [
+        {
+          "id": "pg_player2_scout_1",
+          "x": 51,
+          "y": 50,
+          "my": true,
+          "hits": 100,
+          "parts": {
+            "move": 1
+          }
+        },
+        {
+          "id": "pg_player2_scout_2",
+          "x": 51,
+          "y": 53,
+          "my": true,
+          "hits": 100,
+          "parts": {
+            "move": 1
+          }
+        },
+        {
+          "id": "pg_player2_melee_1",
+          "x": 49,
+          "y": 52,
+          "my": true,
+          "hits": 1600,
+          "parts": {
+            "attack": 8,
+            "move": 8
+          }
+        },
+        {
+          "id": "pg_player2_melee_2",
+          "x": 50,
+          "y": 48,
+          "my": true,
+          "hits": 1600,
+          "parts": {
+            "attack": 8,
+            "move": 8
+          }
+        },
+        {
+          "id": "pg_player2_melee_3",
+          "x": 50,
+          "y": 47,
+          "my": true,
+          "hits": 1420,
+          "parts": {
+            "attack": 7,
+            "move": 8
+          }
+        },
+        {
+          "id": "pg_player2_melee_4",
+          "x": 52,
+          "y": 48,
+          "my": true,
+          "hits": 1600,
+          "parts": {
+            "attack": 8,
+            "move": 8
+          }
+        },
+        {
+          "id": "pg_player2_ranged_1",
+          "x": 49,
+          "y": 53,
+          "my": true,
+          "hits": 1200,
+          "parts": {
+            "ranged_attack": 6,
+            "move": 6
+          }
+        },
+        {
+          "id": "pg_player2_ranged_2",
+          "x": 51,
+          "y": 54,
+          "my": true,
+          "hits": 1200,
+          "parts": {
+            "ranged_attack": 6,
+            "move": 6
+          }
+        },
+        {
+          "id": "pg_player2_ranged_3",
+          "x": 47,
+          "y": 51,
+          "my": true,
+          "hits": 1200,
+          "parts": {
+            "ranged_attack": 6,
+            "move": 6
+          }
+        },
+        {
+          "id": "pg_player2_ranged_4",
+          "x": 49,
+          "y": 50,
+          "my": true,
+          "hits": 1200,
+          "parts": {
+            "ranged_attack": 6,
+            "move": 6
+          }
+        },
+        {
+          "id": "pg_player2_ranged_5",
+          "x": 48,
+          "y": 50,
+          "my": true,
+          "hits": 960,
+          "parts": {
+            "ranged_attack": 4,
+            "move": 6
+          }
+        },
+        {
+          "id": "pg_player2_healer_1",
+          "x": 51,
+          "y": 51,
+          "my": true,
+          "hits": 1200,
+          "parts": {
+            "heal": 6,
+            "move": 6
+          }
+        },
+        {
+          "id": "pg_player2_healer_2",
+          "x": 53,
+          "y": 54,
+          "my": true,
+          "hits": 1200,
+          "parts": {
+            "heal": 6,
+            "move": 6
+          }
+        },
+        {
+          "id": "pg_player2_healer_3",
+          "x": 50,
+          "y": 50,
+          "my": true,
+          "hits": 1200,
+          "parts": {
+            "heal": 6,
+            "move": 6
+          }
+        }
+      ],
+      "enemies": [
+        {
+          "id": "pg_player1_scout_1",
+          "x": 46,
+          "y": 45,
+          "my": false,
+          "hits": 100,
+          "parts": {
+            "move": 1
+          }
+        },
+        {
+          "id": "pg_player1_scout_2",
+          "x": 46,
+          "y": 43,
+          "my": false,
+          "hits": 100,
+          "parts": {
+            "move": 1
+          }
+        },
+        {
+          "id": "pg_player1_melee_1",
+          "x": 48,
+          "y": 44,
+          "my": false,
+          "hits": 1600,
+          "parts": {
+            "attack": 8,
+            "move": 8
+          }
+        },
+        {
+          "id": "pg_player1_melee_2",
+          "x": 48,
+          "y": 48,
+          "my": false,
+          "hits": 1428,
+          "parts": {
+            "attack": 7,
+            "move": 8
+          }
+        },
+        {
+          "id": "pg_player1_melee_3",
+          "x": 47,
+          "y": 49,
+          "my": false,
+          "hits": 1444,
+          "parts": {
+            "attack": 7,
+            "move": 8
+          }
+        },
+        {
+          "id": "pg_player1_melee_4",
+          "x": 46,
+          "y": 49,
+          "my": false,
+          "hits": 1480,
+          "parts": {
+            "attack": 7,
+            "move": 8
+          }
+        },
+        {
+          "id": "pg_player1_ranged_2",
+          "x": 49,
+          "y": 45,
+          "my": false,
+          "hits": 1200,
+          "parts": {
+            "ranged_attack": 6,
+            "move": 6
+          }
+        },
+        {
+          "id": "pg_player1_ranged_3",
+          "x": 50,
+          "y": 46,
+          "my": false,
+          "hits": 1200,
+          "parts": {
+            "ranged_attack": 6,
+            "move": 6
+          }
+        },
+        {
+          "id": "pg_player1_ranged_4",
+          "x": 48,
+          "y": 46,
+          "my": false,
+          "hits": 1200,
+          "parts": {
+            "ranged_attack": 6,
+            "move": 6
+          }
+        },
+        {
+          "id": "pg_player1_ranged_5",
+          "x": 48,
+          "y": 45,
+          "my": false,
+          "hits": 1200,
+          "parts": {
+            "ranged_attack": 6,
+            "move": 6
+          }
+        },
+        {
+          "id": "pg_player1_healer_1",
+          "x": 45,
+          "y": 47,
+          "my": false,
+          "hits": 1200,
+          "parts": {
+            "heal": 6,
+            "move": 6
+          }
+        }
+      ]
+    }
+  ]
+}

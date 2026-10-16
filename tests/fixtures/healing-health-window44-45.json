@@ -1,0 +1,439 @@
+{
+  "provenance": {
+    "replayId": "6ad152e374ae4378a665afb2",
+    "buildId": "4896ef3596bcca45755413fa8d090a7518bb1ece2ed8d416ea17461109e89215",
+    "phase": "before-actions",
+    "audit": {
+      "path": "/Users/zoltanka/.local/share/pain-and-gain-evidence/healing-allocation-audit-20261016-QOEa2x/analysis-final.json",
+      "sha256": "ffaa4434a491acda462eec00a1f0adb53e5a2a2aea8d36ab6ca6491b651addcb"
+    },
+    "retainedSnapshots": {
+      "path": "/Users/zoltanka/.local/share/pain-and-gain-evidence/contact-wait-live-review-20261016-SwoCqP/cache-review.json",
+      "sha256": "d23b787672a187449a519900e2bfcd429b25bb898d98d29551c9ba2d8b8bee26"
+    },
+    "limits": "Ticks 44–45 only; independent fixed snapshots, no simulated effects. Body counts are functioning counts; positive mock part HP is an eligibility sentinel."
+  },
+  "snapshots": [
+    {
+      "tick": 44,
+      "healModifier": 1,
+      "creeps": [
+        {
+          "id": "pg_player2_scout_1",
+          "my": true,
+          "x": 49,
+          "y": 49,
+          "hits": 100,
+          "hitsMax": 100,
+          "activeBodyParts": {
+            "move": 1
+          }
+        },
+        {
+          "id": "pg_player2_scout_2",
+          "my": true,
+          "x": 50,
+          "y": 49,
+          "hits": 100,
+          "hitsMax": 100,
+          "activeBodyParts": {
+            "move": 1
+          }
+        },
+        {
+          "id": "pg_player2_melee_1",
+          "my": true,
+          "x": 48,
+          "y": 49,
+          "hits": 1468,
+          "hitsMax": 1600,
+          "activeBodyParts": {
+            "attack": 7,
+            "move": 8
+          }
+        },
+        {
+          "id": "pg_player2_melee_2",
+          "my": true,
+          "x": 49,
+          "y": 47,
+          "hits": 250,
+          "hitsMax": 1600,
+          "activeBodyParts": {
+            "move": 3
+          }
+        },
+        {
+          "id": "pg_player2_melee_3",
+          "my": true,
+          "x": 50,
+          "y": 47,
+          "hits": 1020,
+          "hitsMax": 1600,
+          "activeBodyParts": {
+            "attack": 3,
+            "move": 8
+          }
+        },
+        {
+          "id": "pg_player2_melee_4",
+          "my": true,
+          "x": 50,
+          "y": 48,
+          "hits": 1534,
+          "hitsMax": 1600,
+          "activeBodyParts": {
+            "attack": 8,
+            "move": 8
+          }
+        },
+        {
+          "id": "pg_player2_ranged_1",
+          "my": true,
+          "x": 49,
+          "y": 51,
+          "hits": 1200,
+          "hitsMax": 1200,
+          "activeBodyParts": {
+            "ranged_attack": 6,
+            "move": 6
+          }
+        },
+        {
+          "id": "pg_player2_ranged_2",
+          "my": true,
+          "x": 51,
+          "y": 51,
+          "hits": 1200,
+          "hitsMax": 1200,
+          "activeBodyParts": {
+            "ranged_attack": 6,
+            "move": 6
+          }
+        },
+        {
+          "id": "pg_player2_ranged_3",
+          "my": true,
+          "x": 47,
+          "y": 51,
+          "hits": 1200,
+          "hitsMax": 1200,
+          "activeBodyParts": {
+            "ranged_attack": 6,
+            "move": 6
+          }
+        },
+        {
+          "id": "pg_player2_ranged_4",
+          "my": true,
+          "x": 49,
+          "y": 50,
+          "hits": 1200,
+          "hitsMax": 1200,
+          "activeBodyParts": {
+            "ranged_attack": 6,
+            "move": 6
+          }
+        },
+        {
+          "id": "pg_player2_ranged_5",
+          "my": true,
+          "x": 48,
+          "y": 50,
+          "hits": 822,
+          "hitsMax": 1200,
+          "activeBodyParts": {
+            "ranged_attack": 3,
+            "move": 6
+          }
+        },
+        {
+          "id": "pg_player2_healer_1",
+          "my": true,
+          "x": 52,
+          "y": 50,
+          "hits": 1200,
+          "hitsMax": 1200,
+          "activeBodyParts": {
+            "heal": 6,
+            "move": 6
+          }
+        },
+        {
+          "id": "pg_player2_healer_2",
+          "my": true,
+          "x": 50,
+          "y": 51,
+          "hits": 1200,
+          "hitsMax": 1200,
+          "activeBodyParts": {
+            "heal": 6,
+            "move": 6
+          }
+        },
+        {
+          "id": "pg_player2_healer_3",
+          "my": true,
+          "x": 50,
+          "y": 50,
+          "hits": 1200,
+          "hitsMax": 1200,
+          "activeBodyParts": {
+            "heal": 6,
+            "move": 6
+          }
+        }
+      ],
+      "decisions": [
+        {
+          "healerId": "pg_player2_healer_1",
+          "expectedBaseline": {
+            "targetId": "pg_player2_melee_4",
+            "method": "rangedHeal"
+          },
+          "actual": [
+            {
+              "method": "rangedHeal",
+              "targetId": "pg_player2_melee_4",
+              "returnCode": 0,
+              "actionId": "44:49#0"
+            }
+          ],
+          "reason": "injured-ally-in-range"
+        },
+        {
+          "healerId": "pg_player2_healer_2",
+          "expectedBaseline": {
+            "targetId": "pg_player2_melee_1",
+            "method": "rangedHeal"
+          },
+          "actual": [
+            {
+              "method": "rangedHeal",
+              "targetId": "pg_player2_melee_1",
+              "returnCode": 0,
+              "actionId": "44:52#0"
+            }
+          ],
+          "reason": "injured-ally-in-range"
+        },
+        {
+          "healerId": "pg_player2_healer_3",
+          "expectedBaseline": {
+            "targetId": "pg_player2_melee_1",
+            "method": "rangedHeal"
+          },
+          "actual": [
+            {
+              "method": "rangedHeal",
+              "targetId": "pg_player2_melee_1",
+              "returnCode": 0,
+              "actionId": "44:55#0"
+            }
+          ],
+          "reason": "injured-ally-in-range"
+        }
+      ]
+    },
+    {
+      "tick": 45,
+      "healModifier": 1,
+      "creeps": [
+        {
+          "id": "pg_player2_scout_1",
+          "my": true,
+          "x": 49,
+          "y": 49,
+          "hits": 100,
+          "hitsMax": 100,
+          "activeBodyParts": {
+            "move": 1
+          }
+        },
+        {
+          "id": "pg_player2_scout_2",
+          "my": true,
+          "x": 50,
+          "y": 49,
+          "hits": 100,
+          "hitsMax": 100,
+          "activeBodyParts": {
+            "move": 1
+          }
+        },
+        {
+          "id": "pg_player2_melee_1",
+          "my": true,
+          "x": 48,
+          "y": 49,
+          "hits": 1318,
+          "hitsMax": 1600,
+          "activeBodyParts": {
+            "attack": 6,
+            "move": 8
+          }
+        },
+        {
+          "id": "pg_player2_melee_3",
+          "my": true,
+          "x": 50,
+          "y": 47,
+          "hits": 844,
+          "hitsMax": 1600,
+          "activeBodyParts": {
+            "attack": 1,
+            "move": 8
+          }
+        },
+        {
+          "id": "pg_player2_melee_4",
+          "my": true,
+          "x": 51,
+          "y": 47,
+          "hits": 1558,
+          "hitsMax": 1600,
+          "activeBodyParts": {
+            "attack": 8,
+            "move": 8
+          }
+        },
+        {
+          "id": "pg_player2_ranged_1",
+          "my": true,
+          "x": 49,
+          "y": 51,
+          "hits": 1200,
+          "hitsMax": 1200,
+          "activeBodyParts": {
+            "ranged_attack": 6,
+            "move": 6
+          }
+        },
+        {
+          "id": "pg_player2_ranged_2",
+          "my": true,
+          "x": 51,
+          "y": 51,
+          "hits": 1200,
+          "hitsMax": 1200,
+          "activeBodyParts": {
+            "ranged_attack": 6,
+            "move": 6
+          }
+        },
+        {
+          "id": "pg_player2_ranged_3",
+          "my": true,
+          "x": 47,
+          "y": 51,
+          "hits": 1200,
+          "hitsMax": 1200,
+          "activeBodyParts": {
+            "ranged_attack": 6,
+            "move": 6
+          }
+        },
+        {
+          "id": "pg_player2_ranged_4",
+          "my": true,
+          "x": 49,
+          "y": 50,
+          "hits": 1200,
+          "hitsMax": 1200,
+          "activeBodyParts": {
+            "ranged_attack": 6,
+            "move": 6
+          }
+        },
+        {
+          "id": "pg_player2_ranged_5",
+          "my": true,
+          "x": 48,
+          "y": 50,
+          "hits": 822,
+          "hitsMax": 1200,
+          "activeBodyParts": {
+            "ranged_attack": 3,
+            "move": 6
+          }
+        },
+        {
+          "id": "pg_player2_healer_1",
+          "my": true,
+          "x": 52,
+          "y": 51,
+          "hits": 1200,
+          "hitsMax": 1200,
+          "activeBodyParts": {
+            "heal": 6,
+            "move": 6
+          }
+        },
+        {
+          "id": "pg_player2_healer_2",
+          "my": true,
+          "x": 51,
+          "y": 50,
+          "hits": 1200,
+          "hitsMax": 1200,
+          "activeBodyParts": {
+            "heal": 6,
+            "move": 6
+          }
+        },
+        {
+          "id": "pg_player2_healer_3",
+          "my": true,
+          "x": 50,
+          "y": 50,
+          "hits": 1200,
+          "hitsMax": 1200,
+          "activeBodyParts": {
+            "heal": 6,
+            "move": 6
+          }
+        }
+      ],
+      "decisions": [
+        {
+          "healerId": "pg_player2_healer_1",
+          "expectedBaseline": null,
+          "actual": [],
+          "reason": "no-injured-target-in-range"
+        },
+        {
+          "healerId": "pg_player2_healer_2",
+          "expectedBaseline": {
+            "targetId": "pg_player2_melee_1",
+            "method": "rangedHeal"
+          },
+          "actual": [
+            {
+              "method": "rangedHeal",
+              "targetId": "pg_player2_melee_1",
+              "returnCode": 0,
+              "actionId": "45:47#0"
+            }
+          ],
+          "reason": "injured-ally-in-range"
+        },
+        {
+          "healerId": "pg_player2_healer_3",
+          "expectedBaseline": {
+            "targetId": "pg_player2_melee_1",
+            "method": "rangedHeal"
+          },
+          "actual": [
+            {
+              "method": "rangedHeal",
+              "targetId": "pg_player2_melee_1",
+              "returnCode": 0,
+              "actionId": "45:50#0"
+            }
+          ],
+          "reason": "injured-ally-in-range"
+        }
+      ]
+    }
+  ]
+}
