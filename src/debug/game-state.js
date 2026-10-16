@@ -19,13 +19,14 @@ function describeCreep(creep) {
     };
 }
 
-export function logGameState({ tick, creeps, flags }, selectedFlag) {
+export function logGameState({ tick, creeps, flags }, selectedFlag, secondaryObjective = null) {
     console.log(JSON.stringify({
         type: 'game-state',
         buildId,
         tick,
         phase: 'before-actions',
         selectedFlagId: selectedFlag?.id ?? null,
+        ...(secondaryObjective ? { secondaryObjective } : {}),
         creeps: creeps.map(describeCreep),
         flags: flags.map(flag => ({
             id: flag.id,

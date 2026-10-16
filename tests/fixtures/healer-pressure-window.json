@@ -1,0 +1,1843 @@
+{
+  "provenance": {
+    "replay": "6ad29845abefcb7eecc8f354",
+    "build": "c52a37aa77c428fb8975c23643f86c99fa174c2324eef52578ee877a82e9bb30",
+    "key": "1/0/https://arena.screeps.com/api/game/6ad29845abefcb7eecc8f354/log/90",
+    "sourceSha256": "7b2fdfa27276103bcf841f8f64e18a799ec3acd14b774da68d53202802ef7a5e",
+    "mapChecksum": "2d0c24396e9b62c828d45c231e4480b53501a9091095905587995503472bbc1b",
+    "kind": "Recorded independent snapshots; no counterfactual engine effects"
+  },
+  "initialBodies": [
+    {
+      "id": "pg_player1_scout_1",
+      "parts": {
+        "move": 1
+      }
+    },
+    {
+      "id": "pg_player1_scout_2",
+      "parts": {
+        "move": 1
+      }
+    },
+    {
+      "id": "pg_player1_melee_1",
+      "parts": {
+        "attack": 8,
+        "move": 8
+      }
+    },
+    {
+      "id": "pg_player1_melee_2",
+      "parts": {
+        "attack": 8,
+        "move": 8
+      }
+    },
+    {
+      "id": "pg_player1_melee_3",
+      "parts": {
+        "attack": 8,
+        "move": 8
+      }
+    },
+    {
+      "id": "pg_player1_melee_4",
+      "parts": {
+        "attack": 8,
+        "move": 8
+      }
+    },
+    {
+      "id": "pg_player1_ranged_1",
+      "parts": {
+        "ranged_attack": 6,
+        "move": 6
+      }
+    },
+    {
+      "id": "pg_player1_ranged_2",
+      "parts": {
+        "ranged_attack": 6,
+        "move": 6
+      }
+    },
+    {
+      "id": "pg_player1_ranged_3",
+      "parts": {
+        "ranged_attack": 6,
+        "move": 6
+      }
+    },
+    {
+      "id": "pg_player1_ranged_4",
+      "parts": {
+        "ranged_attack": 6,
+        "move": 6
+      }
+    },
+    {
+      "id": "pg_player1_ranged_5",
+      "parts": {
+        "ranged_attack": 6,
+        "move": 6
+      }
+    },
+    {
+      "id": "pg_player1_healer_1",
+      "parts": {
+        "heal": 6,
+        "move": 6
+      }
+    },
+    {
+      "id": "pg_player1_healer_2",
+      "parts": {
+        "heal": 6,
+        "move": 6
+      }
+    },
+    {
+      "id": "pg_player1_healer_3",
+      "parts": {
+        "heal": 6,
+        "move": 6
+      }
+    },
+    {
+      "id": "pg_player2_scout_1",
+      "parts": {
+        "move": 1
+      }
+    },
+    {
+      "id": "pg_player2_scout_2",
+      "parts": {
+        "move": 1
+      }
+    },
+    {
+      "id": "pg_player2_melee_1",
+      "parts": {
+        "attack": 8,
+        "move": 8
+      }
+    },
+    {
+      "id": "pg_player2_melee_2",
+      "parts": {
+        "attack": 8,
+        "move": 8
+      }
+    },
+    {
+      "id": "pg_player2_melee_3",
+      "parts": {
+        "attack": 8,
+        "move": 8
+      }
+    },
+    {
+      "id": "pg_player2_melee_4",
+      "parts": {
+        "attack": 8,
+        "move": 8
+      }
+    },
+    {
+      "id": "pg_player2_ranged_1",
+      "parts": {
+        "ranged_attack": 6,
+        "move": 6
+      }
+    },
+    {
+      "id": "pg_player2_ranged_2",
+      "parts": {
+        "ranged_attack": 6,
+        "move": 6
+      }
+    },
+    {
+      "id": "pg_player2_ranged_3",
+      "parts": {
+        "ranged_attack": 6,
+        "move": 6
+      }
+    },
+    {
+      "id": "pg_player2_ranged_4",
+      "parts": {
+        "ranged_attack": 6,
+        "move": 6
+      }
+    },
+    {
+      "id": "pg_player2_ranged_5",
+      "parts": {
+        "ranged_attack": 6,
+        "move": 6
+      }
+    },
+    {
+      "id": "pg_player2_healer_1",
+      "parts": {
+        "heal": 6,
+        "move": 6
+      }
+    },
+    {
+      "id": "pg_player2_healer_2",
+      "parts": {
+        "heal": 6,
+        "move": 6
+      }
+    },
+    {
+      "id": "pg_player2_healer_3",
+      "parts": {
+        "heal": 6,
+        "move": 6
+      }
+    }
+  ],
+  "samples": [
+    {
+      "state": {
+        "type": "game-state",
+        "buildId": "c52a37aa77c428fb8975c23643f86c99fa174c2324eef52578ee877a82e9bb30",
+        "tick": 63,
+        "phase": "before-actions",
+        "selectedFlagId": "pg_flag_vulnerability",
+        "secondaryObjective": {
+          "phase": "idle",
+          "reason": "acquisition-cadence",
+          "squadId": null,
+          "targetId": null,
+          "memberIds": [],
+          "startedAt": null,
+          "unchanged": 0,
+          "queries": 0,
+          "reportedOps": 0,
+          "cacheHits": 0
+        },
+        "creeps": [
+          {
+            "id": "pg_player1_scout_1",
+            "my": true,
+            "x": 49,
+            "y": 49,
+            "hits": 100,
+            "hitsMax": 100,
+            "fatigue": 0,
+            "activeBodyParts": {
+              "move": 1
+            }
+          },
+          {
+            "id": "pg_player1_scout_2",
+            "my": true,
+            "x": 48,
+            "y": 49,
+            "hits": 100,
+            "hitsMax": 100,
+            "fatigue": 0,
+            "activeBodyParts": {
+              "move": 1
+            }
+          },
+          {
+            "id": "pg_player1_melee_2",
+            "my": true,
+            "x": 49,
+            "y": 50,
+            "hits": 1406,
+            "hitsMax": 1600,
+            "fatigue": 0,
+            "activeBodyParts": {
+              "attack": 7,
+              "move": 8
+            }
+          },
+          {
+            "id": "pg_player1_melee_3",
+            "my": true,
+            "x": 50,
+            "y": 50,
+            "hits": 504,
+            "hitsMax": 1600,
+            "fatigue": 0,
+            "activeBodyParts": {
+              "move": 6
+            }
+          },
+          {
+            "id": "pg_player1_melee_4",
+            "my": true,
+            "x": 59,
+            "y": 61,
+            "hits": 689,
+            "hitsMax": 1600,
+            "fatigue": 0,
+            "activeBodyParts": {
+              "move": 7
+            }
+          },
+          {
+            "id": "pg_player1_ranged_1",
+            "my": true,
+            "x": 49,
+            "y": 48,
+            "hits": 1200,
+            "hitsMax": 1200,
+            "fatigue": 0,
+            "activeBodyParts": {
+              "ranged_attack": 6,
+              "move": 6
+            }
+          },
+          {
+            "id": "pg_player1_ranged_2",
+            "my": true,
+            "x": 50,
+            "y": 48,
+            "hits": 1200,
+            "hitsMax": 1200,
+            "fatigue": 0,
+            "activeBodyParts": {
+              "ranged_attack": 6,
+              "move": 6
+            }
+          },
+          {
+            "id": "pg_player1_ranged_3",
+            "my": true,
+            "x": 63,
+            "y": 61,
+            "hits": 947,
+            "hitsMax": 1200,
+            "fatigue": 0,
+            "activeBodyParts": {
+              "ranged_attack": 4,
+              "move": 6
+            }
+          },
+          {
+            "id": "pg_player1_ranged_4",
+            "my": true,
+            "x": 61,
+            "y": 61,
+            "hits": 702,
+            "hitsMax": 1200,
+            "fatigue": 0,
+            "activeBodyParts": {
+              "ranged_attack": 2,
+              "move": 6
+            }
+          },
+          {
+            "id": "pg_player1_ranged_5",
+            "my": true,
+            "x": 62,
+            "y": 61,
+            "hits": 947,
+            "hitsMax": 1200,
+            "fatigue": 0,
+            "activeBodyParts": {
+              "ranged_attack": 4,
+              "move": 6
+            }
+          },
+          {
+            "id": "pg_player1_healer_1",
+            "my": true,
+            "x": 60,
+            "y": 61,
+            "hits": 1131,
+            "hitsMax": 1200,
+            "fatigue": 0,
+            "activeBodyParts": {
+              "heal": 6,
+              "move": 6
+            }
+          },
+          {
+            "id": "pg_player1_healer_2",
+            "my": true,
+            "x": 48,
+            "y": 50,
+            "hits": 1200,
+            "hitsMax": 1200,
+            "fatigue": 0,
+            "activeBodyParts": {
+              "heal": 6,
+              "move": 6
+            }
+          },
+          {
+            "id": "pg_player1_healer_3",
+            "my": true,
+            "x": 52,
+            "y": 53,
+            "hits": 1200,
+            "hitsMax": 1200,
+            "fatigue": 0,
+            "activeBodyParts": {
+              "heal": 6,
+              "move": 6
+            }
+          },
+          {
+            "id": "pg_player2_scout_1",
+            "my": false,
+            "x": 86,
+            "y": 89,
+            "hits": 100,
+            "hitsMax": 100,
+            "fatigue": 0,
+            "activeBodyParts": {
+              "move": 1
+            }
+          },
+          {
+            "id": "pg_player2_scout_2",
+            "my": false,
+            "x": 88,
+            "y": 91,
+            "hits": 100,
+            "hitsMax": 100,
+            "fatigue": 0,
+            "activeBodyParts": {
+              "move": 1
+            }
+          },
+          {
+            "id": "pg_player2_melee_1",
+            "my": false,
+            "x": 65,
+            "y": 65,
+            "hits": 772,
+            "hitsMax": 1600,
+            "fatigue": 0,
+            "activeBodyParts": {
+              "move": 8
+            }
+          },
+          {
+            "id": "pg_player2_melee_2",
+            "my": false,
+            "x": 63,
+            "y": 63,
+            "hits": 1160,
+            "hitsMax": 1600,
+            "fatigue": 0,
+            "activeBodyParts": {
+              "attack": 4,
+              "move": 8
+            }
+          },
+          {
+            "id": "pg_player2_melee_3",
+            "my": false,
+            "x": 64,
+            "y": 63,
+            "hits": 1600,
+            "hitsMax": 1600,
+            "fatigue": 0,
+            "activeBodyParts": {
+              "attack": 8,
+              "move": 8
+            }
+          },
+          {
+            "id": "pg_player2_melee_4",
+            "my": false,
+            "x": 62,
+            "y": 63,
+            "hits": 1600,
+            "hitsMax": 1600,
+            "fatigue": 0,
+            "activeBodyParts": {
+              "attack": 8,
+              "move": 8
+            }
+          },
+          {
+            "id": "pg_player2_ranged_1",
+            "my": false,
+            "x": 64,
+            "y": 64,
+            "hits": 1200,
+            "hitsMax": 1200,
+            "fatigue": 0,
+            "activeBodyParts": {
+              "ranged_attack": 6,
+              "move": 6
+            }
+          },
+          {
+            "id": "pg_player2_ranged_2",
+            "my": false,
+            "x": 63,
+            "y": 65,
+            "hits": 1200,
+            "hitsMax": 1200,
+            "fatigue": 0,
+            "activeBodyParts": {
+              "ranged_attack": 6,
+              "move": 6
+            }
+          },
+          {
+            "id": "pg_player2_ranged_3",
+            "my": false,
+            "x": 63,
+            "y": 64,
+            "hits": 1200,
+            "hitsMax": 1200,
+            "fatigue": 0,
+            "activeBodyParts": {
+              "ranged_attack": 6,
+              "move": 6
+            }
+          },
+          {
+            "id": "pg_player2_ranged_4",
+            "my": false,
+            "x": 63,
+            "y": 62,
+            "hits": 930,
+            "hitsMax": 1200,
+            "fatigue": 0,
+            "activeBodyParts": {
+              "ranged_attack": 4,
+              "move": 6
+            }
+          },
+          {
+            "id": "pg_player2_ranged_5",
+            "my": false,
+            "x": 62,
+            "y": 62,
+            "hits": 1200,
+            "hitsMax": 1200,
+            "fatigue": 0,
+            "activeBodyParts": {
+              "ranged_attack": 6,
+              "move": 6
+            }
+          },
+          {
+            "id": "pg_player2_healer_1",
+            "my": false,
+            "x": 64,
+            "y": 65,
+            "hits": 1200,
+            "hitsMax": 1200,
+            "fatigue": 0,
+            "activeBodyParts": {
+              "heal": 6,
+              "move": 6
+            }
+          },
+          {
+            "id": "pg_player2_healer_2",
+            "my": false,
+            "x": 63,
+            "y": 66,
+            "hits": 1200,
+            "hitsMax": 1200,
+            "fatigue": 0,
+            "activeBodyParts": {
+              "heal": 6,
+              "move": 6
+            }
+          },
+          {
+            "id": "pg_player2_healer_3",
+            "my": false,
+            "x": 64,
+            "y": 66,
+            "hits": 1200,
+            "hitsMax": 1200,
+            "fatigue": 0,
+            "activeBodyParts": {
+              "heal": 6,
+              "move": 6
+            }
+          }
+        ],
+        "flags": [
+          {
+            "id": "pg_flag_vulnerability",
+            "x": 49,
+            "y": 49,
+            "owner": "me",
+            "effectType": "eff_damage_taken_modifier",
+            "scorePerTick": 5
+          },
+          {
+            "id": "pg_flag_heal_reduction_a",
+            "x": 90,
+            "y": 8,
+            "owner": "neutral",
+            "effectType": "eff_heal_modifier",
+            "scorePerTick": 4
+          },
+          {
+            "id": "pg_flag_heal_reduction_b",
+            "x": 8,
+            "y": 90,
+            "owner": "neutral",
+            "effectType": "eff_heal_modifier",
+            "scorePerTick": 4
+          },
+          {
+            "id": "pg_flag_attack_reduction_a",
+            "x": 67,
+            "y": 31,
+            "owner": "neutral",
+            "effectType": "eff_attack_modifier",
+            "scorePerTick": 3
+          },
+          {
+            "id": "pg_flag_attack_reduction_b",
+            "x": 31,
+            "y": 67,
+            "owner": "neutral",
+            "effectType": "eff_attack_modifier",
+            "scorePerTick": 3
+          },
+          {
+            "id": "pg_flag_ranged_attack_reduction_a",
+            "x": 13,
+            "y": 49,
+            "owner": "neutral",
+            "effectType": "eff_ranged_attack_modifier",
+            "scorePerTick": 3
+          },
+          {
+            "id": "pg_flag_ranged_attack_reduction_b",
+            "x": 85,
+            "y": 49,
+            "owner": "neutral",
+            "effectType": "eff_ranged_attack_modifier",
+            "scorePerTick": 3
+          }
+        ]
+      },
+      "recordedMovement": [
+        {
+          "type": "action-decision",
+          "formatVersion": 1,
+          "buildId": "c52a37aa77c428fb8975c23643f86c99fa174c2324eef52578ee877a82e9bb30",
+          "tick": 63,
+          "phase": "movement",
+          "sequence": 1,
+          "recordId": "63:1",
+          "decisionId": "63:1",
+          "channel": "movement",
+          "actorId": "pg_player1_scout_1",
+          "outcome": "selected",
+          "reason": "flag-fallback",
+          "actions": [
+            {
+              "actionId": "63:1#0",
+              "method": "moveTo",
+              "target": {
+                "kind": "score-flag",
+                "id": "pg_flag_vulnerability",
+                "x": 49,
+                "y": 49
+              }
+            }
+          ]
+        },
+        {
+          "type": "action-decision",
+          "formatVersion": 1,
+          "buildId": "c52a37aa77c428fb8975c23643f86c99fa174c2324eef52578ee877a82e9bb30",
+          "tick": 63,
+          "phase": "movement",
+          "sequence": 3,
+          "recordId": "63:3",
+          "decisionId": "63:3",
+          "channel": "movement",
+          "actorId": "pg_player1_scout_2",
+          "outcome": "selected",
+          "reason": "flag-fallback",
+          "actions": [
+            {
+              "actionId": "63:3#0",
+              "method": "moveTo",
+              "target": {
+                "kind": "score-flag",
+                "id": "pg_flag_vulnerability",
+                "x": 49,
+                "y": 49
+              }
+            }
+          ]
+        },
+        {
+          "type": "action-decision",
+          "formatVersion": 1,
+          "buildId": "c52a37aa77c428fb8975c23643f86c99fa174c2324eef52578ee877a82e9bb30",
+          "tick": 63,
+          "phase": "movement",
+          "sequence": 5,
+          "recordId": "63:5",
+          "decisionId": "63:5",
+          "channel": "movement",
+          "actorId": "pg_player1_melee_2",
+          "outcome": "selected",
+          "reason": "flag-fallback",
+          "actions": [
+            {
+              "actionId": "63:5#0",
+              "method": "moveTo",
+              "target": {
+                "kind": "score-flag",
+                "id": "pg_flag_vulnerability",
+                "x": 49,
+                "y": 49
+              }
+            }
+          ]
+        },
+        {
+          "type": "action-decision",
+          "formatVersion": 1,
+          "buildId": "c52a37aa77c428fb8975c23643f86c99fa174c2324eef52578ee877a82e9bb30",
+          "tick": 63,
+          "phase": "movement",
+          "sequence": 7,
+          "recordId": "63:7",
+          "decisionId": "63:7",
+          "channel": "movement",
+          "actorId": "pg_player1_melee_3",
+          "outcome": "selected",
+          "reason": "flag-fallback",
+          "actions": [
+            {
+              "actionId": "63:7#0",
+              "method": "moveTo",
+              "target": {
+                "kind": "score-flag",
+                "id": "pg_flag_vulnerability",
+                "x": 49,
+                "y": 49
+              }
+            }
+          ]
+        },
+        {
+          "type": "action-decision",
+          "formatVersion": 1,
+          "buildId": "c52a37aa77c428fb8975c23643f86c99fa174c2324eef52578ee877a82e9bb30",
+          "tick": 63,
+          "phase": "movement",
+          "sequence": 9,
+          "recordId": "63:9",
+          "decisionId": "63:9",
+          "channel": "movement",
+          "actorId": "pg_player1_melee_4",
+          "outcome": "selected",
+          "reason": "flag-fallback",
+          "actions": [
+            {
+              "actionId": "63:9#0",
+              "method": "moveTo",
+              "target": {
+                "kind": "score-flag",
+                "id": "pg_flag_vulnerability",
+                "x": 49,
+                "y": 49
+              }
+            }
+          ]
+        },
+        {
+          "type": "action-decision",
+          "formatVersion": 1,
+          "buildId": "c52a37aa77c428fb8975c23643f86c99fa174c2324eef52578ee877a82e9bb30",
+          "tick": 63,
+          "phase": "movement",
+          "sequence": 11,
+          "recordId": "63:11",
+          "decisionId": "63:11",
+          "channel": "movement",
+          "actorId": "pg_player1_ranged_1",
+          "outcome": "selected",
+          "reason": "flag-fallback",
+          "actions": [
+            {
+              "actionId": "63:11#0",
+              "method": "moveTo",
+              "target": {
+                "kind": "score-flag",
+                "id": "pg_flag_vulnerability",
+                "x": 49,
+                "y": 49
+              }
+            }
+          ]
+        },
+        {
+          "type": "action-decision",
+          "formatVersion": 1,
+          "buildId": "c52a37aa77c428fb8975c23643f86c99fa174c2324eef52578ee877a82e9bb30",
+          "tick": 63,
+          "phase": "movement",
+          "sequence": 13,
+          "recordId": "63:13",
+          "decisionId": "63:13",
+          "channel": "movement",
+          "actorId": "pg_player1_ranged_2",
+          "outcome": "selected",
+          "reason": "flag-fallback",
+          "actions": [
+            {
+              "actionId": "63:13#0",
+              "method": "moveTo",
+              "target": {
+                "kind": "score-flag",
+                "id": "pg_flag_vulnerability",
+                "x": 49,
+                "y": 49
+              }
+            }
+          ]
+        },
+        {
+          "type": "action-decision",
+          "formatVersion": 1,
+          "buildId": "c52a37aa77c428fb8975c23643f86c99fa174c2324eef52578ee877a82e9bb30",
+          "tick": 63,
+          "phase": "movement",
+          "sequence": 15,
+          "recordId": "63:15",
+          "decisionId": "63:15",
+          "channel": "movement",
+          "actorId": "pg_player1_ranged_3",
+          "outcome": "hold",
+          "reason": "combat-in-range",
+          "actions": []
+        },
+        {
+          "type": "action-decision",
+          "formatVersion": 1,
+          "buildId": "c52a37aa77c428fb8975c23643f86c99fa174c2324eef52578ee877a82e9bb30",
+          "tick": 63,
+          "phase": "movement",
+          "sequence": 16,
+          "recordId": "63:16",
+          "decisionId": "63:16",
+          "channel": "movement",
+          "actorId": "pg_player1_ranged_4",
+          "outcome": "hold",
+          "reason": "combat-in-range",
+          "actions": []
+        },
+        {
+          "type": "action-decision",
+          "formatVersion": 1,
+          "buildId": "c52a37aa77c428fb8975c23643f86c99fa174c2324eef52578ee877a82e9bb30",
+          "tick": 63,
+          "phase": "movement",
+          "sequence": 17,
+          "recordId": "63:17",
+          "decisionId": "63:17",
+          "channel": "movement",
+          "actorId": "pg_player1_ranged_5",
+          "outcome": "hold",
+          "reason": "combat-in-range",
+          "actions": []
+        },
+        {
+          "type": "action-decision",
+          "formatVersion": 1,
+          "buildId": "c52a37aa77c428fb8975c23643f86c99fa174c2324eef52578ee877a82e9bb30",
+          "tick": 63,
+          "phase": "movement",
+          "sequence": 18,
+          "recordId": "63:18",
+          "decisionId": "63:18",
+          "channel": "movement",
+          "actorId": "pg_player1_healer_1",
+          "outcome": "hold",
+          "reason": "injured-ally-in-range",
+          "actions": []
+        },
+        {
+          "type": "action-decision",
+          "formatVersion": 1,
+          "buildId": "c52a37aa77c428fb8975c23643f86c99fa174c2324eef52578ee877a82e9bb30",
+          "tick": 63,
+          "phase": "movement",
+          "sequence": 19,
+          "recordId": "63:19",
+          "decisionId": "63:19",
+          "channel": "movement",
+          "actorId": "pg_player1_healer_2",
+          "outcome": "hold",
+          "reason": "injured-ally-in-range",
+          "actions": []
+        },
+        {
+          "type": "action-decision",
+          "formatVersion": 1,
+          "buildId": "c52a37aa77c428fb8975c23643f86c99fa174c2324eef52578ee877a82e9bb30",
+          "tick": 63,
+          "phase": "movement",
+          "sequence": 20,
+          "recordId": "63:20",
+          "decisionId": "63:20",
+          "channel": "movement",
+          "actorId": "pg_player1_healer_3",
+          "outcome": "hold",
+          "reason": "injured-ally-in-range",
+          "actions": []
+        }
+      ],
+      "healer": {
+        "id": "pg_player1_healer_1",
+        "x": 60,
+        "y": 61,
+        "hits": 1131,
+        "fatigue": 0,
+        "parts": {
+          "heal": 6,
+          "move": 6
+        },
+        "movement": {
+          "recordId": "63:18",
+          "reason": "injured-ally-in-range",
+          "actions": []
+        },
+        "healing": {
+          "recordId": "63:44",
+          "reason": "injured-ally-in-range",
+          "actions": [
+            {
+              "actionId": "63:44#0",
+              "method": "heal",
+              "target": {
+                "kind": "creep",
+                "id": "pg_player1_melee_4",
+                "x": 59,
+                "y": 61
+              }
+            }
+          ]
+        },
+        "attempts": [
+          {
+            "recordId": "63:45",
+            "channel": "healing",
+            "method": "heal",
+            "target": {
+              "kind": "creep",
+              "id": "pg_player1_melee_4",
+              "x": 59,
+              "y": 61
+            },
+            "returnCode": 0
+          }
+        ],
+        "threats": [
+          {
+            "id": "pg_player2_ranged_3",
+            "x": 63,
+            "y": 64,
+            "parts": {
+              "ranged_attack": 6,
+              "move": 6
+            },
+            "range": 3
+          },
+          {
+            "id": "pg_player2_ranged_4",
+            "x": 63,
+            "y": 62,
+            "parts": {
+              "ranged_attack": 4,
+              "move": 6
+            },
+            "range": 3
+          },
+          {
+            "id": "pg_player2_ranged_5",
+            "x": 62,
+            "y": 62,
+            "parts": {
+              "ranged_attack": 6,
+              "move": 6
+            },
+            "range": 2
+          }
+        ]
+      },
+      "terrain": {
+        "59,60": 0,
+        "60,60": 0,
+        "61,60": 0,
+        "59,61": 0,
+        "60,61": 0,
+        "61,61": 0,
+        "59,62": 0,
+        "60,62": 0,
+        "61,62": 0
+      },
+      "expectedRetreat": {
+        "x": 60,
+        "y": 60
+      }
+    },
+    {
+      "state": {
+        "type": "game-state",
+        "buildId": "c52a37aa77c428fb8975c23643f86c99fa174c2324eef52578ee877a82e9bb30",
+        "tick": 64,
+        "phase": "before-actions",
+        "selectedFlagId": "pg_flag_vulnerability",
+        "secondaryObjective": {
+          "phase": "idle",
+          "reason": "acquisition-cadence",
+          "squadId": null,
+          "targetId": null,
+          "memberIds": [],
+          "startedAt": null,
+          "unchanged": 0,
+          "queries": 0,
+          "reportedOps": 0,
+          "cacheHits": 0
+        },
+        "creeps": [
+          {
+            "id": "pg_player1_scout_1",
+            "my": true,
+            "x": 49,
+            "y": 49,
+            "hits": 100,
+            "hitsMax": 100,
+            "fatigue": 0,
+            "activeBodyParts": {
+              "move": 1
+            }
+          },
+          {
+            "id": "pg_player1_scout_2",
+            "my": true,
+            "x": 48,
+            "y": 49,
+            "hits": 100,
+            "hitsMax": 100,
+            "fatigue": 0,
+            "activeBodyParts": {
+              "move": 1
+            }
+          },
+          {
+            "id": "pg_player1_melee_2",
+            "my": true,
+            "x": 49,
+            "y": 50,
+            "hits": 1502,
+            "hitsMax": 1600,
+            "fatigue": 0,
+            "activeBodyParts": {
+              "attack": 8,
+              "move": 8
+            }
+          },
+          {
+            "id": "pg_player1_melee_3",
+            "my": true,
+            "x": 50,
+            "y": 50,
+            "hits": 504,
+            "hitsMax": 1600,
+            "fatigue": 0,
+            "activeBodyParts": {
+              "move": 6
+            }
+          },
+          {
+            "id": "pg_player1_melee_4",
+            "my": true,
+            "x": 58,
+            "y": 60,
+            "hits": 754,
+            "hitsMax": 1600,
+            "fatigue": 2,
+            "activeBodyParts": {
+              "move": 8
+            }
+          },
+          {
+            "id": "pg_player1_ranged_1",
+            "my": true,
+            "x": 49,
+            "y": 48,
+            "hits": 1200,
+            "hitsMax": 1200,
+            "fatigue": 0,
+            "activeBodyParts": {
+              "ranged_attack": 6,
+              "move": 6
+            }
+          },
+          {
+            "id": "pg_player1_ranged_2",
+            "my": true,
+            "x": 50,
+            "y": 48,
+            "hits": 1200,
+            "hitsMax": 1200,
+            "fatigue": 0,
+            "activeBodyParts": {
+              "ranged_attack": 6,
+              "move": 6
+            }
+          },
+          {
+            "id": "pg_player1_ranged_3",
+            "my": true,
+            "x": 63,
+            "y": 61,
+            "hits": 837,
+            "hitsMax": 1200,
+            "fatigue": 0,
+            "activeBodyParts": {
+              "ranged_attack": 3,
+              "move": 6
+            }
+          },
+          {
+            "id": "pg_player1_ranged_4",
+            "my": true,
+            "x": 61,
+            "y": 61,
+            "hits": 486,
+            "hitsMax": 1200,
+            "fatigue": 0,
+            "activeBodyParts": {
+              "move": 5
+            }
+          },
+          {
+            "id": "pg_player1_ranged_5",
+            "my": true,
+            "x": 62,
+            "y": 61,
+            "hits": 837,
+            "hitsMax": 1200,
+            "fatigue": 0,
+            "activeBodyParts": {
+              "ranged_attack": 3,
+              "move": 6
+            }
+          },
+          {
+            "id": "pg_player1_healer_1",
+            "my": true,
+            "x": 60,
+            "y": 61,
+            "hits": 1100,
+            "hitsMax": 1200,
+            "fatigue": 0,
+            "activeBodyParts": {
+              "heal": 5,
+              "move": 6
+            }
+          },
+          {
+            "id": "pg_player1_healer_2",
+            "my": true,
+            "x": 48,
+            "y": 50,
+            "hits": 1200,
+            "hitsMax": 1200,
+            "fatigue": 0,
+            "activeBodyParts": {
+              "heal": 6,
+              "move": 6
+            }
+          },
+          {
+            "id": "pg_player1_healer_3",
+            "my": true,
+            "x": 52,
+            "y": 53,
+            "hits": 1200,
+            "hitsMax": 1200,
+            "fatigue": 0,
+            "activeBodyParts": {
+              "heal": 6,
+              "move": 6
+            }
+          },
+          {
+            "id": "pg_player2_scout_1",
+            "my": false,
+            "x": 86,
+            "y": 89,
+            "hits": 100,
+            "hitsMax": 100,
+            "fatigue": 0,
+            "activeBodyParts": {
+              "move": 1
+            }
+          },
+          {
+            "id": "pg_player2_scout_2",
+            "my": false,
+            "x": 88,
+            "y": 91,
+            "hits": 100,
+            "hitsMax": 100,
+            "fatigue": 0,
+            "activeBodyParts": {
+              "move": 1
+            }
+          },
+          {
+            "id": "pg_player2_melee_1",
+            "my": false,
+            "x": 65,
+            "y": 66,
+            "hits": 916,
+            "hitsMax": 1600,
+            "fatigue": 0,
+            "activeBodyParts": {
+              "attack": 2,
+              "move": 8
+            }
+          },
+          {
+            "id": "pg_player2_melee_2",
+            "my": false,
+            "x": 63,
+            "y": 62,
+            "hits": 1160,
+            "hitsMax": 1600,
+            "fatigue": 0,
+            "activeBodyParts": {
+              "attack": 4,
+              "move": 8
+            }
+          },
+          {
+            "id": "pg_player2_melee_3",
+            "my": false,
+            "x": 64,
+            "y": 62,
+            "hits": 1600,
+            "hitsMax": 1600,
+            "fatigue": 0,
+            "activeBodyParts": {
+              "attack": 8,
+              "move": 8
+            }
+          },
+          {
+            "id": "pg_player2_melee_4",
+            "my": false,
+            "x": 61,
+            "y": 62,
+            "hits": 1600,
+            "hitsMax": 1600,
+            "fatigue": 0,
+            "activeBodyParts": {
+              "attack": 8,
+              "move": 8
+            }
+          },
+          {
+            "id": "pg_player2_ranged_1",
+            "my": false,
+            "x": 63,
+            "y": 63,
+            "hits": 1200,
+            "hitsMax": 1200,
+            "fatigue": 0,
+            "activeBodyParts": {
+              "ranged_attack": 6,
+              "move": 6
+            }
+          },
+          {
+            "id": "pg_player2_ranged_2",
+            "my": false,
+            "x": 63,
+            "y": 64,
+            "hits": 1200,
+            "hitsMax": 1200,
+            "fatigue": 0,
+            "activeBodyParts": {
+              "ranged_attack": 6,
+              "move": 6
+            }
+          },
+          {
+            "id": "pg_player2_ranged_3",
+            "my": false,
+            "x": 64,
+            "y": 63,
+            "hits": 1200,
+            "hitsMax": 1200,
+            "fatigue": 0,
+            "activeBodyParts": {
+              "ranged_attack": 6,
+              "move": 6
+            }
+          },
+          {
+            "id": "pg_player2_ranged_4",
+            "my": false,
+            "x": 62,
+            "y": 63,
+            "hits": 850,
+            "hitsMax": 1200,
+            "fatigue": 0,
+            "activeBodyParts": {
+              "ranged_attack": 3,
+              "move": 6
+            }
+          },
+          {
+            "id": "pg_player2_ranged_5",
+            "my": false,
+            "x": 62,
+            "y": 62,
+            "hits": 1180,
+            "hitsMax": 1200,
+            "fatigue": 0,
+            "activeBodyParts": {
+              "ranged_attack": 6,
+              "move": 6
+            }
+          },
+          {
+            "id": "pg_player2_healer_1",
+            "my": false,
+            "x": 64,
+            "y": 64,
+            "hits": 1200,
+            "hitsMax": 1200,
+            "fatigue": 0,
+            "activeBodyParts": {
+              "heal": 6,
+              "move": 6
+            }
+          },
+          {
+            "id": "pg_player2_healer_2",
+            "my": false,
+            "x": 64,
+            "y": 65,
+            "hits": 1200,
+            "hitsMax": 1200,
+            "fatigue": 0,
+            "activeBodyParts": {
+              "heal": 6,
+              "move": 6
+            }
+          },
+          {
+            "id": "pg_player2_healer_3",
+            "my": false,
+            "x": 65,
+            "y": 65,
+            "hits": 1200,
+            "hitsMax": 1200,
+            "fatigue": 0,
+            "activeBodyParts": {
+              "heal": 6,
+              "move": 6
+            }
+          }
+        ],
+        "flags": [
+          {
+            "id": "pg_flag_vulnerability",
+            "x": 49,
+            "y": 49,
+            "owner": "me",
+            "effectType": "eff_damage_taken_modifier",
+            "scorePerTick": 5
+          },
+          {
+            "id": "pg_flag_heal_reduction_a",
+            "x": 90,
+            "y": 8,
+            "owner": "neutral",
+            "effectType": "eff_heal_modifier",
+            "scorePerTick": 4
+          },
+          {
+            "id": "pg_flag_heal_reduction_b",
+            "x": 8,
+            "y": 90,
+            "owner": "neutral",
+            "effectType": "eff_heal_modifier",
+            "scorePerTick": 4
+          },
+          {
+            "id": "pg_flag_attack_reduction_a",
+            "x": 67,
+            "y": 31,
+            "owner": "neutral",
+            "effectType": "eff_attack_modifier",
+            "scorePerTick": 3
+          },
+          {
+            "id": "pg_flag_attack_reduction_b",
+            "x": 31,
+            "y": 67,
+            "owner": "neutral",
+            "effectType": "eff_attack_modifier",
+            "scorePerTick": 3
+          },
+          {
+            "id": "pg_flag_ranged_attack_reduction_a",
+            "x": 13,
+            "y": 49,
+            "owner": "neutral",
+            "effectType": "eff_ranged_attack_modifier",
+            "scorePerTick": 3
+          },
+          {
+            "id": "pg_flag_ranged_attack_reduction_b",
+            "x": 85,
+            "y": 49,
+            "owner": "neutral",
+            "effectType": "eff_ranged_attack_modifier",
+            "scorePerTick": 3
+          }
+        ]
+      },
+      "recordedMovement": [
+        {
+          "type": "action-decision",
+          "formatVersion": 1,
+          "buildId": "c52a37aa77c428fb8975c23643f86c99fa174c2324eef52578ee877a82e9bb30",
+          "tick": 64,
+          "phase": "movement",
+          "sequence": 1,
+          "recordId": "64:1",
+          "decisionId": "64:1",
+          "channel": "movement",
+          "actorId": "pg_player1_scout_1",
+          "outcome": "selected",
+          "reason": "flag-fallback",
+          "actions": [
+            {
+              "actionId": "64:1#0",
+              "method": "moveTo",
+              "target": {
+                "kind": "score-flag",
+                "id": "pg_flag_vulnerability",
+                "x": 49,
+                "y": 49
+              }
+            }
+          ]
+        },
+        {
+          "type": "action-decision",
+          "formatVersion": 1,
+          "buildId": "c52a37aa77c428fb8975c23643f86c99fa174c2324eef52578ee877a82e9bb30",
+          "tick": 64,
+          "phase": "movement",
+          "sequence": 3,
+          "recordId": "64:3",
+          "decisionId": "64:3",
+          "channel": "movement",
+          "actorId": "pg_player1_scout_2",
+          "outcome": "selected",
+          "reason": "flag-fallback",
+          "actions": [
+            {
+              "actionId": "64:3#0",
+              "method": "moveTo",
+              "target": {
+                "kind": "score-flag",
+                "id": "pg_flag_vulnerability",
+                "x": 49,
+                "y": 49
+              }
+            }
+          ]
+        },
+        {
+          "type": "action-decision",
+          "formatVersion": 1,
+          "buildId": "c52a37aa77c428fb8975c23643f86c99fa174c2324eef52578ee877a82e9bb30",
+          "tick": 64,
+          "phase": "movement",
+          "sequence": 5,
+          "recordId": "64:5",
+          "decisionId": "64:5",
+          "channel": "movement",
+          "actorId": "pg_player1_melee_2",
+          "outcome": "selected",
+          "reason": "flag-fallback",
+          "actions": [
+            {
+              "actionId": "64:5#0",
+              "method": "moveTo",
+              "target": {
+                "kind": "score-flag",
+                "id": "pg_flag_vulnerability",
+                "x": 49,
+                "y": 49
+              }
+            }
+          ]
+        },
+        {
+          "type": "action-decision",
+          "formatVersion": 1,
+          "buildId": "c52a37aa77c428fb8975c23643f86c99fa174c2324eef52578ee877a82e9bb30",
+          "tick": 64,
+          "phase": "movement",
+          "sequence": 7,
+          "recordId": "64:7",
+          "decisionId": "64:7",
+          "channel": "movement",
+          "actorId": "pg_player1_melee_3",
+          "outcome": "selected",
+          "reason": "flag-fallback",
+          "actions": [
+            {
+              "actionId": "64:7#0",
+              "method": "moveTo",
+              "target": {
+                "kind": "score-flag",
+                "id": "pg_flag_vulnerability",
+                "x": 49,
+                "y": 49
+              }
+            }
+          ]
+        },
+        {
+          "type": "action-decision",
+          "formatVersion": 1,
+          "buildId": "c52a37aa77c428fb8975c23643f86c99fa174c2324eef52578ee877a82e9bb30",
+          "tick": 64,
+          "phase": "movement",
+          "sequence": 9,
+          "recordId": "64:9",
+          "decisionId": "64:9",
+          "channel": "movement",
+          "actorId": "pg_player1_melee_4",
+          "outcome": "selected",
+          "reason": "flag-fallback",
+          "actions": [
+            {
+              "actionId": "64:9#0",
+              "method": "moveTo",
+              "target": {
+                "kind": "score-flag",
+                "id": "pg_flag_vulnerability",
+                "x": 49,
+                "y": 49
+              }
+            }
+          ]
+        },
+        {
+          "type": "action-decision",
+          "formatVersion": 1,
+          "buildId": "c52a37aa77c428fb8975c23643f86c99fa174c2324eef52578ee877a82e9bb30",
+          "tick": 64,
+          "phase": "movement",
+          "sequence": 11,
+          "recordId": "64:11",
+          "decisionId": "64:11",
+          "channel": "movement",
+          "actorId": "pg_player1_ranged_1",
+          "outcome": "selected",
+          "reason": "flag-fallback",
+          "actions": [
+            {
+              "actionId": "64:11#0",
+              "method": "moveTo",
+              "target": {
+                "kind": "score-flag",
+                "id": "pg_flag_vulnerability",
+                "x": 49,
+                "y": 49
+              }
+            }
+          ]
+        },
+        {
+          "type": "action-decision",
+          "formatVersion": 1,
+          "buildId": "c52a37aa77c428fb8975c23643f86c99fa174c2324eef52578ee877a82e9bb30",
+          "tick": 64,
+          "phase": "movement",
+          "sequence": 13,
+          "recordId": "64:13",
+          "decisionId": "64:13",
+          "channel": "movement",
+          "actorId": "pg_player1_ranged_2",
+          "outcome": "selected",
+          "reason": "flag-fallback",
+          "actions": [
+            {
+              "actionId": "64:13#0",
+              "method": "moveTo",
+              "target": {
+                "kind": "score-flag",
+                "id": "pg_flag_vulnerability",
+                "x": 49,
+                "y": 49
+              }
+            }
+          ]
+        },
+        {
+          "type": "action-decision",
+          "formatVersion": 1,
+          "buildId": "c52a37aa77c428fb8975c23643f86c99fa174c2324eef52578ee877a82e9bb30",
+          "tick": 64,
+          "phase": "movement",
+          "sequence": 15,
+          "recordId": "64:15",
+          "decisionId": "64:15",
+          "channel": "movement",
+          "actorId": "pg_player1_ranged_3",
+          "outcome": "selected",
+          "reason": "ranged-melee-retreat",
+          "actions": [
+            {
+              "actionId": "64:15#0",
+              "method": "moveTo",
+              "target": {
+                "kind": "position",
+                "id": null,
+                "x": 62,
+                "y": 60
+              }
+            }
+          ]
+        },
+        {
+          "type": "action-decision",
+          "formatVersion": 1,
+          "buildId": "c52a37aa77c428fb8975c23643f86c99fa174c2324eef52578ee877a82e9bb30",
+          "tick": 64,
+          "phase": "movement",
+          "sequence": 17,
+          "recordId": "64:17",
+          "decisionId": "64:17",
+          "channel": "movement",
+          "actorId": "pg_player1_ranged_4",
+          "outcome": "selected",
+          "reason": "flag-fallback",
+          "actions": [
+            {
+              "actionId": "64:17#0",
+              "method": "moveTo",
+              "target": {
+                "kind": "score-flag",
+                "id": "pg_flag_vulnerability",
+                "x": 49,
+                "y": 49
+              }
+            }
+          ]
+        },
+        {
+          "type": "action-decision",
+          "formatVersion": 1,
+          "buildId": "c52a37aa77c428fb8975c23643f86c99fa174c2324eef52578ee877a82e9bb30",
+          "tick": 64,
+          "phase": "movement",
+          "sequence": 19,
+          "recordId": "64:19",
+          "decisionId": "64:19",
+          "channel": "movement",
+          "actorId": "pg_player1_ranged_5",
+          "outcome": "selected",
+          "reason": "ranged-melee-retreat",
+          "actions": [
+            {
+              "actionId": "64:19#0",
+              "method": "moveTo",
+              "target": {
+                "kind": "position",
+                "id": null,
+                "x": 61,
+                "y": 60
+              }
+            }
+          ]
+        },
+        {
+          "type": "action-decision",
+          "formatVersion": 1,
+          "buildId": "c52a37aa77c428fb8975c23643f86c99fa174c2324eef52578ee877a82e9bb30",
+          "tick": 64,
+          "phase": "movement",
+          "sequence": 21,
+          "recordId": "64:21",
+          "decisionId": "64:21",
+          "channel": "movement",
+          "actorId": "pg_player1_healer_1",
+          "outcome": "hold",
+          "reason": "injured-ally-in-range",
+          "actions": []
+        },
+        {
+          "type": "action-decision",
+          "formatVersion": 1,
+          "buildId": "c52a37aa77c428fb8975c23643f86c99fa174c2324eef52578ee877a82e9bb30",
+          "tick": 64,
+          "phase": "movement",
+          "sequence": 22,
+          "recordId": "64:22",
+          "decisionId": "64:22",
+          "channel": "movement",
+          "actorId": "pg_player1_healer_2",
+          "outcome": "hold",
+          "reason": "injured-ally-in-range",
+          "actions": []
+        },
+        {
+          "type": "action-decision",
+          "formatVersion": 1,
+          "buildId": "c52a37aa77c428fb8975c23643f86c99fa174c2324eef52578ee877a82e9bb30",
+          "tick": 64,
+          "phase": "movement",
+          "sequence": 23,
+          "recordId": "64:23",
+          "decisionId": "64:23",
+          "channel": "movement",
+          "actorId": "pg_player1_healer_3",
+          "outcome": "hold",
+          "reason": "injured-ally-in-range",
+          "actions": []
+        }
+      ],
+      "healer": {
+        "id": "pg_player1_healer_1",
+        "x": 60,
+        "y": 61,
+        "hits": 1100,
+        "fatigue": 0,
+        "parts": {
+          "heal": 5,
+          "move": 6
+        },
+        "movement": {
+          "recordId": "64:21",
+          "reason": "injured-ally-in-range",
+          "actions": []
+        },
+        "healing": {
+          "recordId": "64:46",
+          "reason": "self-heal",
+          "actions": [
+            {
+              "actionId": "64:46#0",
+              "method": "heal",
+              "target": {
+                "kind": "creep",
+                "id": "pg_player1_healer_1",
+                "x": 60,
+                "y": 61
+              }
+            }
+          ]
+        },
+        "attempts": [
+          {
+            "recordId": "64:47",
+            "channel": "healing",
+            "method": "heal",
+            "target": {
+              "kind": "creep",
+              "id": "pg_player1_healer_1",
+              "x": 60,
+              "y": 61
+            },
+            "returnCode": 0
+          }
+        ],
+        "threats": [
+          {
+            "id": "pg_player2_melee_4",
+            "x": 61,
+            "y": 62,
+            "parts": {
+              "attack": 8,
+              "move": 8
+            },
+            "range": 1
+          },
+          {
+            "id": "pg_player2_ranged_1",
+            "x": 63,
+            "y": 63,
+            "parts": {
+              "ranged_attack": 6,
+              "move": 6
+            },
+            "range": 3
+          },
+          {
+            "id": "pg_player2_ranged_2",
+            "x": 63,
+            "y": 64,
+            "parts": {
+              "ranged_attack": 6,
+              "move": 6
+            },
+            "range": 3
+          },
+          {
+            "id": "pg_player2_ranged_4",
+            "x": 62,
+            "y": 63,
+            "parts": {
+              "ranged_attack": 3,
+              "move": 6
+            },
+            "range": 2
+          },
+          {
+            "id": "pg_player2_ranged_5",
+            "x": 62,
+            "y": 62,
+            "parts": {
+              "ranged_attack": 6,
+              "move": 6
+            },
+            "range": 2
+          }
+        ]
+      },
+      "terrain": {
+        "59,60": 0,
+        "60,60": 0,
+        "61,60": 0,
+        "59,61": 0,
+        "60,61": 0,
+        "61,61": 0,
+        "59,62": 0,
+        "60,62": 0,
+        "61,62": 0
+      },
+      "expectedRetreat": {
+        "x": 60,
+        "y": 60
+      }
+    }
+  ]
+}

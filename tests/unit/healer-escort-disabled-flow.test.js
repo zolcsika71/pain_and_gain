@@ -82,10 +82,13 @@ test('isolated disabled config preserves first-flag fallback and injury support'
     }
 
     assert.deepEqual(calls, [
-        [98, 'healer', 'moveTo', 'first'], [98, 'melee', 'moveTo', 'foe'],
-        [99, 'healer', 'moveTo', 'melee'], [99, 'melee', 'moveTo', 'foe'],
-        [1, 'healer', 'moveTo', 'first'], [1, 'melee', 'moveTo', 'foe'],
+        [98, 'healer', 'moveTo', 'first'],
+        [99, 'healer', 'moveTo', 'melee'],
+        [1, 'healer', 'moveTo', 'first'],
     ]);
+    assert.deepEqual(records.filter(record => record.type === 'action-decision' &&
+        record.actorId === 'melee' && record.channel === 'movement').map(record => record.reason),
+    ['await-local-healer', 'await-local-healer', 'await-local-healer']);
     assert.equal(pathCalls, 0);
     assert.ok(calls.every((call, index) => calls.findIndex(other =>
         other[0] === call[0] && other[1] === call[1]) === index));

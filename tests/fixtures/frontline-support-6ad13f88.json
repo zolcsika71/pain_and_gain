@@ -1,0 +1,114 @@
+{
+  "provenance": {
+    "replayId": "6ad13f8874ae43822e65af07",
+    "sourceBuildId": "195ad242a0db34be6b279b82d9f65e17acffc3eea6172aa10b986be94aba9697",
+    "phase": "before-actions",
+    "tick": 45,
+    "logResponse": {
+      "file": "/Users/zoltanka/Library/Application Support/screeps_arena/Cache/Cache_Data/a7374bfe4eb69731_0",
+      "sha256": "3e5a9cfdc04a5d46c50667860e022e4c036dc1617e34ec51cbf4f2975b669ffc",
+      "bytes": 111239,
+      "sourceFingerprint": "3848e814ca3e4b9c5c9cc547c3e428e06f287fa677d0e26647790b40a2b3e296"
+    },
+    "recordedMovement": {
+      "type": "action-attempt",
+      "formatVersion": 1,
+      "buildId": "195ad242a0db34be6b279b82d9f65e17acffc3eea6172aa10b986be94aba9697",
+      "tick": 45,
+      "phase": "movement",
+      "sequence": 10,
+      "recordId": "45:10",
+      "decisionId": "45:9",
+      "actionId": "45:9#0",
+      "channel": "movement",
+      "actorId": "pg_player2_melee_3",
+      "method": "moveTo",
+      "target": {
+        "kind": "creep",
+        "id": "pg_player1_melee_1",
+        "x": 44,
+        "y": 41
+      },
+      "returnCode": 0,
+      "sourceKey": "45:13"
+    },
+    "limits": "Selected independent observed snapshot; active counts reconstructed with positive sentinel HP, not original body-part HP or a simulated trajectory."
+  },
+  "flag": {
+    "id": "pg_flag_vulnerability",
+    "x": 49,
+    "y": 49,
+    "owner": "me",
+    "effectType": "eff_damage_taken_modifier",
+    "scorePerTick": 5
+  },
+  "creeps": [
+    {
+      "id": "pg_player1_melee_1",
+      "my": false,
+      "x": 44,
+      "y": 41,
+      "hits": 1408,
+      "hitsMax": 1600,
+      "fatigue": 0,
+      "activeBodyParts": {
+        "attack": 7,
+        "move": 8
+      }
+    },
+    {
+      "id": "pg_player2_melee_3",
+      "my": true,
+      "x": 45,
+      "y": 43,
+      "hits": 1600,
+      "hitsMax": 1600,
+      "fatigue": 0,
+      "activeBodyParts": {
+        "attack": 8,
+        "move": 8
+      }
+    },
+    {
+      "id": "pg_player2_healer_1",
+      "my": true,
+      "x": 48,
+      "y": 47,
+      "hits": 1200,
+      "hitsMax": 1200,
+      "fatigue": 0,
+      "activeBodyParts": {
+        "heal": 6,
+        "move": 6
+      }
+    },
+    {
+      "id": "pg_player2_healer_2",
+      "my": true,
+      "x": 51,
+      "y": 50,
+      "hits": 1200,
+      "hitsMax": 1200,
+      "fatigue": 0,
+      "activeBodyParts": {
+        "heal": 6,
+        "move": 6
+      }
+    },
+    {
+      "id": "pg_player2_healer_3",
+      "my": true,
+      "x": 49,
+      "y": 48,
+      "hits": 1200,
+      "hitsMax": 1200,
+      "fatigue": 0,
+      "activeBodyParts": {
+        "heal": 6,
+        "move": 6
+      }
+    }
+  ],
+  "actorId": "pg_player2_melee_3",
+  "targetId": "pg_player1_melee_1"
+}

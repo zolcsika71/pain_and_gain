@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { moveCreeps } from '../../src/arena/execute.js';
+import { moveCreeps, executeTactics } from '../../src/arena/execute.js';
 import { planScoutFlagAllocation } from '../../src/strategy/flag-allocation.js';
 import { selectFlag } from '../../src/strategy/objectives.js';
 
@@ -32,6 +32,114 @@ function fixture() {
 function plan(state, previous, route) {
     return planScoutFlagAllocation(state, previous, route, attackEffect);
 }
+
+test('a safer route from the other scout is not masked by the farthest scout', () => {
+    const f = fixture();
+    f.nearScout.x = 3;
+    f.z.my = false;
+    f.state.enemies = [unit('enemy', 20, 0, ['move'], { my: false })];
+    // Generated terrain-route assumptions, not reconstructed replay routes:
+    // farthest scout: 20 + 5 >= enemy 24 (reject); other: 18 + 5 < 24.
+    const route = from => from.id === 'enemy' ? 24 : from === f.farScout ? 20 : 18;
+    const decision = plan(f.state, null, route);
+    assert.deepEqual(decision.state, { scoutId: 'scout-1', targetId: 'a', startedAt: 39 });
+    assert.equal(decision.fallbackById.size, 1);
+    moveCreeps(f.state.myCreeps, f.state.enemies, f.first, new Map(), decision.fallbackById);
+    assert.deepEqual(f.nearScout.moves, [f.a]);
+    assert.deepEqual(f.farScout.moves, [f.first]);
+    assert.deepEqual(f.defender.moves, [f.first]);
+});
+
+test('earliest eligible pair wins without changing flag effect or safety thresholds', () => {
+    const f = fixture();
+    f.nearScout.x = 3;
+    const route = (from, to) => (from === f.nearScout ? 18 : 26) + (to === f.z ? 1 : 0);
+    assert.equal(plan(f.state, null, route).state.scoutId, f.nearScout.id);
+    // Equality at +5 still rejects the faster pair as well as the slower one.
+    f.state.enemies = [unit('enemy', 20, 0, ['move'], { my: false })];
+    assert.equal(plan(f.state, null, (from, to) => from.id === 'enemy' ? 23 : route(from, to)).state, null);
+});
+
+test('pair selection checks each scout for threats and fatigue, without weakening route gates', () => {
+    const f = fixture();
+    f.z.my = false;
+    f.state.enemies = [unit('enemy', 9, 0, ['move'], { my: false })];
+    const route = from => from.id === 'enemy' ? 30 : 20;
+    assert.equal(plan(f.state, null, route).state.scoutId, f.nearScout.id);
+    f.nearScout.fatigue = 1;
+    assert.equal(plan(f.state, null, route).state, null); // other scout still threatened
+    f.state.enemies = [];
+    f.nearScout.fatigue = 0;
+    assert.equal(plan(f.state, null, from => from === f.farScout ? null : 40).state.scoutId, f.nearScout.id);
+    assert.equal(plan(f.state, null, from => from === f.farScout ? null : 41).state, null);
+    f.a.my = false;
+    assert.equal(plan(f.state, null, route).state, null);
+});
+
+test('route ties retain farthest-first then scout ID and flag ID, independent of input order', () => {
+    const f = fixture();
+    for (const tiedScouts of [false, true]) {
+        if (tiedScouts) f.nearScout.x = f.farScout.x;
+        const expected = tiedScouts ? f.nearScout.id : f.farScout.id;
+        for (let i = 0; i < 2; i++) {
+            f.state.myCreeps.reverse();
+            f.state.flags = [f.first, ...(i ? [f.a, f.z] : [f.z, f.a])];
+            assert.deepEqual(plan(f.state, null, () => 20).state,
+                { scoutId: expected, targetId: 'a', startedAt: 39 });
+        }
+    }
+});
+
+test('active scout is never replaced by a faster candidate, even during temporary fatigue', () => {
+    const f = fixture();
+    const started = plan(f.state, null, f.route).state;
+    f.farScout.fatigue = 1;
+    f.state.tick++;
+    const calls = [];
+    const decision = plan(f.state, started, (from, to) => {
+        calls.push(from.id);
+        return f.route(from, to);
+    });
+    assert.deepEqual(decision.state, started);
+    assert.deepEqual(calls, [f.farScout.id]);
+    assert.equal(decision.fallbackById.size, 1);
+});
+
+test('standard roster acquisition has at most 60 route calls; reporting adds none', () => {
+    const f = fixture();
+    f.state.enemies = Array.from({ length: 14 }, (_, i) => unit(`enemy-${i}`, 20, 0, ['move'], { my: false }));
+    for (const report of [undefined, () => {}]) {
+        let calls = 0;
+        const decision = planScoutFlagAllocation(f.state, null, from => {
+            calls++;
+            return from.my ? 20 : 30;
+        }, attackEffect, report);
+        assert.equal(calls, 60); // 2 scouts * 2 flags * (1 scout + 14 competitors)
+        assert.equal(decision.fallbackById.size, 1);
+    }
+});
+
+test('enabled allocation leaves non-scout movement, combat and healing calls identical', () => {
+    function trace(enabled) {
+        const f = fixture();
+        const attacker = unit('attacker', 42, 40, ['attack', 'move'], { hits: 80 });
+        const healer = unit('healer', 40, 40, ['heal', 'move']);
+        const actions = [];
+        attacker.attack = target => actions.push(['attacker', 'attack', target.id]);
+        healer.rangedHeal = target => actions.push(['healer', 'rangedHeal', target.id]);
+        f.state.myCreeps.push(attacker, healer);
+        f.state.enemies = [unit('enemy', 43, 40, ['attack', 'move'], { my: false })];
+        const allocation = enabled ? plan(f.state, null, f.route) : null;
+        if (enabled) assert.equal(allocation.fallbackById.size, 1);
+        moveCreeps(f.state.myCreeps, f.state.enemies, f.first, new Map(), allocation?.fallbackById);
+        executeTactics(f.state.myCreeps, f.state.enemies, [attacker]);
+        return { moves: [f.defender, attacker, healer].map(actor =>
+            [actor.id, actor.moves.map(target => target.id)]), actions };
+    }
+    const baseline = trace(false);
+    assert.deepEqual(baseline.actions, [['attacker', 'attack', 'enemy'], ['healer', 'rangedHeal', 'attacker']]);
+    assert.deepEqual(trace(true), baseline);
+});
 
 test('without an allocation, every fallback stays on the first flag', () => {
     const { state, first, nearScout, farScout } = fixture();
@@ -168,19 +276,20 @@ test('assignment diagnostics retain evaluated paths and ordering without extra p
     const decision = planScoutFlagAllocation(f.state, null, route, attackEffect,
         value => diagnostics.push(value));
     assert.equal(decision.state.targetId, 'z');
-    assert.deepEqual(calls, [['scout-2', 'a'], ['scout-2', 'z']]);
+    const expectedCalls = [['scout-2', 'a'], ['scout-2', 'z'], ['scout-1', 'a'], ['scout-1', 'z']];
+    assert.deepEqual(calls, expectedCalls);
     assert.equal(diagnostics.length, 1);
     assert.equal(diagnostics[0].event, 'assign');
     assert.equal(diagnostics[0].reason, 'shortest-eligible-route');
     assert.equal(diagnostics[0].objectiveId, 'z');
     assert.deepEqual(diagnostics[0].state, decision.state);
-    assert.deepEqual(diagnostics[0].evaluations.map(item => [item.flagId, item.scoutRoute]), [
-        ['a', { incomplete: false, length: 22, cost: 24, ops: 17 }],
-        ['z', { incomplete: false, length: 18, cost: 20, ops: 17 }],
-    ]);
+    assert.deepEqual(diagnostics[0].evaluations.map(item => [item.scoutId, item.flagId, item.scoutRoute]),
+        expectedCalls.map(([scoutId, flagId]) => [scoutId, flagId,
+            flagId === 'a' ? { incomplete: false, length: 22, cost: 24, ops: 17 }
+                : { incomplete: false, length: 18, cost: 20, ops: 17 }]));
     calls.length = 0;
     assert.deepEqual(planScoutFlagAllocation(f.state, null, route, attackEffect).state, decision.state);
-    assert.deepEqual(calls, [['scout-2', 'a'], ['scout-2', 'z']]);
+    assert.deepEqual(calls, expectedCalls);
 });
 
 test('rejection diagnostics include actual incomplete routes and enemy arrival comparisons', () => {

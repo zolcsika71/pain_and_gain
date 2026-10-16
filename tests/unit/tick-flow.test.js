@@ -353,9 +353,9 @@ test('runTick executes enabled escort behavior across injury and a new match', t
         delete globalThis.__painAndGainTick;
     }
     assert.deepEqual(calls, [
-        ['healer', 'moveTo', 'melee'], ['melee', 'moveTo', 'foe'],
-        ['healer', 'moveTo', 'melee'], ['melee', 'moveTo', 'foe'],
-        ['healer', 'moveTo', 'melee'], ['melee', 'moveTo', 'foe'],
+        ['healer', 'moveTo', 'melee'],
+        ['healer', 'moveTo', 'melee'],
+        ['healer', 'moveTo', 'melee'],
     ]);
     assert.equal(calls.filter(([id]) => id === 'healer').length, 3);
     assert.equal(pathCalls, 0);
@@ -373,7 +373,52 @@ test('runTick executes enabled escort behavior across injury and a new match', t
     assert.equal(diagnostics.find(({ value }) => value.event === 'release').value.reason,
         'friendly-injured');
     assert.deepEqual(diagnostics.filter(({ value }) => value.phase === 'before-actions')
-        .map(({ calls: count }) => count), [0, 2, 4]);
+        .map(({ calls: count }) => count), [0, 1, 2]);
+});
+
+test('runTick bounds support waits, releases on arrival and resets the budget in a new match', t => {
+    const calls = [], records = [];
+    t.mock.method(console, 'log', line => records.push(JSON.parse(line)));
+    const first = Object.assign(new ScoreFlag(), {
+        id: 'first', x: 10, y: 10, my: false, effectType: 'heal', scorePerTick: 4,
+    });
+    function unit(id, x, parts, my = true) {
+        return Object.assign(new Creep(), { id, x, y: 0, my, hits: 100, hitsMax: 100, fatigue: 0,
+            body: parts.map(type => ({ type, hits: 100 })),
+            getRangeTo(target) { return Math.max(Math.abs(this.x - target.x), Math.abs(this.y - target.y)); },
+            moveTo(target) { calls.push([globalThis.__painAndGainTick, id, target.id]); return 0; },
+            attack() {}, heal() {}, rangedHeal() {}, rangedAttack() {} });
+    }
+    const front = unit('front', 0, ['attack', 'move']);
+    const support = unit('support', 4, ['heal', 'move']);
+    const enemy = unit('enemy', -2, ['attack', 'move'], false);
+    globalThis.__painAndGainArenaObjects = new Map([[ScoreFlag, [first]], [Creep, [front, support, enemy]]]);
+    globalThis.__painAndGainPathCalls = 0;
+    try {
+        globalThis.__painAndGainTick = 10;
+        runTick();
+        support.x = 3;
+        globalThis.__painAndGainTick = 11;
+        runTick();
+        support.x = 4;
+        globalThis.__painAndGainTick = 12;
+        runTick();
+        globalThis.__painAndGainTick = 13;
+        runTick();
+        globalThis.__painAndGainTick = 1;
+        runTick();
+        assert.equal(globalThis.__painAndGainPathCalls, 0);
+        assert.deepEqual(calls.filter(([, id]) => id === 'front'), [[11, 'front', 'enemy'], [13, 'front', 'enemy']]);
+        assert.deepEqual(records.filter(r => r.type === 'action-decision' && r.actorId === 'front' &&
+            r.channel === 'movement').map(r => [r.tick, r.reason]),
+        [[10, 'await-local-healer'], [11, 'combat-approach'], [12, 'await-local-healer'],
+            [13, 'combat-approach'], [1, 'await-local-healer']]);
+        assert.ok(calls.every((c, i) => calls.findIndex(other => other[0] === c[0] && other[1] === c[1]) === i));
+    } finally {
+        delete globalThis.__painAndGainArenaObjects;
+        delete globalThis.__painAndGainPathCalls;
+        delete globalThis.__painAndGainTick;
+    }
 });
 
 test('runTick retains a local combat objective for one outside tick and resets it on a new match', t => {

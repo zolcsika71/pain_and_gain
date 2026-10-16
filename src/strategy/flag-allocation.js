@@ -6,6 +6,10 @@ const arrivalMargin = 5;
 const maxRouteSteps = 40;
 const maxAssignmentTicks = 60;
 const lastStartTick = 80;
+const contestInterval = 20;
+// Rules-based match end, reserving the existing assignment and nominal return
+// route budgets. This is not a guarantee of arrival or scoring uptime.
+const lastContestStartTick = 2000 - maxAssignmentTicks - maxRouteSteps;
 
 function range(a, b) {
     return Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y));
@@ -17,12 +21,22 @@ function isScout(creep) {
         hasFunctioningPart(creep, 'move');
 }
 
-function isSafeTarget(scout, flag, enemies, routeSteps, evaluations) {
-    const evaluation = { flagId: flag.id, scoutRange: range(scout, flag),
+function isArmed(creep) {
+    return hasFunctioningPart(creep, 'attack') || hasFunctioningPart(creep, 'ranged_attack');
+}
+
+function isSafeTarget(scout, flag, enemies, routeSteps, evaluations, contest = false) {
+    const evaluation = { scoutId: scout.id, flagId: flag.id, scoutRange: range(scout, flag),
         maxScoutSteps: maxRouteSteps, enemyRoutes: [] };
     evaluations?.push(evaluation);
-    const nearby = enemies.find(enemy => range(enemy, scout) <= threatRange ||
-        range(enemy, flag) <= threatRange);
+    const occupant = contest && enemies.find(enemy => range(enemy, flag) === 0);
+    if (occupant) {
+        evaluation.reason = 'target-occupied';
+        evaluation.enemyId = occupant.id;
+        return null;
+    }
+    const nearby = enemies.find(enemy => (!contest || isArmed(enemy)) &&
+        (range(enemy, scout) <= threatRange || range(enemy, flag) <= threatRange));
     if (nearby) {
         evaluation.reason = 'enemy-near-scout-or-target';
         evaluation.enemyId = nearby.id;
@@ -73,6 +87,9 @@ export function planScoutFlagAllocation({ tick, flags, myCreeps, enemies }, prev
         return { state, fallbackById };
     };
     if (previous?.finished) return finish(previous, 'reject', 'attempt-finished');
+    // An opening assignment keeps its original rules across tick 80. A finished
+    // attempt of either kind prevents every later assignment in this match.
+    const contest = previous?.scoutId ? previous.mode === 'contest' : tick > lastStartTick;
     const livingEnemies = enemies.filter(enemy => !enemy.my && enemy.hits > 0);
     const firstThreat = first?.my === true
         ? livingEnemies.find(enemy => range(enemy, first) <= threatRange) : null;
@@ -86,14 +103,21 @@ export function planScoutFlagAllocation({ tick, flags, myCreeps, enemies }, prev
                     threatRange: range(firstThreat, first) } : {}) });
     }
 
-    const scout = previous?.scoutId
-        ? myCreeps.find(creep => creep.id === previous.scoutId)
+    if (contest && !previous?.scoutId) {
+        if (tick > lastContestStartTick) return finish(null, 'reject', 'contest-window-closed');
+        if (tick % contestInterval !== 0) return finish(null, 'reject', 'contest-poll-wait');
+    }
+
+    const scouts = previous?.scoutId
+        ? [myCreeps.find(creep => creep.id === previous.scoutId)]
         : myCreeps.filter(creep => isScout(creep) && creep.fatigue === 0)
-            .sort((a, b) => range(b, first) - range(a, first) || a.id.localeCompare(b.id))[0];
-    if (!scout || !isScout(scout) || (previous && tick - previous.startedAt > maxAssignmentTicks)) {
+            .sort((a, b) => range(b, first) - range(a, first) || a.id.localeCompare(b.id));
+    const scout = scouts[0];
+    const fatigued = contest && scout && scout.fatigue !== 0;
+    if (!scout || !isScout(scout) || fatigued || (previous && tick - previous.startedAt > maxAssignmentTicks)) {
         return finish(previous?.scoutId ? { finished: true } : null,
             previous?.scoutId ? 'cancel' : 'reject', !scout ? 'no-scout' :
-                !isScout(scout) ? 'scout-ineligible' : 'assignment-timeout',
+                !isScout(scout) ? 'scout-ineligible' : fatigued ? 'scout-fatigued' : 'assignment-timeout',
             { scoutId: previous?.scoutId ?? null, targetId: previous?.targetId ?? null });
     }
     const defender = myCreeps.some(creep => creep.id !== scout.id && creep.my && creep.hits > 0 &&
@@ -105,15 +129,24 @@ export function planScoutFlagAllocation({ tick, flags, myCreeps, enemies }, prev
             { scoutId: scout.id, targetId: previous?.targetId ?? null });
     }
 
+    // The late opportunity is specifically an unarmed-opponent endgame, not
+    // permission to raid around surviving combatants. Unarmed creeps still
+    // threaten the first flag, occupy targets and compete in every arrival test.
+    const armedEnemy = contest && livingEnemies.find(isArmed);
+    if (armedEnemy) return finish(previous?.scoutId ? { finished: true } : null,
+        previous?.scoutId ? 'cancel' : 'reject', 'armed-enemy-remains',
+        { scoutId: scout.id, targetId: previous?.targetId ?? null, threatEnemyId: armedEnemy.id });
+
     if (previous?.scoutId) {
         const flag = flags.find(candidate => candidate.id === previous.targetId);
         if (flag?.my === true) return finish({ finished: true }, 'complete', 'target-owned',
             { scoutId: scout.id, targetId: previous.targetId });
         const evaluations = [];
-        if (!flag || flag.my !== undefined || flag.effectType !== attackEffectType ||
-            isSafeTarget(scout, flag, livingEnemies, routeSteps, evaluations) === null) {
+        const expectedOwner = contest ? false : undefined;
+        if (!flag || flag.my !== expectedOwner || flag.effectType !== attackEffectType ||
+            isSafeTarget(scout, flag, livingEnemies, routeSteps, evaluations, contest) === null) {
             return finish({ finished: true }, 'cancel', !flag ? 'target-missing' :
-                flag.my !== undefined ? 'target-contested' :
+                flag.my !== expectedOwner ? 'target-contested' :
                     flag.effectType !== attackEffectType ? 'target-effect-changed' : 'target-unsafe',
             { scoutId: scout.id, targetId: previous.targetId, evaluations });
         }
@@ -122,17 +155,22 @@ export function planScoutFlagAllocation({ tick, flags, myCreeps, enemies }, prev
             { scoutId: scout.id, targetId: flag.id, evaluations });
     }
 
-    if (tick > lastStartTick) return finish(null, 'reject', 'start-window-closed', { scoutId: scout.id });
     const evaluations = [];
-    const choices = flags.filter(flag => flag.my === undefined &&
-        flag.effectType === attackEffectType).map(flag => ({
-        flag, steps: isSafeTarget(scout, flag, livingEnemies, routeSteps, evaluations),
-    })).filter(choice => choice.steps !== null)
-        .sort((a, b) => a.steps - b.steps || a.flag.id.localeCompare(b.flag.id));
+    // Compare arrival opportunities before committing to one scout. Distance
+    // from the defended first flag is only a tie-break, not a route estimate.
+    const targets = flags.filter(flag => flag.my === (contest ? false : undefined) && flag.effectType === attackEffectType)
+        .sort((a, b) => a.id.localeCompare(b.id));
+    const choices = scouts.flatMap((candidate, scoutRank) => targets.map(flag => ({
+        flag, scout: candidate, scoutRank,
+        steps: isSafeTarget(candidate, flag, livingEnemies, routeSteps, evaluations, contest),
+    }))).filter(choice => choice.steps !== null)
+        .sort((a, b) => a.steps - b.steps || a.scoutRank - b.scoutRank ||
+            a.flag.id.localeCompare(b.flag.id));
     if (choices.length === 0) return finish(null, 'reject', 'no-eligible-target',
         { scoutId: scout.id, evaluations });
-    const flag = choices[0].flag;
-    fallbackById.set(scout.id, flag);
-    return finish({ scoutId: scout.id, targetId: flag.id, startedAt: tick }, 'assign',
-        'shortest-eligible-route', { scoutId: scout.id, targetId: flag.id, evaluations });
+    const { flag, scout: assignedScout } = choices[0];
+    fallbackById.set(assignedScout.id, flag);
+    return finish({ scoutId: assignedScout.id, targetId: flag.id, startedAt: tick,
+        ...(contest ? { mode: 'contest' } : {}) }, 'assign',
+        'shortest-eligible-route', { scoutId: assignedScout.id, targetId: flag.id, evaluations });
 }

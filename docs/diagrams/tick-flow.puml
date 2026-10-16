@@ -5,6 +5,8 @@ component "src/main.mjs" as Main
 component "src/loop.js" as Loop
 component "src/arena/observe.js" as Observe
 component "src/strategy/objectives.js" as Objectives
+component "src/config.js\nsrc/strategy/secondary-objective-plan.js" as Secondary
+component "src/strategy/supported-contest.js" as Contest
 component "src/squads/membership.js" as Membership
 component "src/config.js\nsrc/strategy/flag-allocation.js" as Allocation
 component "src/config.js\nsrc/tactics/healer-escort.js" as Escort
@@ -13,6 +15,7 @@ component "src/debug/game-state.js" as Debug
 component "src/debug/replay-evidence.js" as Evidence
 component "src/arena/execute.js" as Execute
 component "src/tactics/movement.js" as Movement
+component "src/tactics/healer-closing.js\nhealerUsefulClosingExperiment=false" as Closing
 component "src/tactics/healing.js" as Healing
 component "src/tactics/combat.js" as Combat
 component "src/tactics/body.js\nsrc/tactics/targets.js" as Eligibility
@@ -26,6 +29,15 @@ Membership --> Pair : stable same-squad members\nonly when experiment enabled
 Loop --> Evidence : baseline or change-only membership\nevidence after update
 Membership --> Evidence : read resulting state\nwithout mutation
 Loop --> Objectives : select first flag
+Loop --> Secondary : default-off secondary trial;\noriginal centre + existing membership + controller exclusions
+Secondary --> Objectives : unchanged pure selector;\none bounded existing-squad attempt
+Secondary --> Contest : capture first refusal; isolated unarmed contest\nuses remaining shared work; same lifecycle on handoff
+Secondary --> API : at most24 searchPath queries on acquisition;\n4 active refreshes, maxOps1000 each
+Secondary --> Execute : shared validated first steps; capture replaces only flag fallback;\ncentre/rejoin/escort references unchanged
+Secondary --> Debug : bounded game-state.secondaryObjective;\nobserved positions, not movement claims
+Loop --> Execute : capture/contest whole-group preflight BEFORE snapshot/commands;\ncapture yields to combat too; priority conflict invalidates ownership
+Execute --> Contest : all current/next weapon/healer combinations\nretain functioning range3 access; occupied steps wait
+note right of Contest : Capture and contest use direct move(direction)\nto validated adjacent cells; all partial/stay outcomes keep support.\nCapture cancels ownership for ordinary combat approach;\ncontest may replace compatible combat approach, including handoff.\nAttack/healing selectors stay unchanged;\n24 acquisition /4 refresh queries are shared; no extra wait allowance.
 Loop --> Allocation : optional one-scout fallback\n(default off; one attempt)
 Allocation --> API : searchPath() terrain-route estimates\nwhen enabled
 Loop --> Escort : optional one-healer pair\n(default on; one assignment)
@@ -40,11 +52,18 @@ Loop --> Execute : choose and issue movement\nwith optional scout fallback / hea
 Execute --> Movement : combat objective or pure-healer support,\nthen first flag fallback
 note right of Movement : Optional scout hold (default off):\nunassigned, healthy MOVE-only scout\nwithin two of owned first flag, no nearby enemy.\nAllocation overrides and escort retain priority.
 Movement --> Eligibility : functioning weapons / HEAL and range
-Execute --> API : at most one creep.moveTo(target)
+Execute --> Closing : default-off; ordinary healer hold only AFTER owners/retreat\nknown flags, terrain, occupancy and healing/support bands
+Closing --> Movement : reuse bounded eight-neighbour evaluation
+Closing --> Healing : read-only current-position target selection
+note right of Closing : One adjacent move(direction), no path search or new reservation.\nNo persistent closing/wait state; snapshots establish progress.\nHealing is still selected from current positions.\nConvergence may lose progress indefinitely; no survival guarantee.
+note right of Movement : Pure-healer pressure retreat reuses bounded8-cell checks:\nstrictly less current weapon exposure, no new ranged source,\nno melee reach, all current injured-ally healing bands retained.\nEscort/pair owners win; no extra path search or survival guarantee.
+note left of Movement : Pure-ranged adjacent-melee retreat:\nup to eight plain, free neighbour cells;\nno current melee reach or new ranged envelope.\nFull observed occupancy and local terrain supplied;\nescort/pair priority and tactical selectors unchanged.
+Execute --> API : at most one move(direction) OR moveTo(target) per actor
 Execute --> Debug : escort hold, fatigue pause, or move attempt\nwith actual return code
 Loop --> Execute : execute tactics after movement
 Execute --> Healing : choose available healing
 Execute --> Combat : choose compatible attacks
+note right of Combat : Guarded equal-range ranged spillover trial:\nfull observation and neutral modifiers required;\nonly earlier accepted compatible melee funds\na tick-local nominal budget. No action reordering.\nUnknown evidence keeps baseline targeting.
 Healing --> Eligibility : functioning HEAL, range, target
 Combat --> Eligibility : functioning ATTACK / RANGED_ATTACK,\nrange, target
 Execute --> API : heal / rangedHeal / attack / rangedAttack

@@ -1,6 +1,8 @@
 import { selectHealingDecision } from '../tactics/healing.js';
-import { selectCombatDecision } from '../tactics/combat.js';
-import { selectMovementPlan } from '../tactics/movement.js';
+import { createSpilloverContext, selectSpilloverDecision } from '../tactics/combat.js';
+import { selectMovementPlan, localRetreatStep } from '../tactics/movement.js';
+import { improveHealerHold } from '../tactics/healer-closing.js';
+import { secondaryStepSupport } from '../strategy/supported-contest.js';
 
 function reportDecision(reporter, decision) {
     return reporter?.decision(decision) ?? null;
@@ -12,12 +14,51 @@ function actionAtCall(action) {
 
 function issueAction(creep, action, decision, index, reporter) {
     const attempted = actionAtCall(action);
-    const returnValue = creep[action.method](action.target);
+    // Direct adjacent steps cannot invoke a second pathfinder or detour off
+    // the planner's validated route. Direction constants are the API's1–8.
+    const direction = action.method === 'move' ? [[8, 1, 2], [7, 0, 3], [6, 5, 4]]
+        [action.target.y - creep.y + 1][action.target.x - creep.x + 1] : null;
+    const returnValue = creep[action.method](action.method === 'move' ? direction : action.target);
     if (decision) reporter.attempt(decision, index, attempted, returnValue);
+    return returnValue;
+}
+
+// Preflight the entire ownership group BEFORE logging/executing any movement.
+// Capture keeps every higher-priority plan; contest may replace ordinary
+// attack approach. A conflict releases the entire group before execution.
+export function prepareSecondaryMovement(secondary, friends, enemies, flag, engagements,
+    escort = null, pairPlan = null, spacing = null) {
+    if (!secondary?.movement) return { secondary, moves: null };
+    const { memberIds, steps, kind = 'contest' } = secondary.movement;
+    const cancel = reason => ({ secondary: secondary.cancel(`${kind}-${reason}`), moves: null });
+    if (!(steps instanceof Map) || memberIds.some(id => !steps.has(id))) return cancel('route-unavailable');
+    for (const id of memberIds) {
+        const actor = friends.find(c => c.id === id);
+        if (!actor || typeof actor.move !== 'function' || escort && [escort.healerId, escort.allyId].includes(id) || pairPlan?.moves.has(id))
+            return cancel('movement-priority');
+        const plan = selectMovementPlan(actor, enemies, flag, engagements.get(id), friends, false,
+            spacing ? { ...spacing, reserved: new Set() } : null);
+        if (!(kind === 'capture' ? ['flag-fallback'] : ['flag-fallback', 'combat-approach', 'combat-in-range']).includes(plan.reason))
+            return cancel('movement-priority');
+        const next = steps.get(id);
+        if (next && Math.max(Math.abs(next.x - actor.x), Math.abs(next.y - actor.y)) !== 1)
+            return cancel('route-unavailable');
+    }
+    if (!secondaryStepSupport(friends, memberIds, steps)) return cancel('step-support-unavailable');
+    const all = spacing?.creeps;
+    if (!Array.isArray(all) || all.length > 28) return cancel('occupancy-unknown');
+    const destinations = [...steps.values()].filter(Boolean);
+    const occupied = destinations.some(p => all.some(c => c.exists !== false && c.hits > 0 && c.x === p.x && c.y === p.y));
+    const collision = destinations.some((p, i) => destinations.some((q, j) => j < i && p.x === q.x && p.y === q.y));
+    // No swap/vacating-cell assumptions. A bounded whole-group wait retains
+    // ownership; only future observed improvement can postpone the stall stop.
+    return { secondary, moves: occupied || collision ? new Map(memberIds.map(id => [id, null])) : steps };
 }
 
 export function moveCreeps(myCreeps, enemies, flag, engagements = new Map(), fallbackById = new Map(),
-    escort = null, reportEscort = null, reporter = null, scoutHoldEnabled = false, pairPlan = null) {
+    escort = null, reportEscort = null, reporter = null, scoutHoldEnabled = false, pairPlan = null, spacingContext = null,
+    ordinaryFallbackById = null, objectiveMoves = null, objectiveKind = 'contest', healerClosing = null) {
+    const spacing = spacingContext ? { ...spacingContext, reserved: new Set() } : null;
     const ownedIds = new Set(myCreeps.map(creep => creep.id));
     for (const id of engagements.keys()) if (!ownedIds.has(id)) engagements.delete(id);
     // Vacating leader is executed before its follower regardless of observation order.
@@ -68,20 +109,48 @@ export function moveCreeps(myCreeps, enemies, flag, engagements = new Map(), fal
             continue;
         }
         const fallback = fallbackById.has(creep.id) ? fallbackById.get(creep.id) : flag;
-        const plan = selectMovementPlan(creep, enemies, fallback, engagements.get(creep.id), myCreeps,
-            scoutHoldEnabled && !fallbackById.has(creep.id));
+        let plan = selectMovementPlan(creep, enemies, fallback, engagements.get(creep.id), myCreeps,
+            scoutHoldEnabled && !fallbackById.has(creep.id), spacing);
+        // Do not pass the travel objective as the centre/rejoin safety anchor.
+        // Only ordinary fallback is substitutable; recovery/escort/combat wins.
+        if (plan.reason === 'flag-fallback' && ordinaryFallbackById?.has(creep.id)) {
+            plan = { ...plan, target: ordinaryFallbackById.get(creep.id) };
+        }
+        const objectiveOwned = objectiveMoves?.has(creep.id);
+        if (objectiveOwned) {
+            const target = objectiveMoves.get(creep.id);
+            plan = { ...plan, target, outcome: target ? 'selected' : 'hold', targetKind: 'position',
+                reason: `${objectiveKind}-route-${target ? 'step' : 'hold'}` };
+        }
+        // Closing owns only an ordinary hold. Existing owners and pressure
+        // retreat keep priority; disabled calls never evaluate this policy.
+        if (healerClosing && !objectiveOwned && typeof creep.move === 'function') {
+            plan = improveHealerHold({ creep, friends: myCreeps, enemies, spacing,
+                baseline: plan, owner: 'ordinary', healModifier: healerClosing.healModifier }, localRetreatStep);
+        }
         if (plan.engagement) engagements.set(creep.id, plan.engagement);
         else engagements.delete(creep.id);
         const action = plan.target
-            ? { method: 'moveTo', target: plan.target, targetKind: plan.targetKind } : null;
+            ? { method: objectiveOwned || plan.reason === 'healer-useful-close' ? 'move' : 'moveTo',
+                target: plan.target, targetKind: plan.targetKind } : null;
         const decision = reportDecision(reporter, { phase: 'movement', channel: 'movement',
             actorId: creep.id, outcome: plan.outcome, reason: plan.reason,
             actions: action ? [action] : [], ...pair });
-        if (action) issueAction(creep, action, decision, 0, reporter);
+        if (action) {
+            // A failed/unknown call does not free the tile for another retreat
+            // this tick; the next observation rebuilds these local reservations.
+            if (['ranged-melee-retreat', 'healer-pressure-retreat'].includes(plan.reason))
+                spacing.reserved.add(`${plan.target.x},${plan.target.y}`);
+            issueAction(creep, action, decision, 0, reporter);
+        }
     }
 }
 
-export function executeTactics(myCreeps, enemies, damagedFriends, reporter = null) {
+export function executeTactics(myCreeps, enemies, damagedFriends, reporter = null, observation = null) {
+    // Scoped to this invocation/tick. Logging never supplies policy accounting.
+    const context = observation ? createSpilloverContext(observation, myCreeps, enemies) : null;
+    const earlierIntents = [];
+    let sequence = 0;
     for (const creep of myCreeps) {
         const healingPlan = selectHealingDecision(creep, damagedFriends);
         const healing = healingPlan.action;
@@ -91,12 +160,23 @@ export function executeTactics(myCreeps, enemies, damagedFriends, reporter = nul
             actions: healingAction ? [healingAction] : [] });
         if (healingAction) issueAction(creep, healingAction, healingDecision, 0, reporter);
 
-        const combatPlan = selectCombatDecision(creep, enemies, healing);
+        const combatPlan = selectSpilloverDecision(creep, enemies, healing, context
+            ? { ...context, sequence, earlierIntents } : null);
         const combatActions = combatPlan.actions.map(action => ({ ...action, targetKind: 'creep' }));
         const combatDecision = reportDecision(reporter, { phase: 'tactics', channel: 'combat',
             actorId: creep.id, outcome: combatPlan.outcome, reason: combatPlan.reason,
             actions: combatActions });
-        combatActions.forEach((action, index) => issueAction(creep, action,
-            combatDecision, index, reporter));
+        combatActions.forEach((action, index) => {
+            const returnCode = issueAction(creep, action, combatDecision, index, reporter);
+            if (context) {
+                // Keep one overflow sentinel (65); never truncate to a valid64
+                // budget. Normal14-actor execution has at most28 combat calls.
+                if (earlierIntents.length <= 64) earlierIntents.push({
+                    tick: context.tick, sequence, actionId: `${context.tick}:${sequence}`,
+                    actorId: creep.id, method: action.method, targetId: action.target.id, returnCode,
+                });
+                sequence++;
+            }
+        });
     }
 }

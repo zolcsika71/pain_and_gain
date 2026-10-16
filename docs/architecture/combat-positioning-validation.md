@@ -262,6 +262,289 @@ The five-tile threat radius matches the existing local combat window; five estim
 
 **Strategic validation pending:** The single enabled replay below establishes source identity and available-console health, but not a confirmed allocation command, second capture, or benefit. A causal comparison would need disabled and enabled builds with separately verified emitted IDs over comparable active matches/maps, tracking flag uptime, score differential, casualties, and survival. One match outcome alone is insufficient. Replay positions do not log the scout objective or actual route estimate.
 
+### Earliest-safe-pair candidate — 2026-10-15
+
+The current disabled experiment now compares eligible **scout–target pairs**
+before committing to a scout. The preceding historical checkpoint and replay
+verdicts are unchanged. The score defeat against temik911 (`6ababe3796aad17ed5fae404`,
+recorded below) retained the first flag with all 28 creeps alive and no observed
+combat/injury; it demonstrates a scoring-opportunity problem, not that a second
+capture would win. The diagnostics reviews (`6ab9b0686fdfd1a237709c3d` and
+`6abad54f694bbd0e4ecb70df`) show strict arrival gates can
+reject targets or cancel immediately. None establishes that the other scout had
+a safe route. This change addresses a code-level blind spot: distance from the
+first flag does not establish which scout has the earliest safe target route.
+
+On acquisition, evaluate every healthy, zero-fatigue MOVE-only scout against
+every neutral attack-reduction target using the **same** complete-route,
+40-step, local-threat and strict enemy-arrival `> scout steps + 5` gates.
+Choose the smallest eligible route length. Equal lengths prefer the scout
+farthest from the first flag, then scout ID, then target ID. Targets are evaluated
+in ID order; each diagnostic evaluation now includes `scoutId`. Once assigned,
+only that scout/target is rechecked: no switching, second attempt or chaining.
+First-flag ownership/defence, tick-80 start window, 60-tick timeout, cancellation,
+fatigue continuation and capture completion are unchanged. No deployment switch,
+combat, healer, escort or movement executor was changed.
+
+This is an opportunity ranking within the existing debuff policy, **not** a new
+combat-value model. A neutral attack-reduction flag adds 3 points/tick but reduces
+global ATTACK power to 80% for one such flag (60% for two), persisting after the
+scout leaves. An earlier capture also starts that penalty earlier. Healing,
+ranged-reduction and vulnerability flags remain excluded; no safety threshold is
+relaxed. The expected observable improvement is fewer rejections caused solely
+by preselecting the wrong scout, or an earlier estimated capture when both are
+safe. Net score, survival, actual travel time and outcome remain unproven.
+
+Generated regressions demonstrate an old rejected pair (scout route 20, enemy
+route 24) alongside an eligible other scout (route 18, enemy 24); equality at
+`18 + 5` still rejects. Another generated case chooses route 18 instead of 26:
+eight earlier estimated scoring ticks would yield 24 points **if** capture and
+uptime follow the estimates, with eight earlier debuff ticks as well. These are
+synthetic route assumptions, not replay counterfactual trajectories. Tests also
+cover per-scout danger/fatigue, incomplete/40/41-step routes, deterministic ties,
+first-flag loss/defender loss, ownership changes, retained assignment and one move
+per actor. Existing combat/healer/escort and disabled tick traces remain checked.
+
+The standard observed roster has two MOVE-only scouts and at most two neutral
+attack-reduction targets: at most `2 × 2 × (1 + 14) = 60` path calls per acquisition
+tick, each still capped at 5,000 ops by `src/loop.js` (300,000 requested path ops,
+versus 150,000 previously). Active retention needs at most 15 calls. Reporting
+does not trigger extra searches. This finite work bound is **not** a wall-time/CPU
+guarantee; live CPU headroom and congestion remain trial gates. No persistent
+path cache, extra movement controller or example dependency was added.
+
+**Offline validation:** two new regressions failed before correction; the final
+focused allocator/movement/tick/healing/escort/hold checks passed **83/83** on
+Node **24.19.0**. Build generation, `npm run check` (including build-ID checking)
+and whitespace checks passed. The checked **disabled** candidate ID is
+`419943d9786e765deb1080f827b83dcdea45abc42821557ec956bbc6fb96a2a8`.
+No managed capture/cache was reread and no match was launched. WebStorm found
+no allocator/build-ID issues; it reports two existing omitted-optional-report
+argument warnings and the existing mocked `ScoreFlag.my` read-only-typing error
+in tests, despite passing Node execution. They were not suppressed.
+
+Local TypeScript examples were inspected, not executed or modified:
+`skirmish-main/.../intents/creeps/move.ts` (MIT) uses deterministic movement
+conflict ordering but is an engine resolver, not an Arena allocation policy;
+`screeps-rl-main/samples/bots/apex-v3/src/main.ts` relies on World `Game`/`Memory`
+and is unsuitable here; `screeps-arena-tools-main/src/terrain.ts` (GPL-3.0-or-later)
+is replay terrain encoding, not a path/arrival oracle. Their manifests/licenses
+were consulted. No example code, fixtures, dependencies or TypeScript were copied.
+
+**Proposed operator trial, not launched:** retain this disabled candidate's build
+ID and a baseline result first. For one explicitly approved active-opponent
+screening match, change only `oneScoutFlagExperiment` to `true`, regenerate and
+check the build ID, record that distinct enabled ID, keep every other switch
+unchanged, and verify Arena's selected `src/` plus emitted ID. Record acquisition
+scout/target/routes/margins, actual capture tick, both flags' ownership uptime,
+score and score differential, casualties, terminal outcome and CPU headroom.
+Abort further trials on runtime/CPU errors, first-flag loss or unsafe allocation;
+retain rejection and cancellation cases as outcomes, not successes. Roll back by
+setting only that switch to `false`, regenerating/checking the ID, and confirming
+the recorded disabled candidate ID before another launch. This cannot undo a
+captured flag's debuff within an already-running match. Compare multiple enabled
+and disabled matches, keeping opponent/map/build identities: random opponents
+confound one-match comparisons. Neither offline checks nor this proposed single
+screening match establish win-rate improvement or authorize promotion.
+
+For the exact current runtime bytes with only that switch changed, the
+**in-memory calculated, not deployed** enabled fingerprint is
+`ec674f707e9412ce6e3cccda8282016a546696a267fa4b469d1cde59fd7e9ead`.
+The operator must actually regenerate/check and match it before the trial;
+restoring the switch must reproduce the disabled ID above. A mismatch stops the
+trial rather than silently accepting another candidate. The retained offline
+commands, hashes and scoped preservation checks are in
+`/Users/zoltanka/.local/share/pain-and-gain-evidence/scout-pair-policy-20261015-vQR166/`.
+
+### Earliest-safe-pair one-match review — 2026-10-15
+
+The operator completed **one random Fame match**, replay
+`6ad1353874ae43d45c65ae76`: bushdoctor2008 **v25** (`player2`) versus
+**magnum338 v6**. Arena's open-replay URL and visible tick-782 console identified
+this match and enabled build
+`ec674f707e9412ce6e3cccda8282016a546696a267fa4b469d1cde59fd7e9ead`.
+Exact local finished-match metadata agrees (created 20:19:04.703 UTC, 1,384 ticks).
+Metadata code ownership/slot references and 149/149 early comparisons of every
+logged creep independently agree with our runtime ownership: pre-action log tick
+`t` matches replay frame `gameTime=t-1`; offsets zero and +1 matched none of the
+150 tested rosters. The source directory selected **at launch** was not
+independently observed; emitted identity matches the locally checked enabled
+runtime, not proof of that UI setting.
+
+**Coverage and preservation:** existing cache parsers validated 14 log responses,
+14 frame responses and one metadata response, selected by this match's exact
+request keys only. There are 1,383 consecutive pre-action snapshots (1–1383),
+1,384 consecutive frames (1–1384), and 1,383 complete action/CPU diagnostic ticks,
+with no reported closure/correlation gaps or untyped console entries. No error
+entry was found in those captured console responses; the full UI console and
+terminal-tick logging remain unverified. All 29 selected cache-file hashes and
+metadata were rechecked unchanged. The captured starting map contains 10,000
+terrain cells/seven flags; its calculated checksum is
+`f35f86a64af8f969887cfb8fa809ad2253feea6ea5805a7ebe35c1ffdd52dfee`.
+No registered-map agreement is claimed: the production manifest was found
+**dataless**, never opened or hydrated. No managed capture was read or imported;
+managed membership and claim/examined recording remain unavailable, not silently
+treated as completed. Original cache bytes, managed files and old claims were
+left untouched.
+
+**Execution/safety:** all **86** allocation diagnostics are `reject`; there is no
+assignment, retention, cancellation or completion. Early first-flag threats
+blocked acquisition. On ticks **48–80**, both scouts were evaluated against the
+remaining neutral attack targets. At tick 48 both scouts' route to A was 18
+steps, versus enemy scout_2's 17; B was 19/18 for our scouts versus enemy
+scout_1's 16. All fail the unchanged strict `enemy > scout + 5` gate. Tick 81
+closed the start window. Across these evaluations, diagnostics report **176**
+path calls, at most eight and 216 pathfinder ops in one tick—not the 60-call
+worst case. Scout `moveTo(first flag)` calls returned zero and consecutive
+snapshots show fallback movement (for example scout_1 at 51,52 → 50,51 from
+log ticks 38→39); zero proves accepted scheduling, not displacement causality.
+Selected scout action records through tick 150 contain no alternate-flag command;
+no second-flag capture occurred in the full observed coverage. Pair evaluation/rejection is
+exercised; pair selection, diversion, successful capture and its debuff trade-off
+remain **unexercised**, not successful allocation validation.
+
+**CPU:** all 33 route-evaluation ticks have complete sampled coverage. Peak
+elapsed sampling-point CPU was **3,298,929 ns at tick 51**, against the recorded
+ordinary-tick **100,000,000 ns** limit (96,701,071 ns sample headroom). The largest
+ordinary sample in the match was 9,565,273 ns at tick 376. Tick 1 used the separate
+1,000,000,000 ns limit. These samples precede logger/closure completion; they do
+not prove final CPU usage, worst-case route cost or incremental allocator
+overhead. No CPU/runtime error was found in available captured output.
+
+**Effects/strategy:** the first flag became ours at frame **38** (log **39**) and
+remained ours through terminal frame 1384: 1,347 observed owned frames and 1,346
+five-point score increments. Neither attack-reduction flag was ever ours;
+second-flag uptime and its ATTACK penalty were zero. Scores (ours–opponent) were
+315–291 at frame 100, 815–891 at 200, 2,815–6,507 at 600, and **6,730–22,167**
+at terminal frame 1384. Arena displayed **Defeat**. We lost five creeps (nine
+survived), while the opponent lost thirteen (one scout survived) and held all
+other flags at the end. This is a score loss despite combat attrition advantage,
+not evidence that relaxing safety gates or accepting a combat penalty would win.
+One random opponent does not establish a win-rate change.
+
+**Restoration:** immediately after match completion was reported, only allocation
+was restored to `false`; escort remains `true`, holding/pairing `false`.
+Regeneration and `npm run check` returned exact disabled build
+`419943d9786e765deb1080f827b83dcdea45abc42821557ec956bbc6fb96a2a8`.
+The accepted 83 offline checks were reused; no suite or second match was run.
+The scoped trial record, exact source hashes, route/CPU evidence, restoration and
+preservation checks are retained under
+`/Users/zoltanka/.local/share/pain-and-gain-evidence/scout-pair-live-trial-20261015-XzKxun/`.
+No promotion or continued activation is authorized.
+
+### Post-opening contest candidate — 2026-10-15
+
+The disabled allocator now has one narrow late-contest mode in addition to the
+unchanged neutral opening. It is **not enabled or live-validated**. Historical
+builds, the rejection-only trial above, and its restoration receipt remain valid
+for their original source bytes; the new disabled candidate ID is recorded below.
+
+**Concrete opportunity:** the retained trial findings showed nine friendly
+survivors versus one enemy scout after log tick 503, while the opponent retained
+all six non-central flags. One additional bounded read of the already-selected
+resident `/log/600` response confirmed tick **520**: full-health, zero-fatigue
+scouts at (49,49) and (50,49), owned first flag (49,49), functioning ranged
+defenders at (49,48)/(50,48), and the sole MOVE-only enemy at (67,31), occupying
+enemy-owned attack flag A. Attack flag B (31,67) was enemy-owned and unoccupied;
+that enemy's geometric distance to B was 36. The original policy rejected every
+post-80 start and never considered enemy-owned B. The exact 55,365-byte source's
+recorded path, identity, timestamps and SHA-256
+`73aeead6c052b7d28715556e02eb99d09a1a598ec18e8c78ce17e5ad7e8f48a7`
+were verified from the same bytes passed to the existing parser. No other
+original response, managed manifest, import or review lifecycle was accessed.
+
+**Acquisition:** ticks 1–80 still consider neutral attack-reduction flags under
+the original all-enemy danger/race rules. If no attempt has already started,
+late mode considers only **enemy-owned attack-reduction flags** at ticks
+100,120,…,1900: at most **91** acquisition polls. The 20-tick cadence is an
+explicit search-work/response-latency trade-off, not an empirically optimal
+strategy. The 1900 cutoff is `2000 - 60 assignment - 40 nominal return steps`;
+it does not guarantee arrival, return, uptime or survival before an early end.
+There is still **one assignment total per match**, across both modes.
+
+Every living enemy must have **no functioning ATTACK or RANGED_ATTACK** before
+late acquisition/continuation. This conservative global gate avoids introducing
+a new combat-risk radius or allowing a raid around surviving armed enemies.
+Unarmed does **not** mean irrelevant: any living enemy within five of the first
+flag still blocks/cancels; an enemy standing on the target rejects it before any
+route search, regardless of weapons or estimated speed. All other enemies,
+including unarmed scouts/healers, remain arrival competitors. Incomplete/unknown
+routes reject; the existing maximum 40 scout steps and strict
+`enemy steps > scout steps + 5` margin remain unchanged. Linear range is only a
+lower bound that may establish that margin. Earliest eligible route wins, then
+farthest-from-first scout, scout ID and target ID. First-flag ownership, a living
+functioning armed defender within three, full health and MOVE-only body remain
+mandatory; new scouts must have zero fatigue.
+
+**Continuation/release:** state records `mode: "contest"` so an opening attempt
+does not change rules when it crosses tick 80. A late assignment rechecks every
+tick, not just poll ticks, and never changes scout/target. New armed danger,
+centre threat/loss, lost defender, injury/lost MOVE, **any late-assignment
+fatigue**, target occupation, ownership/effect change, or lost route/race ends
+the attempt permanently and restores first-flag fallback. The late fatigue
+cancellation avoids pretending a paused raider can meet its original race;
+opening fatigue continuation remains unchanged. Ours-owned target completes
+after safety checks; otherwise it must remain explicitly enemy-owned (missing or
+null ownership is not normalized). At zero route steps the scout holds until
+ownership is observed. The existing timeout allows elapsed ticks through 60 and
+cancels at 61. Capture, cancellation or timeout never causes a retry, second
+capture, holding patrol or recapture loop. Returning cannot undo a flag's debuff.
+
+**Trade-off:** taking an enemy 3-point flag adds 3 to us and removes 3 from them:
+a **6-point/tick ownership swing while held**. It also reduces our army's ATTACK
+power (80% for one attack flag, 60% for two), and removes one of the opponent's
+ATTACK penalties. The no-armed-enemy prerequisite limits immediate combat risk,
+but does not guarantee no future threat (for example healed body parts), prevent
+recapture, or establish that score pursuit beats destroying the remaining scout.
+The policy deliberately does not add heal/ranged/vulnerability targets or a
+general score/combat-value optimizer.
+
+**Regression and bounds:** a tick-520-shaped generated fixture preserves the
+observed positions/ownership/roles with simplified body and health values. Its
+complete 20/21-step routes are **synthetic assumptions**, not measured tick-520
+Arena routes; the enemy's 36 lower bound clears either route +5. The original
+planner rejected; the new planner chooses B and explicitly rejects occupied A.
+This is a counterfactual decision on a fixed observation, not a replay trajectory
+or a claim capture would succeed. Tests exercise occupancy, unarmed races,
+armed danger, ownership changes, health/fatigue, defence, incomplete routes,
+timeout, ordering, bounded polls, and actual enabled tick orchestration.
+At most 60 searches occur per late poll for the standard two-scout/two-target/
+14-enemy bounds, each still at `maxOps: 5000`; idle non-poll ticks do no route
+searches. Active continuation needs at most 15 searches/tick for at most 60
+following ticks. No extra path searches are made for diagnostics. This is a
+finite work bound, not a CPU-time guarantee. The prior live 3.30 ms sample was
+for opening rejection, **not** this new branch or its worst case.
+
+**Local validation:** the new opportunity regression failed before correction;
+**97/97** focused allocator/movement/tick/healing/escort/hold checks passed on
+Node 24.19.0 afterward. Runtime generation/checking, `npm run check` and whitespace
+checks passed. Disabled candidate:
+`efd19a0e3de6d5cbde301aff2e85fb90ac2b5b595fb5bf90b9cc8f7af9967852`.
+WebStorm found no allocator/new-test/build-ID problems; the pre-existing mocked
+`ScoreFlag.my` read-only-typing error in the opening flow test remains disclosed,
+not suppressed. Allocation stays false; escort stays true, holding/pairing false.
+Commands, hashes, the bounded source observation and final review are retained
+under `/Users/zoltanka/.local/share/pain-and-gain-evidence/scout-contest-policy-20261015-3tvLry/`.
+
+The local MIT TypeScript `skirmish-main` movement resolver's deterministic-ID
+ordering was consulted again. Its engine-wide collision arbitration is not a
+compatible Arena controller; none of its code, dependencies or TypeScript was
+copied. Existing JavaScript movement, combat, healing, escort and deployment
+switches are unchanged.
+
+**Future one-match procedure, separately authorized:** retain this disabled ID;
+change only the scout switch, generate/check and record the distinct enabled ID,
+confirm Arena's source directory and emitted ID, then have the operator launch
+one random Fame match. Record whether any late poll meets the unarmed/defence/
+race gates; distinguish planner assignment, accepted movement, displacement and
+ownership. Measure capture time, first/second-flag uptime, recaptures, score
+progression, casualties/outcome, path calls/ops and sample CPU/headroom against
+recorded limits. A rejection-only run leaves capture unexercised. After the match
+or abandonment restore only allocation=false and regenerate/check this disabled
+candidate ID. Stop on identity/runtime/CPU/safety problems; no automatic second
+match, threshold tuning or promotion. Random opponents confound comparisons;
+offline checks and a single match cannot establish win-rate benefit.
+
 ### Enabled-build handoff — 2026-09-28
 
 For the requested single live experiment, **only** `src/config.js` was switched to `oneScoutFlagExperiment = true` in the runtime source. The generated module and `npm run build-id:check` agree on enabled build ID `26c17cf90a387e6b0450f578cd927cccd61dccd1ada0c7bc1453cccbb2315bf9`. `npm run check`, all 68 unit tests, and whitespace checks pass. One test that had asserted the deployment switch must always be false was made configuration-neutral; it still verifies the production first-flag fallback when no allocation is provided. No strategy logic or threshold was changed in this handoff. The prior disabled ID is `0843ad4a7ada529101cee16c87b8c7e39bfee2f499cf5e6bb3c583839462632b`; it does **not** identify an enabled match.
@@ -425,3 +708,344 @@ The completed audit of the same scout-enabled replay used **first contact at pre
 Across **76 armed friendly creep/tick states**, all **38 selected attacks** matched the actor's attack marker and target coordinate; the other **38** had no eligible in-range attack and no attack marker. There was no selector/marker discrepancy. The first two contact ticks (43–44) had no eligible in-range attack. Of the 38 selected attacks, **30** targeted enemy `melee_2` or `melee_4`; both survived this window. Enemy functioning ATTACK parts fell **32→15** by snapshot 53, while ours fell **32→0**. Enemy healing markers, including repeated healing of `melee_4`, and simultaneous combat limit interpretation of net health and part changes.
 
 Reconstructed selections are **not issued-command traces**. Replay markers identify action types and target coordinates, not API return codes or damage amounts; net health and body-part changes cannot isolate individual attacks from simultaneous damage and healing. Agreement in this window establishes consistency with the existing selector, **not** policy optimality, strategic benefit, or the cause of the defeat. The replay's build-provenance, full-UI-console, and terminal-tick logging limitations stated in the one-match review still apply. **Decision: no targeting change or further match is justified by this audit.** The managed capture remains claimed and examined, not `done`; this documentation close-out does not complete its replay review or clean up evidence.
+
+## Offline equal-range ranged spillover — 2026-10-16
+
+Status: test-side comparison completed; recommend a narrowly bounded trial
+candidate after separate runtime integration, validation and authorization.
+This is not a selector bug fix, deployed policy or launch-ready runtime change.
+
+The [first-contact audit](/Users/zoltanka/.local/share/pain-and-gain-evidence/first-contact-targeting-audit-20261016-izMPzC/report.json)
+of replay `6ad152e374ae4378a665afb2` found all 39 attacks at ticks 37–44
+consistent with the current nearest-range/raw-ID policy, accepted returns and
+resolved markers. At tick 43, enemy melee 2 had 412 HP, five functioning MOVE
+parts and no weapon. Three earlier accepted melee intents offered 570 nominal
+damage. Four ranged attacks added 210, while armed melee 3 at (48,48) was
+equally reachable. Neither target had a functioning enemy healer within three.
+
+### Test-only contract
+
+`tests/fixtures/ranged-spillover-candidate.js` reuses the deployed combat,
+healing and nearest-target selectors. It can replace only a single-target
+ranged selection with a living enemy at the **same nearest range**, choosing
+the existing smallest ID among eligible alternatives. The default must already
+be nominally covered by earlier compatible accepted melee intents, and the
+alternative must not be covered by those intents. Melee selection, healing,
+movement, mass attacks, action order and exclusions remain unchanged.
+
+Accounting consumes the original ordered attempt prefix before the current
+decision, not a separate melee-first pass. Only current-tick `attack` returns
+equal to numeric `0` qualify; current-actor melee cannot precede its own ranged
+decision. Recompute eligibility, functioning ATTACK count, adjacency, healing
+compatibility and unchanged melee target. Count an exact repeated action ID
+once. Conflicting IDs, multiple distinct accepted attacks by one actor, future
+or out-of-order events disable spillover. No ledger survives a tick reset.
+
+The deliberately conservative experiment supports only explicitly neutral
+friendly ATTACK/RANGED_ATTACK, enemy damage-taken and enemy HEAL modifiers,
+complete known rosters and no functioning enemy HEAL within range three of
+either target. Missing data or unsupported modifiers retain baseline selection;
+they never imply zero healing or neutral damage. Our vulnerability flag at
+tick 43 affects incoming damage only and does not invalidate these outgoing
+neutral conditions. Finite bounds are 14 units per roster, 50 body parts per
+unit and 64 earlier observations; exceeding them disables spillover without
+truncation. Only melee intents fund coverage: redirected ranged intents are
+not reservations, so this is not a general anti-overkill or focus-fire planner.
+
+### Recorded tick-43 comparison
+
+The pinned `tests/fixtures/ranged-spillover-tick43.json` retains the complete
+pre-action roster and actual tactical event order. Positive mock body HP is a
+functioning-count sentinel, not reconstructed per-part HP. All 14 baseline
+combat decisions and eight original attack calls reproduce. The table uses
+friendly actor names and enemy target names; A/R counts are functioning parts.
+
+| Friendly actor | Weapon / range | Nominal damage | Baseline target | Test candidate target |
+| --- | --- | ---: | --- | --- |
+| melee 1 | 8 A / 1 | 240 | melee 2 | melee 2 |
+| melee 2 | 3 A / 1 | 90 | melee 1 | melee 1 |
+| melee 3 | 3 A / 1 | 90 | melee 2 | melee 2 |
+| melee 4 | 8 A / 1 | 240 | melee 2 | melee 2 |
+| ranged 1 | 6 R / 3 | 60 | melee 2 | melee 3 |
+| ranged 3 | 6 R / 3 | 60 | melee 2 | melee 3 |
+| ranged 4 | 6 R / 2 | 60 | melee 2 | melee 3 |
+| ranged 5 | 3 R / 2 | 30 | melee 2 | melee 3 |
+
+Four ranged choices change without movement or range changes. Baseline nominal
+allocation M1=90/M2=780 becomes M1=90/M2=570/M3=210, total 870 in both.
+M2's 570 exceeds recorded HP by 158; the baseline excess was 368.
+These are arithmetic comparisons, **not proven wasted damage**.
+Single-target ranged attacks use 10 per functioning part throughout range 1–3,
+not mass-attack falloff. M3 had 1,168 HP and four functioning ATTACK parts.
+
+Only unchanged original melee returns fund this counterfactual comparison.
+No redirected ranged command was issued or assumed accepted. Scheduled melee
+may not realize the nominal budget: simultaneous resolution, capability changes
+and unsupported effects could leave M2 alive after ranged fire moves away.
+Exact nominal coverage deliberately qualifies in generated checks and has no
+safety margin. Nearby healing/unsupported modifiers disable the experiment,
+but do not convert accepted scheduling into guaranteed damage. Multiple ranged
+redirects can still over-concentrate elsewhere because they are not reserved.
+
+Recommendation: trial this guarded idea rather than adopt it. The comparison
+moves 210 potential damage toward an armed target while retaining 570 potential
+on the original 412-HP target, with no movement or range cost in this snapshot.
+That is sufficient for a separately authorized experimental runtime candidate,
+not evidence of an alternative kill, prevented casualty or gameplay benefit.
+No runtime integration, live trial, deployment switch or next task is authorized
+by this offline result.
+
+### Focused validation and preservation
+
+On resident Node 24.19.0, the explicit spillover experiment plus existing
+tactics checks passed 21 tests. Generated cases cover insufficient/exact/excess
+coverage, duplicate and incompatible/rejected intents, interleaved actor order,
+tick reset, healing, modifiers, stable equal-range fallback and finite bounds.
+The retained initial run had a fixture reference-comparison failure; a separate
+replacement-intent regression then exposed and corrected test-side accounting.
+Both failures are retained. No deployed code changed to pass these checks.
+
+```sh
+node --max-old-space-size=256 --test tests/unit/ranged-spillover-experiment.test.js \
+  tests/unit/tactics.test.js
+```
+
+Runtime and build remain unchanged:
+`4896ef3596bcca45755413fa8d090a7518bb1ece2ed8d416ea17461109e89215`.
+No build regeneration, full suite, replay-response reread, managed manifest
+access or match occurred. Existing healing experiments and historical
+disclosures are preserved.
+
+[Comparison, failures and scoped preservation receipt](/Users/zoltanka/.local/share/pain-and-gain-evidence/ranged-spillover-experiment-20261016-Iw0mnX/report.json).
+
+## Runtime equal-range ranged spillover trial candidate — 2026-10-16
+
+Status: integrated and locally checked; ready for one separately operator-run
+random Fame trial, not launched or promoted. The preceding test-only experiment
+remains an independent archived oracle. Current candidate build:
+`c14daba6f8c054218bbe32d3c3f890fdb3fa467b4615a91ec9fdf3af3924b07f`.
+Source directory:
+`/Users/zoltanka/Documents/Prog/JavaScript/ScreepsArena/pain_and_gain/src`.
+
+### Live assumptions and execution
+
+`src/loop.js` passes its existing full observation to `executeTactics`.
+`createSpilloverContext` in `src/tactics/combat.js` validates the live roster
+partition and all seven flags: unique IDs, live objects, supported effect counts,
+positions, scoring rates and documented ownership values. Arena's
+`getObjectsByPrototype(Creep)` returns all creeps; completeness relies on that
+existing API query, not an inferred fixed survivor count or an arbitrary
+selected snapshot. Known live units require recorded integer health/positions,
+body data and range access. Null or sparse body entries disable the live context
+before the accepted kernel runs; missing parts never imply absence of HEAL.
+The documented neutral `Flag.my` value is
+`undefined`; false means enemy-owned. There are no extra Arena queries.
+
+Explicit friendly melee/ranged, enemy damage-taken and enemy healing modifiers
+must all equal 1. Own vulnerability affects incoming damage only. Unknown,
+incomplete, stale, oversized or inconsistent observations keep baseline attack
+targets. A functioning enemy healer within three of either target disables
+that spillover. Bounds remain 14 units per side, 50 parts per unit and 64 earlier
+observations (plus the full-observation bounds of 28 creeps/seven flags).
+The actual loop can issue at most 28 combat calls for 14 mixed-weapon actors.
+
+The executor's local call-order prefix is updated only after each original
+combat call returns. Numeric `0` compatible melee counts once per actor. It does
+not trust logging callbacks or move anyone into a separate melee-first pass;
+mixed actors still select ranged before melee. Exact duplicate observations
+count once; ambiguous accepted replacements disable spillover. Each invocation
+starts empty, including new ticks and match resets. Overflow retains one invalid
+sentinel rather than truncating into a valid budget. Earlier ranged calls never
+fund coverage, and no ranged reservations are added.
+
+The promoted kernel matches the accepted test-side candidate except for bounded
+diagnostic reasons. Existing `action-decision` records distinguish
+`ranged-spillover` from `ranged-spillover-fallback` (including guarded or
+insufficient-budget cases). Original baseline/no-action reasons remain when
+there is no ranged action, or no observation was supplied. Attempts retain the
+actual method, target and return. No new record type, count or logger was added.
+
+### Verification and limits
+
+44 explicit affected checks passed on Node 24.19.0: real `runTick` integration,
+the existing tactical/tick-flow paths, replay-evidence logging, game-state logging
+and ordinary movement fallback. The real tick fixture reproduces all eight
+baseline attack calls, then makes the four expected redirects with unchanged
+movement/healing calls and actual scheduling order. Generated cases cover
+accepted/rejected/unknown returns, interleaved actors, tick/reset isolation,
+exact/insufficient/excess coverage, enemy healing, modifiers, incomplete flags
+and roster data, duplicates/replacements and finite limits. Two additional
+null/sparse enemy-body regressions failed before the live-boundary correction
+and pass afterward; the failed run is retained. The earlier 21
+experiment checks are reused, not recounted as new runtime checks.
+
+`npm run build-id:generate`, `npm run build-id:check` and `npm run check`
+passed. Runtime imports remain local to `src/` or existing Arena-provided
+modules; no Node/test dependency enters runtime. IDE inspections found no errors.
+Three weak duplicate-code warnings reflect the preserved experiment oracle;
+the pre-existing `arenaInfo` import-resolution warning remains. No blanket
+suppression was added. Live CPU/headroom and gameplay effects remain unmeasured.
+
+All four deployment switches are unchanged: allocation off, escort on, holding
+and pairing off. Healing and movement source are unchanged. There is no new
+deployment switch: this source build is the experimental candidate.
+The baseline build before this task was
+`4896ef3596bcca45755413fa8d090a7518bb1ece2ed8d416ea17461109e89215`.
+
+### One future trial and exact rollback
+
+Only after separate operator launch approval: confirm Arena's selected source
+directory above and the emitted candidate build, then play one random Fame match.
+Use existing bounded diagnostics to identify actual redirects/fallbacks,
+preceding accepted melee, shared ranges and subsequent target HP/parts. Record
+supporting enemy-healer access, casualties, central defence, score/outcome and
+sampled CPU/headroom. Separate selected commands, numeric returns, resolved
+markers and observed effects; unexercised branches remain unexercised. Accepted
+melee and exact nominal coverage do not guarantee elimination. The original
+target may survive; ranged fire may over-concentrate elsewhere. No automatic
+second match, promotion or threshold change follows this task.
+
+After that trial ends or is abandoned, rollback only with workspace ownership
+and unchanged candidate inputs. Check residency first. Require the candidate
+build above and all four current runtime hashes in `rollback-c14-pins.json` to
+match; also hash the added test against this task receipt. Stop if any source,
+test or runtime inventory has changed. Never use a blanket Git restore.
+
+The retained `runtime-c14-change.patch` reverses only this task's changes to
+`src/tactics/combat.js`, `src/arena/execute.js`, `src/loop.js` and the generated
+build artifact, preserving earlier dirty work. Its reverse check passed without
+applying it. From the repository root, after those pin checks and explicit
+rollback authority:
+
+```sh
+/usr/bin/patch -C -R -p1 -F0 -t -i /Users/zoltanka/.local/share/pain-and-gain-evidence/ranged-spillover-runtime-20261016-PJHfho/runtime-c14-change.patch
+# Only if the check succeeds, apply that same scoped reversal:
+/usr/bin/patch -R -p1 -F0 -t -i /Users/zoltanka/.local/share/pain-and-gain-evidence/ranged-spillover-runtime-20261016-PJHfho/runtime-c14-change.patch
+```
+
+Retain the new candidate-specific test outside the active `tests/unit` suite
+before baseline testing: after verifying its receipt hash and that the destination
+is absent, move only `tests/unit/ranged-spillover-flow.test.js` to
+`/Users/zoltanka/.local/share/pain-and-gain-evidence/ranged-spillover-runtime-20261016-PJHfho/archived-ranged-spillover-flow.test.js`.
+Do not move pre-existing tests or experiment fixtures. This preserves the new
+test without leaving named imports of removed candidate APIs in the baseline suite.
+Keep this policy/history and the trial receipt, recording the actual rollback
+separately; they are not runtime inputs.
+
+Then, with the resident Node 24.19.0 bin directory first in PATH, run
+`npm run build-id:generate`, `npm run build-id:check` and `npm run check`.
+The restored ID must exactly equal the baseline ID above; otherwise stop.
+No rollback, match, original-response read, manifest access or Git mutation
+was performed during candidate preparation.
+
+[Runtime checks, source pins, rollback artifacts and preservation receipt](/Users/zoltanka/.local/share/pain-and-gain-evidence/ranged-spillover-runtime-20261016-PJHfho/report.json).
+
+## Pure-ranged melee spacing — 2026-10-16
+
+One movement correction is implemented; no match or gameplay benefit is claimed.
+Baseline: `c14daba6f8c054218bbe32d3c3f890fdb3fa467b4615a91ec9fdf3af3924b07f`.
+New candidate: `411650f86bacec4876fd32e472c983fbed6b5a8a65e8053c2c22d5ce72871a9c`.
+Allocation stays off, escort on, scout holding/pairing off. The rejected rally
+and melee shared-target experiments are not extended or promoted.
+
+### Demonstrated holds
+
+Replay `6ad152e374ae4378a665afb2`, Golden Eagle v19, emitted historical build
+`4896ef3596bcca45755413fa8d090a7518bb1ece2ed8d416ea17461109e89215`.
+Its movement code matches the baseline above; later ranged spillover does not
+change these movement holds. Retained states/actions establish:
+
+| Pre-action tick | Pure ranged actor / position | Recorded hold / next snapshot | Free plain escape tiles |
+| --- | --- | --- | --- |
+| 40 | ranged 5 (48,50), 960 HP | no move; still there at 41, 798 HP | (48,51), (49,51) |
+| 41 | ranged 4 (49,50), 1,200 HP | no move; still there at 42, 1,020 HP | (49,51), (50,51) |
+| 41 | ranged 5 (48,50), 798 HP | no move; still there at 42, 822 HP | (49,51) |
+
+Each was adjacent to functioning enemy ATTACK and selected `combat-in-range`.
+These tiles avoid every current melee envelope, enter no new functioning ranged
+envelope and retain ranged reach. HP deltas do not identify individual damage or
+establish what a retreat would change. Snapshot tick N aligns with frame N−1.
+
+The retained review lacked terrain rows. Only its pinned resident `/log/86`
+Chromium response was additionally read (75,477 bytes, SHA-256
+`950bbae376d04b5fa70303c4ee3f66e79a129f2f664defb68e80784e472b4678`).
+Original path identity/metadata, length and hash were checked; the existing parser
+verified replay/build and map checksum
+`4dea7cdacc0594a8e59e97c42f56f9a3c3430bce8bdadea6dff66126c13c42e3`.
+Reads were bounded to 1 MiB raw/16 MiB decoded, 64 KiB buffers, 180 seconds,
+256 MiB heap/512 MiB RSS. No other original responses or dataless manifest were
+read; no hydration or managed claim/examined/done mutation is asserted. Cooperative
+metadata/open checks are not atomic OS-level protection. Source bytes are unchanged.
+
+### Narrow local retreat
+
+Only a living owned, zero-fatigue actor with functioning MOVE/RANGED_ATTACK and
+no ATTACK or HEAL parts (even destroyed ones) may replace its in-range hold with
+`ranged-melee-retreat`, when a living enemy has functioning ATTACK within one.
+Inspect at most eight neighbours, stable y then x. Require bounds 0–99, known
+plain terrain (Arena value 0), no currently living occupant (even if vacating),
+no earlier retreat reservation, no functioning enemy ATTACK within one, and no
+functioning enemy RANGED_ATTACK newly within three. Walls, swamps and unknown
+terrain reject; avoiding swamps avoids new swamp fatigue. Existing ranged fire
+may remain. Keep the selected ordinary target within three: it is already at
+most one away, so a legal one-cell retreat preserves ranged reach without changing
+attack selection. Single-target ranged attacks have full power through three.
+
+The loop supplies complete observed creep occupancy and `getTerrainAt`; direct
+callers lacking that context retain old behavior. Use one adjacent-goal `moveTo`
+through the existing executor. No explicit extra path search, threat map, timer,
+waiting budget, target latch or new controller is added. The default moveTo
+options are unchanged. Bound rosters to 28 occupants/14 enemies and checked
+bodies to 50 parts. Added local work is eight bounded neighbour/roster scans,
+not a measured live CPU bound or guaranteed pathfinding result.
+
+Escort and paired ownership win before this rule. Hybrids, attack/healing
+selection, melee waits/rejoin and deployment switches are unchanged. Reserve a
+retreat destination for this executor invocation even on a rejected/unknown
+return, preventing two retreats selecting it; rebuild reservations next tick.
+This does not reserve ordinary movement or predict enemies. No eligible tile
+means retain the old hold, not a knowingly unsafe step. Outside current melee
+range the ordinary standoff resumes; there is no new advance back into adjacency.
+
+### Validation and trade-offs
+
+The historical regression fails before correction and chooses from the verified
+escape sets afterward. Generated successive observations exercise retreat →
+standoff without bouncing, blocked/unsafe destinations, new ranged exposure,
+unknown/swamp terrain, hybrids, fatigue/lost MOVE, bounds, deterministic choice,
+rejected commands, exclusive destinations and escort/pair ownership. Real tick
+flow reports a correlated numeric-zero retreat while still scheduling the ranged
+attack. Generated displacement is not an observed Arena effect.
+
+65 focused checks passed on Node 24.19.0, covering new spacing/tick flow and
+existing movement, tactics, melee support/rejoin, escort and spillover. Build
+generation/check and `npm run check` passed. Failing-before evidence is retained;
+an added pair-owner fixture initially omitted required context and was corrected
+without weakening production ownership handling.
+
+Local TypeScript `xxscreeps` invader `flee.ts` and `apex-v3` `kiteAway` separate
+movement from attacks and consider armed threats, but use World Room/PathFinder
+APIs and broad searches. They are not Arena-compatible drop-ins or authoritative
+resolution models. No code/dependencies/TypeScript were copied; the small local
+spacing idea was adapted in plain JavaScript.
+
+Retreat may lose healing access, pressure or flag progress and remain under ranged
+fire. Congestion can leave no exit; earlier actors may reserve another's sole
+exit. No formation-wide allocation is introduced. Other movement can conflict
+with the chosen cell, and an enemy may close simultaneously. Accepted commands,
+projected safety and observed effects are distinct. A separately authorized live
+trial must verify emitted build, retreat returns/displacement, following enemy
+motion, attacks/healing, flag progress and CPU samples. No prevented casualty or
+gameplay benefit follows from these checks; no match is launched here.
+
+[Analysis, regressions, commands and preservation receipt](/Users/zoltanka/.local/share/pain-and-gain-evidence/ranged-spacing-20261016-8GbYaj/report.json).
+
+### Adjacent escape support preference — 2026-10-17
+
+The [production support/cycling audit](adjacent-ranged-retreat-support-audit-2026-10-17.md)
+demonstrated an avoidable healing-access loss between two otherwise legal
+escapes. The current implementation prefers a support-preserving cell within
+the same eight-cell scan without regaining ranged exposure avoided by the
+original first choice. If none exists, it retains that original emergency
+escape. Adjacency, tactics, ownership and all deployment switches are unchanged;
+independent healer movement and reactive pursuit cycles remain explicit limits.

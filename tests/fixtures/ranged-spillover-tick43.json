@@ -1,0 +1,1215 @@
+{
+  "provenance": {
+    "replayId": "6ad152e374ae4378a665afb2",
+    "buildId": "4896ef3596bcca45755413fa8d090a7518bb1ece2ed8d416ea17461109e89215",
+    "audit": {
+      "path": "/Users/zoltanka/.local/share/pain-and-gain-evidence/first-contact-targeting-audit-20261016-izMPzC/report.json",
+      "sha256": "64f7e5ca7b94457d29c85f89c8339e4555c31baee9f9c8942f96552e596583a0"
+    },
+    "retainedSnapshots": {
+      "path": "/Users/zoltanka/.local/share/pain-and-gain-evidence/contact-wait-live-review-20261016-SwoCqP/cache-review.json",
+      "sha256": "d23b787672a187449a519900e2bfcd429b25bb898d98d29551c9ba2d8b8bee26"
+    },
+    "scope": "Tick43 fixed pre-action snapshot and original tactical event order; positive mock body HP represents functioning counts only. No simulated effects or scheduling of changed ranged targets."
+  },
+  "snapshot": {
+    "type": "game-state",
+    "buildId": "4896ef3596bcca45755413fa8d090a7518bb1ece2ed8d416ea17461109e89215",
+    "tick": 43,
+    "phase": "before-actions",
+    "selectedFlagId": "pg_flag_vulnerability",
+    "creeps": [
+      {
+        "id": "pg_player1_scout_1",
+        "my": false,
+        "x": 43,
+        "y": 44,
+        "hits": 100,
+        "hitsMax": 100,
+        "fatigue": 0,
+        "activeBodyParts": {
+          "move": 1
+        }
+      },
+      {
+        "id": "pg_player1_scout_2",
+        "my": false,
+        "x": 46,
+        "y": 42,
+        "hits": 100,
+        "hitsMax": 100,
+        "fatigue": 0,
+        "activeBodyParts": {
+          "move": 1
+        }
+      },
+      {
+        "id": "pg_player1_melee_1",
+        "my": false,
+        "x": 48,
+        "y": 46,
+        "hits": 1600,
+        "hitsMax": 1600,
+        "fatigue": 0,
+        "activeBodyParts": {
+          "attack": 8,
+          "move": 8
+        }
+      },
+      {
+        "id": "pg_player1_melee_2",
+        "my": false,
+        "x": 49,
+        "y": 48,
+        "hits": 412,
+        "hitsMax": 1600,
+        "fatigue": 0,
+        "activeBodyParts": {
+          "move": 5
+        }
+      },
+      {
+        "id": "pg_player1_melee_3",
+        "my": false,
+        "x": 48,
+        "y": 48,
+        "hits": 1168,
+        "hitsMax": 1600,
+        "fatigue": 0,
+        "activeBodyParts": {
+          "attack": 4,
+          "move": 8
+        }
+      },
+      {
+        "id": "pg_player1_melee_4",
+        "my": false,
+        "x": 48,
+        "y": 47,
+        "hits": 1504,
+        "hitsMax": 1600,
+        "fatigue": 0,
+        "activeBodyParts": {
+          "attack": 8,
+          "move": 8
+        }
+      },
+      {
+        "id": "pg_player1_ranged_1",
+        "my": false,
+        "x": 45,
+        "y": 45,
+        "hits": 1200,
+        "hitsMax": 1200,
+        "fatigue": 0,
+        "activeBodyParts": {
+          "ranged_attack": 6,
+          "move": 6
+        }
+      },
+      {
+        "id": "pg_player1_ranged_2",
+        "my": false,
+        "x": 48,
+        "y": 44,
+        "hits": 1200,
+        "hitsMax": 1200,
+        "fatigue": 0,
+        "activeBodyParts": {
+          "ranged_attack": 6,
+          "move": 6
+        }
+      },
+      {
+        "id": "pg_player1_ranged_3",
+        "my": false,
+        "x": 49,
+        "y": 44,
+        "hits": 990,
+        "hitsMax": 1200,
+        "fatigue": 0,
+        "activeBodyParts": {
+          "ranged_attack": 4,
+          "move": 6
+        }
+      },
+      {
+        "id": "pg_player1_ranged_4",
+        "my": false,
+        "x": 46,
+        "y": 44,
+        "hits": 1200,
+        "hitsMax": 1200,
+        "fatigue": 0,
+        "activeBodyParts": {
+          "ranged_attack": 6,
+          "move": 6
+        }
+      },
+      {
+        "id": "pg_player1_ranged_5",
+        "my": false,
+        "x": 47,
+        "y": 44,
+        "hits": 1200,
+        "hitsMax": 1200,
+        "fatigue": 0,
+        "activeBodyParts": {
+          "ranged_attack": 6,
+          "move": 6
+        }
+      },
+      {
+        "id": "pg_player1_healer_1",
+        "my": false,
+        "x": 44,
+        "y": 46,
+        "hits": 1200,
+        "hitsMax": 1200,
+        "fatigue": 0,
+        "activeBodyParts": {
+          "heal": 6,
+          "move": 6
+        }
+      },
+      {
+        "id": "pg_player1_healer_2",
+        "my": false,
+        "x": 45,
+        "y": 43,
+        "hits": 1200,
+        "hitsMax": 1200,
+        "fatigue": 0,
+        "activeBodyParts": {
+          "heal": 6,
+          "move": 6
+        }
+      },
+      {
+        "id": "pg_player1_healer_3",
+        "my": false,
+        "x": 44,
+        "y": 42,
+        "hits": 1200,
+        "hitsMax": 1200,
+        "fatigue": 0,
+        "activeBodyParts": {
+          "heal": 6,
+          "move": 6
+        }
+      },
+      {
+        "id": "pg_player2_scout_1",
+        "my": true,
+        "x": 49,
+        "y": 49,
+        "hits": 100,
+        "hitsMax": 100,
+        "fatigue": 0,
+        "activeBodyParts": {
+          "move": 1
+        }
+      },
+      {
+        "id": "pg_player2_scout_2",
+        "my": true,
+        "x": 51,
+        "y": 50,
+        "hits": 100,
+        "hitsMax": 100,
+        "fatigue": 0,
+        "activeBodyParts": {
+          "move": 1
+        }
+      },
+      {
+        "id": "pg_player2_melee_1",
+        "my": true,
+        "x": 48,
+        "y": 49,
+        "hits": 1600,
+        "hitsMax": 1600,
+        "fatigue": 0,
+        "activeBodyParts": {
+          "attack": 8,
+          "move": 8
+        }
+      },
+      {
+        "id": "pg_player2_melee_2",
+        "my": true,
+        "x": 49,
+        "y": 47,
+        "hits": 1020,
+        "hitsMax": 1600,
+        "fatigue": 0,
+        "activeBodyParts": {
+          "attack": 3,
+          "move": 8
+        }
+      },
+      {
+        "id": "pg_player2_melee_3",
+        "my": true,
+        "x": 50,
+        "y": 47,
+        "hits": 1020,
+        "hitsMax": 1600,
+        "fatigue": 0,
+        "activeBodyParts": {
+          "attack": 3,
+          "move": 8
+        }
+      },
+      {
+        "id": "pg_player2_melee_4",
+        "my": true,
+        "x": 50,
+        "y": 48,
+        "hits": 1510,
+        "hitsMax": 1600,
+        "fatigue": 0,
+        "activeBodyParts": {
+          "attack": 8,
+          "move": 8
+        }
+      },
+      {
+        "id": "pg_player2_ranged_1",
+        "my": true,
+        "x": 49,
+        "y": 51,
+        "hits": 1200,
+        "hitsMax": 1200,
+        "fatigue": 0,
+        "activeBodyParts": {
+          "ranged_attack": 6,
+          "move": 6
+        }
+      },
+      {
+        "id": "pg_player2_ranged_2",
+        "my": true,
+        "x": 50,
+        "y": 52,
+        "hits": 1200,
+        "hitsMax": 1200,
+        "fatigue": 0,
+        "activeBodyParts": {
+          "ranged_attack": 6,
+          "move": 6
+        }
+      },
+      {
+        "id": "pg_player2_ranged_3",
+        "my": true,
+        "x": 47,
+        "y": 51,
+        "hits": 1200,
+        "hitsMax": 1200,
+        "fatigue": 0,
+        "activeBodyParts": {
+          "ranged_attack": 6,
+          "move": 6
+        }
+      },
+      {
+        "id": "pg_player2_ranged_4",
+        "my": true,
+        "x": 49,
+        "y": 50,
+        "hits": 1116,
+        "hitsMax": 1200,
+        "fatigue": 0,
+        "activeBodyParts": {
+          "ranged_attack": 6,
+          "move": 6
+        }
+      },
+      {
+        "id": "pg_player2_ranged_5",
+        "my": true,
+        "x": 48,
+        "y": 50,
+        "hits": 822,
+        "hitsMax": 1200,
+        "fatigue": 0,
+        "activeBodyParts": {
+          "ranged_attack": 3,
+          "move": 6
+        }
+      },
+      {
+        "id": "pg_player2_healer_1",
+        "my": true,
+        "x": 52,
+        "y": 50,
+        "hits": 1200,
+        "hitsMax": 1200,
+        "fatigue": 0,
+        "activeBodyParts": {
+          "heal": 6,
+          "move": 6
+        }
+      },
+      {
+        "id": "pg_player2_healer_2",
+        "my": true,
+        "x": 50,
+        "y": 51,
+        "hits": 1200,
+        "hitsMax": 1200,
+        "fatigue": 0,
+        "activeBodyParts": {
+          "heal": 6,
+          "move": 6
+        }
+      },
+      {
+        "id": "pg_player2_healer_3",
+        "my": true,
+        "x": 50,
+        "y": 50,
+        "hits": 1200,
+        "hitsMax": 1200,
+        "fatigue": 0,
+        "activeBodyParts": {
+          "heal": 6,
+          "move": 6
+        }
+      }
+    ],
+    "flags": [
+      {
+        "id": "pg_flag_vulnerability",
+        "x": 49,
+        "y": 49,
+        "owner": "me",
+        "effectType": "eff_damage_taken_modifier",
+        "scorePerTick": 5
+      },
+      {
+        "id": "pg_flag_heal_reduction_a",
+        "x": 90,
+        "y": 8,
+        "owner": "neutral",
+        "effectType": "eff_heal_modifier",
+        "scorePerTick": 4
+      },
+      {
+        "id": "pg_flag_heal_reduction_b",
+        "x": 8,
+        "y": 90,
+        "owner": "neutral",
+        "effectType": "eff_heal_modifier",
+        "scorePerTick": 4
+      },
+      {
+        "id": "pg_flag_attack_reduction_a",
+        "x": 67,
+        "y": 31,
+        "owner": "neutral",
+        "effectType": "eff_attack_modifier",
+        "scorePerTick": 3
+      },
+      {
+        "id": "pg_flag_attack_reduction_b",
+        "x": 31,
+        "y": 67,
+        "owner": "neutral",
+        "effectType": "eff_attack_modifier",
+        "scorePerTick": 3
+      },
+      {
+        "id": "pg_flag_ranged_attack_reduction_a",
+        "x": 13,
+        "y": 49,
+        "owner": "neutral",
+        "effectType": "eff_ranged_attack_modifier",
+        "scorePerTick": 3
+      },
+      {
+        "id": "pg_flag_ranged_attack_reduction_b",
+        "x": 85,
+        "y": 49,
+        "owner": "neutral",
+        "effectType": "eff_ranged_attack_modifier",
+        "scorePerTick": 3
+      }
+    ]
+  },
+  "events": [
+    {
+      "type": "action-decision",
+      "formatVersion": 1,
+      "buildId": "4896ef3596bcca45755413fa8d090a7518bb1ece2ed8d416ea17461109e89215",
+      "tick": 43,
+      "phase": "tactics",
+      "sequence": 20,
+      "recordId": "43:20",
+      "decisionId": "43:20",
+      "channel": "healing",
+      "actorId": "pg_player2_scout_1",
+      "outcome": "no-action",
+      "reason": "no-functioning-heal",
+      "actions": []
+    },
+    {
+      "type": "action-decision",
+      "formatVersion": 1,
+      "buildId": "4896ef3596bcca45755413fa8d090a7518bb1ece2ed8d416ea17461109e89215",
+      "tick": 43,
+      "phase": "tactics",
+      "sequence": 21,
+      "recordId": "43:21",
+      "decisionId": "43:21",
+      "channel": "combat",
+      "actorId": "pg_player2_scout_1",
+      "outcome": "no-action",
+      "reason": "no-functioning-weapon",
+      "actions": []
+    },
+    {
+      "type": "action-decision",
+      "formatVersion": 1,
+      "buildId": "4896ef3596bcca45755413fa8d090a7518bb1ece2ed8d416ea17461109e89215",
+      "tick": 43,
+      "phase": "tactics",
+      "sequence": 22,
+      "recordId": "43:22",
+      "decisionId": "43:22",
+      "channel": "healing",
+      "actorId": "pg_player2_scout_2",
+      "outcome": "no-action",
+      "reason": "no-functioning-heal",
+      "actions": []
+    },
+    {
+      "type": "action-decision",
+      "formatVersion": 1,
+      "buildId": "4896ef3596bcca45755413fa8d090a7518bb1ece2ed8d416ea17461109e89215",
+      "tick": 43,
+      "phase": "tactics",
+      "sequence": 23,
+      "recordId": "43:23",
+      "decisionId": "43:23",
+      "channel": "combat",
+      "actorId": "pg_player2_scout_2",
+      "outcome": "no-action",
+      "reason": "no-functioning-weapon",
+      "actions": []
+    },
+    {
+      "type": "action-decision",
+      "formatVersion": 1,
+      "buildId": "4896ef3596bcca45755413fa8d090a7518bb1ece2ed8d416ea17461109e89215",
+      "tick": 43,
+      "phase": "tactics",
+      "sequence": 24,
+      "recordId": "43:24",
+      "decisionId": "43:24",
+      "channel": "healing",
+      "actorId": "pg_player2_melee_1",
+      "outcome": "no-action",
+      "reason": "no-functioning-heal",
+      "actions": []
+    },
+    {
+      "type": "action-decision",
+      "formatVersion": 1,
+      "buildId": "4896ef3596bcca45755413fa8d090a7518bb1ece2ed8d416ea17461109e89215",
+      "tick": 43,
+      "phase": "tactics",
+      "sequence": 25,
+      "recordId": "43:25",
+      "decisionId": "43:25",
+      "channel": "combat",
+      "actorId": "pg_player2_melee_1",
+      "outcome": "selected",
+      "reason": "target-in-range",
+      "actions": [
+        {
+          "actionId": "43:25#0",
+          "method": "attack",
+          "target": {
+            "kind": "creep",
+            "id": "pg_player1_melee_2",
+            "x": 49,
+            "y": 48
+          }
+        }
+      ]
+    },
+    {
+      "type": "action-attempt",
+      "formatVersion": 1,
+      "buildId": "4896ef3596bcca45755413fa8d090a7518bb1ece2ed8d416ea17461109e89215",
+      "tick": 43,
+      "phase": "tactics",
+      "sequence": 26,
+      "recordId": "43:26",
+      "decisionId": "43:25",
+      "actionId": "43:25#0",
+      "channel": "combat",
+      "actorId": "pg_player2_melee_1",
+      "method": "attack",
+      "target": {
+        "kind": "creep",
+        "id": "pg_player1_melee_2",
+        "x": 49,
+        "y": 48
+      },
+      "returnCode": 0
+    },
+    {
+      "type": "action-decision",
+      "formatVersion": 1,
+      "buildId": "4896ef3596bcca45755413fa8d090a7518bb1ece2ed8d416ea17461109e89215",
+      "tick": 43,
+      "phase": "tactics",
+      "sequence": 27,
+      "recordId": "43:27",
+      "decisionId": "43:27",
+      "channel": "healing",
+      "actorId": "pg_player2_melee_2",
+      "outcome": "no-action",
+      "reason": "no-functioning-heal",
+      "actions": []
+    },
+    {
+      "type": "action-decision",
+      "formatVersion": 1,
+      "buildId": "4896ef3596bcca45755413fa8d090a7518bb1ece2ed8d416ea17461109e89215",
+      "tick": 43,
+      "phase": "tactics",
+      "sequence": 28,
+      "recordId": "43:28",
+      "decisionId": "43:28",
+      "channel": "combat",
+      "actorId": "pg_player2_melee_2",
+      "outcome": "selected",
+      "reason": "target-in-range",
+      "actions": [
+        {
+          "actionId": "43:28#0",
+          "method": "attack",
+          "target": {
+            "kind": "creep",
+            "id": "pg_player1_melee_1",
+            "x": 48,
+            "y": 46
+          }
+        }
+      ]
+    },
+    {
+      "type": "action-attempt",
+      "formatVersion": 1,
+      "buildId": "4896ef3596bcca45755413fa8d090a7518bb1ece2ed8d416ea17461109e89215",
+      "tick": 43,
+      "phase": "tactics",
+      "sequence": 29,
+      "recordId": "43:29",
+      "decisionId": "43:28",
+      "actionId": "43:28#0",
+      "channel": "combat",
+      "actorId": "pg_player2_melee_2",
+      "method": "attack",
+      "target": {
+        "kind": "creep",
+        "id": "pg_player1_melee_1",
+        "x": 48,
+        "y": 46
+      },
+      "returnCode": 0
+    },
+    {
+      "type": "action-decision",
+      "formatVersion": 1,
+      "buildId": "4896ef3596bcca45755413fa8d090a7518bb1ece2ed8d416ea17461109e89215",
+      "tick": 43,
+      "phase": "tactics",
+      "sequence": 30,
+      "recordId": "43:30",
+      "decisionId": "43:30",
+      "channel": "healing",
+      "actorId": "pg_player2_melee_3",
+      "outcome": "no-action",
+      "reason": "no-functioning-heal",
+      "actions": []
+    },
+    {
+      "type": "action-decision",
+      "formatVersion": 1,
+      "buildId": "4896ef3596bcca45755413fa8d090a7518bb1ece2ed8d416ea17461109e89215",
+      "tick": 43,
+      "phase": "tactics",
+      "sequence": 31,
+      "recordId": "43:31",
+      "decisionId": "43:31",
+      "channel": "combat",
+      "actorId": "pg_player2_melee_3",
+      "outcome": "selected",
+      "reason": "target-in-range",
+      "actions": [
+        {
+          "actionId": "43:31#0",
+          "method": "attack",
+          "target": {
+            "kind": "creep",
+            "id": "pg_player1_melee_2",
+            "x": 49,
+            "y": 48
+          }
+        }
+      ]
+    },
+    {
+      "type": "action-attempt",
+      "formatVersion": 1,
+      "buildId": "4896ef3596bcca45755413fa8d090a7518bb1ece2ed8d416ea17461109e89215",
+      "tick": 43,
+      "phase": "tactics",
+      "sequence": 32,
+      "recordId": "43:32",
+      "decisionId": "43:31",
+      "actionId": "43:31#0",
+      "channel": "combat",
+      "actorId": "pg_player2_melee_3",
+      "method": "attack",
+      "target": {
+        "kind": "creep",
+        "id": "pg_player1_melee_2",
+        "x": 49,
+        "y": 48
+      },
+      "returnCode": 0
+    },
+    {
+      "type": "action-decision",
+      "formatVersion": 1,
+      "buildId": "4896ef3596bcca45755413fa8d090a7518bb1ece2ed8d416ea17461109e89215",
+      "tick": 43,
+      "phase": "tactics",
+      "sequence": 33,
+      "recordId": "43:33",
+      "decisionId": "43:33",
+      "channel": "healing",
+      "actorId": "pg_player2_melee_4",
+      "outcome": "no-action",
+      "reason": "no-functioning-heal",
+      "actions": []
+    },
+    {
+      "type": "action-decision",
+      "formatVersion": 1,
+      "buildId": "4896ef3596bcca45755413fa8d090a7518bb1ece2ed8d416ea17461109e89215",
+      "tick": 43,
+      "phase": "tactics",
+      "sequence": 34,
+      "recordId": "43:34",
+      "decisionId": "43:34",
+      "channel": "combat",
+      "actorId": "pg_player2_melee_4",
+      "outcome": "selected",
+      "reason": "target-in-range",
+      "actions": [
+        {
+          "actionId": "43:34#0",
+          "method": "attack",
+          "target": {
+            "kind": "creep",
+            "id": "pg_player1_melee_2",
+            "x": 49,
+            "y": 48
+          }
+        }
+      ]
+    },
+    {
+      "type": "action-attempt",
+      "formatVersion": 1,
+      "buildId": "4896ef3596bcca45755413fa8d090a7518bb1ece2ed8d416ea17461109e89215",
+      "tick": 43,
+      "phase": "tactics",
+      "sequence": 35,
+      "recordId": "43:35",
+      "decisionId": "43:34",
+      "actionId": "43:34#0",
+      "channel": "combat",
+      "actorId": "pg_player2_melee_4",
+      "method": "attack",
+      "target": {
+        "kind": "creep",
+        "id": "pg_player1_melee_2",
+        "x": 49,
+        "y": 48
+      },
+      "returnCode": 0
+    },
+    {
+      "type": "action-decision",
+      "formatVersion": 1,
+      "buildId": "4896ef3596bcca45755413fa8d090a7518bb1ece2ed8d416ea17461109e89215",
+      "tick": 43,
+      "phase": "tactics",
+      "sequence": 36,
+      "recordId": "43:36",
+      "decisionId": "43:36",
+      "channel": "healing",
+      "actorId": "pg_player2_ranged_1",
+      "outcome": "no-action",
+      "reason": "no-functioning-heal",
+      "actions": []
+    },
+    {
+      "type": "action-decision",
+      "formatVersion": 1,
+      "buildId": "4896ef3596bcca45755413fa8d090a7518bb1ece2ed8d416ea17461109e89215",
+      "tick": 43,
+      "phase": "tactics",
+      "sequence": 37,
+      "recordId": "43:37",
+      "decisionId": "43:37",
+      "channel": "combat",
+      "actorId": "pg_player2_ranged_1",
+      "outcome": "selected",
+      "reason": "target-in-range",
+      "actions": [
+        {
+          "actionId": "43:37#0",
+          "method": "rangedAttack",
+          "target": {
+            "kind": "creep",
+            "id": "pg_player1_melee_2",
+            "x": 49,
+            "y": 48
+          }
+        }
+      ]
+    },
+    {
+      "type": "action-attempt",
+      "formatVersion": 1,
+      "buildId": "4896ef3596bcca45755413fa8d090a7518bb1ece2ed8d416ea17461109e89215",
+      "tick": 43,
+      "phase": "tactics",
+      "sequence": 38,
+      "recordId": "43:38",
+      "decisionId": "43:37",
+      "actionId": "43:37#0",
+      "channel": "combat",
+      "actorId": "pg_player2_ranged_1",
+      "method": "rangedAttack",
+      "target": {
+        "kind": "creep",
+        "id": "pg_player1_melee_2",
+        "x": 49,
+        "y": 48
+      },
+      "returnCode": 0
+    },
+    {
+      "type": "action-decision",
+      "formatVersion": 1,
+      "buildId": "4896ef3596bcca45755413fa8d090a7518bb1ece2ed8d416ea17461109e89215",
+      "tick": 43,
+      "phase": "tactics",
+      "sequence": 39,
+      "recordId": "43:39",
+      "decisionId": "43:39",
+      "channel": "healing",
+      "actorId": "pg_player2_ranged_2",
+      "outcome": "no-action",
+      "reason": "no-functioning-heal",
+      "actions": []
+    },
+    {
+      "type": "action-decision",
+      "formatVersion": 1,
+      "buildId": "4896ef3596bcca45755413fa8d090a7518bb1ece2ed8d416ea17461109e89215",
+      "tick": 43,
+      "phase": "tactics",
+      "sequence": 40,
+      "recordId": "43:40",
+      "decisionId": "43:40",
+      "channel": "combat",
+      "actorId": "pg_player2_ranged_2",
+      "outcome": "no-action",
+      "reason": "no-target-in-range",
+      "actions": []
+    },
+    {
+      "type": "action-decision",
+      "formatVersion": 1,
+      "buildId": "4896ef3596bcca45755413fa8d090a7518bb1ece2ed8d416ea17461109e89215",
+      "tick": 43,
+      "phase": "tactics",
+      "sequence": 41,
+      "recordId": "43:41",
+      "decisionId": "43:41",
+      "channel": "healing",
+      "actorId": "pg_player2_ranged_3",
+      "outcome": "no-action",
+      "reason": "no-functioning-heal",
+      "actions": []
+    },
+    {
+      "type": "action-decision",
+      "formatVersion": 1,
+      "buildId": "4896ef3596bcca45755413fa8d090a7518bb1ece2ed8d416ea17461109e89215",
+      "tick": 43,
+      "phase": "tactics",
+      "sequence": 42,
+      "recordId": "43:42",
+      "decisionId": "43:42",
+      "channel": "combat",
+      "actorId": "pg_player2_ranged_3",
+      "outcome": "selected",
+      "reason": "target-in-range",
+      "actions": [
+        {
+          "actionId": "43:42#0",
+          "method": "rangedAttack",
+          "target": {
+            "kind": "creep",
+            "id": "pg_player1_melee_2",
+            "x": 49,
+            "y": 48
+          }
+        }
+      ]
+    },
+    {
+      "type": "action-attempt",
+      "formatVersion": 1,
+      "buildId": "4896ef3596bcca45755413fa8d090a7518bb1ece2ed8d416ea17461109e89215",
+      "tick": 43,
+      "phase": "tactics",
+      "sequence": 43,
+      "recordId": "43:43",
+      "decisionId": "43:42",
+      "actionId": "43:42#0",
+      "channel": "combat",
+      "actorId": "pg_player2_ranged_3",
+      "method": "rangedAttack",
+      "target": {
+        "kind": "creep",
+        "id": "pg_player1_melee_2",
+        "x": 49,
+        "y": 48
+      },
+      "returnCode": 0
+    },
+    {
+      "type": "action-decision",
+      "formatVersion": 1,
+      "buildId": "4896ef3596bcca45755413fa8d090a7518bb1ece2ed8d416ea17461109e89215",
+      "tick": 43,
+      "phase": "tactics",
+      "sequence": 44,
+      "recordId": "43:44",
+      "decisionId": "43:44",
+      "channel": "healing",
+      "actorId": "pg_player2_ranged_4",
+      "outcome": "no-action",
+      "reason": "no-functioning-heal",
+      "actions": []
+    },
+    {
+      "type": "action-decision",
+      "formatVersion": 1,
+      "buildId": "4896ef3596bcca45755413fa8d090a7518bb1ece2ed8d416ea17461109e89215",
+      "tick": 43,
+      "phase": "tactics",
+      "sequence": 45,
+      "recordId": "43:45",
+      "decisionId": "43:45",
+      "channel": "combat",
+      "actorId": "pg_player2_ranged_4",
+      "outcome": "selected",
+      "reason": "target-in-range",
+      "actions": [
+        {
+          "actionId": "43:45#0",
+          "method": "rangedAttack",
+          "target": {
+            "kind": "creep",
+            "id": "pg_player1_melee_2",
+            "x": 49,
+            "y": 48
+          }
+        }
+      ]
+    },
+    {
+      "type": "action-attempt",
+      "formatVersion": 1,
+      "buildId": "4896ef3596bcca45755413fa8d090a7518bb1ece2ed8d416ea17461109e89215",
+      "tick": 43,
+      "phase": "tactics",
+      "sequence": 46,
+      "recordId": "43:46",
+      "decisionId": "43:45",
+      "actionId": "43:45#0",
+      "channel": "combat",
+      "actorId": "pg_player2_ranged_4",
+      "method": "rangedAttack",
+      "target": {
+        "kind": "creep",
+        "id": "pg_player1_melee_2",
+        "x": 49,
+        "y": 48
+      },
+      "returnCode": 0
+    },
+    {
+      "type": "action-decision",
+      "formatVersion": 1,
+      "buildId": "4896ef3596bcca45755413fa8d090a7518bb1ece2ed8d416ea17461109e89215",
+      "tick": 43,
+      "phase": "tactics",
+      "sequence": 47,
+      "recordId": "43:47",
+      "decisionId": "43:47",
+      "channel": "healing",
+      "actorId": "pg_player2_ranged_5",
+      "outcome": "no-action",
+      "reason": "no-functioning-heal",
+      "actions": []
+    },
+    {
+      "type": "action-decision",
+      "formatVersion": 1,
+      "buildId": "4896ef3596bcca45755413fa8d090a7518bb1ece2ed8d416ea17461109e89215",
+      "tick": 43,
+      "phase": "tactics",
+      "sequence": 48,
+      "recordId": "43:48",
+      "decisionId": "43:48",
+      "channel": "combat",
+      "actorId": "pg_player2_ranged_5",
+      "outcome": "selected",
+      "reason": "target-in-range",
+      "actions": [
+        {
+          "actionId": "43:48#0",
+          "method": "rangedAttack",
+          "target": {
+            "kind": "creep",
+            "id": "pg_player1_melee_2",
+            "x": 49,
+            "y": 48
+          }
+        }
+      ]
+    },
+    {
+      "type": "action-attempt",
+      "formatVersion": 1,
+      "buildId": "4896ef3596bcca45755413fa8d090a7518bb1ece2ed8d416ea17461109e89215",
+      "tick": 43,
+      "phase": "tactics",
+      "sequence": 49,
+      "recordId": "43:49",
+      "decisionId": "43:48",
+      "actionId": "43:48#0",
+      "channel": "combat",
+      "actorId": "pg_player2_ranged_5",
+      "method": "rangedAttack",
+      "target": {
+        "kind": "creep",
+        "id": "pg_player1_melee_2",
+        "x": 49,
+        "y": 48
+      },
+      "returnCode": 0
+    },
+    {
+      "type": "action-decision",
+      "formatVersion": 1,
+      "buildId": "4896ef3596bcca45755413fa8d090a7518bb1ece2ed8d416ea17461109e89215",
+      "tick": 43,
+      "phase": "tactics",
+      "sequence": 50,
+      "recordId": "43:50",
+      "decisionId": "43:50",
+      "channel": "healing",
+      "actorId": "pg_player2_healer_1",
+      "outcome": "selected",
+      "reason": "injured-ally-in-range",
+      "actions": [
+        {
+          "actionId": "43:50#0",
+          "method": "rangedHeal",
+          "target": {
+            "kind": "creep",
+            "id": "pg_player2_melee_4",
+            "x": 50,
+            "y": 48
+          }
+        }
+      ]
+    },
+    {
+      "type": "action-attempt",
+      "formatVersion": 1,
+      "buildId": "4896ef3596bcca45755413fa8d090a7518bb1ece2ed8d416ea17461109e89215",
+      "tick": 43,
+      "phase": "tactics",
+      "sequence": 51,
+      "recordId": "43:51",
+      "decisionId": "43:50",
+      "actionId": "43:50#0",
+      "channel": "healing",
+      "actorId": "pg_player2_healer_1",
+      "method": "rangedHeal",
+      "target": {
+        "kind": "creep",
+        "id": "pg_player2_melee_4",
+        "x": 50,
+        "y": 48
+      },
+      "returnCode": 0
+    },
+    {
+      "type": "action-decision",
+      "formatVersion": 1,
+      "buildId": "4896ef3596bcca45755413fa8d090a7518bb1ece2ed8d416ea17461109e89215",
+      "tick": 43,
+      "phase": "tactics",
+      "sequence": 52,
+      "recordId": "43:52",
+      "decisionId": "43:52",
+      "channel": "combat",
+      "actorId": "pg_player2_healer_1",
+      "outcome": "no-action",
+      "reason": "no-functioning-weapon",
+      "actions": []
+    },
+    {
+      "type": "action-decision",
+      "formatVersion": 1,
+      "buildId": "4896ef3596bcca45755413fa8d090a7518bb1ece2ed8d416ea17461109e89215",
+      "tick": 43,
+      "phase": "tactics",
+      "sequence": 53,
+      "recordId": "43:53",
+      "decisionId": "43:53",
+      "channel": "healing",
+      "actorId": "pg_player2_healer_2",
+      "outcome": "selected",
+      "reason": "injured-ally-in-range",
+      "actions": [
+        {
+          "actionId": "43:53#0",
+          "method": "heal",
+          "target": {
+            "kind": "creep",
+            "id": "pg_player2_ranged_4",
+            "x": 49,
+            "y": 50
+          }
+        }
+      ]
+    },
+    {
+      "type": "action-attempt",
+      "formatVersion": 1,
+      "buildId": "4896ef3596bcca45755413fa8d090a7518bb1ece2ed8d416ea17461109e89215",
+      "tick": 43,
+      "phase": "tactics",
+      "sequence": 54,
+      "recordId": "43:54",
+      "decisionId": "43:53",
+      "actionId": "43:53#0",
+      "channel": "healing",
+      "actorId": "pg_player2_healer_2",
+      "method": "heal",
+      "target": {
+        "kind": "creep",
+        "id": "pg_player2_ranged_4",
+        "x": 49,
+        "y": 50
+      },
+      "returnCode": 0
+    },
+    {
+      "type": "action-decision",
+      "formatVersion": 1,
+      "buildId": "4896ef3596bcca45755413fa8d090a7518bb1ece2ed8d416ea17461109e89215",
+      "tick": 43,
+      "phase": "tactics",
+      "sequence": 55,
+      "recordId": "43:55",
+      "decisionId": "43:55",
+      "channel": "combat",
+      "actorId": "pg_player2_healer_2",
+      "outcome": "no-action",
+      "reason": "no-functioning-weapon",
+      "actions": []
+    },
+    {
+      "type": "action-decision",
+      "formatVersion": 1,
+      "buildId": "4896ef3596bcca45755413fa8d090a7518bb1ece2ed8d416ea17461109e89215",
+      "tick": 43,
+      "phase": "tactics",
+      "sequence": 56,
+      "recordId": "43:56",
+      "decisionId": "43:56",
+      "channel": "healing",
+      "actorId": "pg_player2_healer_3",
+      "outcome": "selected",
+      "reason": "injured-ally-in-range",
+      "actions": [
+        {
+          "actionId": "43:56#0",
+          "method": "heal",
+          "target": {
+            "kind": "creep",
+            "id": "pg_player2_ranged_4",
+            "x": 49,
+            "y": 50
+          }
+        }
+      ]
+    },
+    {
+      "type": "action-attempt",
+      "formatVersion": 1,
+      "buildId": "4896ef3596bcca45755413fa8d090a7518bb1ece2ed8d416ea17461109e89215",
+      "tick": 43,
+      "phase": "tactics",
+      "sequence": 57,
+      "recordId": "43:57",
+      "decisionId": "43:56",
+      "actionId": "43:56#0",
+      "channel": "healing",
+      "actorId": "pg_player2_healer_3",
+      "method": "heal",
+      "target": {
+        "kind": "creep",
+        "id": "pg_player2_ranged_4",
+        "x": 49,
+        "y": 50
+      },
+      "returnCode": 0
+    },
+    {
+      "type": "action-decision",
+      "formatVersion": 1,
+      "buildId": "4896ef3596bcca45755413fa8d090a7518bb1ece2ed8d416ea17461109e89215",
+      "tick": 43,
+      "phase": "tactics",
+      "sequence": 58,
+      "recordId": "43:58",
+      "decisionId": "43:58",
+      "channel": "combat",
+      "actorId": "pg_player2_healer_3",
+      "outcome": "no-action",
+      "reason": "no-functioning-weapon",
+      "actions": []
+    }
+  ]
+}

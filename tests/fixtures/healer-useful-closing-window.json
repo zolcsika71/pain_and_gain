@@ -1,0 +1,1850 @@
+{
+  "provenance": {
+    "replay": "6ad29e3babefcb34fac8f3d3",
+    "build": "d1e95a106a708f10826cf472be65e143bab86f44ef84f5d537bb3c07f6639e0f",
+    "retainedSource": "/Users/zoltanka/.local/share/pain-and-gain-evidence/pure-healer-pressure-frozen-trial-20261016-zb3SKL/retained-observation.json",
+    "sourceCacheSha256": "bd6032a6b8e08f19f9c1ab439a435c5a9afda2648927d3fad8e92befc5d85440",
+    "terrain": "Not retained. No Arena/cache/replay reread. Plain-cell variants in tests are generated assumptions, never historical terrain observations.",
+    "snapshotTiming": "before-actions; all three independent snapshots, not candidate trajectories"
+  },
+  "initialParts": [
+    {
+      "id": "pg_player1_scout_1",
+      "parts": {
+        "move": 1
+      }
+    },
+    {
+      "id": "pg_player1_scout_2",
+      "parts": {
+        "move": 1
+      }
+    },
+    {
+      "id": "pg_player1_melee_1",
+      "parts": {
+        "attack": 8,
+        "move": 8
+      }
+    },
+    {
+      "id": "pg_player1_melee_2",
+      "parts": {
+        "attack": 8,
+        "move": 8
+      }
+    },
+    {
+      "id": "pg_player1_melee_3",
+      "parts": {
+        "attack": 8,
+        "move": 8
+      }
+    },
+    {
+      "id": "pg_player1_melee_4",
+      "parts": {
+        "attack": 8,
+        "move": 8
+      }
+    },
+    {
+      "id": "pg_player1_ranged_1",
+      "parts": {
+        "ranged_attack": 6,
+        "move": 6
+      }
+    },
+    {
+      "id": "pg_player1_ranged_2",
+      "parts": {
+        "ranged_attack": 6,
+        "move": 6
+      }
+    },
+    {
+      "id": "pg_player1_ranged_3",
+      "parts": {
+        "ranged_attack": 6,
+        "move": 6
+      }
+    },
+    {
+      "id": "pg_player1_ranged_4",
+      "parts": {
+        "ranged_attack": 6,
+        "move": 6
+      }
+    },
+    {
+      "id": "pg_player1_ranged_5",
+      "parts": {
+        "ranged_attack": 6,
+        "move": 6
+      }
+    },
+    {
+      "id": "pg_player1_healer_1",
+      "parts": {
+        "heal": 6,
+        "move": 6
+      }
+    },
+    {
+      "id": "pg_player1_healer_2",
+      "parts": {
+        "heal": 6,
+        "move": 6
+      }
+    },
+    {
+      "id": "pg_player1_healer_3",
+      "parts": {
+        "heal": 6,
+        "move": 6
+      }
+    },
+    {
+      "id": "pg_player2_scout_1",
+      "parts": {
+        "move": 1
+      }
+    },
+    {
+      "id": "pg_player2_scout_2",
+      "parts": {
+        "move": 1
+      }
+    },
+    {
+      "id": "pg_player2_melee_1",
+      "parts": {
+        "attack": 8,
+        "move": 8
+      }
+    },
+    {
+      "id": "pg_player2_melee_2",
+      "parts": {
+        "attack": 8,
+        "move": 8
+      }
+    },
+    {
+      "id": "pg_player2_melee_3",
+      "parts": {
+        "attack": 8,
+        "move": 8
+      }
+    },
+    {
+      "id": "pg_player2_melee_4",
+      "parts": {
+        "attack": 8,
+        "move": 8
+      }
+    },
+    {
+      "id": "pg_player2_ranged_1",
+      "parts": {
+        "ranged_attack": 6,
+        "move": 6
+      }
+    },
+    {
+      "id": "pg_player2_ranged_2",
+      "parts": {
+        "ranged_attack": 6,
+        "move": 6
+      }
+    },
+    {
+      "id": "pg_player2_ranged_3",
+      "parts": {
+        "ranged_attack": 6,
+        "move": 6
+      }
+    },
+    {
+      "id": "pg_player2_ranged_4",
+      "parts": {
+        "ranged_attack": 6,
+        "move": 6
+      }
+    },
+    {
+      "id": "pg_player2_ranged_5",
+      "parts": {
+        "ranged_attack": 6,
+        "move": 6
+      }
+    },
+    {
+      "id": "pg_player2_healer_1",
+      "parts": {
+        "heal": 6,
+        "move": 6
+      }
+    },
+    {
+      "id": "pg_player2_healer_2",
+      "parts": {
+        "heal": 6,
+        "move": 6
+      }
+    },
+    {
+      "id": "pg_player2_healer_3",
+      "parts": {
+        "heal": 6,
+        "move": 6
+      }
+    }
+  ],
+  "samples": [
+    {
+      "tick": 76,
+      "id": "pg_player2_healer_3",
+      "healer": {
+        "id": "pg_player2_healer_3",
+        "my": true,
+        "x": 50,
+        "y": 51,
+        "hits": 1200,
+        "hitsMax": 1200,
+        "fatigue": 0,
+        "activeBodyParts": {
+          "heal": 6,
+          "move": 6
+        }
+      },
+      "target": {
+        "id": "pg_player2_healer_2",
+        "my": true,
+        "x": 48,
+        "y": 51,
+        "hits": 1147,
+        "hitsMax": 1200,
+        "fatigue": 0,
+        "activeBodyParts": {
+          "heal": 6,
+          "move": 6
+        }
+      },
+      "movement": [
+        {
+          "type": "action-decision",
+          "reason": "injured-ally-in-range",
+          "outcome": "hold",
+          "actions": []
+        }
+      ],
+      "healing": [
+        {
+          "type": "action-decision",
+          "reason": "injured-ally-in-range",
+          "outcome": "selected",
+          "actions": [
+            {
+              "actionId": "76:23#0",
+              "method": "rangedHeal",
+              "target": {
+                "kind": "creep",
+                "id": "pg_player2_healer_2",
+                "x": 48,
+                "y": 51
+              }
+            }
+          ]
+        },
+        {
+          "type": "action-attempt",
+          "method": "rangedHeal",
+          "target": {
+            "kind": "creep",
+            "id": "pg_player2_healer_2",
+            "x": 48,
+            "y": 51
+          },
+          "returnCode": 0
+        }
+      ],
+      "currentThreats": [
+        {
+          "id": "pg_player1_ranged_5",
+          "x": 48,
+          "y": 48,
+          "range": 3,
+          "attack": 0,
+          "ranged": 6
+        }
+      ],
+      "flags": [
+        {
+          "id": "pg_flag_vulnerability",
+          "x": 49,
+          "y": 49,
+          "owner": "me",
+          "effectType": "eff_damage_taken_modifier",
+          "scorePerTick": 5
+        },
+        {
+          "id": "pg_flag_heal_reduction_a",
+          "x": 90,
+          "y": 8,
+          "owner": "neutral",
+          "effectType": "eff_heal_modifier",
+          "scorePerTick": 4
+        },
+        {
+          "id": "pg_flag_heal_reduction_b",
+          "x": 8,
+          "y": 90,
+          "owner": "neutral",
+          "effectType": "eff_heal_modifier",
+          "scorePerTick": 4
+        },
+        {
+          "id": "pg_flag_attack_reduction_a",
+          "x": 67,
+          "y": 31,
+          "owner": "enemy",
+          "effectType": "eff_attack_modifier",
+          "scorePerTick": 3
+        },
+        {
+          "id": "pg_flag_attack_reduction_b",
+          "x": 31,
+          "y": 67,
+          "owner": "neutral",
+          "effectType": "eff_attack_modifier",
+          "scorePerTick": 3
+        },
+        {
+          "id": "pg_flag_ranged_attack_reduction_a",
+          "x": 13,
+          "y": 49,
+          "owner": "neutral",
+          "effectType": "eff_ranged_attack_modifier",
+          "scorePerTick": 3
+        },
+        {
+          "id": "pg_flag_ranged_attack_reduction_b",
+          "x": 85,
+          "y": 49,
+          "owner": "neutral",
+          "effectType": "eff_ranged_attack_modifier",
+          "scorePerTick": 3
+        }
+      ],
+      "cells": [
+        {
+          "x": 49,
+          "y": 50,
+          "targetRange": 1,
+          "occupied": [],
+          "threats": [
+            "pg_player1_ranged_5"
+          ],
+          "downgraded": [],
+          "unsupported": [],
+          "terrain": "unknown-not-retained"
+        },
+        {
+          "x": 50,
+          "y": 50,
+          "targetRange": 2,
+          "occupied": [],
+          "threats": [
+            "pg_player1_ranged_5"
+          ],
+          "downgraded": [],
+          "unsupported": [],
+          "terrain": "unknown-not-retained"
+        },
+        {
+          "x": 51,
+          "y": 50,
+          "targetRange": 3,
+          "occupied": [],
+          "threats": [
+            "pg_player1_ranged_5"
+          ],
+          "downgraded": [
+            "pg_player2_ranged_1",
+            "pg_player2_healer_1"
+          ],
+          "unsupported": [],
+          "terrain": "unknown-not-retained"
+        },
+        {
+          "x": 49,
+          "y": 51,
+          "targetRange": 1,
+          "occupied": [
+            "pg_player2_healer_1"
+          ],
+          "threats": [
+            "pg_player1_ranged_5"
+          ],
+          "downgraded": [],
+          "unsupported": [],
+          "terrain": "unknown-not-retained"
+        },
+        {
+          "x": 51,
+          "y": 51,
+          "targetRange": 3,
+          "occupied": [],
+          "threats": [
+            "pg_player1_ranged_5"
+          ],
+          "downgraded": [
+            "pg_player2_ranged_1",
+            "pg_player2_healer_1"
+          ],
+          "unsupported": [],
+          "terrain": "unknown-not-retained"
+        },
+        {
+          "x": 49,
+          "y": 52,
+          "targetRange": 1,
+          "occupied": [],
+          "threats": [],
+          "downgraded": [
+            "pg_player2_ranged_5"
+          ],
+          "unsupported": [],
+          "terrain": "unknown-not-retained"
+        },
+        {
+          "x": 50,
+          "y": 52,
+          "targetRange": 2,
+          "occupied": [],
+          "threats": [],
+          "downgraded": [
+            "pg_player2_ranged_5"
+          ],
+          "unsupported": [],
+          "terrain": "unknown-not-retained"
+        },
+        {
+          "x": 51,
+          "y": 52,
+          "targetRange": 3,
+          "occupied": [],
+          "threats": [],
+          "downgraded": [
+            "pg_player2_ranged_1",
+            "pg_player2_ranged_5",
+            "pg_player2_healer_1"
+          ],
+          "unsupported": [],
+          "terrain": "unknown-not-retained"
+        }
+      ],
+      "state": {
+        "type": "game-state",
+        "buildId": "d1e95a106a708f10826cf472be65e143bab86f44ef84f5d537bb3c07f6639e0f",
+        "tick": 76,
+        "phase": "before-actions",
+        "selectedFlagId": "pg_flag_vulnerability",
+        "creeps": [
+          {
+            "id": "pg_player1_scout_1",
+            "my": false,
+            "x": 63,
+            "y": 35,
+            "hits": 100,
+            "hitsMax": 100,
+            "fatigue": 0,
+            "activeBodyParts": {
+              "move": 1
+            }
+          },
+          {
+            "id": "pg_player1_scout_2",
+            "my": false,
+            "x": 38,
+            "y": 54,
+            "hits": 100,
+            "hitsMax": 100,
+            "fatigue": 0,
+            "activeBodyParts": {
+              "move": 1
+            }
+          },
+          {
+            "id": "pg_player1_melee_1",
+            "my": false,
+            "x": 45,
+            "y": 49,
+            "hits": 910,
+            "hitsMax": 1600,
+            "fatigue": 0,
+            "activeBodyParts": {
+              "attack": 2,
+              "move": 8
+            }
+          },
+          {
+            "id": "pg_player1_melee_2",
+            "my": false,
+            "x": 46,
+            "y": 53,
+            "hits": 772,
+            "hitsMax": 1600,
+            "fatigue": 0,
+            "activeBodyParts": {
+              "move": 8
+            }
+          },
+          {
+            "id": "pg_player1_melee_3",
+            "my": false,
+            "x": 47,
+            "y": 49,
+            "hits": 1600,
+            "hitsMax": 1600,
+            "fatigue": 0,
+            "activeBodyParts": {
+              "attack": 8,
+              "move": 8
+            }
+          },
+          {
+            "id": "pg_player1_melee_4",
+            "my": false,
+            "x": 46,
+            "y": 51,
+            "hits": 1000,
+            "hitsMax": 1600,
+            "fatigue": 0,
+            "activeBodyParts": {
+              "attack": 2,
+              "move": 8
+            }
+          },
+          {
+            "id": "pg_player1_ranged_1",
+            "my": false,
+            "x": 44,
+            "y": 48,
+            "hits": 1200,
+            "hitsMax": 1200,
+            "fatigue": 0,
+            "activeBodyParts": {
+              "ranged_attack": 6,
+              "move": 6
+            }
+          },
+          {
+            "id": "pg_player1_ranged_2",
+            "my": false,
+            "x": 45,
+            "y": 50,
+            "hits": 1200,
+            "hitsMax": 1200,
+            "fatigue": 0,
+            "activeBodyParts": {
+              "ranged_attack": 6,
+              "move": 6
+            }
+          },
+          {
+            "id": "pg_player1_ranged_3",
+            "my": false,
+            "x": 43,
+            "y": 50,
+            "hits": 1200,
+            "hitsMax": 1200,
+            "fatigue": 0,
+            "activeBodyParts": {
+              "ranged_attack": 6,
+              "move": 6
+            }
+          },
+          {
+            "id": "pg_player1_ranged_4",
+            "my": false,
+            "x": 42,
+            "y": 50,
+            "hits": 1200,
+            "hitsMax": 1200,
+            "fatigue": 0,
+            "activeBodyParts": {
+              "ranged_attack": 6,
+              "move": 6
+            }
+          },
+          {
+            "id": "pg_player1_ranged_5",
+            "my": false,
+            "x": 48,
+            "y": 48,
+            "hits": 1200,
+            "hitsMax": 1200,
+            "fatigue": 0,
+            "activeBodyParts": {
+              "ranged_attack": 6,
+              "move": 6
+            }
+          },
+          {
+            "id": "pg_player1_healer_1",
+            "my": false,
+            "x": 46,
+            "y": 48,
+            "hits": 1200,
+            "hitsMax": 1200,
+            "fatigue": 0,
+            "activeBodyParts": {
+              "heal": 6,
+              "move": 6
+            }
+          },
+          {
+            "id": "pg_player1_healer_2",
+            "my": false,
+            "x": 47,
+            "y": 48,
+            "hits": 1200,
+            "hitsMax": 1200,
+            "fatigue": 0,
+            "activeBodyParts": {
+              "heal": 6,
+              "move": 6
+            }
+          },
+          {
+            "id": "pg_player1_healer_3",
+            "my": false,
+            "x": 49,
+            "y": 48,
+            "hits": 1200,
+            "hitsMax": 1200,
+            "fatigue": 0,
+            "activeBodyParts": {
+              "heal": 6,
+              "move": 6
+            }
+          },
+          {
+            "id": "pg_player2_ranged_1",
+            "my": true,
+            "x": 47,
+            "y": 53,
+            "hits": 264,
+            "hitsMax": 1200,
+            "fatigue": 0,
+            "activeBodyParts": {
+              "move": 3
+            }
+          },
+          {
+            "id": "pg_player2_ranged_2",
+            "my": true,
+            "x": 49,
+            "y": 49,
+            "hits": 20,
+            "hitsMax": 1200,
+            "fatigue": 0,
+            "activeBodyParts": {
+              "move": 1
+            }
+          },
+          {
+            "id": "pg_player2_ranged_5",
+            "my": true,
+            "x": 50,
+            "y": 48,
+            "hits": 148,
+            "hitsMax": 1200,
+            "fatigue": 0,
+            "activeBodyParts": {
+              "move": 2
+            }
+          },
+          {
+            "id": "pg_player2_healer_1",
+            "my": true,
+            "x": 49,
+            "y": 51,
+            "hits": 1193,
+            "hitsMax": 1200,
+            "fatigue": 0,
+            "activeBodyParts": {
+              "heal": 6,
+              "move": 6
+            }
+          },
+          {
+            "id": "pg_player2_healer_2",
+            "my": true,
+            "x": 48,
+            "y": 51,
+            "hits": 1147,
+            "hitsMax": 1200,
+            "fatigue": 0,
+            "activeBodyParts": {
+              "heal": 6,
+              "move": 6
+            }
+          },
+          {
+            "id": "pg_player2_healer_3",
+            "my": true,
+            "x": 50,
+            "y": 51,
+            "hits": 1200,
+            "hitsMax": 1200,
+            "fatigue": 0,
+            "activeBodyParts": {
+              "heal": 6,
+              "move": 6
+            }
+          }
+        ],
+        "flags": [
+          {
+            "id": "pg_flag_vulnerability",
+            "x": 49,
+            "y": 49,
+            "owner": "me",
+            "effectType": "eff_damage_taken_modifier",
+            "scorePerTick": 5
+          },
+          {
+            "id": "pg_flag_heal_reduction_a",
+            "x": 90,
+            "y": 8,
+            "owner": "neutral",
+            "effectType": "eff_heal_modifier",
+            "scorePerTick": 4
+          },
+          {
+            "id": "pg_flag_heal_reduction_b",
+            "x": 8,
+            "y": 90,
+            "owner": "neutral",
+            "effectType": "eff_heal_modifier",
+            "scorePerTick": 4
+          },
+          {
+            "id": "pg_flag_attack_reduction_a",
+            "x": 67,
+            "y": 31,
+            "owner": "enemy",
+            "effectType": "eff_attack_modifier",
+            "scorePerTick": 3
+          },
+          {
+            "id": "pg_flag_attack_reduction_b",
+            "x": 31,
+            "y": 67,
+            "owner": "neutral",
+            "effectType": "eff_attack_modifier",
+            "scorePerTick": 3
+          },
+          {
+            "id": "pg_flag_ranged_attack_reduction_a",
+            "x": 13,
+            "y": 49,
+            "owner": "neutral",
+            "effectType": "eff_ranged_attack_modifier",
+            "scorePerTick": 3
+          },
+          {
+            "id": "pg_flag_ranged_attack_reduction_b",
+            "x": 85,
+            "y": 49,
+            "owner": "neutral",
+            "effectType": "eff_ranged_attack_modifier",
+            "scorePerTick": 3
+          }
+        ]
+      }
+    },
+    {
+      "tick": 77,
+      "id": "pg_player2_healer_1",
+      "healer": {
+        "id": "pg_player2_healer_1",
+        "my": true,
+        "x": 49,
+        "y": 51,
+        "hits": 1193,
+        "hitsMax": 1200,
+        "fatigue": 0,
+        "activeBodyParts": {
+          "heal": 6,
+          "move": 6
+        }
+      },
+      "target": {
+        "id": "pg_player2_ranged_1",
+        "my": true,
+        "x": 47,
+        "y": 52,
+        "hits": 198,
+        "hitsMax": 1200,
+        "fatigue": 6,
+        "activeBodyParts": {
+          "move": 2
+        }
+      },
+      "movement": [
+        {
+          "type": "action-decision",
+          "reason": "injured-ally-in-range",
+          "outcome": "hold",
+          "actions": []
+        }
+      ],
+      "healing": [
+        {
+          "type": "action-decision",
+          "reason": "injured-ally-in-range",
+          "outcome": "selected",
+          "actions": [
+            {
+              "actionId": "77:12#0",
+              "method": "rangedHeal",
+              "target": {
+                "kind": "creep",
+                "id": "pg_player2_ranged_1",
+                "x": 47,
+                "y": 52
+              }
+            }
+          ]
+        },
+        {
+          "type": "action-attempt",
+          "method": "rangedHeal",
+          "target": {
+            "kind": "creep",
+            "id": "pg_player2_ranged_1",
+            "x": 47,
+            "y": 52
+          },
+          "returnCode": 0
+        }
+      ],
+      "currentThreats": [
+        {
+          "id": "pg_player1_ranged_5",
+          "x": 48,
+          "y": 49,
+          "range": 2,
+          "attack": 0,
+          "ranged": 6
+        }
+      ],
+      "flags": [
+        {
+          "id": "pg_flag_vulnerability",
+          "x": 49,
+          "y": 49,
+          "owner": "me",
+          "effectType": "eff_damage_taken_modifier",
+          "scorePerTick": 5
+        },
+        {
+          "id": "pg_flag_heal_reduction_a",
+          "x": 90,
+          "y": 8,
+          "owner": "neutral",
+          "effectType": "eff_heal_modifier",
+          "scorePerTick": 4
+        },
+        {
+          "id": "pg_flag_heal_reduction_b",
+          "x": 8,
+          "y": 90,
+          "owner": "neutral",
+          "effectType": "eff_heal_modifier",
+          "scorePerTick": 4
+        },
+        {
+          "id": "pg_flag_attack_reduction_a",
+          "x": 67,
+          "y": 31,
+          "owner": "enemy",
+          "effectType": "eff_attack_modifier",
+          "scorePerTick": 3
+        },
+        {
+          "id": "pg_flag_attack_reduction_b",
+          "x": 31,
+          "y": 67,
+          "owner": "neutral",
+          "effectType": "eff_attack_modifier",
+          "scorePerTick": 3
+        },
+        {
+          "id": "pg_flag_ranged_attack_reduction_a",
+          "x": 13,
+          "y": 49,
+          "owner": "neutral",
+          "effectType": "eff_ranged_attack_modifier",
+          "scorePerTick": 3
+        },
+        {
+          "id": "pg_flag_ranged_attack_reduction_b",
+          "x": 85,
+          "y": 49,
+          "owner": "neutral",
+          "effectType": "eff_ranged_attack_modifier",
+          "scorePerTick": 3
+        }
+      ],
+      "cells": [
+        {
+          "x": 48,
+          "y": 50,
+          "targetRange": 2,
+          "occupied": [],
+          "threats": [
+            "pg_player1_ranged_5"
+          ],
+          "downgraded": [],
+          "unsupported": [],
+          "terrain": "unknown-not-retained"
+        },
+        {
+          "x": 49,
+          "y": 50,
+          "targetRange": 2,
+          "occupied": [
+            "pg_player2_healer_2"
+          ],
+          "threats": [
+            "pg_player1_ranged_5"
+          ],
+          "downgraded": [],
+          "unsupported": [],
+          "terrain": "unknown-not-retained"
+        },
+        {
+          "x": 50,
+          "y": 50,
+          "targetRange": 3,
+          "occupied": [],
+          "threats": [
+            "pg_player1_ranged_5"
+          ],
+          "downgraded": [],
+          "unsupported": [],
+          "terrain": "unknown-not-retained"
+        },
+        {
+          "x": 48,
+          "y": 51,
+          "targetRange": 1,
+          "occupied": [],
+          "threats": [
+            "pg_player1_ranged_5"
+          ],
+          "downgraded": [],
+          "unsupported": [],
+          "terrain": "unknown-not-retained"
+        },
+        {
+          "x": 50,
+          "y": 51,
+          "targetRange": 3,
+          "occupied": [
+            "pg_player2_healer_3"
+          ],
+          "threats": [
+            "pg_player1_ranged_5"
+          ],
+          "downgraded": [],
+          "unsupported": [],
+          "terrain": "unknown-not-retained"
+        },
+        {
+          "x": 48,
+          "y": 52,
+          "targetRange": 1,
+          "occupied": [],
+          "threats": [
+            "pg_player1_ranged_5"
+          ],
+          "downgraded": [
+            "pg_player2_ranged_5"
+          ],
+          "unsupported": [],
+          "terrain": "unknown-not-retained"
+        },
+        {
+          "x": 49,
+          "y": 52,
+          "targetRange": 2,
+          "occupied": [],
+          "threats": [
+            "pg_player1_ranged_5"
+          ],
+          "downgraded": [
+            "pg_player2_ranged_5"
+          ],
+          "unsupported": [],
+          "terrain": "unknown-not-retained"
+        },
+        {
+          "x": 50,
+          "y": 52,
+          "targetRange": 3,
+          "occupied": [],
+          "threats": [
+            "pg_player1_ranged_5"
+          ],
+          "downgraded": [
+            "pg_player2_ranged_5"
+          ],
+          "unsupported": [],
+          "terrain": "unknown-not-retained"
+        }
+      ],
+      "state": {
+        "type": "game-state",
+        "buildId": "d1e95a106a708f10826cf472be65e143bab86f44ef84f5d537bb3c07f6639e0f",
+        "tick": 77,
+        "phase": "before-actions",
+        "selectedFlagId": "pg_flag_vulnerability",
+        "creeps": [
+          {
+            "id": "pg_player1_scout_1",
+            "my": false,
+            "x": 62,
+            "y": 36,
+            "hits": 100,
+            "hitsMax": 100,
+            "fatigue": 0,
+            "activeBodyParts": {
+              "move": 1
+            }
+          },
+          {
+            "id": "pg_player1_scout_2",
+            "my": false,
+            "x": 39,
+            "y": 53,
+            "hits": 100,
+            "hitsMax": 100,
+            "fatigue": 0,
+            "activeBodyParts": {
+              "move": 1
+            }
+          },
+          {
+            "id": "pg_player1_melee_1",
+            "my": false,
+            "x": 44,
+            "y": 50,
+            "hits": 1006,
+            "hitsMax": 1600,
+            "fatigue": 0,
+            "activeBodyParts": {
+              "attack": 3,
+              "move": 8
+            }
+          },
+          {
+            "id": "pg_player1_melee_2",
+            "my": false,
+            "x": 45,
+            "y": 54,
+            "hits": 772,
+            "hitsMax": 1600,
+            "fatigue": 0,
+            "activeBodyParts": {
+              "move": 8
+            }
+          },
+          {
+            "id": "pg_player1_melee_3",
+            "my": false,
+            "x": 46,
+            "y": 50,
+            "hits": 1600,
+            "hitsMax": 1600,
+            "fatigue": 0,
+            "activeBodyParts": {
+              "attack": 8,
+              "move": 8
+            }
+          },
+          {
+            "id": "pg_player1_melee_4",
+            "my": false,
+            "x": 45,
+            "y": 52,
+            "hits": 1024,
+            "hitsMax": 1600,
+            "fatigue": 0,
+            "activeBodyParts": {
+              "attack": 3,
+              "move": 8
+            }
+          },
+          {
+            "id": "pg_player1_ranged_1",
+            "my": false,
+            "x": 44,
+            "y": 49,
+            "hits": 1200,
+            "hitsMax": 1200,
+            "fatigue": 0,
+            "activeBodyParts": {
+              "ranged_attack": 6,
+              "move": 6
+            }
+          },
+          {
+            "id": "pg_player1_ranged_2",
+            "my": false,
+            "x": 44,
+            "y": 51,
+            "hits": 1200,
+            "hitsMax": 1200,
+            "fatigue": 0,
+            "activeBodyParts": {
+              "ranged_attack": 6,
+              "move": 6
+            }
+          },
+          {
+            "id": "pg_player1_ranged_3",
+            "my": false,
+            "x": 42,
+            "y": 51,
+            "hits": 1200,
+            "hitsMax": 1200,
+            "fatigue": 0,
+            "activeBodyParts": {
+              "ranged_attack": 6,
+              "move": 6
+            }
+          },
+          {
+            "id": "pg_player1_ranged_4",
+            "my": false,
+            "x": 41,
+            "y": 51,
+            "hits": 1200,
+            "hitsMax": 1200,
+            "fatigue": 0,
+            "activeBodyParts": {
+              "ranged_attack": 6,
+              "move": 6
+            }
+          },
+          {
+            "id": "pg_player1_ranged_5",
+            "my": false,
+            "x": 48,
+            "y": 49,
+            "hits": 1200,
+            "hitsMax": 1200,
+            "fatigue": 0,
+            "activeBodyParts": {
+              "ranged_attack": 6,
+              "move": 6
+            }
+          },
+          {
+            "id": "pg_player1_healer_1",
+            "my": false,
+            "x": 46,
+            "y": 49,
+            "hits": 1200,
+            "hitsMax": 1200,
+            "fatigue": 0,
+            "activeBodyParts": {
+              "heal": 6,
+              "move": 6
+            }
+          },
+          {
+            "id": "pg_player1_healer_2",
+            "my": false,
+            "x": 47,
+            "y": 48,
+            "hits": 1200,
+            "hitsMax": 1200,
+            "fatigue": 0,
+            "activeBodyParts": {
+              "heal": 6,
+              "move": 6
+            }
+          },
+          {
+            "id": "pg_player1_healer_3",
+            "my": false,
+            "x": 49,
+            "y": 48,
+            "hits": 1200,
+            "hitsMax": 1200,
+            "fatigue": 0,
+            "activeBodyParts": {
+              "heal": 6,
+              "move": 6
+            }
+          },
+          {
+            "id": "pg_player2_ranged_1",
+            "my": true,
+            "x": 47,
+            "y": 52,
+            "hits": 198,
+            "hitsMax": 1200,
+            "fatigue": 6,
+            "activeBodyParts": {
+              "move": 2
+            }
+          },
+          {
+            "id": "pg_player2_ranged_5",
+            "my": true,
+            "x": 50,
+            "y": 48,
+            "hits": 148,
+            "hitsMax": 1200,
+            "fatigue": 0,
+            "activeBodyParts": {
+              "move": 2
+            }
+          },
+          {
+            "id": "pg_player2_healer_1",
+            "my": true,
+            "x": 49,
+            "y": 51,
+            "hits": 1193,
+            "hitsMax": 1200,
+            "fatigue": 0,
+            "activeBodyParts": {
+              "heal": 6,
+              "move": 6
+            }
+          },
+          {
+            "id": "pg_player2_healer_2",
+            "my": true,
+            "x": 49,
+            "y": 50,
+            "hits": 1200,
+            "hitsMax": 1200,
+            "fatigue": 0,
+            "activeBodyParts": {
+              "heal": 6,
+              "move": 6
+            }
+          },
+          {
+            "id": "pg_player2_healer_3",
+            "my": true,
+            "x": 50,
+            "y": 51,
+            "hits": 1200,
+            "hitsMax": 1200,
+            "fatigue": 0,
+            "activeBodyParts": {
+              "heal": 6,
+              "move": 6
+            }
+          }
+        ],
+        "flags": [
+          {
+            "id": "pg_flag_vulnerability",
+            "x": 49,
+            "y": 49,
+            "owner": "me",
+            "effectType": "eff_damage_taken_modifier",
+            "scorePerTick": 5
+          },
+          {
+            "id": "pg_flag_heal_reduction_a",
+            "x": 90,
+            "y": 8,
+            "owner": "neutral",
+            "effectType": "eff_heal_modifier",
+            "scorePerTick": 4
+          },
+          {
+            "id": "pg_flag_heal_reduction_b",
+            "x": 8,
+            "y": 90,
+            "owner": "neutral",
+            "effectType": "eff_heal_modifier",
+            "scorePerTick": 4
+          },
+          {
+            "id": "pg_flag_attack_reduction_a",
+            "x": 67,
+            "y": 31,
+            "owner": "enemy",
+            "effectType": "eff_attack_modifier",
+            "scorePerTick": 3
+          },
+          {
+            "id": "pg_flag_attack_reduction_b",
+            "x": 31,
+            "y": 67,
+            "owner": "neutral",
+            "effectType": "eff_attack_modifier",
+            "scorePerTick": 3
+          },
+          {
+            "id": "pg_flag_ranged_attack_reduction_a",
+            "x": 13,
+            "y": 49,
+            "owner": "neutral",
+            "effectType": "eff_ranged_attack_modifier",
+            "scorePerTick": 3
+          },
+          {
+            "id": "pg_flag_ranged_attack_reduction_b",
+            "x": 85,
+            "y": 49,
+            "owner": "neutral",
+            "effectType": "eff_ranged_attack_modifier",
+            "scorePerTick": 3
+          }
+        ]
+      }
+    },
+    {
+      "tick": 80,
+      "id": "pg_player2_healer_3",
+      "healer": {
+        "id": "pg_player2_healer_3",
+        "my": true,
+        "x": 50,
+        "y": 51,
+        "hits": 1200,
+        "hitsMax": 1200,
+        "fatigue": 0,
+        "activeBodyParts": {
+          "heal": 6,
+          "move": 6
+        }
+      },
+      "target": {
+        "id": "pg_player2_ranged_1",
+        "my": true,
+        "x": 48,
+        "y": 51,
+        "hits": 186,
+        "hitsMax": 1200,
+        "fatigue": 8,
+        "activeBodyParts": {
+          "move": 2
+        }
+      },
+      "movement": [
+        {
+          "type": "action-decision",
+          "reason": "injured-ally-in-range",
+          "outcome": "hold",
+          "actions": []
+        }
+      ],
+      "healing": [
+        {
+          "type": "action-decision",
+          "reason": "injured-ally-in-range",
+          "outcome": "selected",
+          "actions": [
+            {
+              "actionId": "80:18#0",
+              "method": "rangedHeal",
+              "target": {
+                "kind": "creep",
+                "id": "pg_player2_ranged_1",
+                "x": 48,
+                "y": 51
+              }
+            }
+          ]
+        },
+        {
+          "type": "action-attempt",
+          "method": "rangedHeal",
+          "target": {
+            "kind": "creep",
+            "id": "pg_player2_ranged_1",
+            "x": 48,
+            "y": 51
+          },
+          "returnCode": 0
+        }
+      ],
+      "currentThreats": [],
+      "flags": [
+        {
+          "id": "pg_flag_vulnerability",
+          "x": 49,
+          "y": 49,
+          "owner": "me",
+          "effectType": "eff_damage_taken_modifier",
+          "scorePerTick": 5
+        },
+        {
+          "id": "pg_flag_heal_reduction_a",
+          "x": 90,
+          "y": 8,
+          "owner": "neutral",
+          "effectType": "eff_heal_modifier",
+          "scorePerTick": 4
+        },
+        {
+          "id": "pg_flag_heal_reduction_b",
+          "x": 8,
+          "y": 90,
+          "owner": "neutral",
+          "effectType": "eff_heal_modifier",
+          "scorePerTick": 4
+        },
+        {
+          "id": "pg_flag_attack_reduction_a",
+          "x": 67,
+          "y": 31,
+          "owner": "enemy",
+          "effectType": "eff_attack_modifier",
+          "scorePerTick": 3
+        },
+        {
+          "id": "pg_flag_attack_reduction_b",
+          "x": 31,
+          "y": 67,
+          "owner": "neutral",
+          "effectType": "eff_attack_modifier",
+          "scorePerTick": 3
+        },
+        {
+          "id": "pg_flag_ranged_attack_reduction_a",
+          "x": 13,
+          "y": 49,
+          "owner": "neutral",
+          "effectType": "eff_ranged_attack_modifier",
+          "scorePerTick": 3
+        },
+        {
+          "id": "pg_flag_ranged_attack_reduction_b",
+          "x": 85,
+          "y": 49,
+          "owner": "neutral",
+          "effectType": "eff_ranged_attack_modifier",
+          "scorePerTick": 3
+        }
+      ],
+      "cells": [
+        {
+          "x": 49,
+          "y": 50,
+          "targetRange": 1,
+          "occupied": [
+            "pg_player2_healer_2"
+          ],
+          "threats": [],
+          "downgraded": [],
+          "unsupported": [],
+          "terrain": "unknown-not-retained"
+        },
+        {
+          "x": 50,
+          "y": 50,
+          "targetRange": 2,
+          "occupied": [
+            "pg_player2_healer_1"
+          ],
+          "threats": [],
+          "downgraded": [],
+          "unsupported": [],
+          "terrain": "unknown-not-retained"
+        },
+        {
+          "x": 51,
+          "y": 50,
+          "targetRange": 3,
+          "occupied": [],
+          "threats": [],
+          "downgraded": [],
+          "unsupported": [],
+          "terrain": "unknown-not-retained"
+        },
+        {
+          "x": 49,
+          "y": 51,
+          "targetRange": 1,
+          "occupied": [],
+          "threats": [],
+          "downgraded": [],
+          "unsupported": [],
+          "terrain": "unknown-not-retained"
+        },
+        {
+          "x": 51,
+          "y": 51,
+          "targetRange": 3,
+          "occupied": [],
+          "threats": [],
+          "downgraded": [],
+          "unsupported": [],
+          "terrain": "unknown-not-retained"
+        },
+        {
+          "x": 49,
+          "y": 52,
+          "targetRange": 1,
+          "occupied": [],
+          "threats": [],
+          "downgraded": [
+            "pg_player2_healer_1"
+          ],
+          "unsupported": [],
+          "terrain": "unknown-not-retained"
+        },
+        {
+          "x": 50,
+          "y": 52,
+          "targetRange": 2,
+          "occupied": [],
+          "threats": [],
+          "downgraded": [
+            "pg_player2_healer_1"
+          ],
+          "unsupported": [],
+          "terrain": "unknown-not-retained"
+        },
+        {
+          "x": 51,
+          "y": 52,
+          "targetRange": 3,
+          "occupied": [],
+          "threats": [],
+          "downgraded": [
+            "pg_player2_healer_1"
+          ],
+          "unsupported": [],
+          "terrain": "unknown-not-retained"
+        }
+      ],
+      "state": {
+        "type": "game-state",
+        "buildId": "d1e95a106a708f10826cf472be65e143bab86f44ef84f5d537bb3c07f6639e0f",
+        "tick": 80,
+        "phase": "before-actions",
+        "selectedFlagId": "pg_flag_vulnerability",
+        "creeps": [
+          {
+            "id": "pg_player1_scout_1",
+            "my": false,
+            "x": 59,
+            "y": 39,
+            "hits": 100,
+            "hitsMax": 100,
+            "fatigue": 0,
+            "activeBodyParts": {
+              "move": 1
+            }
+          },
+          {
+            "id": "pg_player1_scout_2",
+            "my": false,
+            "x": 41,
+            "y": 50,
+            "hits": 100,
+            "hitsMax": 100,
+            "fatigue": 0,
+            "activeBodyParts": {
+              "move": 1
+            }
+          },
+          {
+            "id": "pg_player1_melee_1",
+            "my": false,
+            "x": 41,
+            "y": 53,
+            "hits": 1054,
+            "hitsMax": 1600,
+            "fatigue": 0,
+            "activeBodyParts": {
+              "attack": 3,
+              "move": 8
+            }
+          },
+          {
+            "id": "pg_player1_melee_2",
+            "my": false,
+            "x": 42,
+            "y": 57,
+            "hits": 772,
+            "hitsMax": 1600,
+            "fatigue": 0,
+            "activeBodyParts": {
+              "move": 8
+            }
+          },
+          {
+            "id": "pg_player1_melee_3",
+            "my": false,
+            "x": 43,
+            "y": 53,
+            "hits": 1600,
+            "hitsMax": 1600,
+            "fatigue": 0,
+            "activeBodyParts": {
+              "attack": 8,
+              "move": 8
+            }
+          },
+          {
+            "id": "pg_player1_melee_4",
+            "my": false,
+            "x": 42,
+            "y": 55,
+            "hits": 1072,
+            "hitsMax": 1600,
+            "fatigue": 0,
+            "activeBodyParts": {
+              "attack": 3,
+              "move": 8
+            }
+          },
+          {
+            "id": "pg_player1_ranged_1",
+            "my": false,
+            "x": 41,
+            "y": 52,
+            "hits": 1200,
+            "hitsMax": 1200,
+            "fatigue": 0,
+            "activeBodyParts": {
+              "ranged_attack": 6,
+              "move": 6
+            }
+          },
+          {
+            "id": "pg_player1_ranged_2",
+            "my": false,
+            "x": 41,
+            "y": 54,
+            "hits": 1200,
+            "hitsMax": 1200,
+            "fatigue": 0,
+            "activeBodyParts": {
+              "ranged_attack": 6,
+              "move": 6
+            }
+          },
+          {
+            "id": "pg_player1_ranged_3",
+            "my": false,
+            "x": 39,
+            "y": 54,
+            "hits": 1200,
+            "hitsMax": 1200,
+            "fatigue": 0,
+            "activeBodyParts": {
+              "ranged_attack": 6,
+              "move": 6
+            }
+          },
+          {
+            "id": "pg_player1_ranged_4",
+            "my": false,
+            "x": 40,
+            "y": 52,
+            "hits": 1200,
+            "hitsMax": 1200,
+            "fatigue": 0,
+            "activeBodyParts": {
+              "ranged_attack": 6,
+              "move": 6
+            }
+          },
+          {
+            "id": "pg_player1_ranged_5",
+            "my": false,
+            "x": 45,
+            "y": 52,
+            "hits": 1200,
+            "hitsMax": 1200,
+            "fatigue": 0,
+            "activeBodyParts": {
+              "ranged_attack": 6,
+              "move": 6
+            }
+          },
+          {
+            "id": "pg_player1_healer_1",
+            "my": false,
+            "x": 43,
+            "y": 52,
+            "hits": 1200,
+            "hitsMax": 1200,
+            "fatigue": 0,
+            "activeBodyParts": {
+              "heal": 6,
+              "move": 6
+            }
+          },
+          {
+            "id": "pg_player1_healer_2",
+            "my": false,
+            "x": 45,
+            "y": 51,
+            "hits": 1200,
+            "hitsMax": 1200,
+            "fatigue": 0,
+            "activeBodyParts": {
+              "heal": 6,
+              "move": 6
+            }
+          },
+          {
+            "id": "pg_player1_healer_3",
+            "my": false,
+            "x": 47,
+            "y": 50,
+            "hits": 1200,
+            "hitsMax": 1200,
+            "fatigue": 0,
+            "activeBodyParts": {
+              "heal": 6,
+              "move": 6
+            }
+          },
+          {
+            "id": "pg_player2_ranged_1",
+            "my": true,
+            "x": 48,
+            "y": 51,
+            "hits": 186,
+            "hitsMax": 1200,
+            "fatigue": 8,
+            "activeBodyParts": {
+              "move": 2
+            }
+          },
+          {
+            "id": "pg_player2_ranged_5",
+            "my": true,
+            "x": 49,
+            "y": 49,
+            "hits": 142,
+            "hitsMax": 1200,
+            "fatigue": 2,
+            "activeBodyParts": {
+              "move": 2
+            }
+          },
+          {
+            "id": "pg_player2_healer_1",
+            "my": true,
+            "x": 50,
+            "y": 50,
+            "hits": 1193,
+            "hitsMax": 1200,
+            "fatigue": 0,
+            "activeBodyParts": {
+              "heal": 6,
+              "move": 6
+            }
+          },
+          {
+            "id": "pg_player2_healer_2",
+            "my": true,
+            "x": 49,
+            "y": 50,
+            "hits": 1200,
+            "hitsMax": 1200,
+            "fatigue": 0,
+            "activeBodyParts": {
+              "heal": 6,
+              "move": 6
+            }
+          },
+          {
+            "id": "pg_player2_healer_3",
+            "my": true,
+            "x": 50,
+            "y": 51,
+            "hits": 1200,
+            "hitsMax": 1200,
+            "fatigue": 0,
+            "activeBodyParts": {
+              "heal": 6,
+              "move": 6
+            }
+          }
+        ],
+        "flags": [
+          {
+            "id": "pg_flag_vulnerability",
+            "x": 49,
+            "y": 49,
+            "owner": "me",
+            "effectType": "eff_damage_taken_modifier",
+            "scorePerTick": 5
+          },
+          {
+            "id": "pg_flag_heal_reduction_a",
+            "x": 90,
+            "y": 8,
+            "owner": "neutral",
+            "effectType": "eff_heal_modifier",
+            "scorePerTick": 4
+          },
+          {
+            "id": "pg_flag_heal_reduction_b",
+            "x": 8,
+            "y": 90,
+            "owner": "neutral",
+            "effectType": "eff_heal_modifier",
+            "scorePerTick": 4
+          },
+          {
+            "id": "pg_flag_attack_reduction_a",
+            "x": 67,
+            "y": 31,
+            "owner": "enemy",
+            "effectType": "eff_attack_modifier",
+            "scorePerTick": 3
+          },
+          {
+            "id": "pg_flag_attack_reduction_b",
+            "x": 31,
+            "y": 67,
+            "owner": "neutral",
+            "effectType": "eff_attack_modifier",
+            "scorePerTick": 3
+          },
+          {
+            "id": "pg_flag_ranged_attack_reduction_a",
+            "x": 13,
+            "y": 49,
+            "owner": "neutral",
+            "effectType": "eff_ranged_attack_modifier",
+            "scorePerTick": 3
+          },
+          {
+            "id": "pg_flag_ranged_attack_reduction_b",
+            "x": 85,
+            "y": 49,
+            "owner": "neutral",
+            "effectType": "eff_ranged_attack_modifier",
+            "scorePerTick": 3
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,928 @@
+{
+  "replay": "6ad152e374ae4378a665afb2",
+  "historicalBuild": "4896ef3596bcca45755413fa8d090a7518bb1ece2ed8d416ea17461109e89215",
+  "mapChecksum": "4dea7cdacc0594a8e59e97c42f56f9a3c3430bce8bdadea6dff66126c13c42e3",
+  "provenance": "Retained pre-action states40/41 and verified exact-map neighbor terrain; positive body HP reconstructed only. No alternate replay outcomes.",
+  "states": [
+    {
+      "type": "game-state",
+      "buildId": "4896ef3596bcca45755413fa8d090a7518bb1ece2ed8d416ea17461109e89215",
+      "tick": 40,
+      "phase": "before-actions",
+      "selectedFlagId": "pg_flag_vulnerability",
+      "creeps": [
+        {
+          "id": "pg_player1_scout_1",
+          "my": false,
+          "x": 46,
+          "y": 45,
+          "hits": 100,
+          "hitsMax": 100,
+          "fatigue": 0,
+          "activeBodyParts": {
+            "move": 1
+          }
+        },
+        {
+          "id": "pg_player1_scout_2",
+          "my": false,
+          "x": 46,
+          "y": 43,
+          "hits": 100,
+          "hitsMax": 100,
+          "fatigue": 0,
+          "activeBodyParts": {
+            "move": 1
+          }
+        },
+        {
+          "id": "pg_player1_melee_1",
+          "my": false,
+          "x": 48,
+          "y": 44,
+          "hits": 1600,
+          "hitsMax": 1600,
+          "fatigue": 0,
+          "activeBodyParts": {
+            "attack": 8,
+            "move": 8
+          }
+        },
+        {
+          "id": "pg_player1_melee_2",
+          "my": false,
+          "x": 48,
+          "y": 48,
+          "hits": 1428,
+          "hitsMax": 1600,
+          "fatigue": 0,
+          "activeBodyParts": {
+            "attack": 7,
+            "move": 8
+          }
+        },
+        {
+          "id": "pg_player1_melee_3",
+          "my": false,
+          "x": 47,
+          "y": 49,
+          "hits": 1444,
+          "hitsMax": 1600,
+          "fatigue": 0,
+          "activeBodyParts": {
+            "attack": 7,
+            "move": 8
+          }
+        },
+        {
+          "id": "pg_player1_melee_4",
+          "my": false,
+          "x": 46,
+          "y": 49,
+          "hits": 1480,
+          "hitsMax": 1600,
+          "fatigue": 0,
+          "activeBodyParts": {
+            "attack": 7,
+            "move": 8
+          }
+        },
+        {
+          "id": "pg_player1_ranged_1",
+          "my": false,
+          "x": 44,
+          "y": 43,
+          "hits": 1200,
+          "hitsMax": 1200,
+          "fatigue": 0,
+          "activeBodyParts": {
+            "ranged_attack": 6,
+            "move": 6
+          }
+        },
+        {
+          "id": "pg_player1_ranged_2",
+          "my": false,
+          "x": 49,
+          "y": 45,
+          "hits": 1200,
+          "hitsMax": 1200,
+          "fatigue": 0,
+          "activeBodyParts": {
+            "ranged_attack": 6,
+            "move": 6
+          }
+        },
+        {
+          "id": "pg_player1_ranged_3",
+          "my": false,
+          "x": 50,
+          "y": 46,
+          "hits": 1200,
+          "hitsMax": 1200,
+          "fatigue": 0,
+          "activeBodyParts": {
+            "ranged_attack": 6,
+            "move": 6
+          }
+        },
+        {
+          "id": "pg_player1_ranged_4",
+          "my": false,
+          "x": 48,
+          "y": 46,
+          "hits": 1200,
+          "hitsMax": 1200,
+          "fatigue": 0,
+          "activeBodyParts": {
+            "ranged_attack": 6,
+            "move": 6
+          }
+        },
+        {
+          "id": "pg_player1_ranged_5",
+          "my": false,
+          "x": 48,
+          "y": 45,
+          "hits": 1200,
+          "hitsMax": 1200,
+          "fatigue": 0,
+          "activeBodyParts": {
+            "ranged_attack": 6,
+            "move": 6
+          }
+        },
+        {
+          "id": "pg_player1_healer_1",
+          "my": false,
+          "x": 45,
+          "y": 47,
+          "hits": 1200,
+          "hitsMax": 1200,
+          "fatigue": 0,
+          "activeBodyParts": {
+            "heal": 6,
+            "move": 6
+          }
+        },
+        {
+          "id": "pg_player1_healer_2",
+          "my": false,
+          "x": 43,
+          "y": 40,
+          "hits": 1200,
+          "hitsMax": 1200,
+          "fatigue": 0,
+          "activeBodyParts": {
+            "heal": 6,
+            "move": 6
+          }
+        },
+        {
+          "id": "pg_player1_healer_3",
+          "my": false,
+          "x": 41,
+          "y": 39,
+          "hits": 1200,
+          "hitsMax": 1200,
+          "fatigue": 0,
+          "activeBodyParts": {
+            "heal": 6,
+            "move": 6
+          }
+        },
+        {
+          "id": "pg_player2_scout_1",
+          "my": true,
+          "x": 51,
+          "y": 50,
+          "hits": 100,
+          "hitsMax": 100,
+          "fatigue": 0,
+          "activeBodyParts": {
+            "move": 1
+          }
+        },
+        {
+          "id": "pg_player2_scout_2",
+          "my": true,
+          "x": 51,
+          "y": 53,
+          "hits": 100,
+          "hitsMax": 100,
+          "fatigue": 0,
+          "activeBodyParts": {
+            "move": 1
+          }
+        },
+        {
+          "id": "pg_player2_melee_1",
+          "my": true,
+          "x": 49,
+          "y": 52,
+          "hits": 1600,
+          "hitsMax": 1600,
+          "fatigue": 0,
+          "activeBodyParts": {
+            "attack": 8,
+            "move": 8
+          }
+        },
+        {
+          "id": "pg_player2_melee_2",
+          "my": true,
+          "x": 50,
+          "y": 48,
+          "hits": 1600,
+          "hitsMax": 1600,
+          "fatigue": 0,
+          "activeBodyParts": {
+            "attack": 8,
+            "move": 8
+          }
+        },
+        {
+          "id": "pg_player2_melee_3",
+          "my": true,
+          "x": 50,
+          "y": 47,
+          "hits": 1420,
+          "hitsMax": 1600,
+          "fatigue": 0,
+          "activeBodyParts": {
+            "attack": 7,
+            "move": 8
+          }
+        },
+        {
+          "id": "pg_player2_melee_4",
+          "my": true,
+          "x": 52,
+          "y": 48,
+          "hits": 1600,
+          "hitsMax": 1600,
+          "fatigue": 0,
+          "activeBodyParts": {
+            "attack": 8,
+            "move": 8
+          }
+        },
+        {
+          "id": "pg_player2_ranged_1",
+          "my": true,
+          "x": 49,
+          "y": 53,
+          "hits": 1200,
+          "hitsMax": 1200,
+          "fatigue": 0,
+          "activeBodyParts": {
+            "ranged_attack": 6,
+            "move": 6
+          }
+        },
+        {
+          "id": "pg_player2_ranged_2",
+          "my": true,
+          "x": 51,
+          "y": 54,
+          "hits": 1200,
+          "hitsMax": 1200,
+          "fatigue": 0,
+          "activeBodyParts": {
+            "ranged_attack": 6,
+            "move": 6
+          }
+        },
+        {
+          "id": "pg_player2_ranged_3",
+          "my": true,
+          "x": 47,
+          "y": 51,
+          "hits": 1200,
+          "hitsMax": 1200,
+          "fatigue": 0,
+          "activeBodyParts": {
+            "ranged_attack": 6,
+            "move": 6
+          }
+        },
+        {
+          "id": "pg_player2_ranged_4",
+          "my": true,
+          "x": 49,
+          "y": 50,
+          "hits": 1200,
+          "hitsMax": 1200,
+          "fatigue": 0,
+          "activeBodyParts": {
+            "ranged_attack": 6,
+            "move": 6
+          }
+        },
+        {
+          "id": "pg_player2_ranged_5",
+          "my": true,
+          "x": 48,
+          "y": 50,
+          "hits": 960,
+          "hitsMax": 1200,
+          "fatigue": 0,
+          "activeBodyParts": {
+            "ranged_attack": 4,
+            "move": 6
+          }
+        },
+        {
+          "id": "pg_player2_healer_1",
+          "my": true,
+          "x": 51,
+          "y": 51,
+          "hits": 1200,
+          "hitsMax": 1200,
+          "fatigue": 0,
+          "activeBodyParts": {
+            "heal": 6,
+            "move": 6
+          }
+        },
+        {
+          "id": "pg_player2_healer_2",
+          "my": true,
+          "x": 53,
+          "y": 54,
+          "hits": 1200,
+          "hitsMax": 1200,
+          "fatigue": 0,
+          "activeBodyParts": {
+            "heal": 6,
+            "move": 6
+          }
+        },
+        {
+          "id": "pg_player2_healer_3",
+          "my": true,
+          "x": 50,
+          "y": 50,
+          "hits": 1200,
+          "hitsMax": 1200,
+          "fatigue": 0,
+          "activeBodyParts": {
+            "heal": 6,
+            "move": 6
+          }
+        }
+      ],
+      "flags": [
+        {
+          "id": "pg_flag_vulnerability",
+          "x": 49,
+          "y": 49,
+          "owner": "neutral",
+          "effectType": "eff_damage_taken_modifier",
+          "scorePerTick": 5
+        },
+        {
+          "id": "pg_flag_heal_reduction_a",
+          "x": 90,
+          "y": 8,
+          "owner": "neutral",
+          "effectType": "eff_heal_modifier",
+          "scorePerTick": 4
+        },
+        {
+          "id": "pg_flag_heal_reduction_b",
+          "x": 8,
+          "y": 90,
+          "owner": "neutral",
+          "effectType": "eff_heal_modifier",
+          "scorePerTick": 4
+        },
+        {
+          "id": "pg_flag_attack_reduction_a",
+          "x": 67,
+          "y": 31,
+          "owner": "neutral",
+          "effectType": "eff_attack_modifier",
+          "scorePerTick": 3
+        },
+        {
+          "id": "pg_flag_attack_reduction_b",
+          "x": 31,
+          "y": 67,
+          "owner": "neutral",
+          "effectType": "eff_attack_modifier",
+          "scorePerTick": 3
+        },
+        {
+          "id": "pg_flag_ranged_attack_reduction_a",
+          "x": 13,
+          "y": 49,
+          "owner": "neutral",
+          "effectType": "eff_ranged_attack_modifier",
+          "scorePerTick": 3
+        },
+        {
+          "id": "pg_flag_ranged_attack_reduction_b",
+          "x": 85,
+          "y": 49,
+          "owner": "neutral",
+          "effectType": "eff_ranged_attack_modifier",
+          "scorePerTick": 3
+        }
+      ]
+    },
+    {
+      "type": "game-state",
+      "buildId": "4896ef3596bcca45755413fa8d090a7518bb1ece2ed8d416ea17461109e89215",
+      "tick": 41,
+      "phase": "before-actions",
+      "selectedFlagId": "pg_flag_vulnerability",
+      "creeps": [
+        {
+          "id": "pg_player1_scout_1",
+          "my": false,
+          "x": 45,
+          "y": 44,
+          "hits": 100,
+          "hitsMax": 100,
+          "fatigue": 0,
+          "activeBodyParts": {
+            "move": 1
+          }
+        },
+        {
+          "id": "pg_player1_scout_2",
+          "my": false,
+          "x": 47,
+          "y": 42,
+          "hits": 100,
+          "hitsMax": 100,
+          "fatigue": 0,
+          "activeBodyParts": {
+            "move": 1
+          }
+        },
+        {
+          "id": "pg_player1_melee_1",
+          "my": false,
+          "x": 49,
+          "y": 44,
+          "hits": 1600,
+          "hitsMax": 1600,
+          "fatigue": 0,
+          "activeBodyParts": {
+            "attack": 8,
+            "move": 8
+          }
+        },
+        {
+          "id": "pg_player1_melee_2",
+          "my": false,
+          "x": 49,
+          "y": 48,
+          "hits": 1392,
+          "hitsMax": 1600,
+          "fatigue": 0,
+          "activeBodyParts": {
+            "attack": 6,
+            "move": 8
+          }
+        },
+        {
+          "id": "pg_player1_melee_3",
+          "my": false,
+          "x": 48,
+          "y": 49,
+          "hits": 1344,
+          "hitsMax": 1600,
+          "fatigue": 0,
+          "activeBodyParts": {
+            "attack": 6,
+            "move": 8
+          }
+        },
+        {
+          "id": "pg_player1_melee_4",
+          "my": false,
+          "x": 47,
+          "y": 48,
+          "hits": 1480,
+          "hitsMax": 1600,
+          "fatigue": 0,
+          "activeBodyParts": {
+            "attack": 7,
+            "move": 8
+          }
+        },
+        {
+          "id": "pg_player1_ranged_1",
+          "my": false,
+          "x": 44,
+          "y": 43,
+          "hits": 1200,
+          "hitsMax": 1200,
+          "fatigue": 0,
+          "activeBodyParts": {
+            "ranged_attack": 6,
+            "move": 6
+          }
+        },
+        {
+          "id": "pg_player1_ranged_2",
+          "my": false,
+          "x": 48,
+          "y": 44,
+          "hits": 1200,
+          "hitsMax": 1200,
+          "fatigue": 0,
+          "activeBodyParts": {
+            "ranged_attack": 6,
+            "move": 6
+          }
+        },
+        {
+          "id": "pg_player1_ranged_3",
+          "my": false,
+          "x": 50,
+          "y": 45,
+          "hits": 990,
+          "hitsMax": 1200,
+          "fatigue": 0,
+          "activeBodyParts": {
+            "ranged_attack": 4,
+            "move": 6
+          }
+        },
+        {
+          "id": "pg_player1_ranged_4",
+          "my": false,
+          "x": 47,
+          "y": 45,
+          "hits": 1200,
+          "hitsMax": 1200,
+          "fatigue": 0,
+          "activeBodyParts": {
+            "ranged_attack": 6,
+            "move": 6
+          }
+        },
+        {
+          "id": "pg_player1_ranged_5",
+          "my": false,
+          "x": 47,
+          "y": 44,
+          "hits": 1200,
+          "hitsMax": 1200,
+          "fatigue": 0,
+          "activeBodyParts": {
+            "ranged_attack": 6,
+            "move": 6
+          }
+        },
+        {
+          "id": "pg_player1_healer_1",
+          "my": false,
+          "x": 44,
+          "y": 46,
+          "hits": 1200,
+          "hitsMax": 1200,
+          "fatigue": 0,
+          "activeBodyParts": {
+            "heal": 6,
+            "move": 6
+          }
+        },
+        {
+          "id": "pg_player1_healer_2",
+          "my": false,
+          "x": 44,
+          "y": 41,
+          "hits": 1200,
+          "hitsMax": 1200,
+          "fatigue": 0,
+          "activeBodyParts": {
+            "heal": 6,
+            "move": 6
+          }
+        },
+        {
+          "id": "pg_player1_healer_3",
+          "my": false,
+          "x": 42,
+          "y": 40,
+          "hits": 1200,
+          "hitsMax": 1200,
+          "fatigue": 0,
+          "activeBodyParts": {
+            "heal": 6,
+            "move": 6
+          }
+        },
+        {
+          "id": "pg_player2_scout_1",
+          "my": true,
+          "x": 50,
+          "y": 49,
+          "hits": 100,
+          "hitsMax": 100,
+          "fatigue": 0,
+          "activeBodyParts": {
+            "move": 1
+          }
+        },
+        {
+          "id": "pg_player2_scout_2",
+          "my": true,
+          "x": 50,
+          "y": 52,
+          "hits": 100,
+          "hitsMax": 100,
+          "fatigue": 0,
+          "activeBodyParts": {
+            "move": 1
+          }
+        },
+        {
+          "id": "pg_player2_melee_1",
+          "my": true,
+          "x": 48,
+          "y": 51,
+          "hits": 1600,
+          "hitsMax": 1600,
+          "fatigue": 0,
+          "activeBodyParts": {
+            "attack": 8,
+            "move": 8
+          }
+        },
+        {
+          "id": "pg_player2_melee_2",
+          "my": true,
+          "x": 49,
+          "y": 47,
+          "hits": 1576,
+          "hitsMax": 1600,
+          "fatigue": 0,
+          "activeBodyParts": {
+            "attack": 8,
+            "move": 8
+          }
+        },
+        {
+          "id": "pg_player2_melee_3",
+          "my": true,
+          "x": 50,
+          "y": 47,
+          "hits": 1180,
+          "hitsMax": 1600,
+          "fatigue": 0,
+          "activeBodyParts": {
+            "attack": 4,
+            "move": 8
+          }
+        },
+        {
+          "id": "pg_player2_melee_4",
+          "my": true,
+          "x": 51,
+          "y": 47,
+          "hits": 1576,
+          "hitsMax": 1600,
+          "fatigue": 0,
+          "activeBodyParts": {
+            "attack": 8,
+            "move": 8
+          }
+        },
+        {
+          "id": "pg_player2_ranged_1",
+          "my": true,
+          "x": 48,
+          "y": 52,
+          "hits": 1200,
+          "hitsMax": 1200,
+          "fatigue": 0,
+          "activeBodyParts": {
+            "ranged_attack": 6,
+            "move": 6
+          }
+        },
+        {
+          "id": "pg_player2_ranged_2",
+          "my": true,
+          "x": 50,
+          "y": 53,
+          "hits": 1200,
+          "hitsMax": 1200,
+          "fatigue": 0,
+          "activeBodyParts": {
+            "ranged_attack": 6,
+            "move": 6
+          }
+        },
+        {
+          "id": "pg_player2_ranged_3",
+          "my": true,
+          "x": 47,
+          "y": 51,
+          "hits": 1200,
+          "hitsMax": 1200,
+          "fatigue": 0,
+          "activeBodyParts": {
+            "ranged_attack": 6,
+            "move": 6
+          }
+        },
+        {
+          "id": "pg_player2_ranged_4",
+          "my": true,
+          "x": 49,
+          "y": 50,
+          "hits": 1200,
+          "hitsMax": 1200,
+          "fatigue": 0,
+          "activeBodyParts": {
+            "ranged_attack": 6,
+            "move": 6
+          }
+        },
+        {
+          "id": "pg_player2_ranged_5",
+          "my": true,
+          "x": 48,
+          "y": 50,
+          "hits": 798,
+          "hitsMax": 1200,
+          "fatigue": 0,
+          "activeBodyParts": {
+            "ranged_attack": 2,
+            "move": 6
+          }
+        },
+        {
+          "id": "pg_player2_healer_1",
+          "my": true,
+          "x": 52,
+          "y": 50,
+          "hits": 1200,
+          "hitsMax": 1200,
+          "fatigue": 0,
+          "activeBodyParts": {
+            "heal": 6,
+            "move": 6
+          }
+        },
+        {
+          "id": "pg_player2_healer_2",
+          "my": true,
+          "x": 52,
+          "y": 53,
+          "hits": 1200,
+          "hitsMax": 1200,
+          "fatigue": 0,
+          "activeBodyParts": {
+            "heal": 6,
+            "move": 6
+          }
+        },
+        {
+          "id": "pg_player2_healer_3",
+          "my": true,
+          "x": 50,
+          "y": 50,
+          "hits": 1200,
+          "hitsMax": 1200,
+          "fatigue": 0,
+          "activeBodyParts": {
+            "heal": 6,
+            "move": 6
+          }
+        }
+      ],
+      "flags": [
+        {
+          "id": "pg_flag_vulnerability",
+          "x": 49,
+          "y": 49,
+          "owner": "neutral",
+          "effectType": "eff_damage_taken_modifier",
+          "scorePerTick": 5
+        },
+        {
+          "id": "pg_flag_heal_reduction_a",
+          "x": 90,
+          "y": 8,
+          "owner": "neutral",
+          "effectType": "eff_heal_modifier",
+          "scorePerTick": 4
+        },
+        {
+          "id": "pg_flag_heal_reduction_b",
+          "x": 8,
+          "y": 90,
+          "owner": "neutral",
+          "effectType": "eff_heal_modifier",
+          "scorePerTick": 4
+        },
+        {
+          "id": "pg_flag_attack_reduction_a",
+          "x": 67,
+          "y": 31,
+          "owner": "neutral",
+          "effectType": "eff_attack_modifier",
+          "scorePerTick": 3
+        },
+        {
+          "id": "pg_flag_attack_reduction_b",
+          "x": 31,
+          "y": 67,
+          "owner": "neutral",
+          "effectType": "eff_attack_modifier",
+          "scorePerTick": 3
+        },
+        {
+          "id": "pg_flag_ranged_attack_reduction_a",
+          "x": 13,
+          "y": 49,
+          "owner": "neutral",
+          "effectType": "eff_ranged_attack_modifier",
+          "scorePerTick": 3
+        },
+        {
+          "id": "pg_flag_ranged_attack_reduction_b",
+          "x": 85,
+          "y": 49,
+          "owner": "neutral",
+          "effectType": "eff_ranged_attack_modifier",
+          "scorePerTick": 3
+        }
+      ]
+    }
+  ],
+  "terrain": {
+    "47,49": 0,
+    "48,49": 0,
+    "49,49": 0,
+    "47,50": 0,
+    "49,50": 0,
+    "47,51": 0,
+    "48,51": 0,
+    "49,51": 0,
+    "50,49": 0,
+    "48,50": 0,
+    "50,50": 0,
+    "50,51": 0
+  },
+  "findings": [
+    {
+      "tick": 40,
+      "actor": "pg_player2_ranged_5",
+      "position": [
+        48,
+        50
+      ],
+      "available": [
+        [
+          48,
+          51
+        ],
+        [
+          49,
+          51
+        ]
+      ]
+    },
+    {
+      "tick": 41,
+      "actor": "pg_player2_ranged_4",
+      "position": [
+        49,
+        50
+      ],
+      "available": [
+        [
+          49,
+          51
+        ],
+        [
+          50,
+          51
+        ]
+      ]
+    },
+    {
+      "tick": 41,
+      "actor": "pg_player2_ranged_5",
+      "position": [
+        48,
+        50
+      ],
+      "available": [
+        [
+          49,
+          51
+        ]
+      ]
+    }
+  ]
+}

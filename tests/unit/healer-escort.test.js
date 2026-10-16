@@ -25,13 +25,13 @@ const enemy = (id, x, y) => creep(id, x, y, ['attack', 'move'], { my: false });
 const flag = { id: 'flag', my: true, x: 0, y: 0 };
 const state = (tick, friends, enemies) => ({ tick, myCreeps: friends, enemies });
 
-test('without an escort, every creep retains its baseline movement decision', () => {
+test('without an escort, healer fallback remains and unsupported pure melee waits', () => {
     const h = healer('healer', 4, 0);
     const m = melee('melee', 0, 0);
     const e = enemy('enemy', -4, 0);
     moveCreeps([h, m], [e], flag);
     assert.deepEqual(h.calls, [['moveTo', 'flag']]);
-    assert.deepEqual(m.calls, [['moveTo', 'enemy']]);
+    assert.deepEqual(m.calls, []);
 });
 
 test('one deterministic pair persists; only its healer escorts and reports the actual return code', () => {

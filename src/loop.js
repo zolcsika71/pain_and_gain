@@ -1,20 +1,24 @@
 import { observeArena, observeMap } from './arena/observe.js';
-import { moveCreeps, executeTactics } from './arena/execute.js';
+import { moveCreeps, executeTactics, prepareSecondaryMovement } from './arena/execute.js';
 import { selectFlag } from './strategy/objectives.js';
 import { logFlagAllocationDiagnostic, logGameState, logHealerEscortDiagnostic, logMapOnce } from './debug/game-state.js';
 import { searchPath } from 'game/path-finder';
-import { getCpuTime } from 'game/utils';
+import { getCpuTime, getTerrainAt } from 'game/utils';
 import { arenaInfo } from 'game';
 import { EFF_ATTACK_MODIFIER } from 'game/constants';
-import { oneHealerEscortExperiment, oneScoutFlagExperiment, scoutHoldExperiment, squadPairExperiment } from './config.js';
+import * as configuration from './config.js';
+import { planSecondaryObjective } from './strategy/secondary-objective-plan.js';
 import { planScoutFlagAllocation } from './strategy/flag-allocation.js';
 import { planHealerEscort } from './tactics/healer-escort.js';
+import { closingHealModifier } from './tactics/healer-closing.js';
 import { resetMembership, updateMembership } from './squads/membership.js';
 import { planSquadPair, resetPair } from './squads/pair.js';
 import { beginEvidenceTick, closeEvidenceTick, logActionAttempt,
     logActionDecision, logCpuEvidence, logMembershipEvidence } from './debug/replay-evidence.js';
 
 const engagements = new Map();
+const { oneHealerEscortExperiment, oneScoutFlagExperiment, scoutHoldExperiment, squadPairExperiment } = configuration;
+let secondaryObjective = null;
 let flagAllocation = null;
 let healerEscort = null;
 let lastTick = 0;
@@ -57,6 +61,8 @@ export function runTick() {
         squadPair = resetPair();
     }
     lastTick = state.tick;
+    // The selector's one-attempt state cannot be replenished by duplicate ticks.
+    if (Number.isInteger(state.tick) && state.tick < previousTick) secondaryObjective = null;
     beginEvidenceTick(state.tick, matchReset
         ? { previousTick, reason: 'tick-not-increasing' } : null);
     const { flags, myCreeps, enemies, damagedFriends } = state;
@@ -75,16 +81,28 @@ export function runTick() {
         nextStep: (creep, target, ignore) => creep.findPathTo(target, { maxOps: 1000, ignore })[0],
     }) : null;
     if (pairPlan) squadPair = pairPlan.state;
+    const unavailableIds = configuration.secondaryObjectiveExperiment === true ? [...new Set([
+        ...(fallbackById?.fallbackById.keys() ?? []), ...(pairPlan?.moves.keys() ?? []),
+        ...[escortPlan?.escort?.healerId, escortPlan?.escort?.allyId].filter(Boolean),
+    ])] : null;
+    let secondary = configuration.secondaryObjectiveExperiment === true
+        ? planSecondaryObjective(state, membership, flag, secondaryObjective, { search: searchPath, unavailableIds }) : null;
+    const prepared = secondary?.movement ? prepareSecondaryMovement(secondary, myCreeps, enemies, flag,
+        engagements, escortPlan?.escort, pairPlan, { creeps: state.creeps, terrainAt: getTerrainAt }) : null;
+    if (prepared) secondary = prepared.secondary;
+    if (secondary) secondaryObjective = secondary.state;
     logMapOnce(state.tick, observeMap);
-    logGameState(state, flag);
+    logGameState(state, flag, secondary?.diagnostic);
     if (escortPlan?.transition) logHealerEscortDiagnostic({ tick: state.tick,
         phase: 'before-actions', ...escortPlan.transition, range: escortPlan.escort?.distance ?? null,
         targetId: null, returnCode: null });
     moveCreeps(myCreeps, enemies, flag, engagements, fallbackById?.fallbackById,
         escortPlan?.escort, escortPlan?.escort ? diagnostic => logHealerEscortDiagnostic({ tick: state.tick,
             phase: 'movement', reason: null, ...diagnostic }) : null, actionReporter, scoutHoldExperiment,
-        pairPlan);
-    executeTactics(myCreeps, enemies, damagedFriends, actionReporter);
+        pairPlan, { creeps: state.creeps, terrainAt: getTerrainAt }, secondary?.fallbackById, prepared?.moves,
+        secondary?.movement?.kind, configuration.healerUsefulClosingExperiment === true
+            ? { healModifier: closingHealModifier(flags) } : null);
+    executeTactics(myCreeps, enemies, damagedFriends, actionReporter, state);
     const limitKind = state.tick === 1 ? 'first-tick' : 'ordinary-tick';
     const limitNs = state.tick === 1 ? arenaInfo.cpuTimeLimitFirstTick : arenaInfo.cpuTimeLimit;
     const elapsedNs = getCpuTime();

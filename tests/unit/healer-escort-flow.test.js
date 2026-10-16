@@ -107,17 +107,14 @@ test('enabled runTick retains for remote injury, releases for local injury, and 
     }
 
     const disabledBaselineTick98 = [
-        [98, 'melee', 'moveTo', 'engaged', 0],
         [98, 'scout', 'moveTo', 'first', 0],
         [98, 'healer', 'moveTo', 'first', -11],
         [98, 'ranged', 'rangedAttack', 'engaged', 0],
     ];
     assert.deepEqual(calls, [
-        [98, 'melee', 'moveTo', 'engaged', 0],
         [98, 'scout', 'moveTo', 'first', 0],
         [98, 'healer', 'moveTo', 'melee', -11],
         [98, 'ranged', 'rangedAttack', 'engaged', 0],
-        [99, 'melee', 'moveTo', 'engaged', 0],
         [99, 'scout', 'moveTo', 'first', 0],
         [99, 'healer', 'moveTo', 'melee', 0],
         [99, 'ranged', 'rangedAttack', 'engaged', 0],
@@ -125,23 +122,23 @@ test('enabled runTick retains for remote injury, releases for local injury, and 
         [100, 'scout', 'moveTo', 'first', 0],
         [100, 'healer', 'rangedHeal', 'scout', 0],
         [100, 'ranged', 'rangedAttack', 'engaged', 0],
-        [1, 'melee', 'moveTo', 'engaged', 0],
         [1, 'scout', 'moveTo', 'first', 0],
         [1, 'healer', 'moveTo', 'melee', 0],
         [1, 'ranged', 'rangedAttack', 'engaged', 0],
     ]);
-    assert.deepEqual(calls.slice(0, 2), disabledBaselineTick98.slice(0, 2));
-    assert.deepEqual(calls[2].slice(0, 3), disabledBaselineTick98[2].slice(0, 3));
-    assert.equal(disabledBaselineTick98[2][3], 'first');
-    assert.equal(calls[2][3], 'melee');
-    assert.deepEqual(calls[3], disabledBaselineTick98[3]);
-    assert.deepEqual(calls.slice(4, 8), [
-        [99, 'melee', 'moveTo', 'engaged', 0],
+    // The new support hold changes only the unsupported melee calls. Escort
+    // still changes only its healer's target; every other channel is exact.
+    assert.deepEqual(calls[0], disabledBaselineTick98[0]);
+    assert.deepEqual(calls[1].slice(0, 3), disabledBaselineTick98[1].slice(0, 3));
+    assert.equal(disabledBaselineTick98[1][3], 'first');
+    assert.equal(calls[1][3], 'melee');
+    assert.deepEqual(calls[2], disabledBaselineTick98[2]);
+    assert.deepEqual(calls.slice(3, 6), [
         [99, 'scout', 'moveTo', 'first', 0],
         [99, 'healer', 'moveTo', 'melee', 0],
         [99, 'ranged', 'rangedAttack', 'engaged', 0],
     ]);
-    assert.deepEqual(calls.slice(8, 12), [
+    assert.deepEqual(calls.slice(6, 10), [
         [100, 'melee', 'moveTo', 'engaged', 0],
         [100, 'scout', 'moveTo', 'first', 0],
         [100, 'healer', 'rangedHeal', 'scout', 0],
