@@ -5,3 +5,4 @@ export const scoutHoldExperiment = false;
 export const squadPairExperiment = false;
 export const secondaryObjectiveExperiment = false;
 export const healerUsefulClosingExperiment = false;
+export const supportLockedEngagementExperiment = false;

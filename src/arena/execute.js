@@ -65,7 +65,8 @@ export function prepareSecondaryMovement(secondary, friends, enemies, flag, enga
 
 export function moveCreeps(myCreeps, enemies, flag, engagements = new Map(), fallbackById = new Map(),
     escort = null, reportEscort = null, reporter = null, scoutHoldEnabled = false, pairPlan = null, spacingContext = null,
-    ordinaryFallbackById = null, objectiveMoves = null, objectiveKind = 'contest', healerClosing = null) {
+    ordinaryFallbackById = null, objectiveMoves = null, objectiveKind = 'contest', healerClosing = null,
+    engagementMoves = null) {
     const spacing = spacingContext ? { ...spacingContext, reserved: new Set() } : null;
     const ownedIds = new Set(myCreeps.map(creep => creep.id));
     for (const id of engagements.keys()) if (!ownedIds.has(id)) engagements.delete(id);
@@ -125,21 +126,27 @@ export function moveCreeps(myCreeps, enemies, flag, engagements = new Map(), fal
             plan = { ...plan, target: ordinaryFallbackById.get(creep.id) };
         }
         const objectiveOwned = objectiveMoves?.has(creep.id);
+        const engagementOwned = !objectiveOwned && engagementMoves?.has(creep.id);
         if (objectiveOwned) {
             const target = objectiveMoves.get(creep.id);
             plan = { ...plan, target, outcome: target ? 'selected' : 'hold', targetKind: 'position',
                 reason: `${objectiveKind}-route-${target ? 'step' : 'hold'}` };
         }
+        if (engagementOwned) {
+            const target = engagementMoves.get(creep.id);
+            plan = { ...plan, target, outcome: target ? 'selected' : 'hold', targetKind: 'position',
+                reason: `support-locked-${target ? 'step' : 'hold'}` };
+        }
         // Closing owns only an ordinary hold. Existing owners and pressure
         // retreat keep priority; disabled calls never evaluate this policy.
-        if (healerClosing && !objectiveOwned && typeof creep.move === 'function') {
+        if (healerClosing && !objectiveOwned && !engagementOwned && typeof creep.move === 'function') {
             plan = improveHealerHold({ creep, friends: myCreeps, enemies, spacing,
                 baseline: plan, owner: 'ordinary', healModifier: healerClosing.healModifier }, localRetreatStep);
         }
         if (plan.engagement) engagements.set(creep.id, plan.engagement);
         else engagements.delete(creep.id);
         const action = plan.target
-            ? { method: objectiveOwned || plan.reason === 'healer-useful-close' ? 'move' : 'moveTo',
+            ? { method: objectiveOwned || engagementOwned || plan.reason === 'healer-useful-close' ? 'move' : 'moveTo',
                 target: plan.target, targetKind: plan.targetKind } : null;
         const decision = reportDecision(reporter, { phase: 'movement', channel: 'movement',
             actorId: creep.id, outcome: plan.outcome, reason: plan.reason,

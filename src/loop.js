@@ -8,6 +8,7 @@ import { arenaInfo } from 'game';
 import { EFF_ATTACK_MODIFIER } from 'game/constants';
 import * as configuration from './config.js';
 import { planSecondaryObjective } from './strategy/secondary-objective-plan.js';
+import { planSupportLockedTick, engagementDiagnostic } from './strategy/support-locked-engagement.js';
 import { planScoutFlagAllocation } from './strategy/flag-allocation.js';
 import { planHealerEscort } from './tactics/healer-escort.js';
 import { closingHealModifier } from './tactics/healer-closing.js';
@@ -19,6 +20,7 @@ import { beginEvidenceTick, closeEvidenceTick, logActionAttempt,
 const engagements = new Map();
 const { oneHealerEscortExperiment, oneScoutFlagExperiment, scoutHoldExperiment, squadPairExperiment } = configuration;
 let secondaryObjective = null;
+let supportLockedEngagement = null;
 let flagAllocation = null;
 let healerEscort = null;
 let lastTick = 0;
@@ -62,7 +64,10 @@ export function runTick() {
     }
     lastTick = state.tick;
     // The selector's one-attempt state cannot be replenished by duplicate ticks.
-    if (Number.isInteger(state.tick) && state.tick < previousTick) secondaryObjective = null;
+    if (Number.isInteger(state.tick) && state.tick < previousTick) {
+        secondaryObjective = null;
+        supportLockedEngagement = null;
+    }
     beginEvidenceTick(state.tick, matchReset
         ? { previousTick, reason: 'tick-not-increasing' } : null);
     const { flags, myCreeps, enemies, damagedFriends } = state;
@@ -91,8 +96,14 @@ export function runTick() {
         engagements, escortPlan?.escort, pairPlan, { creeps: state.creeps, terrainAt: getTerrainAt }) : null;
     if (prepared) secondary = prepared.secondary;
     if (secondary) secondaryObjective = secondary.state;
+    const locked = configuration.supportLockedEngagementExperiment === true
+        ? planSupportLockedTick(state, membership, flag, supportLockedEngagement, {
+            terrainAt: getTerrainAt, engagements, escort: escortPlan?.escort, pair: pairPlan,
+            externalMoves: new Map([...(fallbackById?.fallbackById ?? []), ...(prepared?.moves ?? [])]),
+        }) : null;
+    if (locked) supportLockedEngagement = locked.state;
     logMapOnce(state.tick, observeMap);
-    logGameState(state, flag, secondary?.diagnostic);
+    logGameState(state, flag, secondary?.diagnostic, locked ? engagementDiagnostic(locked) : null);
     if (escortPlan?.transition) logHealerEscortDiagnostic({ tick: state.tick,
         phase: 'before-actions', ...escortPlan.transition, range: escortPlan.escort?.distance ?? null,
         targetId: null, returnCode: null });
@@ -101,7 +112,7 @@ export function runTick() {
             phase: 'movement', reason: null, ...diagnostic }) : null, actionReporter, scoutHoldExperiment,
         pairPlan, { creeps: state.creeps, terrainAt: getTerrainAt }, secondary?.fallbackById, prepared?.moves,
         secondary?.movement?.kind, configuration.healerUsefulClosingExperiment === true
-            ? { healModifier: closingHealModifier(flags) } : null);
+            ? { healModifier: closingHealModifier(flags) } : null, locked?.moves);
     executeTactics(myCreeps, enemies, damagedFriends, actionReporter, state);
     const limitKind = state.tick === 1 ? 'first-tick' : 'ordinary-tick';
     const limitNs = state.tick === 1 ? arenaInfo.cpuTimeLimitFirstTick : arenaInfo.cpuTimeLimit;

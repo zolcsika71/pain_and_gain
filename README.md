@@ -82,6 +82,15 @@ Pure melee combat approaches pause at most twice per continuous engagement for [
 
 ## Per-tick console output
 
+The `supportLockedEngagementExperiment` is also **off by default**. Its
+[inactive integration](docs/architecture/support-locked-engagement-integration-2026-10-17.md)
+coordinates ordinary movement for one existing three-pure-ranged/healer squad,
+with fixed bounded episodes and priority handoffs. A bounded live review verified
+priority yielding, recovery timeout and attacks during spent holds; coordinated
+advance and rearming remain unexercised. Support after yielding is not guaranteed;
+no survival or victory benefit is established.
+It adds no command or diagnostic field while disabled.
+
 Every tick emits one compact JSON line with `type: "game-state"` and the Arena tick number. It includes the selected flag ID, all observed creeps (ID, ownership, position, health, fatigue, and functioning body-part counts), and flags (ID, position, ownership, effect, and score per tick). Flag ownership is `me`, `enemy`, or `neutral`. Flag scoring rates are not accumulated match scores.
 
 Snapshots are logged before movement and combat commands. Compare consecutive ticks by creep ID to inspect health changes; those changes alone do not establish which attack or heal caused them. Logging is enabled every tick without sampling. In the Arena console, use the current-tick filter to inspect one snapshot or disable it to see the tick history. Live log observations are recorded in the verification checkpoint below.

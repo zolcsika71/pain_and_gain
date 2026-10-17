@@ -41,6 +41,14 @@ position—not the close decision, direction or return0—establishes displaceme
 Current-tick healing decisions continue to use pre-action ranges; a planned
 adjacent step does not imply an immediate `heal` or extra resolved healing.
 
+The default-off support-locked controller adds only a bounded optional
+`game-state.supportLockedEngagement` summary, not a record type or stream.
+Its [integration contract](support-locked-engagement-integration-2026-10-17.md)
+defines membership-slot ownership and current proposed/admitted cells. Existing
+`support-locked-step` / `support-locked-hold` movement decisions and correlated
+attempts retain their ordinary schemas and coverage. Selection is not movement;
+rearm transition holds do not establish a new engagement.
+
 Replay identity never comes from a runtime diagnostic. The importer associates
 records with the replay ID verified from the cache request key or another
 supported source-provenance path. Runtime records must not contain a guessed

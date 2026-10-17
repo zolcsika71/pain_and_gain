@@ -19,7 +19,7 @@ function describeCreep(creep) {
     };
 }
 
-export function logGameState({ tick, creeps, flags }, selectedFlag, secondaryObjective = null) {
+export function logGameState({ tick, creeps, flags }, selectedFlag, secondaryObjective = null, supportLockedEngagement = null) {
     console.log(JSON.stringify({
         type: 'game-state',
         buildId,
@@ -27,6 +27,7 @@ export function logGameState({ tick, creeps, flags }, selectedFlag, secondaryObj
         phase: 'before-actions',
         selectedFlagId: selectedFlag?.id ?? null,
         ...(secondaryObjective ? { secondaryObjective } : {}),
+        ...(supportLockedEngagement ? { supportLockedEngagement } : {}),
         creeps: creeps.map(describeCreep),
         flags: flags.map(flag => ({
             id: flag.id,

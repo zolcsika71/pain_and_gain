@@ -74,4 +74,11 @@ Evidence --> API : console.log(versioned records)
 Execute --> Evidence : decisions before original calls;\nattempts immediately after returns
 note right of Evidence : M2/M3 closures remain valid;\nversion 2 adds one late CPU sample
 
+component "src/strategy/support-locked-engagement.js\nsupportLockedEngagementExperiment=false" as Engagement
+Loop --> Engagement : bounded current observation + existing squad;\nafter explicit owner preparation
+Engagement --> Contest : reuse support/subset helpers; <=16 subsets
+Engagement --> Execute : replace ordinary movement in same pass;\npriority yields, other bound members hold
+Engagement --> Debug : optional bounded state/slot ownership\nin existing pre-action snapshot
+note right of Engagement : Assess / Engage / Recover / Spent; 3 stall, 5 recovery, 24 total.\nTwo complete clears around fixed anchor AND survivors rearm.\nPriority healer handoff can still lose support; no live guarantee.
+
 @enduml

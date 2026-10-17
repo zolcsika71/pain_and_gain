@@ -1,5 +1,12 @@
 # Project layout
 
+`src/strategy/support-locked-engagement.js` now owns the default-off
+`supportLockedEngagementExperiment`. It replaces ordinary movement only for
+one existing three-pure-ranged/healer squad through the existing execution pass;
+priority owners keep control. See its [integration contract](support-locked-engagement-integration-2026-10-17.md)
+for input mapping, lifecycle, diagnostics, generated validation and rollback.
+Secondary objectives and healer closing remain disabled.
+
 The Screeps Arena client loads `src/main.mjs` from the selected `src/` code directory and calls its exported `loop()` once per tick. This entry point delegates to `runTick()` in `src/loop.js`.
 
 The current tick flow is:
