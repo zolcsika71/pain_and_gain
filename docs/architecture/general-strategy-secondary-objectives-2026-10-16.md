@@ -520,6 +520,85 @@ checks; build generation/check, `npm run check` and whitespace review pass.
 The failing-before regression, full results, task-local diff and preservation
 are retained in the [inactive-candidate receipt](/Users/zoltanka/.local/share/pain-and-gain-evidence/secondary-shared-travel-20261016-ZmGw2g/report.json).
 
+### Continuous generated capture lifecycle — 2026-10-17
+
+One new regression in `tests/unit/secondary-objective-flow.test.js` connects the
+previously separate travel and capture-terminal checks. It uses the existing
+real `runTick` fixture, production membership/coordinator/selector/preflight and
+executor, with14 owned and14 hostile generated actors. Runtime and switches
+remain unchanged at build
+`2db3ffea0c369f5003d16f96e3714ca536aa150dc3ed9a8932490c68fef04cbd`.
+
+Production selects existing squad B at1, retaining three functioning supported
+centre weapons. All subsequent changed positions must equal previously admitted
+adjacent commands, into cells empty in the ORIGINAL observation with distinct
+destinations. The test supplies the all-success observation; stubs never move
+actors. Final approach at16 admits the healer and leading weapon, while two
+weapons retain owned holds because their next cells are still occupied. No
+vacating-cell entry, swap, second planner or arbitration model is introduced.
+
+The leading weapon is supplied on the flag at17; only then does the fixture
+explicitly confirm generated ownership. The same attempt terminates `captured`
+and immediately releases direct-step ownership. Five subsequent observations,
+18–22, retain finished state without new searches or assignments. A separately
+supplied post-capture wound exercises ordinary adjacent healing while fallback
+commands do not move actors; accepted healing never updates supplied HP.
+Attack branches remain unexercised in this no-contact chain and retain existing
+adverse/compatibility coverage. This establishes no physical return or retention
+against an opponent.
+
+Start1/deadline61 stay fixed. Search counts are24 at1 and4 at6/11/16,36 total;
+capture/released ticks issue0. Every tick checks functioning healing access,
+retained centre defence, action schemas and at most one movement call per actor.
+The new test passed on the unchanged runtime; no production defect was exposed.
+Final generated-only selection:91 passed,0 failed/skipped:
+
+```sh
+node --test tests/unit/secondary-objective-flow.test.js tests/unit/secondary-partial-travel.test.js
+```
+
+Validation-scope exception: two earlier affected runs mistakenly executed the
+mixed selector suite's two historical-fixture cases. A name filter did not
+exclude them; the final command excludes that file entirely. Both repository
+snapshot fixtures were therefore read twice, contrary to this task's scope.
+There was no pre-read residency baseline, so no no-hydration claim is made for
+those reads. Full outputs, exact commands, generated observations and preservation
+findings are retained in the task's external receipt. No original replay/cache,
+managed manifest or PNG was read. These supplied observations and explicit
+ownership are not Arena movement, capture, resolved healing or strategic-benefit
+evidence. No activation or trial is authorized.
+[Continuous-chain receipt](/Users/zoltanka/.local/share/pain-and-gain-evidence/secondary-continuous-capture-regression-20261017-DX1hCV/report.json).
+
+### Generated versus historical validation entry points
+
+The two historical callbacks formerly mixed into
+`tests/unit/secondary-objective-selection.test.js` now live in
+[`secondary-objective-historical.test.js`](../../tests/unit/secondary-objective-historical.test.js).
+Their snapshot projection helper, fixture references and assertions move intact;
+no historical helper or case is duplicated in the generated suite. No historical
+payload is imported by the generated selector or its generated-world helper.
+Runtime-source reads in generated checks remain intentional and separate from
+historical payload reads. Existing schema validators used by real tick-flow
+checks do not load historical fixtures on import.
+
+Use explicit file selection, not negative test-name filters:
+
+```sh
+npm run test:secondary:generated
+# Separately authorized historical-fixture validation only:
+npm run test:secondary:historical
+```
+
+The generated command enumerates selector, flow, partial-travel and
+scoped-readiness test files in `package.json`. The historical command selects
+only the dedicated historical entry point. Both remain discoverable under the
+existing full-suite `npm test` glob; that broad command is not generated-only.
+Earlier commands/counts and scope exceptions above are historical receipts,
+not instructions to repeat mixed validation or evidence that historical payload
+reads were harmless. The organization repair checks the moved source statically
+and runs only generated entry points; it does not execute historical callbacks.
+No runtime, gameplay switch or build change is part of this separation.
+
 ## Persistence, termination and integration boundary
 
 Pin centre identity/coordinates, squad/member IDs, target identity/coordinates/

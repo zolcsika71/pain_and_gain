@@ -593,6 +593,132 @@ test('capture makes positive observed direct-step progress and shares suffix/ref
     assert.equal(w.step(61).reason,'timeout');assert.equal(w.queries.length,28);assert.equal(w.step(62).phase,'finished');
 });
 
+test('ordinary capture continuously observes admitted steps through arrival, generated ownership and five released ticks',async t=>{
+    const w=await captureTravelFixture(t),centre=w.flags[0],target=w.flags.find(f=>f.id==='east');
+    // Complete generated armies:14 owned and14 hostile actors. No enemy motion,
+    // damage, pathfinding, collision arbitration or healing effects are simulated.
+    for(let i=0;i<13;i++)w.units.push(Object.assign(new Creep(),w.actor('enemy'),{
+        id:`distant-enemy-${i}`,x:80+i%7,y:80+Math.floor(i/7),
+        body:w.actor('enemy').body.map(p=>({...p})),
+    }));
+    w.distinct();assert.equal(w.units.filter(c=>c.my).length,14);assert.equal(w.units.length,28);
+    const birthPositions=new Map(w.units.map(c=>[c.id,{x:c.x,y:c.y}]));
+    const timeline=[];let first=null,previous=null,arrivalTick=null,arrivalActor=null;
+    const snapshot=()=>w.units.map(c=>({id:c.id,x:c.x,y:c.y}));
+    const assertTick=(d,tick)=>{
+        w.distinct();assert.equal(centre.my,true);assert.equal(d.startedAt,1);
+        assert.equal(d.startedAt+60,61,'Original absolute deadline is never replenished');
+        const membership=w.loop.getMembershipState();assert.equal(membership.initialized,true);
+        const squad=membership.squads.find(s=>s.id===first.squadId);
+        assert.deepEqual([...squad.memberIds].sort(),first.memberIds);
+        const friends=w.units.filter(c=>c.my),members=first.memberIds.map(id=>w.actor(id));
+        const retained=friends.filter(c=>!first.memberIds.includes(c.id)&&range(c,centre)<=3);
+        assert(retained.every(c=>c.hits===c.hitsMax));
+        const livePart=(c,type)=>c.body.some(p=>p.type===type&&p.hits>0);
+        const supportedDefenders=retained.filter(c=>(livePart(c,'attack')||livePart(c,'ranged_attack'))&&
+            retained.some(h=>livePart(h,'heal')&&range(c,h)<=3));
+        assert(supportedDefenders.length>=2,'Retained functioning weapons keep functioning healer access');
+        for(const c of w.units.filter(c=>!first.memberIds.includes(c.id)))
+            assert.deepEqual({x:c.x,y:c.y},birthPositions.get(c.id),'Nonmember positions are not advanced from fallback calls');
+        const decisions=w.records.filter(r=>r.type==='action-decision'&&r.tick===tick);
+        assert.equal(decisions.length,42);
+        for(const c of friends){
+            assert.equal(decisions.filter(r=>r.actorId===c.id&&r.channel==='movement').length,1);
+            assert(w.calls.filter(a=>a.id===c.id&&['move','moveTo'].includes(a.method)).length<=1);
+        }
+        assert(decisions.every(validActionDecision));
+        assert(w.records.filter(r=>r.type==='action-attempt'&&r.tick===tick).every(validActionAttempt));
+        const queries=w.queries.filter(q=>q.tick===tick);
+        assert.equal(queries.length,d.queries);assert(queries.length<=(tick===1?24:4));
+        assert(d.reportedOps<=(tick===1?24000:4000));assert(queries.every(q=>q.opts.maxOps===1000));
+        assert.equal(d.mode,undefined,'The operation stays ordinary capture, never contest or handoff');
+        for(const weapon of members.filter(c=>livePart(c,'attack')||livePart(c,'ranged_attack')))
+            assert(members.some(h=>livePart(h,'heal')&&range(weapon,h)<=3));
+        timeline.push({tick,phase:d.phase,reason:d.reason,startedAt:d.startedAt,deadline:d.startedAt+60,
+            targetId:d.targetId,queries:d.queries,reportedOps:d.reportedOps,cacheHits:d.cacheHits,
+            retainedDefenders:supportedDefenders.map(c=>c.id),
+            positions:snapshot().filter(c=>first.memberIds.includes(c.id)),
+            travel:d.travel??null,calls:w.calls.filter(c=>first.memberIds.includes(c.id)).map(c=>({...c}))});
+    };
+    for(let tick=1;tick<=60;tick++){
+        if(previous){
+            // Supply the all-success next observation ONLY for the previously
+            // admitted adjacent cells. Numeric0 by itself does not move anyone.
+            const moves=w.calls.filter(c=>c.method==='move');assert(moves.length>0);
+            for(const call of moves){
+                const actor=w.actor(call.id),admitted=previous.travel.actors.find(a=>a.actorId===call.id)?.admitted;
+                assert.deepEqual({x:call.x,y:call.y},admitted);assert.equal(range(actor,admitted),1);
+                assert(!w.units.some(c=>c.exists!==false&&c.hits>0&&c.x===call.x&&c.y===call.y),
+                    'Destination is empty BEFORE any step; no swaps or vacating-cell entry');
+            }
+            assert.equal(new Set(moves.map(c=>`${c.x},${c.y}`)).size,moves.length);
+            w.observeSteps();w.distinct();
+            const arrived=first.memberIds.map(id=>w.actor(id)).filter(c=>range(c,target)===0);
+            if(arrived.length){
+                assert.equal(arrived.length,1);arrivalActor=arrived[0].id;arrivalTick=tick;
+                assert(moves.some(c=>c.id===arrivalActor&&c.x===target.x&&c.y===target.y));
+                assert.equal(target.my,undefined);
+                // Explicit GENERATED ownership confirmation after supplied
+                // arrival, not an ownership effect inferred from a move return.
+                target.my=true;
+            }
+        }
+        const before=snapshot(),d=w.step(tick);assert.deepEqual(snapshot(),before,'Executor stubs never mutate positions');
+        if(!first){
+            first=d;assert.equal(d.reason,'selected');assert.equal(d.squadId,'B');assert.equal(d.targetId,target.id);
+            assert.deepEqual(d.memberIds,[...w.loop.getMembershipState().squads.find(s=>s.id===d.squadId).memberIds].sort());
+        }
+        assertTick(d,tick);
+        const tactical=w.calls.filter(c=>!['move','moveTo'].includes(c.method));
+        assert.deepEqual(tactical,[],'Healthy armies and no enemies in reach select no tactical actions during travel/capture');
+        if(arrivalTick){
+            assert.equal(tick,arrivalTick);assert.equal(d.phase,'finished');assert.equal(d.reason,'captured');
+            assert.equal(d.targetId,null);assert.deepEqual(d.memberIds,[]);assert.equal(d.travel,undefined);
+            assert.equal(d.queries,0);assert.equal(d.cacheHits,0);assert(tick<61);
+            assert(w.calls.every(c=>c.method==='moveTo'&&c.target===centre.id),'Capture releases direct-step ownership immediately');
+            break;
+        }
+        assert.equal(d.phase,'active');assert.equal(d.targetId,target.id);assert.deepEqual(d.memberIds,first.memberIds);
+        assert.equal(d.unchanged,0);assert.equal(target.my,undefined);
+        assert.equal(d.queries,tick===1?24:(tick-1)%5===0?4:0);
+        const proposed=new Map(d.travel.actors.map(a=>[a.actorId,a.proposed]));
+        assert(secondaryStepSupport(w.units.filter(c=>c.my),first.memberIds,proposed));
+        const admitted=d.travel.actors.filter(a=>a.admitted);
+        assert.equal(w.calls.filter(c=>c.method==='move').length,admitted.length);
+        for(const a of d.travel.actors){
+            const calls=w.calls.filter(c=>c.id===a.actorId);
+            if(a.admitted){assert.deepEqual(a.admitted,a.proposed);assert.equal(calls.length,1);assert.equal(calls[0].method,'move');}
+            else assert.deepEqual(calls,[],'An owned hold cannot fall through to unchecked fallback');
+        }
+        previous=d;
+    }
+    assert.equal(arrivalTick,17);assert.equal(arrivalActor,'b-melee');assert.equal(w.queries.length,36);
+    const finalApproach=timeline.find(r=>r.tick===arrivalTick-1);
+    assert.equal(finalApproach.travel.actors.filter(a=>a.admitted).length,2);
+    assert.equal(finalApproach.travel.actors.filter(a=>a.holdReason==='occupied').length,2);
+    const stoppedPositions=snapshot(),queriesAtCapture=w.queries.length;
+    // A generated wound AFTER capture tests released ordinary healing; HP is not
+    // advanced by accepted healing calls and no fallback movement is resolved.
+    w.actor('b-ranged1').hits--;
+    for(let tick=arrivalTick+1;tick<=arrivalTick+5;tick++){
+        const d=w.step(tick);assertTick(d,tick);assert.deepEqual(snapshot(),stoppedPositions);
+        assert.equal(d.phase,'finished');assert.equal(d.reason,'captured');assert.equal(d.targetId,null);
+        assert.deepEqual(d.memberIds,[]);assert.equal(d.travel,undefined);assert.equal(d.queries,0);assert.equal(d.cacheHits,0);
+        assert.equal(w.queries.length,queriesAtCapture);assert.equal(target.my,true);
+        assert(!w.calls.some(c=>c.method==='move'||c.target===target.id));
+        assert(w.calls.filter(c=>c.method==='moveTo').every(c=>c.target===centre.id));
+        assert.deepEqual(w.calls.filter(c=>!['move','moveTo'].includes(c.method)).map(c=>[c.id,c.method,c.target]),
+            [['b-healer','heal','b-ranged1']]);
+        assert.equal(range(w.actor('b-healer'),w.actor('b-ranged1')),1);
+        const heal=w.records.find(r=>r.type==='action-attempt'&&r.tick===tick&&r.method==='heal');
+        assert.equal(heal.returnCode,0);assert.equal(w.actor('b-ranged1').hits,999,'Accepted healing is not resolved HP');
+        assert(!w.records.filter(r=>r.type==='action-decision'&&r.tick===tick).some(r=>r.reason.startsWith('capture-route-')));
+    }
+    t.diagnostic(JSON.stringify({generatedOnly:true,initialPositions:[...birthPositions].map(([id,p])=>({id,...p})),
+        arrivalTick,arrivalActor,generatedOwnershipTick:arrivalTick,
+        postCaptureTicks:[arrivalTick+1,arrivalTick+5],totalQueries:w.queries.length,timeline}));
+});
+
 test('capture safe partial displacement revalidates observed support before another step',async t=>{
     const w=await captureTravelFixture(t),first=w.step(1);assert.equal(first.phase,'active');
     w.observeSteps(w.calls.filter(c=>c.id==='b-ranged1'));w.distinct();

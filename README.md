@@ -33,6 +33,21 @@ Additional strategy, squad, state, and config modules can be added when they hav
 
 With Node.js available, run `npm run check` to verify the runtime build ID and parse the game modules, and `npm test` to run the local tests. There are no package dependencies or compilation step. The `package.json` ES module setting applies to local Node.js tooling; Arena loads the source files directly.
 
+Secondary-objective validation has separate, explicit file-based commands:
+
+```sh
+npm run test:secondary:generated
+# Historical fixtures only; run only when historical payload reads are authorized:
+npm run test:secondary:historical
+```
+
+The generated command selects selector, real tick-flow, safe-subset travel and
+scoped-readiness files without name filters. Its fixtures are generated; source
+checks may read runtime JavaScript, not historical payloads. The two historical
+counterexamples live only in `tests/unit/secondary-objective-historical.test.js`.
+`npm test` remains the full suite, including historical cases; it is **not** a
+generated-only command. See the [validation boundary](docs/architecture/general-strategy-secondary-objectives-2026-10-16.md#generated-versus-historical-validation-entry-points).
+
 In the Screeps Arena client, set this arena's code directory to the project's `src/` directory, which contains `main.mjs`. Keep all local imports within `src/`. The current project checks do not execute an Arena match, so confirm module loading and movement in the client after selecting the directory.
 
 Game rules are in `docs/pain_and_gain_rules.md`. The API and squad references are in `docs/architecture/`; code examples are in `docs/examples/`.
