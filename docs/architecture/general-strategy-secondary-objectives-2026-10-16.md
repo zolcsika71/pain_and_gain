@@ -1,10 +1,13 @@
 # General strategy and guarded secondary objective — 2026-10-16
 
 Status: connected to `runTick` behind **`secondaryObjectiveExperiment = false`**.
-Current inactive shared capture/contest travel build:
-`d1e95a106a708f10826cf472be65e143bab86f44ef84f5d537bb3c07f6639e0f`.
-This includes the independent [pure-healer pressure correction](pure-healer-pressure-retreat-2026-10-16.md);
-secondary selection/travel policy and its disabled switch are unchanged.
+Current inactive scoped-health/shared safe-subset travel build:
+`275a7eaafd5de6fa2acfd8f7734aa9d6d1946863164cf6c058153d388e21ff77`.
+The [scoped-health integration](secondary-scoped-readiness-integration-2026-10-17.md)
+changed only the health veto below. The subsequent
+[safe-subset integration](secondary-partial-travel-integration-2026-10-17.md)
+changes occupancy/convergence handling, not admission. Reviewed adjacent ranged
+retreat and every switch are preserved; healer closing also remains disabled.
 The completed operator trial is reviewed in the
 [readiness audit](secondary-readiness-audit-2026-10-16.md); the switch remains off
 and no further match is authorized. The prior
@@ -78,31 +81,39 @@ Unknown or oversized representations reject explicitly, never truncate.
 
 Centre must be the explicit vulnerability flag and owned. The existing squad
 has2–4 distinct living, functioning-MOVE actors, each with a functioning weapon
-or HEAL, zero fatigue, and no competing controller ownership. Every living
-friend must be full-health. Require a squad weapon and healer, with every squad
+or HEAL, zero fatigue, and no competing controller ownership. Every departing
+member and every actor in the unchanged retained-defence set must be full-health.
+Require a squad weapon and healer, with every squad
 weapon within ranged-heal distance3. Retain at least two non-squad functioning
 weapons and a functioning healer within centre range3, excluding unavailable
 actors; both retained weapons must also be within3 of a retained healer, not
 merely at opposite edges of the centre radius. This conservative presence gate
 is not a combat-strength calculation.
 
-The full-health requirement is explicitly army-wide, including injured allies
-outside both the proposed squad and the retained defenders. It is a conservative
-entry/continuation condition, not proof that those actors compete for the same
-healer. Full health is necessary under this contract, never sufficient: check
+The health scope is the union of the proposed squad and **all** living
+non-members within centre range3 who are not unavailable to this controller.
+This is exactly production's retained-defence set, not a chosen healthy quorum:
+surplus and unarmed members of that set must also be healthy. Injury outside
+both sets alone no longer vetoes entry or continuation. Do not omit an actor,
+normalize its HP or ignore malformed observations; complete original health and
+body observations still feed validation and utility. Full health is necessary
+inside this union, never sufficient: check
 functioning weapons/HEAL/MOVE, fatigue, current healing range, independent retained
 defence and local danger as well. Healing access means an observed functioning
 healer within range3; it neither reserves that healer's action nor establishes
-adequate healing capacity against incoming damage.
+adequate healing capacity against incoming damage. An injured outsider can still
+require the departing healer: ordinary healing/support ownership then cancels
+capture travel before any objective step, with the existing attempt spent.
 
 `no-eligible-squad` is the coordinator's aggregate result. Membership
 participation/capability/mobility filters run first; surviving groups reach the
-pure selector's availability, army health, squad support, retained defence and
+pure selector's availability, scoped health, squad support, retained defence and
 local-combat checks in that order. A first failure can mask independent later
 failures. The [three-poll reconstruction](secondary-readiness-audit-2026-10-16.md)
 found no otherwise compliant departure incorrectly rejected by the health scope;
-removing that scope would not qualify any examined squad. Readiness policy and
-runtime code remain unchanged.
+removing that scope would not qualify any examined squad. That historical audit
+remains a no-defect finding. The later generated policy comparison and inactive
+integration intentionally change health scope, not those historical conclusions.
 
 Reject armed enemies within5 of centre/group. Secondary choices are any unowned
 attack, ranged or healing flag; no family/name/coordinate is preselected. Reject
@@ -452,9 +463,15 @@ retained centre defence and all existing selector safety gates still revalidate
 before route reuse/refresh. Unsafe prospective support cancels with
 `capture-step-support-unavailable` (existing contest reason unchanged).
 
-Occupied requested cells or duplicate destinations hold the **entire** owned
-group, with no swap/vacating-cell assumption or alternate route search. Unknown
-occupancy/route steps cancel. Every hold consumes the original elapsed/stall
+After original priority, validated-step, full support and known-occupancy checks,
+occupied/converging cells can admit a safe subset for a four-member group.
+The shared selector examines at most16 subsets, using only currently empty,
+distinct original cells and the same all-outcome support check. Among equal
+maximum-size subsets, only their common moves proceed; unresolved contenders
+remain **objective-owned holds**. Two/three-member blocked groups retain whole
+holds. No swap/vacating-cell assumption, alternate route, reservation or fairness
+state is added. Full support failure still cancels, never salvages a subset.
+Unknown occupancy/route steps cancel. Every hold consumes the original elapsed/stall
 allowance; it creates no grace period. Even failed or unknown returns do not
 advance cached positions. Only subsequent observations can rebase a route or
 reset the existing unchanged-position counter. Four unchanged observations or
@@ -466,7 +483,19 @@ is no budget/deadline reset or additive preflight search. Diagnostics use the
 existing movement record: `capture-route-step` / `capture-route-hold` versus
 unchanged `contest-route-step` / `contest-route-hold`, position/null-ID targets
 and actual return/null. Attack/healing selectors/order and disabled commands
-remain unchanged. No new switch, logging stream or schema is added.
+remain unchanged. No new switch or logging stream is added; the optional
+snapshot extension is specified below.
+
+The current pre-action `secondaryObjective` additionally includes `travel` only
+after valid active preflight: `{examined,bestSize,tied,actors}`. At most four
+actors have `{actorId,proposed:{x,y}|null,admitted:{x,y}|null,holdReason}`.
+Reasons are `null` for admitted moves, otherwise `occupied`, `converging`,
+`no-step` or `group-hold`. These are intentions, not returns/displacement or
+proof that a safe tied singleton was chosen. No paths or raw objects are copied.
+The extension is <1200 JSON characters at maximum128-character IDs, while the
+original diagnostic excluding `travel` retains its <1500 bound; combined <2700.
+No log records/queries are added. See the linked integration for exact semantics,
+generated coverage, limitations and rollback instructions.
 
 Generated distinct-cell multi-tick regression first fails on the old independent
 capture calls: only weapons move and range3 becomes4. The corrected candidate
@@ -478,8 +507,9 @@ refresh, support/capability loss, priority conflicts, multiple healers, mirrored
 geometry, contest/handoff and disabled equivalence. These positions are supplied
 test inputs, not an Arena coordination, capture or causal-benefit demonstration.
 
-Remaining limitations: a conservative whole-group hold can deadlock converging
-range0 routes or prevent a feasible departure. No queue, alternate route or
+Remaining limitations: unresolved ties/fully occupied steps can still deadlock
+range0 routes or prevent a feasible departure. Partial progress can later cause
+support cancellation rather than complete departure. No queue, alternate route or
 wait extension is added to force capture. Observation gaps, external enemy
 movement, terrain fatigue and fallback after release remain live uncertainties;
 preflight protects only the issued one-step/stay outcomes, not guaranteed return

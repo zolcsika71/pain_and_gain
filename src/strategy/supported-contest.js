@@ -74,3 +74,32 @@ export function secondaryStepSupport(myCreeps, memberIds, steps) {
         [c, steps.get(c.id) ?? c].every(p => [healer, steps.get(healer.id) ?? healer]
             .every(h => range(p, h) <= limits.supportRange))));
 }
+
+// Shared capture/contest travel, AFTER original priority/route/full-support
+// preflight. Reuse validated adjacent steps; never search or assume vacating.
+export function selectSecondaryTravelSteps(friends, memberIds, steps, all) {
+    const occupied = p => all.some(c => living(c) && same(c, p));
+    const conflict = destinations => destinations.some((p, i) => occupied(p) ||
+        destinations.some((q, j) => j < i && same(p, q)));
+    const destinations = [...steps.values()].filter(Boolean);
+    if (!conflict(destinations)) return { moves: steps, examined: 0, bestSize: 0, tied: 0 };
+    const hold = new Map(memberIds.map(id => [id, null]));
+    if (memberIds.length !== 4 || new Set(memberIds).size !== 4 || steps.size !== 4)
+        return { moves: hold, examined: 0, bestSize: 0, tied: 0 };
+    // Full mask was examined above. Examine its other15 subsets once, empty
+    // included. Each admitted success/failure combination must retain support.
+    let examined = 1, bestSize = -1, common = 0, tied = 0;
+    const accepted = new Map();
+    for (let mask = 0; mask < 15; mask++) {
+        examined++;
+        const moves = new Map(memberIds.map((id, i) => [id, mask & (1 << i) ? steps.get(id) : null]));
+        const next = [...moves.values()].filter(Boolean);
+        if (conflict(next) || !secondaryStepSupport(friends, memberIds, moves)) continue;
+        accepted.set(mask, moves);
+        if (next.length > bestSize) { bestSize = next.length; common = mask; tied = 1; }
+        else if (next.length === bestSize) { common &= mask; tied++; }
+    }
+    // Intersection of tied maxima is an already checked safe subset. No ID,
+    // geometry or iteration-order tie-break; unresolved contenders stay owned.
+    return { moves: accepted.get(common) ?? hold, examined, bestSize, tied };
+}

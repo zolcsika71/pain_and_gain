@@ -208,18 +208,18 @@ test('owned-only, unavailable routes and unknown observation/effect/owner have e
     }
 });
 
-test('accepted readiness contract rejects an unrelated injury independently of actor IDs and order',()=>{
+test('scoped readiness admits unrelated injury independently of actor IDs and order',()=>{
     const w=only(fixture(),'east');
     w.myCreeps.push(unit('bystander',10,10,{}));
     assert.equal(select(w).reason,'selected');
     w.myCreeps.find(c=>c.id==='bystander').hits--;
     assert(w.myCreeps.filter(c=>w.squad.memberIds.includes(c.id)).every(c=>c.hits===c.hitsMax));
     // This actor belongs to neither the departing squad nor centre defence.
-    // The accepted all-living-allies health condition deliberately still applies.
+    // Health remains mandatory for the departing squad and all retained defence.
     for(const options of [{},{reverse:true},{rename:true},{rename:true,reverse:true}]){
         const result=select(transform(w,options));
-        assert.equal(result.reason,'army-injured');assert.equal(result.objectiveId,w.centreId);
-        assert.equal(result.work.candidates,0);
+        assert.equal(result.reason,'selected');assert.equal(result.objectiveId,'east');
+        assert(result.work.candidates>0);
     }
 });
 

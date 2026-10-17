@@ -2,7 +2,7 @@ import { selectHealingDecision } from '../tactics/healing.js';
 import { createSpilloverContext, selectSpilloverDecision } from '../tactics/combat.js';
 import { selectMovementPlan, localRetreatStep } from '../tactics/movement.js';
 import { improveHealerHold } from '../tactics/healer-closing.js';
-import { secondaryStepSupport } from '../strategy/supported-contest.js';
+import { secondaryStepSupport, selectSecondaryTravelSteps } from '../strategy/supported-contest.js';
 
 function reportDecision(reporter, decision) {
     return reporter?.decision(decision) ?? null;
@@ -48,11 +48,19 @@ export function prepareSecondaryMovement(secondary, friends, enemies, flag, enga
     const all = spacing?.creeps;
     if (!Array.isArray(all) || all.length > 28) return cancel('occupancy-unknown');
     const destinations = [...steps.values()].filter(Boolean);
-    const occupied = destinations.some(p => all.some(c => c.exists !== false && c.hits > 0 && c.x === p.x && c.y === p.y));
-    const collision = destinations.some((p, i) => destinations.some((q, j) => j < i && p.x === q.x && p.y === q.y));
-    // No swap/vacating-cell assumptions. A bounded whole-group wait retains
-    // ownership; only future observed improvement can postpone the stall stop.
-    return { secondary, moves: occupied || collision ? new Map(memberIds.map(id => [id, null])) : steps };
+    const selected = selectSecondaryTravelSteps(friends, memberIds, steps, all);
+    const point = p => p ? { x: p.x, y: p.y } : null;
+    // Existing pre-action snapshot only. Fixed fields, <=4 actors, no paths or
+    // persistent diagnostic state. An admitted step is not observed movement.
+    const actors = memberIds.slice(0, 4).map(actorId => {
+        const proposed = steps.get(actorId), admitted = selected.moves.get(actorId);
+        const occupied = proposed && all.some(c => c.exists !== false && c.hits > 0 && c.x === proposed.x && c.y === proposed.y);
+        const converging = proposed && destinations.filter(p => p.x === proposed.x && p.y === proposed.y).length > 1;
+        return { actorId, proposed: point(proposed), admitted: point(admitted),
+            holdReason: admitted ? null : !proposed ? 'no-step' : occupied ? 'occupied' : converging ? 'converging' : 'group-hold' };
+    });
+    const travel = { examined: selected.examined, bestSize: selected.bestSize, tied: selected.tied, actors };
+    return { secondary: { ...secondary, diagnostic: { ...secondary.diagnostic, travel } }, moves: selected.moves };
 }
 
 export function moveCreeps(myCreeps, enemies, flag, engagements = new Map(), fallbackById = new Map(),

@@ -2,12 +2,14 @@
 
 ## Status and scope
 
-Retain this alternative for possible later integration; **not integrated or
-activated**. Production's accepted [secondary-objective contract](general-strategy-secondary-objectives-2026-10-16.md)
-still requires every living ally to be full health. Earlier audits remain
-no-defect findings. This comparison does not reinterpret historical departures.
+The accepted comparison below is retained as historical design evidence.
+Its predicate is now [integrated, inactive](secondary-scoped-readiness-integration-2026-10-17.md)
+in the production [secondary-objective contract](general-strategy-secondary-objectives-2026-10-16.md).
+The source-rewriting fixture has been removed; the 27 cases now exercise the
+single production implementation. Earlier audits remain no-defect findings;
+neither comparison nor integration reinterprets historical departures.
 
-Pinned unchanged runtime/build:
+Original test-only comparison's pinned unchanged runtime/build:
 `79790451f2c07eebd62902ffb77d5b7618fdd97ef5a9d9d93a2314a70e74e094`.
 Secondary objectives and healer closing remain off; every other switch persists.
 
@@ -32,10 +34,12 @@ at the same location in the selector. Keep `army-injured` for relevant injuries.
 Do not remove roster entries, normalize hits, restore body parts, alter utility
 capacity arithmetic, change caller binding or reorder any other gates.
 
-The test fixture loads a one-predicate variant of the production ES module in
+The original test fixture loaded a one-predicate variant of the production ES module in
 memory, asserting a unique source match and exact reversibility. The shared
-contest-readiness caller imports that same variant in memory. No alternate
-runtime implementation, configuration switch or generated build is installed.
+contest-readiness caller imported that same variant in memory. No alternate
+runtime implementation, configuration switch or generated build was installed
+by that comparison. Integration removes this variant rather than maintaining
+two policies.
 
 ## Existing coverage reused
 
@@ -122,7 +126,7 @@ healing demand, separation, displacement and terrain remain unknown.
 
 ## Recommendation
 
-Retain the scoped-health alternative for a separately authorized integration
+The original comparison recommended retaining the alternative for a separately authorized integration
 proposal. It isolates a deliberate conservative policy veto without weakening
 the demonstrated gates, and independently exposes otherwise decisive failures.
 It is not a production bug fix or proof of safe departure in Arena. Any future
@@ -130,6 +134,11 @@ integration must preserve the shared capture/contest readiness seam, actual
 movement/healing ownership and revalidation rather than converting this pure
 admission result into a travel guarantee. Do not activate or request another
 match from this finding.
+
+That authorized integration is now complete and disabled; see the linked
+integration contract for current build, failing-before evidence, real-flow
+support cancellation, validation and preservation. The historical results and
+validation exceptions below/above are not relabelled as new integration results.
 
 Receipt:
 `/Users/zoltanka/.local/share/pain-and-gain-evidence/secondary-scoped-readiness-20261017-qERWhN/report.json`.

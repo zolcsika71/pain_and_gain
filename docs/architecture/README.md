@@ -31,7 +31,10 @@ This folder holds descriptions of the bot and its integrations, plus validation 
 - [healer-useful-closing-test-only-2026-10-17.md](healer-useful-closing-test-only-2026-10-17.md) — default-off runtime integration of the tested range-two close; prospective healing, convergence limits, movement priority and exact rollback contract.
 - [adjacent-ranged-retreat-support-audit-2026-10-17.md](adjacent-ranged-retreat-support-audit-2026-10-17.md) — support-preserving adjacent escape preference with the original emergency fallback; frozen build awaiting manual observation.
 - [precontact-ranged-kiting-test-only-2026-10-17.md](precontact-ranged-kiting-test-only-2026-10-17.md) — rejected test-only range-two proposal and retained support-loss/cycling counterexamples.
-- [secondary-scoped-readiness-test-only-2026-10-17.md](secondary-scoped-readiness-test-only-2026-10-17.md) — generated health-scope comparison only; runtime integration remains deferred until the frozen trial is completed and reviewed.
+- [secondary-scoped-readiness-test-only-2026-10-17.md](secondary-scoped-readiness-test-only-2026-10-17.md) — retained original generated health-scope comparison and limitations.
+- [secondary-scoped-readiness-integration-2026-10-17.md](secondary-scoped-readiness-integration-2026-10-17.md) — inactive promotion of the scoped health veto, with real-flow support cancellation and unchanged defence membership.
+- [secondary-partial-travel-test-only-2026-10-17.md](secondary-partial-travel-test-only-2026-10-17.md) — retained original bounded16-subset generated comparison and adverse outcomes.
+- [secondary-partial-travel-integration-2026-10-17.md](secondary-partial-travel-integration-2026-10-17.md) — inactive shared capture/contest subset selector, bounded step diagnostics, real-flow regressions and rollback.
 - [development-publication-2026-10-17.md](development-publication-2026-10-17.md) — publication scope, reused validation, excluded local work and unchanged frozen gameplay identity.
 - [scout-hold-experiment-2026-10-02.md](scout-hold-experiment-2026-10-02.md) — disabled-default scout fallback holding policy, local checks, live charcock screening, and remaining release gap.
 - [historical-evidence-cycle-2026-10-02.md](historical-evidence-cycle-2026-10-02.md) — bounded cached cross-match index and no-change escort decision.

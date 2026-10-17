@@ -96,7 +96,9 @@ export function selectSecondaryObjective(input, previous = null) {
     const group = ids.map(memberId => friends.find(c => c.id === memberId));
     if (group.some(c => !c || c.fatigue !== 0 || !partCount(c, 'move') ||
         !armed(c) && !partCount(c, 'heal') || unavailableIds.includes(c.id))) return stop('squad-unavailable');
-    if (friends.some(c => c.hits !== c.hitsMax)) return stop('army-injured');
+    if (friends.some(c => (ids.includes(c.id) ||
+        !unavailableIds.includes(c.id) && distance(c, centre) <= limits.defenderRange) &&
+        c.hits !== c.hitsMax)) return stop('army-injured');
     const healers = group.filter(c => partCount(c, 'heal'));
     const weapons = group.filter(armed);
     if (!healers.length || !weapons.length || weapons.some(c => !healers.some(h => distance(c, h) <= limits.supportRange))) return stop('support-unavailable');

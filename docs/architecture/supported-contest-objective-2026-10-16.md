@@ -6,7 +6,9 @@ activation, capture or strategic benefit is established. The original test-only
 proposal and rejection below are historical; the current integration is here.
 
 Current inactive shared-travel candidate build:
-`d1e95a106a708f10826cf472be65e143bab86f44ef84f5d537bb3c07f6639e0f`.
+`275a7eaafd5de6fa2acfd8f7734aa9d6d1946863164cf6c058153d388e21ff77`.
+Includes [shared safe-subset travel](secondary-partial-travel-integration-2026-10-17.md)
+and [scoped health readiness](secondary-scoped-readiness-integration-2026-10-17.md).
 Includes the independent [pure-healer pressure correction](pure-healer-pressure-retreat-2026-10-16.md),
 which yields to escort/pair ownership and is incompatible with active travel.
 Original integration build was `56501f03b5715c055311b3a770329b0437c362a52efad8cd29e4d6336733bdd0`.
@@ -58,10 +60,15 @@ partially executed objective group followed by an emergency override.
 For each weapon, all four current/next weapon and current/next healer position
 combinations must remain within functioning heal range3. This one-step check
 permits either actor to move or remain blocked; it is not a multi-tick traffic
-or combat simulator. Unknown occupancy cancels. An occupied requested cell or
-duplicate destination holds the entire group, with no swap/vacating-cell
-assumption and no alternate path. Support exposure cancels rather than inventing
-an alternate step. Actual next observations are rechecked every tick.
+or combat simulator. Unknown occupancy cancels. After those unchanged gates,
+four-member capture/contest groups may admit a bounded safe subset around an
+occupied/converging cell; tied maxima admit only common moves, and every other
+member retains an objective-owned hold. Smaller blocked groups still all hold.
+There is no swap/vacating-cell assumption or alternate path. Support exposure
+still cancels rather than salvaging a subset or inventing an alternate step.
+Actual next observations are rechecked every tick. The existing snapshot gains
+only bounded proposed/admitted cells and controlled hold reasons; see the
+linked shared integration for exact fields and limits.
 
 The executor issues `Creep.move(direction)` for the adjacent validated cell,
 using the [documented Arena1–8 directions](https://arena.screeps.com/docs/#Creep.move).

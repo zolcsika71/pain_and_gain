@@ -74,7 +74,10 @@ test('default-off real flow retains exact centre fallback with zero new searches
 test('real tick flow selects an existing eligible squad, bounds searches, overrides only its fallback and retains defence',async t=>{
     const w=await fixture(t),d=w.step(1);assert.equal(d.phase,'active');assert.equal(d.targetId,'east');assert.equal(d.queries,24);
     const group=w.loop.getMembershipState().squads.find(s=>s.id===d.squadId);assert.deepEqual(d.memberIds,[...group.memberIds].sort());
-    for(const call of w.calls)assert.equal(call.target,group.memberIds.includes(call.id)?'east':'centre');
+    const direct=w.calls.filter(c=>group.memberIds.includes(c.id));
+    assert.deepEqual(direct.map(c=>c.id).sort(),['b-melee','b-ranged1']);
+    for(const call of direct){assert.equal(call.method,'move');assert.equal(call.x,w.actor(call.id).x+1);assert.equal(call.y,w.actor(call.id).y);}
+    assert(w.calls.filter(c=>!group.memberIds.includes(c.id)).every(c=>c.target==='centre'));
     assert(w.calls.filter(c=>c.target==='centre'&&['a-melee','a-ranged1','a-ranged2'].includes(c.id)).length===3);
     assert(d.reportedOps<=24000);assert(w.queries.every(q=>group.memberIds.includes(q.actor)));
     assert(w.records.filter(r=>r.type==='game-state').every(r=>JSON.stringify(r.secondaryObjective).length<1500));
@@ -189,10 +192,11 @@ test('nearby valid objective survives a distant or detoured overlong candidate i
         assert.equal(d.excludedCandidates.geometry,far?1:0);assert.equal(d.excludedCandidates.routeLimit,far?0:1);
         assert.equal(d.excludedCandidates.first.flagId,long.id);
         // These original routes request cells currently occupied by squad
-        // members. Selection survives; shared preflight now holds all four.
-        assert.equal(w.calls.length,10);
-        assert.equal(w.records.filter(r=>r.type==='action-decision'&&r.channel==='movement'&&r.reason==='capture-route-hold').length,4);
-        assert(w.calls.every(c=>c.target===(d.memberIds.includes(c.id)?'east':'centre')));
+        // members. Only the two currently free first cells are admitted.
+        assert.equal(w.calls.length,12);
+        assert.equal(w.records.filter(r=>r.type==='action-decision'&&r.channel==='movement'&&r.reason==='capture-route-hold').length,2);
+        assert.equal(w.calls.filter(c=>c.method==='move').length,2);
+        assert(w.calls.filter(c=>c.method==='moveTo').every(c=>c.target==='centre'));
         assert(JSON.stringify(d).length<1500);
     }
 });
@@ -245,7 +249,9 @@ test('exclusion and poll-failure diagnostics stay distinct and bounded with maxi
     w.search=(from,goal,opts)=>{const r=search(from,goal,opts);return goal.pos===long
         ?{path:detour(from,long),incomplete:false,ops:1000}:r;};
     const d=w.step(1);assert.equal(d.phase,'active');assert.equal(d.excludedCandidates.routeLimit,1);
-    assert(!('rejectedQuery' in d));assert(JSON.stringify(d).length<1500);
+    assert(!('rejectedQuery' in d));const {travel,...original}=d;
+    assert(JSON.stringify(original).length<1500);assert(JSON.stringify(travel).length<1200);
+    assert(JSON.stringify(d).length<2700);assert.equal(travel.actors.length,4);
     assert(JSON.stringify(d.excludedCandidates).length<400);
     const broken=await fixture(t),base=broken.search;Object.assign(broken.flags.find(f=>f.id==='west'),{x:90,y:8});
     broken.search=(...args)=>{base(...args);return{path:null,incomplete:false,ops:17};};
@@ -441,6 +447,116 @@ async function captureTravelFixture(t,{spread=2,...options}={}){
     w.distinct();return w;
 }
 
+test('scoped readiness real flow admits remote injury without changing routes or direct travel',async t=>{
+    const w=await captureTravelFixture(t);
+    Object.assign(w.actor('scout1'),{x:10,y:10,hits:999});w.distinct();
+    const d=w.step(1);assert.equal(d.reason,'selected');assert.equal(d.phase,'active');
+    assert.deepEqual(d.memberIds,['b-healer','b-melee','b-ranged1','b-ranged2']);
+    assert.equal(d.queries,24);assert(d.reportedOps<=24000);
+    assert.equal(w.calls.filter(c=>c.method==='move').length,4);
+    w.observeSteps();w.distinct();const next=w.step(2);
+    assert.equal(next.reason,'retained');assert.equal(next.queries,0);assert.equal(next.startedAt,1);
+});
+
+test('scoped readiness outsider healing ownership cancels before objective movement and spends attempt',async t=>{
+    for(const x of [46,48]){
+        const w=await captureTravelFixture(t);
+        Object.assign(w.actor('scout1'),{x,y:44,hits:999});w.distinct();
+        const d=w.step(1);assert.equal(d.phase,'finished');assert.equal(d.reason,'capture-movement-priority');
+        assert.equal(d.queries,24);assert.equal(d.startedAt,1);
+        // Terminal diagnostics intentionally clear active member IDs; the
+        // pinned squad and queries identify which attempted departure stopped.
+        const group=w.loop.getMembershipState().squads.find(s=>s.id===d.squadId);
+        assert.deepEqual([...group.memberIds].sort(),['b-healer','b-melee','b-ranged1','b-ranged2']);
+        assert(w.queries.every(q=>group.memberIds.includes(q.actor)));assert.deepEqual(d.memberIds,[]);
+        assert(!w.calls.some(c=>c.method==='move'||c.method==='moveTo'&&c.target==='east'));
+        const support=w.calls.filter(c=>c.id==='b-healer');
+        assert.deepEqual(support.map(c=>[c.method,c.target]),[[x===46?'rangedHeal':'moveTo','scout1']]);
+        w.actor('scout1').hits=w.actor('scout1').hitsMax;
+        for(const tick of [2,11,61]){
+            const spent=w.step(tick);assert.equal(spent.phase,'finished');assert.equal(spent.reason,d.reason);
+            assert.equal(spent.startedAt,1);assert.deepEqual(spent.memberIds,d.memberIds);assert.equal(spent.queries,0);
+        }
+        assert.equal(w.queries.length,24);
+    }
+});
+
+test('disabled scoped readiness preserves injured-outsider healing and exact baseline movement commands',async t=>{
+    const w=await captureTravelFixture(t,{off:true});
+    Object.assign(w.actor('scout1'),{x:46,y:44,hits:999});w.distinct();
+    assert.equal(w.step(1),undefined);assert.equal(w.queries.length,0);
+    const expected=w.units.filter(c=>c.my&&c.id!=='b-healer').map(c=>[c.id,'moveTo','centre']);
+    expected.push(['b-healer','rangedHeal','scout1']);
+    assert.deepEqual(w.calls.map(c=>[c.id,c.method,c.target]).sort(),expected.sort());
+    assert(w.records.filter(r=>r.type==='game-state').every(r=>!('secondaryObjective' in r)));
+});
+
+test('safe-subset real capture departs around an occupied first cell without moving the held healer',async t=>{
+    const w=await captureTravelFixture(t);Object.assign(w.actor('scout1'),{x:44,y:42});w.distinct();
+    const first=w.step(1);assert.equal(first.phase,'active');assert.equal(first.queries,24);
+    const calls=w.calls.filter(c=>c.method==='move');assert.equal(calls.length,3);
+    assert(calls.every(c=>c.id!=='b-healer'&&c.x===46));
+    assert(!w.calls.some(c=>c.id==='b-healer'));
+    assert.deepEqual(first.travel.actors.find(c=>c.actorId==='b-healer'),{actorId:'b-healer',
+        proposed:{x:44,y:42},admitted:null,holdReason:'occupied'});
+    assert.equal(first.travel.examined,16);
+    for(let mask=0;mask<8;mask++)for(let i=0;i<3;i++){
+        const p=mask&(1<<i)?calls[i]:w.actor(calls[i].id);assert(range(p,w.actor('b-healer'))<=3);
+    }
+    w.observeSteps();w.distinct();const stopped=w.step(2);
+    assert.equal(stopped.phase,'finished');assert.equal(stopped.reason,'capture-step-support-unavailable');
+    assert.equal(stopped.startedAt,1);assert.equal(stopped.queries,0);
+    assert.equal(w.step(11).phase,'finished');assert.equal(w.queries.length,24);
+});
+
+test('safe-subset real capture convergence keeps only common moves and owned holds',async t=>{
+    const w=await captureTravelFixture(t),search=w.search;
+    w.search=(from,goal,opts)=>{
+        const r=search(from,goal,opts);
+        if(goal.pos.id!=='east'||!['b-healer','b-melee'].includes(from.id))return r;
+        const path=[{x:44,y:42}];let p=path[0];
+        while(p.x!==goal.pos.x){p={x:p.x+1,y:p.y};path.push(p);}
+        while(p.y!==goal.pos.y){p={x:p.x,y:p.y-1};path.push(p);}return{...r,path};
+    };
+    const d=w.step(1);assert.equal(d.phase,'active');const moves=w.calls.filter(c=>c.method==='move');
+    assert.deepEqual(moves.map(c=>c.id).sort(),['b-ranged1','b-ranged2']);
+    for(const id of ['b-healer','b-melee']){
+        assert(!w.calls.some(c=>c.id===id));const detail=d.travel.actors.find(c=>c.actorId===id);
+        assert.equal(detail.admitted,null);assert.equal(detail.holdReason,'converging');
+    }
+    assert.equal(d.travel.bestSize,3);assert.equal(d.travel.tied,2);assert.equal(d.travel.examined,16);
+    assert.equal(d.queries,24);assert.equal(d.startedAt,1);
+});
+
+test('safe-subset travel diagnostic is bounded at maximum IDs and adds no queries or log records',async t=>{
+    const w=await captureTravelFixture(t);Object.assign(w.actor('scout1'),{x:44,y:42});
+    w.units.forEach(c=>c.id=c.id.padEnd(128,'x'));
+    const d=w.step(1),{travel,...original}=d;
+    assert.equal(d.phase,'active');assert.equal(d.queries,24);assert.equal(w.queries.length,24);
+    assert.deepEqual(Object.keys(travel).sort(),['actors','bestSize','examined','tied']);
+    assert.equal(travel.actors.length,4);assert.equal(travel.examined,16);
+    for(const detail of travel.actors){
+        assert.deepEqual(Object.keys(detail).sort(),['actorId','admitted','holdReason','proposed']);
+        assert.equal(detail.actorId.length,128);
+        for(const p of [detail.proposed,detail.admitted].filter(Boolean)){
+            assert.deepEqual(Object.keys(p).sort(),['x','y']);assert(Number.isInteger(p.x)&&Number.isInteger(p.y));
+        }
+        assert([null,'occupied','converging','no-step','group-hold'].includes(detail.holdReason));
+        const attempted=w.calls.find(c=>c.id===detail.actorId);
+        if(detail.admitted){assert.equal(attempted.method,'move');assert.deepEqual({x:attempted.x,y:attempted.y},detail.admitted);}
+        else assert.equal(attempted,undefined);
+    }
+    assert(JSON.stringify(travel).length<1200);assert(JSON.stringify(original).length<1500);assert(JSON.stringify(d).length<2700);
+    assert.equal(w.records.filter(r=>r.type==='game-state').length,1);
+    assert.equal(w.records.filter(r=>r.type==='action-decision').length,42);
+    assert.equal(w.records.filter(r=>r.type==='action-attempt').length,w.calls.length);
+    const known=new Set(['membership-baseline','membership-change','map-state','game-state','action-decision','action-attempt','runtime-cpu','evidence-coverage']);
+    assert(w.records.every(r=>known.has(r.type)));
+    // Snapshot proposals remain the pre-action cells, never command-updated
+    // positions or retained arrays. Failed/non-displacing calls cannot edit it.
+    const first=JSON.stringify(travel);w.step(2);assert.equal(JSON.stringify(travel),first);
+});
+
 test('capture partial movement cannot issue a departure that loses healer access',async t=>{
     const w=await captureTravelFixture(t,{spread:3}),first=w.step(1);
     const departure=w.calls.filter(c=>c.method==='move'||c.method==='moveTo'&&c.target==='east');
@@ -499,10 +615,11 @@ test('capture accepted, rejected and unknown returns cannot create observed prog
     }
 });
 
-test('capture occupied or colliding requested cells hold the whole group under the original stall bound',async t=>{
+test('capture all-occupied or wholly converging first cells hold under the original stall bound',async t=>{
     for(const collision of [false,true]){
         const w=await captureTravelFixture(t);
-        if(!collision)Object.assign(w.actor('scout1'),{x:44,y:42});
+        if(!collision)for(const [id,x,y]of [['scout1',44,42],['scout2',46,41],['c-healer',46,42],['c-melee1',46,43]])
+            Object.assign(w.actor(id),{x,y});
         else {const search=w.search;w.search=(from,goal,opts)=>{const r=search(from,goal,opts);if(goal.pos.id!=='east')return r;
             const path=[{x:44,y:42}];let p=path[0];while(p.x!==goal.pos.x){p={x:p.x+1,y:p.y};path.push(p);}
             while(p.y!==goal.pos.y){p={x:p.x,y:p.y+Math.sign(goal.pos.y-p.y)};path.push(p);}return{...r,path};};}
@@ -606,6 +723,20 @@ async function contestFixture(t,options={}){
     return w;
 }
 
+test('safe-subset real contest shares work and retains owned holds around an occupied first cell',async t=>{
+    const w=await contestFixture(t);Object.assign(w.actor('scout1'),{x:34,y:42});
+    const d=w.step(1);assert.equal(d.reason,'contest-selected');assert.equal(d.queries,24);
+    const moves=w.calls.filter(c=>c.method==='move');assert.equal(moves.length,3);
+    assert(!w.calls.some(c=>c.id==='c-melee1'));
+    assert.equal(d.travel.actors.find(c=>c.actorId==='c-melee1').holdReason,'occupied');
+    assert.equal(d.travel.examined,16);assert.equal(d.startedAt,1);
+    for(let tick=2;tick<=5;tick++){
+        const next=w.step(tick);assert.equal(next.phase,tick===5?'finished':'active');
+        if(tick===5)assert.equal(next.reason,'no-displacement');assert.equal(next.startedAt,1);
+    }
+    assert.equal(w.step(10).phase,'finished');assert.equal(w.queries.length,24);
+});
+
 test('contest real flow shares acquisition work and executes only validated adjacent steps',async t=>{
     const w=await contestFixture(t),d=w.step(1);assert.equal(d.reason,'contest-selected');assert.equal(d.mode,'contest');
     assert.equal(d.queries,24);assert.equal(d.reportedOps,24000);
@@ -699,10 +830,14 @@ test('accepted or rejected movement commands without displacement spend the same
     }
 });
 
-test('occupied adjacent cells hold the entire group without swap assumptions and eventually expire',async t=>{
-    const w=await contestFixture(t);w.actor('scout1').x=34;w.actor('scout1').y=42;
-    const d=w.step(1);assert.equal(d.phase,'active');assert(!w.calls.some(c=>c.method==='move'));
-    for(let tick=2;tick<=5;tick++)w.step(tick);
+test('all occupied contest first cells retain owned holds and eventually expire',async t=>{
+    const w=await contestFixture(t);assert.equal(w.step(1).reason,'contest-selected');
+    // Supply blocking observations only after original membership binds; do
+    // not inadvertently form a different squad by relocating actors at birth.
+    for(const [id,x,y]of [['scout1',34,42],['scout2',34,43],['b-melee',34,44],['a-melee',35,45]])Object.assign(w.actor(id),{x,y});
+    const d=w.step(2);assert.equal(d.phase,'active');assert(!w.calls.some(c=>c.method==='move'));
+    assert(d.travel.actors.every(c=>c.holdReason==='occupied'));
+    for(let tick=3;tick<=5;tick++)w.step(tick);
     assert.equal(w.records.findLast(r=>r.type==='game-state').secondaryObjective.reason,'no-displacement');
 });
 

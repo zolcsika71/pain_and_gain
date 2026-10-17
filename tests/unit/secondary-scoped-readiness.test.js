@@ -1,13 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {selectSecondaryObjective as baseline, secondaryObjectiveLimits as limits} from '../../src/strategy/objectives.js';
+import {selectSecondaryObjective as select, secondaryObjectiveLimits as limits} from '../../src/strategy/objectives.js';
 import {contestReadiness} from '../../src/strategy/supported-contest.js';
 import {selectMovementPlan} from '../../src/tactics/movement.js';
 import {selectHealingDecision} from '../../src/tactics/healing.js';
 import {prepareSecondaryMovement} from '../../src/arena/execute.js';
 import {only, reports, presetFixture, transform, range} from '../fixtures/secondary-generated-world.js';
-import {scopedSelect as candidate, scopedLimits, productionSource, candidateSource,
-    baselineHealthGate, scopedHealthGate, scopedContestReadiness} from '../fixtures/secondary-scoped-health-candidate.js';
 
 const actor=(w,id)=>w.myCreeps.find(c=>c.id===id);
 function world(){
@@ -27,19 +25,16 @@ function observedMethods(w){
     return ()=>commands;
 }
 
-test('test-only variant changes only health scope; baseline and all finite limits stay intact',()=>{
-    assert.equal(candidateSource.replace(scopedHealthGate,baselineHealthGate),productionSource);
-    assert.deepEqual(scopedLimits,limits);
+test('scoped production readiness preserves complete full-roster observations',()=>{
     const w=world(),before=structuredClone(w);
     assert.equal(w.myCreeps.length,14);assert.equal(w.enemies.length,14);
-    assert.equal(baseline(w).reason,'selected');assert.deepEqual(candidate(w),baseline(w));assert.deepEqual(w,before);
+    assert.equal(select(w).reason,'selected');assert.deepEqual(w,before);
 });
 
 test('one or multiple genuinely remote injuries alone change rejection to the identical healthy-world selection',()=>{
     for(const ids of [['scout1'],['scout1','scout2']]){
-        const w=world(),healthy=baseline(w);for(const id of ids)actor(w,id).hits--;
-        const before=structuredClone(w),b=baseline(w),c=candidate(w);
-        assert.equal(b.reason,'army-injured');assert.equal(b.work.candidates,0);
+        const w=world(),healthy=select(w);for(const id of ids)actor(w,id).hits--;
+        const before=structuredClone(w),c=select(w);
         assert.equal(c.reason,'selected');assert.deepEqual(c,healthy);assert.deepEqual(w,before);
         // No selected or retained healer has even a ranged healing opportunity
         // or an approach request to either injured remote actor at this snapshot.
@@ -55,22 +50,22 @@ test('one or multiple genuinely remote injuries alone change rejection to the id
 test('any departing actor injury remains decisive, including its weapon and required healer',()=>{
     for(const id of world().squad.memberIds){
         const w=unrelated();actor(w,id).hits--;
-        assert.equal(baseline(w).reason,'army-injured');assert.equal(candidate(w).reason,'army-injured');
+        assert.equal(select(w).reason,'army-injured');
     }
 });
 
 test('scope is independent of outsider role; the remaining original defence must still qualify',()=>{
     for(const id of ['scout1','guardM0','guardR0','guardH2']){
-        const w=world();Object.assign(actor(w,id),{x:12,y:11});const healthy=baseline(w);
+        const w=world();Object.assign(actor(w,id),{x:12,y:11});const healthy=select(w);
         assert.equal(healthy.reason,'selected');actor(w,id).hits--;
-        assert.equal(baseline(w).reason,'army-injured');assert.deepEqual(candidate(w),healthy);
+        assert.deepEqual(select(w),healthy);
     }
 });
 
-test('later remote injury changes only global-health cancellation, not active binding or original deadline',()=>{
-    const w=world(),first=baseline(w);w.tick++;only(w,'east');const healthy=baseline(w,first.state);
-    actor(w,'scout1').hits--;assert.equal(baseline(w,first.state).reason,'army-injured');
-    const retained=candidate(w,first.state);assert.equal(retained.reason,'retained');assert.deepEqual(retained,healthy);
+test('later remote injury preserves active binding and original deadline',()=>{
+    const w=world(),first=select(w);w.tick++;only(w,'east');const healthy=select(w,first.state);
+    actor(w,'scout1').hits--;
+    const retained=select(w,first.state);assert.equal(retained.reason,'retained');assert.deepEqual(retained,healthy);
     assert.equal(retained.state.startedAt,first.state.startedAt);assert.deepEqual(retained.state.memberIds,first.state.memberIds);
 });
 
@@ -79,22 +74,22 @@ test('all original retained defenders remain health-relevant; no healthier subse
     const retained=w.myCreeps.filter(c=>!w.squad.memberIds.includes(c.id)&&range(c,centre)<=limits.defenderRange);
     assert.equal(retained.length,8);
     for(const c of retained){const copy=structuredClone(w);actor(copy,c.id).hits--;
-        assert.equal(candidate(copy).reason,'army-injured',c.id);}
+        assert.equal(select(copy).reason,'army-injured',c.id);}
     // Even an unarmed actor, surplus to the two-weapon quorum, stays relevant
     // when it belongs to the unchanged positional retained-defence set.
     Object.assign(actor(w,'scout2'),{x:38,y:38});actor(w,'scout2').hits--;
-    assert.equal(candidate(w).reason,'army-injured');
+    assert.equal(select(w).reason,'army-injured');
 });
 
 test('membership boundary is exactly production defence radius, including an unavailable outsider',()=>{
     for(const [x,expected]of [[37,'army-injured'],[36,'selected']]){
         const w=unrelated();Object.assign(actor(w,'scout1'),{x,y:40});
-        assert.equal(candidate(w).reason,expected);
+        assert.equal(select(w).reason,expected);
     }
     const w=unrelated();Object.assign(actor(w,'scout1'),{x:38,y:38});w.unavailableIds=['scout1'];
     // Existing defence excludes unavailable actors. Never use one to satisfy
     // quorum; other healthy retained defenders still satisfy it here.
-    assert.equal(candidate(w).reason,'selected');
+    assert.equal(select(w).reason,'selected');
 });
 
 const safetyCases=[
@@ -114,9 +109,9 @@ const safetyCases=[
 ];
 for(const [name,reason,change]of safetyCases)test(`unrelated injury cannot bypass ${name}`,()=>{
     const w=unrelated();change(w);only(w,'east');
-    assert.equal(candidate(w).reason,reason);assert.equal(candidate(w).evaluation,null);
+    assert.equal(select(w).reason,reason);assert.equal(select(w).evaluation,null);
     const healthy=structuredClone(w);actor(healthy,'scout1').hits=actor(healthy,'scout1').hitsMax;
-    assert.equal(baseline(healthy).reason,reason);
+    assert.equal(select(healthy).reason,reason);
 });
 
 test('existing defence quorum cannot use unavailable or remote defenders even if healthy',()=>{
@@ -124,7 +119,7 @@ test('existing defence quorum cannot use unavailable or remote defenders even if
         const w=unrelated(),defenders=w.myCreeps.filter(c=>!w.squad.memberIds.includes(c.id)&&c.id.startsWith('guard'));
         if(mode==='unavailable')w.unavailableIds=defenders.map(c=>c.id);
         else defenders.forEach((c,i)=>Object.assign(c,{x:20+i,y:20}));
-        assert.equal(candidate(w).reason,'defence-unavailable');
+        assert.equal(select(w).reason,'defence-unavailable');
     }
 });
 
@@ -142,18 +137,18 @@ test('arrival margin, occupancy, safe paths and route shape limits remain decisi
         ['unsupported-observation',w=>w.routes[0].ops=5001],
         ['no-useful-objective',w=>{w.tick=1990;only(w,'east');}],
     ]){
-        const w=unrelated();change(w);assert.equal(candidate(w).reason,reason);
-        actor(w,'scout1').hits=actor(w,'scout1').hitsMax;assert.equal(baseline(w).reason,reason);
+        const w=unrelated();change(w);assert.equal(select(w).reason,reason);
+        actor(w,'scout1').hits=actor(w,'scout1').hitsMax;assert.equal(select(w).reason,reason);
     }
 });
 
 test('ownership and capacity utility arithmetic are unchanged after health admission',()=>{
     for(const owner of [true,false,undefined]){
-        const w=world();w.flags.find(f=>f.id==='east').my=owner;const healthy=baseline(w);
-        actor(w,'scout1').hits--;assert.deepEqual(candidate(w),healthy);
+        const w=world();w.flags.find(f=>f.id==='east').my=owner;const healthy=select(w);
+        actor(w,'scout1').hits--;assert.deepEqual(select(w),healthy);
         if(owner!==true){assert.equal(healthy.reason,'selected');assert.equal(healthy.evaluation.deniedIncome,owner===false?3:0);}
     }
-    const w=unrelated();w.flags[0].my=false;assert.equal(candidate(w).reason,'centre-not-owned');
+    const w=unrelated();w.flags[0].my=false;assert.equal(select(w).reason,'centre-not-owned');
 });
 
 test('missing and malformed observations remain unknown, never declared unrelated and ignored',()=>{
@@ -161,8 +156,7 @@ test('missing and malformed observations remain unknown, never declared unrelate
         w=>delete actor(w,'scout1').hits,w=>actor(w,'scout1').hitsMax=0,w=>actor(w,'scout1').x=undefined,
         w=>actor(w,'scout1').body=null,w=>actor(w,'scout1').body[0].hits=Infinity,
         w=>actor(w,'scout1').id='medic',w=>w.flags[1].my=null,w=>w.routes[0].ops=undefined]){
-        const w=unrelated();change(w);assert.equal(baseline(w).reason,'unsupported-observation');
-        assert.equal(candidate(w).reason,'unsupported-observation');
+        const w=unrelated();change(w);assert.equal(select(w).reason,'unsupported-observation');
     }
 });
 
@@ -175,21 +169,21 @@ test('ownership changes, later relevant injury and danger finish the same attemp
         ['army-injured',w=>Object.assign(actor(w,'scout1'),{x:38,y:38})],
         ['local-combat',w=>Object.assign(w.enemies[3],{x:40,y:44})],
     ]){
-        const w=unrelated(),first=candidate(w);assert.equal(first.reason,'selected');w.tick++;change(w);only(w,'east');
-        const stopped=candidate(w,first.state);assert.equal(stopped.reason,reason);assert.equal(stopped.state.phase,'finished');
+        const w=unrelated(),first=select(w);assert.equal(first.reason,'selected');w.tick++;change(w);only(w,'east');
+        const stopped=select(w,first.state);assert.equal(stopped.reason,reason);assert.equal(stopped.state.phase,'finished');
         const fresh=unrelated();fresh.tick=w.tick+1;only(fresh,'east');
-        assert.equal(candidate(fresh,stopped.state).state.phase,'finished');
+        assert.equal(select(fresh,stopped.state).state.phase,'finished');
     }
 });
 
 test('remote injury adds no waiting, deadline extension or second attempt',()=>{
-    const w=unrelated();let result=candidate(w);const first=result.state;
-    assert.equal(candidate(w,first).state.unchanged,0);
-    for(let n=1;n<=limits.unchanged;n++){w.tick++;only(w,'east');result=candidate(w,result.state);
+    const w=unrelated();let result=select(w);const first=result.state;
+    assert.equal(select(w,first).state.unchanged,0);
+    for(let n=1;n<=limits.unchanged;n++){w.tick++;only(w,'east');result=select(w,result.state);
         assert.equal(result.reason,n===limits.unchanged?'no-displacement':'retained');assert.equal(result.state.startedAt,first.startedAt);}
-    w.tick=first.startedAt+limits.lifetime;only(w,'east');assert.equal(candidate(w,first).reason,'timeout');
-    assert.equal(candidate(w,result.state).state.phase,'finished');
-    w.tick=1;only(w,'east');assert.equal(candidate(w,result.state).reason,'selected');
+    w.tick=first.startedAt+limits.lifetime;only(w,'east');assert.equal(select(w,first).reason,'timeout');
+    assert.equal(select(w,result.state).state.phase,'finished');
+    w.tick=1;only(w,'east');assert.equal(select(w,result.state).reason,'selected');
 });
 
 test('renaming, ordering, rotation and mirrored geometry preserve decisions and costs',()=>{
@@ -197,32 +191,31 @@ test('renaming, ordering, rotation and mirrored geometry preserve decisions and 
         const injured=scenario!=='healthy',w=injured?unrelated():world();
         if(scenario==='relevant-injury')actor(w,'guardH1').hits--;
         if(scenario==='danger')Object.assign(w.enemies[3],{x:40,y:44});
-        reports(w);const expected=candidate(w);
+        reports(w);const expected=select(w);
         for(const options of [{rename:true},{reverse:true},{mirror:'x'},{mirror:'y'},{mirror:true},{rename:true,mirror:true,reverse:true}]){
-            const altered=transform(w,options),actual=candidate(altered);
+            const altered=transform(w,options),actual=select(altered);
             assert.equal(actual.reason,expected.reason);assert.equal(actual.objectiveId,expected.objectiveId);
             assert.deepEqual(actual.evaluation,expected.evaluation);assert.deepEqual(actual.work,expected.work);
-            assert.equal(baseline(altered).reason,injured?'army-injured':expected.reason);
         }
         for(let n=1;n<=14;n++){
             const rotated=structuredClone(w);for(const list of [rotated.myCreeps,rotated.enemies,rotated.flags,rotated.routes,rotated.squad.memberIds])list.push(...list.splice(0,n%list.length));
-            assert.deepEqual(candidate(rotated),expected);
+            assert.deepEqual(select(rotated),expected);
         }
     }
 });
 
 test('shared contest readiness inherits only scoped health and preserves its extra role quorum',()=>{
     const w=unrelated();w.squad.memberIds=['medic','bow1','bow2'];only(w,'east');
-    assert.equal(contestReadiness(w),'army-injured');assert.equal(scopedContestReadiness(w),null);
-    actor(w,'guardH1').hits--;assert.equal(scopedContestReadiness(w),'army-injured');
+    assert.equal(contestReadiness(w),null);
+    actor(w,'guardH1').hits--;assert.equal(contestReadiness(w),'army-injured');
     actor(w,'guardH1').hits++;w.squad.memberIds.push('blade');only(w,'east');
-    assert.equal(scopedContestReadiness(w),'contest-support-quorum');
+    assert.equal(contestReadiness(w),'contest-support-quorum');
 });
 
 test('positional non-membership does not override healing work or higher-priority capture movement',()=>{
     for(const x of [44,46]){
         const w=unrelated();Object.assign(actor(w,'scout1'),{x,y:44});const commands=observedMethods(w);
-        assert.equal(candidate(w).reason,'selected');const healer=actor(w,'medic');
+        assert.equal(select(w).reason,'selected');const healer=actor(w,'medic');
         const plan=selectMovementPlan(healer,w.enemies,w.flags[0],null,w.myCreeps);
         assert.equal(plan.reason,x===44?'injured-ally-in-range':'injured-ally-approach');
         const healing=selectHealingDecision(healer,w.myCreeps);
