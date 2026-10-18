@@ -503,9 +503,15 @@ test('safe-subset real capture departs around an occupied first cell without mov
     for(let mask=0;mask<8;mask++)for(let i=0;i<3;i++){
         const p=mask&(1<<i)?calls[i]:w.actor(calls[i].id);assert(range(p,w.actor('b-healer'))<=3);
     }
-    w.observeSteps();w.distinct();const stopped=w.step(2);
-    assert.equal(stopped.phase,'finished');assert.equal(stopped.reason,'capture-step-support-unavailable');
-    assert.equal(stopped.startedAt,1);assert.equal(stopped.queries,0);
+    w.observeSteps();w.distinct();const held=w.step(2);
+    assert.equal(held.phase,'active');assert.equal(held.travel.bestSize,0);
+    assert.equal(w.calls.filter(c=>c.method==='move').length,0);
+    assert.equal(held.startedAt,1);assert.equal(held.queries,0);
+    for(let tick=3;tick<=6;tick++){
+        const d=w.step(tick);assert.equal(d.phase,tick===6?'finished':'active');
+        if(tick===6)assert.equal(d.reason,'no-displacement');
+        assert(!w.calls.some(c=>c.method==='move'));
+    }
     assert.equal(w.step(11).phase,'finished');assert.equal(w.queries.length,24);
 });
 
@@ -541,7 +547,7 @@ test('safe-subset travel diagnostic is bounded at maximum IDs and adds no querie
         for(const p of [detail.proposed,detail.admitted].filter(Boolean)){
             assert.deepEqual(Object.keys(p).sort(),['x','y']);assert(Number.isInteger(p.x)&&Number.isInteger(p.y));
         }
-        assert([null,'occupied','converging','no-step','group-hold'].includes(detail.holdReason));
+        assert([null,'occupied','converging','no-step','group-hold','subset-hold'].includes(detail.holdReason));
         const attempted=w.calls.find(c=>c.id===detail.actorId);
         if(detail.admitted){assert.equal(attempted.method,'move');assert.deepEqual({x:attempted.x,y:attempted.y},detail.admitted);}
         else assert.equal(attempted,undefined);
@@ -557,17 +563,22 @@ test('safe-subset travel diagnostic is bounded at maximum IDs and adds no querie
     const first=JSON.stringify(travel);w.step(2);assert.equal(JSON.stringify(travel),first);
 });
 
-test('capture partial movement cannot issue a departure that loses healer access',async t=>{
+test('capture unsafe full proposal admits only healer-first progress and retains all-outcome support',async t=>{
     const w=await captureTravelFixture(t,{spread:3}),first=w.step(1);
     const departure=w.calls.filter(c=>c.method==='move'||c.method==='moveTo'&&c.target==='east');
-    // Only the weapons displace in this generated next observation. Old
-    // independent moveTo permits range4; guarded travel must refuse it first.
-    for(const c of departure.filter(c=>c.id.startsWith('b-')&&c.id!=='b-healer'))w.actor(c.id).x++;
+    // Supply no displacement first: unsafe weapon steps were never admitted,
+    // and an accepted healer command is not an observed position change.
     w.distinct();const next=w.step(2);
-    assert.equal(departure.length,0,JSON.stringify({first,next,departure}));
-    assert.equal(first.reason,'capture-step-support-unavailable');
-    assert.equal(next.phase,'finished');assert.equal(next.startedAt,1);assert.equal(next.queries,0);
+    assert.deepEqual(departure.map(c=>c.id),['b-healer']);
+    assert.equal(first.phase,'active');assert.equal(first.travel.examined,16);
+    assert.equal(next.phase,'active');assert.equal(next.startedAt,1);assert.equal(next.queries,0);
+    assert.deepEqual(w.calls.filter(c=>c.method==='move').map(c=>c.id),['b-healer']);
     assert(['b-melee','b-ranged1','b-ranged2'].every(id=>range(w.actor(id),w.actor('b-healer'))<=3));
+    w.observeSteps();w.distinct();const advanced=w.step(3);
+    assert.equal(advanced.phase,'active');assert.equal(advanced.startedAt,1);assert.equal(advanced.queries,0);
+    const moves=w.calls.filter(c=>c.method==='move');assert.equal(moves.length,4);
+    assert(secondaryStepSupport(w.units.filter(c=>c.my),first.memberIds,
+        new Map(first.memberIds.map(id=>[id,moves.find(c=>c.id===id)??null]))));
 });
 
 test('capture makes positive observed direct-step progress and shares suffix/refresh budgets',async t=>{
@@ -723,9 +734,17 @@ test('capture safe partial displacement revalidates observed support before anot
     const w=await captureTravelFixture(t),first=w.step(1);assert.equal(first.phase,'active');
     w.observeSteps(w.calls.filter(c=>c.id==='b-ranged1'));w.distinct();
     assert.equal(range(w.actor('b-ranged1'),w.actor('b-healer')),3);
-    const next=w.step(2);assert.equal(next.phase,'finished');assert.equal(next.reason,'capture-step-support-unavailable');
+    const next=w.step(2);assert.equal(next.phase,'active');assert.equal(next.reason,'retained');
     assert.equal(next.queries,0);assert.equal(next.startedAt,1);
-    assert(!w.calls.some(c=>c.method==='move'));assert(w.calls.filter(c=>c.id.startsWith('b-')).every(c=>c.target==='centre'));
+    const moves=w.calls.filter(c=>c.method==='move');
+    assert.deepEqual(moves.map(c=>c.id),['b-healer','b-melee','b-ranged2']);
+    assert(secondaryStepSupport(w.units.filter(c=>c.my),first.memberIds,
+        new Map(first.memberIds.map(id=>[id,moves.find(c=>c.id===id)??null]))));
+    assert(!w.calls.some(c=>c.id==='b-ranged1'));
+    for(let tick=3;tick<=6;tick++){
+        const d=w.step(tick);assert.equal(d.phase,tick===6?'finished':'active');
+        if(tick===6)assert.equal(d.reason,'no-displacement');
+    }
     assert.equal(w.step(10).phase,'finished');assert.equal(w.queries.length,24);
 });
 
@@ -929,10 +948,14 @@ test('injury support movement invalidates contest before the healer executes its
     assert(w.calls.some(c=>c.id==='c-healer'&&c.method==='moveTo'&&c.target==='c-melee1'));
 });
 
-test('prospective partial-success support loss cancels whole-group ownership before any move',async t=>{
+test('contest unsafe full proposal withholds the unsupported weapon and admits the safe smaller subset',async t=>{
     const w=await contestFixture(t);w.step(1);w.actor('c-melee1').x=33;
-    const d=w.step(2);assert.equal(d.reason,'contest-step-support-unavailable');assert.equal(d.phase,'finished');
-    assert(!w.calls.some(c=>c.method==='move'));
+    const d=w.step(2);assert.equal(d.reason,'contest-retained');assert.equal(d.phase,'active');
+    const moves=w.calls.filter(c=>c.method==='move');assert.equal(moves.length,3);
+    assert(!moves.some(c=>c.id==='c-melee1'));assert.equal(d.travel.examined,16);
+    const steps=new Map(d.memberIds.map(id=>[id,moves.find(c=>c.id===id)??null]));
+    assert(secondaryStepSupport(w.units.filter(c=>c.my),d.memberIds,steps));
+    assert.equal(d.startedAt,1);assert.equal(d.queries,0);
 });
 
 test('whole-group preflight rejects escort ownership and incompatible support before any execution',async t=>{

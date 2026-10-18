@@ -1,8 +1,11 @@
 # General strategy and guarded secondary objective — 2026-10-16
 
 Status: connected to `runTick` behind **`secondaryObjectiveExperiment = false`**.
-Current inactive scoped-health/shared safe-subset travel build:
-`275a7eaafd5de6fa2acfd8f7734aa9d6d1946863164cf6c058153d388e21ff77`.
+Current inactive shared objective-travel build:
+`cdf6e4eb2289e0b24f2a16df6b21b3c9029666826dfbbde1a3dc647a90d67afd`.
+The [subset-scoped support integration](objective-travel-support-scope-integration-2026-10-18.md)
+checks current support before admission and all move/stay outcomes of admitted
+steps, rather than requiring every proposed step to be support-safe together.
 The [scoped-health integration](secondary-scoped-readiness-integration-2026-10-17.md)
 changed only the health veto below. The subsequent
 [safe-subset integration](secondary-partial-travel-integration-2026-10-17.md)
@@ -460,17 +463,22 @@ ID/input order; a different healer can support each weapon. This is a sufficient
 conservative check, not nominal combat-capacity or reserved-healing evidence.
 The one-healer contest case is unchanged. Current observed functioning support,
 retained centre defence and all existing selector safety gates still revalidate
-before route reuse/refresh. Unsafe prospective support cancels with
-`capture-step-support-unavailable` (existing contest reason unchanged).
+before route reuse/refresh. Lost **current** support still cancels with
+`capture-step-support-unavailable` (existing contest reason unchanged). A future
+proposal that would lose support is withheld, not executed or counted as progress.
 
-After original priority, validated-step, full support and known-occupancy checks,
-occupied/converging cells can admit a safe subset for a four-member group.
+After original complete-input/membership, priority, validated-step, current
+support and known-occupancy checks, unsafe or occupied/converging full proposals
+can admit a safe subset for a four-member group.
 The shared selector examines at most16 subsets, using only currently empty,
 distinct original cells and the same all-outcome support check. Among equal
 maximum-size subsets, only their common moves proceed; unresolved contenders
 remain **objective-owned holds**. Two/three-member blocked groups retain whole
 holds. No swap/vacating-cell assumption, alternate route, reservation or fairness
-state is added. Full support failure still cancels, never salvages a subset.
+state is added. The conflict-free fast path also checks all-outcome support.
+Empty/current support is proved in preflight, full support in selection, and
+the remaining14 proper nonempty subsets at most once:16 total subset proofs.
+No safe moving subset retains owned holds; lost current support cancels instead.
 Unknown occupancy/route steps cancel. Every hold consumes the original elapsed/stall
 allowance; it creates no grace period. Even failed or unknown returns do not
 advance cached positions. Only subsequent observations can rebase a route or
@@ -490,7 +498,10 @@ The current pre-action `secondaryObjective` additionally includes `travel` only
 after valid active preflight: `{examined,bestSize,tied,actors}`. At most four
 actors have `{actorId,proposed:{x,y}|null,admitted:{x,y}|null,holdReason}`.
 Reasons are `null` for admitted moves, otherwise `occupied`, `converging`,
-`no-step` or `group-hold`. These are intentions, not returns/displacement or
+`no-step`, `subset-hold` or `group-hold`. `subset-hold` means withheld by safe
+subset selection/intersection; it does not assert that this actor alone is
+unsafe. `group-hold` is the unchanged smaller-group fallback. These are
+intentions, not returns/displacement or
 proof that a safe tied singleton was chosen. No paths or raw objects are copied.
 The extension is <1200 JSON characters at maximum128-character IDs, while the
 original diagnostic excluding `travel` retains its <1500 bound; combined <2700.

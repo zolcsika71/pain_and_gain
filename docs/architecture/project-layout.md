@@ -1,5 +1,14 @@
 # Project layout
 
+`src/strategy/opening-deployment.js` now owns the default-off
+`openingDeploymentExperiment`. It shares capture validation/ranking and the
+secondary coordinator's route/cache implementation, but uses distinct tick1
+mission admission without pretending centre is already owned or defended.
+Opening and post-centre processing occupy one exclusive objective slot before
+the same group preflight/single movement pass. See the
+[inactive opening integration contract](opening-deployment-integration-2026-10-17.md)
+for supported configuration, snapshot-slot diagnostics, bounds and rollback.
+
 `src/strategy/support-locked-engagement.js` now owns the default-off
 `supportLockedEngagementExperiment`. It replaces ordinary movement only for
 one existing three-pure-ranged/healer squad through the existing execution pass;

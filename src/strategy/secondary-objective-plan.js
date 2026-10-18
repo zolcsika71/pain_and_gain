@@ -1,4 +1,4 @@
-import { selectSecondaryObjective, secondaryObjectiveLimits as limits } from './objectives.js';
+import { selectSecondaryObjective, selectOpeningObjective, secondaryObjectiveLimits as limits } from './objectives.js';
 import { contestReadiness, contestOccupant, contestRange, checkContestRoutes } from './supported-contest.js';
 
 export const secondaryTrialLimits = Object.freeze({ squads: 3, cadence: 10, cacheTicks: 5,
@@ -18,10 +18,29 @@ function suffix(report, actor, tick) {
     return { ...report, tick, from: { x: actor.x, y: actor.y }, path: report.path.slice(index + 1) };
 }
 
+export function completeObjectiveObservation({creeps, myCreeps, enemies}) {
+    return Array.isArray(creeps) && creeps.length <= limits.army * 2 &&
+        creeps.every(c => c && typeof c.my === 'boolean') &&
+        Array.isArray(myCreeps) && Array.isArray(enemies) &&
+        creeps.filter(c => c.my === true).length === myCreeps.length &&
+        creeps.filter(c => c.my === false && c.hits > 0).length === enemies.length &&
+        [...myCreeps, ...enemies].every(c => creeps.includes(c));
+}
+
 /** Bounded coordinator for one existing squad/attempt. Only `search` crosses
  * the Arena boundary; this planner issues no actor commands or diagnostics.
  */
-export function planSecondaryObjective(observation, membership, centre, previous, { search, unavailableIds = [] } = {}) {
+export function planSecondaryObjective(observation, membership, centre, previous, context = {}) {
+    return planObjectiveRoutes(observation, membership, centre, previous, context, false);
+}
+
+// Used only after the opening controller's distinct full-force admission.
+export function planOpeningRoutes(observation, membership, centre, previous, context = {}) {
+    return planObjectiveRoutes(observation, membership, centre, previous, context, true);
+}
+
+function planObjectiveRoutes(observation, membership, centre, previous, { search, unavailableIds = [] }, opening) {
+    const select = opening ? selectOpeningObjective : selectSecondaryObjective;
     const { tick, flags, myCreeps, enemies, creeps } = observation;
     const validTick = Number.isInteger(tick) && tick >= 1 && tick <= limits.matchTicks;
     let control = previous && !(validTick && tick < previous.lastTick) ? previous :
@@ -31,10 +50,10 @@ export function planSecondaryObjective(observation, membership, centre, previous
     let rejectedQuery = null, routeRejectionReason = null;
     let excludedCandidates = null;
     let ownedSteps = null;
-    const result = (reason, evaluation = null) => {
+    const result = (reason, evaluation = null, work = null) => {
         const s = control.selection, active = s?.phase === 'active';
         const target = active ? flags.find(f => f.id === s.targetId) : null;
-        return { state: control, fallbackById: new Map(target && !control.contest ? s.memberIds.map(id => [id, target]) : []),
+        return { state: control, evaluation, work, fallbackById: new Map(target && !control.contest ? s.memberIds.map(id => [id, target]) : []),
             ...(active ? { movement: { kind: control.contest ? 'contest' : 'capture', memberIds: [...s.memberIds],
                 steps: control.contest ? ownedSteps : new Map(control.cache.map(r => [r.actorId, r.path[0] ?? null])) }, cancel: stop } : {}),
             diagnostic: { phase: s?.phase ?? 'idle', reason, squadId: control.squad?.id ?? null,
@@ -54,12 +73,7 @@ export function planSecondaryObjective(observation, membership, centre, previous
         return result(reason);
     };
     if (control.selection?.phase === 'finished') return result(control.selection.reason);
-    const complete = Array.isArray(creeps) && creeps.length <= limits.army * 2 &&
-        creeps.every(c => c && typeof c.my === 'boolean') &&
-        Array.isArray(myCreeps) && Array.isArray(enemies) &&
-        creeps.filter(c => c.my === true).length === myCreeps.length &&
-        creeps.filter(c => c.my === false && c.hits > 0).length === enemies.length &&
-        [...myCreeps, ...enemies].every(c => creeps.includes(c));
+    const complete = completeObjectiveObservation(observation);
     if (!validTick || !complete) return stop('unsupported-observation');
     if (!membership?.initialized || membership.lastTick !== tick || !Array.isArray(membership.squads) ||
         membership.squads.length > secondaryTrialLimits.squads || !Array.isArray(membership.members) ||
@@ -167,7 +181,7 @@ export function planSecondaryObjective(observation, membership, centre, previous
         } else {
             // Unchanged capture admission on the pinned flag with the original
             // active state: deadline, binding and attempt never restart.
-            const checked = selectSecondaryObjective(input(squad, routes), s);
+            const checked = select(input(squad, routes), s);
             if (checked.state.phase !== 'active') return stop(checked.reason);
             control.selection = checked.state;
             ownedSteps = new Map(routes.map(r => [r.actorId, r.path[0] ?? null]));
@@ -176,12 +190,12 @@ export function planSecondaryObjective(observation, membership, centre, previous
         control = { ...control, contest: { ...control.contest, mode }, cache: routes };
         return result(reason);
     }
-    if (control.selection?.phase === 'active' && control.contest) return runContest();
+    if (!opening && control.selection?.phase === 'active' && control.contest) return runContest();
     if (control.selection?.phase === 'active') {
         const squad = membership.squads.find(s => s.id === control.squad.id);
         if (!squad || !eligibleMembers(squad)) return stop('squad-unavailable');
         const routes = control.cache.map(r => suffix(r, myCreeps.find(c => c.id === r.actorId), tick)).filter(Boolean);
-        const cached = selectSecondaryObjective(input(squad, routes), control.selection);
+        const cached = select(input(squad, routes), control.selection);
         const reusable = routes.length === squad.memberIds.length;
         // Safety/ownership/timeout/stall always revalidate; no search for an
         // already-terminal result, except a missing off-path route report.
@@ -192,22 +206,23 @@ export function planSecondaryObjective(observation, membership, centre, previous
         if (fresh) {
             cacheHits = routes.length;
             control = { ...control, selection: cached.state, cache: routes };
-            return result(cached.reason, cached.evaluation);
+            return result(cached.reason, cached.evaluation, cached.work);
         }
         const target = flags.find(f => f.id === control.selection.targetId);
         const refreshed = collect(squad, [target]);
         if (!refreshed) return stop(routeRejectionReason);
-        const checked = selectSecondaryObjective(input(squad, refreshed), control.selection);
+        const checked = select(input(squad, refreshed), control.selection);
         control = { ...control, selection: checked.state, cache: checked.state.phase === 'active' ? refreshed : [] };
-        return result(checked.reason, checked.evaluation);
+        return result(checked.reason, checked.evaluation, checked.work);
     }
     if (control.lastAcquireAt !== null && tick - control.lastAcquireAt < secondaryTrialLimits.cadence) return result('acquisition-cadence');
-    if (!centre || centre.my !== true) return result('centre-not-owned');
+    if (!centre || (opening ? centre.my === false : centre.my !== true))
+        return result(opening ? 'centre-enemy-owned' : 'centre-not-owned');
     control = { ...control, lastAcquireAt: tick };
     // Filter using the unchanged selector's role/support/defence/observation
     // gates before paying for routes. Empty routes cannot acquire an objective.
     const eligible = membership.squads.filter(eligibleMembers).filter(s =>
-        selectSecondaryObjective(input(s, [])).reason === 'no-useful-objective');
+        select(input(s, [])).reason === 'no-useful-objective');
     const score = squad => {
         const members = squad.memberIds.map(id => myCreeps.find(c => c.id === id));
         const healers = members.filter(c => part(c, 'heal'));
@@ -216,7 +231,7 @@ export function planSecondaryObjective(observation, membership, centre, previous
     };
     const chosen = eligible.map(score).sort((a, b) => a.gap - b.gap || b.weapons - a.weapons || byId(a.squad, b.squad))[0]?.squad;
     if (!chosen) return result('no-eligible-squad');
-    const targets = flags.filter(f => f.id !== centre.id && f.my !== true &&
+    const targets = flags.filter(f => f.id !== centre.id && (opening ? f.my === undefined : f.my !== true) &&
         tick + Math.max(...chosen.memberIds.map(id => range(myCreeps.find(c => c.id === id), f))) + 1 < limits.matchTicks &&
         !creeps.some(c => c.hits > 0 && c.exists !== false && same(c, f)) &&
         !enemies.some(e => armed(e) && range(e, f) <= limits.threatRange)).sort(byId).filter(target => {
@@ -229,11 +244,11 @@ export function planSecondaryObjective(observation, membership, centre, previous
     });
     const reports = collect(chosen, targets);
     if (!reports) return result(routeRejectionReason);
-    const selected = selectSecondaryObjective(input(chosen, reports));
+    const selected = select(input(chosen, reports));
     control = { ...control, selection: selected.state, squad: selected.state.phase === 'active'
         ? { id: chosen.id, memberIds: [...chosen.memberIds] } : null,
         cache: selected.state.phase === 'active' ? reports.filter(r => r.flagId === selected.objectiveId) : [] };
-    if (selected.state.phase !== 'active') {
+    if (!opening && selected.state.phase !== 'active') {
         // Safe capture keeps first refusal. Contest uses only unspent work in
         // this invocation; no additional squad/route budget is created.
         const contestSquad = eligible.filter(s => !contestReadiness(input(s, []))).map(score)
@@ -265,5 +280,5 @@ export function planSecondaryObjective(observation, membership, centre, previous
         ownedSteps = best.checked.steps;
         return result('contest-selected');
     }
-    return result(selected.reason, selected.evaluation);
+    return result(selected.reason, selected.evaluation, selected.work);
 }

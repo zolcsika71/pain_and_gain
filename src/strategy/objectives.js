@@ -72,6 +72,17 @@ function capacities(creeps, flags, owner) {
  * IDs in results keep centre, travel objective and squad ownership separate.
  */
 export function selectSecondaryObjective(input, previous = null) {
+    return selectCaptureObjective(input, previous, false);
+}
+
+// Opening mission admission is deliberately distinct from post-centre defence.
+// The opening controller additionally requires the full six-weapon/two-healer
+// centre commitment; route validation, utility and lifecycle remain shared.
+export function selectOpeningObjective(input, previous = null) {
+    return selectCaptureObjective(input, previous, true);
+}
+
+function selectCaptureObjective(input, previous, opening) {
     const { tick, flags, myCreeps, enemies, squad, routes, centreId, unavailableIds = [] } = input;
     const work = { candidates: 0, routes: 0, pathCells: 0, routeThreatChecks: 0 };
     const validTick = Number.isInteger(tick) && tick >= 1 && tick <= limits.matchTicks;
@@ -88,7 +99,8 @@ export function selectSecondaryObjective(input, previous = null) {
     const centre = flags.find(f => f.id === centreId);
     if (!centre || centre.effectType !== 'eff_damage_taken_modifier') return stop('invalid-centre');
     if (state?.phase === 'finished') { state = { ...state, lastTick: tick }; return reply(state.reason); }
-    if (centre.my !== true) return stop('centre-not-owned');
+    if (opening ? centre.my === false : centre.my !== true)
+        return stop(opening ? 'centre-enemy-owned' : 'centre-not-owned');
     const ids = [...squad.memberIds].sort();
     if (state?.phase === 'active' && (state.centreId !== centreId || !samePosition(state.centre, centre) ||
         state.squadId !== squad.id || ids.join('\0') !== state.memberIds.join('\0'))) return stop('binding-changed');
@@ -97,12 +109,12 @@ export function selectSecondaryObjective(input, previous = null) {
     if (group.some(c => !c || c.fatigue !== 0 || !partCount(c, 'move') ||
         !armed(c) && !partCount(c, 'heal') || unavailableIds.includes(c.id))) return stop('squad-unavailable');
     if (friends.some(c => (ids.includes(c.id) ||
-        !unavailableIds.includes(c.id) && distance(c, centre) <= limits.defenderRange) &&
+        !unavailableIds.includes(c.id) && (opening || distance(c, centre) <= limits.defenderRange)) &&
         c.hits !== c.hitsMax)) return stop('army-injured');
     const healers = group.filter(c => partCount(c, 'heal'));
     const weapons = group.filter(armed);
     if (!healers.length || !weapons.length || weapons.some(c => !healers.some(h => distance(c, h) <= limits.supportRange))) return stop('support-unavailable');
-    const defenders = friends.filter(c => !ids.includes(c.id) && !unavailableIds.includes(c.id) && distance(c, centre) <= limits.defenderRange);
+    const defenders = friends.filter(c => !ids.includes(c.id) && !unavailableIds.includes(c.id) && (opening || distance(c, centre) <= limits.defenderRange));
     const defenceHealers = defenders.filter(c => partCount(c, 'heal'));
     if (defenders.filter(c => armed(c) && defenceHealers.some(h => distance(c, h) <= limits.supportRange)).length < limits.defenders) return stop('defence-unavailable');
     const armedFoes = foes.filter(armed);
@@ -117,7 +129,7 @@ export function selectSecondaryObjective(input, previous = null) {
     }
     const own = capacities(friends, flags, true), enemy = capacities(foes, flags, false);
     const indexed = new Map(routes.map(r => [routeKey(r.actorId, r.flagId), r]));
-    const candidates = active ? [target] : flags.filter(f => f.id !== centreId && f.my !== true).sort((a, b) => a.id < b.id ? -1 : 1);
+    const candidates = active ? [target] : flags.filter(f => f.id !== centreId && (opening ? f.my === undefined : f.my !== true)).sort((a, b) => a.id < b.id ? -1 : 1);
     const evaluations = [];
     for (const flag of candidates) {
         work.candidates++;

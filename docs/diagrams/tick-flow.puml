@@ -29,6 +29,12 @@ Membership --> Pair : stable same-squad members\nonly when experiment enabled
 Loop --> Evidence : baseline or change-only membership\nevidence after update
 Membership --> Evidence : read resulting state\nwithout mutation
 Loop --> Objectives : select first flag
+component "src/strategy/opening-deployment.js\nopeningDeploymentExperiment=false" as Opening
+Loop --> Opening : optional tick1 mission; exclusive objective slot;\nreject incompatible experiments before routing
+Opening --> Secondary : shared capture route/cache core;\n24 acquisition /4 refresh, maxOps1000; no contest
+Opening --> Objectives : distinct neutral-centre/neutral-target admission;\nsix weapons/two healers committed to centre
+Opening --> Execute : same preflight and movement pass;\nordinary combat/escort/injury support retains priority
+Opening --> Debug : bounded snapshot-slot references\nin existing secondaryObjective field; no new records
 Loop --> Secondary : default-off secondary trial;\noriginal centre + existing membership + controller exclusions
 Secondary --> Objectives : unchanged pure selector;\none bounded existing-squad attempt
 Secondary --> Contest : capture first refusal; isolated unarmed contest\nuses remaining shared work; same lifecycle on handoff

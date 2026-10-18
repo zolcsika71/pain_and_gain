@@ -44,7 +44,10 @@ export function prepareSecondaryMovement(secondary, friends, enemies, flag, enga
         if (next && Math.max(Math.abs(next.x - actor.x), Math.abs(next.y - actor.y)) !== 1)
             return cancel('route-unavailable');
     }
-    if (!secondaryStepSupport(friends, memberIds, steps)) return cancel('step-support-unavailable');
+    // All-stationary is a possible outcome of every admitted batch. Reject
+    // lost CURRENT support first; proposed moves need not all be admissible.
+    if (!secondaryStepSupport(friends, memberIds, new Map(memberIds.map(id => [id, null]))))
+        return cancel('step-support-unavailable');
     const all = spacing?.creeps;
     if (!Array.isArray(all) || all.length > 28) return cancel('occupancy-unknown');
     const destinations = [...steps.values()].filter(Boolean);
@@ -57,7 +60,8 @@ export function prepareSecondaryMovement(secondary, friends, enemies, flag, enga
         const occupied = proposed && all.some(c => c.exists !== false && c.hits > 0 && c.x === proposed.x && c.y === proposed.y);
         const converging = proposed && destinations.filter(p => p.x === proposed.x && p.y === proposed.y).length > 1;
         return { actorId, proposed: point(proposed), admitted: point(admitted),
-            holdReason: admitted ? null : !proposed ? 'no-step' : occupied ? 'occupied' : converging ? 'converging' : 'group-hold' };
+            holdReason: admitted ? null : !proposed ? 'no-step' : occupied ? 'occupied' : converging ? 'converging'
+                : selected.examined ? 'subset-hold' : 'group-hold' };
     });
     const travel = { examined: selected.examined, bestSize: selected.bestSize, tied: selected.tied, actors };
     return { secondary: { ...secondary, diagnostic: { ...secondary.diagnostic, travel } }, moves: selected.moves };

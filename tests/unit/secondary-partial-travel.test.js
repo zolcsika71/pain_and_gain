@@ -116,12 +116,12 @@ test('no swaps or entry into a cell merely expected to be vacated',()=>{
     assert.equal(c.moves.get('medic'),null);assert.equal(c.moves.get('bow2'),null);allOutcomesSafe(w,c);
 });
 
-test('full unsafe support is still cancellation, not permission to salvage a subset',()=>{
+test('full unsafe support admits only supported smaller subsets',()=>{
     const w=world();Object.assign(w.actor('bow2'),{x:44,y:43});w.steps.set('bow2',{x:45,y:43});
     // If only this weapon moved, current healer at41 would be range4 away.
     assert.equal(secondaryStepSupport(w.myCreeps,w.ids,w.steps),false);
-    const c=w.prepare();assert.equal(c.moves,null);assert.equal(w.cancelled,'capture-step-support-unavailable');
-    assert.equal(summary(c).examined,0);
+    const c=w.prepare();assert.deepEqual(admitted(c),['blade','medic']);assert.equal(w.cancelled,null);
+    assert.equal(summary(c).examined,16);allOutcomesSafe(w,c);
 });
 
 test('every partial-success outcome preserves current functioning healer access',()=>{
@@ -191,12 +191,18 @@ test('real planner and executor make supplied multi-tick progress with unchanged
         state=p.secondary.state;supplyNextObservation(w,p);
     }
     assert.equal(w.actor('medic').x,46);assert.equal(w.actor('bow2').x,48);assert.equal(w.actor('bow1').x,43);
-    // Continued healer departure would abandon the blocked weapon. Do not
-    // weaken support or add catch-up waiting to keep this trajectory running.
-    w.secondary=planner(w,state);const stopped=w.prepare();
-    assert.equal(stopped.moves,null);assert.equal(stopped.secondary.diagnostic.reason,'capture-step-support-unavailable');
-    assert.equal(stopped.secondary.diagnostic.queries,4);assert.equal(stopped.secondary.diagnostic.startedAt,1);
-    w.tick++;const spent=planner(w,stopped.secondary.state);assert.equal(spent.diagnostic.phase,'finished');
+    // Further healer departure would abandon a blocked weapon. Hold the
+    // healer; allow only supported weapons, without adding catch-up time.
+    w.secondary=planner(w,state);const next=w.prepare();
+    assert.deepEqual(admitted(next),['blade','bow2']);allOutcomesSafe(w,next);
+    assert.equal(next.secondary.diagnostic.queries,4);assert.equal(next.secondary.diagnostic.startedAt,1);
+    state=next.secondary.state;
+    for(let tick=7;tick<=10;tick++){
+        w.tick=tick;w.secondary=planner(w,state);const p=w.prepare();state=p.secondary.state;
+        assert.equal(p.secondary.diagnostic.phase,tick===10?'finished':'active');
+        if(tick===10)assert.equal(p.secondary.diagnostic.reason,'no-displacement');
+    }
+    w.tick++;const spent=planner(w,state);assert.equal(spent.diagnostic.phase,'finished');
     assert.equal(spent.diagnostic.queries,0);assert.equal(w.queries.length,28);
     assert(w.queries.every(q=>q.maxOps===1000&&q.range===0));
     assert.deepEqual(secondaryTrialLimits,{squads:3,cadence:10,cacheTicks:5,queryOps:1000,acquisitionQueries:24,activeQueries:4});
@@ -218,9 +224,9 @@ test('partial observed progress is not inferred from accepted commands and next 
     const w=world();w.secondary=planner(w);const p=w.prepare();w.execute(p);
     supplyNextObservation(w,p,['bow2']);assert.equal(range(w.actor('bow2'),w.actor('medic')),3);
     w.secondary=planner(w,p.secondary.state);assert.equal(w.secondary.diagnostic.unchanged,0);
-    const stopped=w.prepare();assert.equal(stopped.moves,null);
-    assert.equal(stopped.secondary.diagnostic.reason,'capture-step-support-unavailable');
-    assert.equal(stopped.secondary.diagnostic.startedAt,1);assert.equal(w.queries.length,24);
+    const next=w.prepare();assert.deepEqual(admitted(next),['blade','medic']);allOutcomesSafe(w,next);
+    assert.equal(next.moves.get('bow2'),null);
+    assert.equal(next.secondary.diagnostic.startedAt,1);assert.equal(w.queries.length,24);
 });
 
 test('original absolute deadline and spent state survive an earlier partial departure',()=>{

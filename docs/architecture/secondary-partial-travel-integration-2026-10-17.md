@@ -1,5 +1,11 @@
 # Shared safe-subset travel — inactive integration (2026-10-17)
 
+Historical integration record below. Its full-proposal prerequisite is superseded
+by the [2026-10-18 support-scope promotion](objective-travel-support-scope-integration-2026-10-18.md):
+current support still cancels when lost; prospective support is validated on
+admitted subsets, with intersection ties unchanged. Earlier receipts and live
+limitations are not relabelled as results of that later change.
+
 Build: `275a7eaafd5de6fa2acfd8f7734aa9d6d1946863164cf6c058153d388e21ff77`.
 Starting build: `0bec72b13084579ea07b3e2d3d15b260f8c141a3d5e06317db4253528cbb391f`.
 Both experiments remain disabled; all other switches and policies are unchanged.
