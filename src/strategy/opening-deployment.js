@@ -5,6 +5,23 @@ const range=(a,b)=>Math.max(Math.abs(a.x-b.x),Math.abs(a.y-b.y));
 const part=(c,type)=>c.body.some(p=>p.type===type&&p.hits>0);
 const armed=c=>part(c,'attack')||part(c,'ranged_attack');
 const point=c=>({x:c.x,y:c.y});
+const same=(a,b)=>a.x===b.x&&a.y===b.y;
+const living=c=>c.exists!==false&&c.hits>0;
+
+// Only inspect the next cell at an observed origin/path node. Off-path reports
+// remain subject to the shared planner's original suffix validation/refresh.
+export function blockedOpeningReports(observation,previous){
+    const cache=previous?.routeControl?.cache;
+    if(previous?.phase!=='active'||!Array.isArray(cache))return[];
+    return cache.filter(r=>{
+        const actor=observation.myCreeps.find(c=>c.id===r.actorId);
+        if(!actor||!r.from||!Array.isArray(r.path))return false;
+        const index=same(actor,r.from)?-1:r.path.findIndex(p=>same(actor,p));
+        if(index<0&&!same(actor,r.from))return false;
+        const next=r.path[index+1];
+        return next&&observation.creeps.some(c=>living(c)&&same(c,next));
+    });
+}
 export const openingLimits=Object.freeze({centreWeapons:6,centreHealers:2,
     acquisitionQueries:secondaryTrialLimits.acquisitionQueries,
     refreshQueries:secondaryTrialLimits.activeQueries,lifetime:limits.lifetime,unchanged:limits.unchanged});
@@ -42,6 +59,7 @@ export function planOpeningDeployment(observation,membership,centre,previous=nul
     const all=observation.creeps;
     if(!Array.isArray(all)||all.length!==myCreeps.length+enemies.length||new Set(all).size!==all.length||
         [...myCreeps,...enemies].some(c=>!all.includes(c)))return finish('opening-occupancy-unavailable');
+    if(typeof context.CostMatrix!=='function')return finish('opening-matrix-unavailable');
     if(previous&&(centre.id!==previous.centre.id||range(centre,previous.centre)!==0||
         [...squad.memberIds].sort().join('\0')!==previous.squad.memberIds.join('\0')))
         return finish('binding-changed');
@@ -54,8 +72,19 @@ export function planOpeningDeployment(observation,membership,centre,previous=nul
         healers.some(h=>weapons.filter(w=>range(w,h)<=3).length<2))return finish('centre-mission-unavailable');
     if(enemies.some(e=>e.hits>0&&armed(e)&&remaining.some(c=>range(e,c)<=limits.threatRange)))
         return finish('centre-mission-pressure');
+    const blocked=blockedOpeningReports(observation,previous);
+    // Eviction, not fabricated age/progress. Missing reports use the shared
+    // planner's one <=4-query refresh, including its terminal-stall accounting.
+    const routeInput=blocked.length?{...previous.routeControl,
+        cache:previous.routeControl.cache.filter(r=>!blocked.includes(r))}:previous?.routeControl;
+    const search=(actor,goal,options)=>{
+        const costMatrix=new context.CostMatrix();
+        for(const c of all)if(living(c)&&c.id!==actor.id)costMatrix.set(c.x,c.y,255);
+        costMatrix.set(actor.x,actor.y,0); // terrain default; no assumed vacating
+        return context.search(actor,goal,{...options,costMatrix});
+    };
     const planned=planOpeningRoutes(observation,{...membership,squads:[squad]},
-        centre,previous?.routeControl,{search:context.search,unavailableIds:input.unavailableIds});
+        centre,routeInput,{search,unavailableIds:input.unavailableIds});
     const routeControl=planned.state,routeDiagnostic=planned.diagnostic;
     if(routeControl.selection?.phase!=='active')return finish(routeDiagnostic.reason,routeDiagnostic);
     const selected={state:routeControl.selection,objectiveId:routeDiagnostic.targetId,

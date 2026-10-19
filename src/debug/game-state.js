@@ -53,21 +53,25 @@ export function logHealerEscortDiagnostic(diagnostic) {
 let mapLogged = false;
 let lastMapTick = 0;
 let mapAttempts = 0;
+let mapRecordedAt = null;
 
 export function logMapOnce(tick, readMap) {
     if (tick < lastMapTick) {
         mapLogged = false;
         mapAttempts = 0;
+        mapRecordedAt = null;
     }
     lastMapTick = tick;
-    if (mapLogged || mapAttempts >= 3) return;
+    if (mapLogged || mapAttempts >= 3) return mapRecordedAt;
     mapAttempts++;
     try {
         const map = readMap();
         console.log(JSON.stringify({ type: 'map-state', formatVersion: 1, buildId,
             tick, phase: 'before-actions', map }));
         mapLogged = true;
+        mapRecordedAt = tick;
     } catch (error) {
         console.error(`Map capture failed at tick ${tick}: ${error.message}`);
     }
+    return mapRecordedAt;
 }

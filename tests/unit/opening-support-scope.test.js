@@ -6,6 +6,7 @@ import {secondaryStepSupport} from '../../src/strategy/supported-contest.js';
 import {planOpeningDeployment} from '../../src/strategy/opening-deployment.js';
 import {retainedScopeInput} from '../fixtures/opening-support-scope-retained-input.js';
 import {useGeneratedOpeningSearch} from '../fixtures/opening-secondary-search-api.js';
+import {TestCostMatrix} from '../fixtures/arena-cost-matrix.js';
 // Production preflight, without a support-scope import hook.
 const {prepareSecondaryMovement}=await import('../../src/arena/execute.js');
 const moved=m=>[...m??[]].filter(([,p])=>p).map(([id])=>id).sort();
@@ -38,7 +39,7 @@ test('retained generated unsafe proposal now examines safe subsets; intersection
     for(const c of retainedScopeInput.positions)Object.assign(w.actor(c.id),{x:c.x,y:c.y});
     w.tick=retainedScopeInput.tick;w.bind();w.reports();
     const p=planOpeningDeployment({...w,creeps:w.spacing.creeps},w.membership,w.centre,w.state,
-        {search:w.searchPath,terrainAt:w.spacing.terrainAt});
+        {search:w.searchPath,CostMatrix:TestCostMatrix,terrainAt:w.spacing.terrainAt});
     assert.equal(p.state.phase,'active');const ids=p.movement.memberIds,steps=p.movement.steps;
     assert.deepEqual([...steps],retainedScopeInput.steps);
     assert(!secondaryStepSupport(w.myCreeps,ids,steps));

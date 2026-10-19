@@ -70,7 +70,7 @@ export function prepareSecondaryMovement(secondary, friends, enemies, flag, enga
 export function moveCreeps(myCreeps, enemies, flag, engagements = new Map(), fallbackById = new Map(),
     escort = null, reportEscort = null, reporter = null, scoutHoldEnabled = false, pairPlan = null, spacingContext = null,
     ordinaryFallbackById = null, objectiveMoves = null, objectiveKind = 'contest', healerClosing = null,
-    engagementMoves = null) {
+    engagementMoves = null, openingCentreIds = null) {
     const spacing = spacingContext ? { ...spacingContext, reserved: new Set() } : null;
     const ownedIds = new Set(myCreeps.map(creep => creep.id));
     for (const id of engagements.keys()) if (!ownedIds.has(id)) engagements.delete(id);
@@ -134,7 +134,9 @@ export function moveCreeps(myCreeps, enemies, flag, engagements = new Map(), fal
         if (objectiveOwned) {
             const target = objectiveMoves.get(creep.id);
             plan = { ...plan, target, outcome: target ? 'selected' : 'hold', targetKind: 'position',
-                reason: `${objectiveKind}-route-${target ? 'step' : 'hold'}` };
+                reason: openingCentreIds?.has(creep.id)
+                    ? `opening-centre-${target ? 'step' : 'hold'}`
+                    : `${objectiveKind}-route-${target ? 'step' : 'hold'}` };
         }
         if (engagementOwned) {
             const target = engagementMoves.get(creep.id);

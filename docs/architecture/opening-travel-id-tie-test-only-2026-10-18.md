@@ -1,5 +1,16 @@
 # Opening travel ID tie resolution — rejected test-only (2026-10-18)
 
+Current re-evaluation: **reject runtime integration of the ID-only rule**.
+The [subset-scoped re-evaluation below](#re-evaluation-with-current-subset-scoped-support)
+uses inactive build
+`cdf6e4eb2289e0b24f2a16df6b21b3c9029666826dfbbde1a3dc647a90d67afd`
+and15 generated checks. It removes the obsolete support-cancellation premise,
+but retains conditional transient progress, eventual blocking and demonstrated
+starvation. The original allocator and test transport remain byte-identical;
+only test expectations/coverage and this document change. No integration or
+trial follows. The original result and publication boundary below are historical
+and remain intact; the earlier external receipt is not overwritten.
+
 Decision: **reject as a standalone improvement**. Stable actor IDs recover safe
 moves withheld by intersection, but do not establish sustained supported travel
 in the retained generated sequence. Keep the negative candidate/tests; no
@@ -141,3 +152,126 @@ is established. Do not start another arbitration variant or trial here.
 Cause audit, complete generated frames/returns, outputs, preservation hashes and
 read-scope limitations are retained in:
 `/Users/zoltanka/.local/share/pain-and-gain-evidence/opening-travel-tie-test-only-20261018-cAwbjh/report.json`.
+
+## Re-evaluation with current subset-scoped support
+
+The unchanged local `tests/fixtures/opening-travel-tie-candidate.js` and
+`tests/fixtures/opening-travel-tie-world.js` run against the published371894a
+runtime. Existing `congestedWorld`, supplied diagonal response table, plain
+terrain, actor IDs, membership, priorities, centre helper and observation-success
+conventions are unchanged. No historical reader, raw extract, fixture search or
+original response is used. Tests import the named generated harness only and
+necessary production/generated dependencies.
+
+Canonical current `secondaryStepSupport` proves every admitted weapon/healer
+move/stay combination. Original production preflight checks **current support**,
+not full-proposal support. Intersection uses the actual production selector.
+The original generic ID branch still chooses the lexicographically smallest
+sorted actor list among maximum safe subsets when occupancy/convergence blocks
+the full proposal. Its existing conflict-free/unsupported-shape delegation goes
+directly to the current production selector; no new arbitration domain, ranker,
+fairness state or support rule is added. Exhaustive diagnostic enumeration is
+test work, not extra runtime route work or an Arena CPU measurement.
+
+### Precisely obsolete expectations
+
+The unchanged old14-case entry point on the current build gives10 passes and4
+failures. The all-success expectation `[3,2,2,0]` with support cancellation at4,
+and the three `bow2` return cases (`-11`,unknown,numeric0 without displacement)
+expecting that same reason/tick, are obsolete. Their actual continuation now
+retains safe subsets and eventually stalls. These failures are retained before
+test edits; they are not production failures or overwritten old-build evidence.
+
+Extend the primary observation loop from its former10-test-observation cutoff
+to termination within the **existing**61 absolute boundary. No mission timer,
+deadline, stall counter or policy is extended. The first updated run also
+mistakenly asserted that nested route selection must become finished: opening
+cancellation deliberately spends the outer mission while retaining its nested
+selection. The corrected assertion checks outer finished state, no owned moves
+and no later search/reacquisition. That failed assertion is retained too.
+
+The previous isolated renaming probe remains in the exact old test before-copy.
+The current run uses original IDs in every comparison and instead asserts the
+fixed lexical winner; no identity is renamed to improve progress. Input-order
+reversal and mirrored geometry preserve original identities and the complete
+generated sequence. Exact-tie outcomes are **not renaming invariant**, by the
+unchanged ID comparator; this is separate from input-order determinism.
+
+### Successive-observation results
+
+All counts below are admitted commands. Supplied displacement is a separate
+generated input, never inferred from returns or claimed as Arena movement.
+Every active frame checks all16 move/stay combinations per four-member squad,
+distinct currently empty destinations, one movement command/actor and24/4
+query caps. Original start1, deadline61, unchanged support/priority cancellation,
+four stalled observations and spent state remain. Centre helper work stays
+bounded at64 neighbours and16 subsets per retained squad.
+
+| Supplied execution convention | Intersection | Original stable-ID rule |
+| --- | --- | --- |
+| All admitted direct moves succeed | 4 supplied secondary steps; counts3,1,0,0,0,0,0; stall7 | 12 supplied steps; counts3,2,2,1,1,1,1,1,0,0,0,0,0; stall13 |
+| `bow2` never displaces; return-11,unknown or0 | 5 commands,4 supplied steps; stall8 | 11 commands,4 supplied steps; stall8 |
+| After first observation no secondary actor displaces | 7 commands,3 supplied steps; stall6 | 11 commands,3 supplied steps; stall6 |
+| Departing healer never displaces | 9 commands,3 supplied steps; stall7 | 12 commands,5 supplied steps; stall8 |
+
+All end `no-displacement`; no flag ownership/capture is supplied or observed.
+All-success routing totals8 queries for intersection and12 for IDs (four each
+at1/6 and, for the longer ID attempt,11), not an enlarged per-tick budget.
+Reported ops100 per injected response are generated inputs, not measured work.
+Remaining flag ranges in bound order medic/bow1/bow2/guardR2 are37/37/36/36
+versus36/34/33/35. Thus IDs yield real **decision-level local progress** in the
+declared generated-success case, not sustained mission departure/arrival.
+
+At4 the full proposal is unsupported but current support remains valid. IDs
+admit bow1, withholding bow2's unsafe step. At5 medic can move safely, then
+bow2 at6 and bow1 at7. At8 equal safe singleton contenders are medic and
+guardR2; IDs choose guardR2. At9 medic's proposed cell is occupied, two other
+cells are occupied and bow2 cannot advance without leaving stationary healer
+access. Only empty/current support is safe through12; the original stall
+terminates at13. The former cancellation disappears, not the traffic/support
+dead end.
+
+When bow2 never displaces, the safe medic alternative is repeatedly declined
+while the original lower-ID contender is selected. At4–7 IDs keep selecting
+bow2; at5–7 `{medic}` and `{bow2}` remain equal safe maxima. The accepted0 case
+has the same observations as rejected/unknown returns. Both rules end with the
+same secondary positions; the additional commands confer no generated progress.
+When all secondary commands fail to displace, the same contender is likewise
+repeatedly favoured until stall. Bounded termination prevents indefinite waiting,
+but does not establish fairness or useful retry behavior.
+
+The original adjacent crossing case still fences secondary destination(12,12)
+from centre travel under both rules, including a non-displacing retained healer.
+Shared reservations, occupancy and no-vacating assumptions remain. Escort wins
+before any alternate selection, with identical ordinary/tactical traces. A new
+current-observation tactical comparison also matches production selectors/order
+through both continuations; these no-contact healthy inputs emit no attack/heal
+calls, so nonempty combat/healing effectiveness is unexercised, not inferred.
+Existing unaffected tactical validation is reused.
+
+### Recommendation and retained evidence
+
+**Reject the ID-only rule for runtime integration.** The old support-cancellation
+reason is no longer a valid objection. There is conditional safe local progress,
+but the unchanged ID ordering still demonstrably denies available healer moves
+under a non-displacing winner, provides no added observed progress in that case,
+and eventually blocks even with all supplied moves succeeding. No remedy or
+new arbitration variant is introduced to force success.
+
+Both comparisons depend on the same **test-only centre-support controller**.
+The gain is conditional on that helper, not qualification of standalone deployed
+opening movement; ordinary centre support and priority handoff limitations remain.
+Support-safe decisions do not prove Arena arbitration, capture, damage prevention,
+survival, competitive benefit or engine CPU cost. No future trial is authorized.
+
+```sh
+node --test tests/unit/opening-travel-tie.test.js
+```
+
+15 generated checks pass,0 fail/skip. Runtime/config/package/build/index,
+allocator, routing transport, centre candidate and source fixtures stay unchanged.
+No historical test, gameplay suite or build regeneration runs. Test-local Node
+timing is not Arena CPU. Original receipt/hash and all new before/failing/passing
+outputs,12 complete generated comparisons, support/command observations and
+preservation evidence are retained at:
+`/Users/zoltanka/.local/share/pain-and-gain-evidence/opening-id-tie-reevaluation-20261018-LUA9v6/report.json`.

@@ -34,6 +34,11 @@ Loop --> Opening : optional tick1 mission; exclusive objective slot;\nreject inc
 Opening --> Secondary : shared capture route/cache core;\n24 acquisition /4 refresh, maxOps1000; no contest
 Opening --> Objectives : distinct neutral-centre/neutral-target admission;\nsix weapons/two healers committed to centre
 Opening --> Execute : same preflight and movement pass;\nordinary combat/escort/injury support retains priority
+component "src/strategy/opening-centre-support.js\nactive opening only; same disabled switch" as CentreSupport
+Loop --> CentreSupport : AFTER departing preflight, BEFORE final state/logging;\noriginal centre + two retained birth squads + priority context
+CentreSupport --> Contest : <=8 neighbours/actor; <=16 subsets/squad;\nsecondary destinations reserve first; cross-centre ties hold
+CentreSupport --> Execute : merge centre steps/null holds into same move map;\npriority cancellation discards ALL prepared moves
+note right of CentreSupport : Eight retained actors, scouts unchanged.\nNo route queries or secondary progress/deadline reset.\nCapture/termination releases both groups immediately;\ndisabled/inactive bypasses evaluation and terrain scans.\nExisting actor reasons distinguish centre from capture steps.
 Opening --> Debug : bounded snapshot-slot references\nin existing secondaryObjective field; no new records
 Loop --> Secondary : default-off secondary trial;\noriginal centre + existing membership + controller exclusions
 Secondary --> Objectives : unchanged pure selector;\none bounded existing-squad attempt
@@ -53,6 +58,17 @@ Pair --> Execute : joint step / bounded wait;\nrelease restores ordinary movemen
 Loop --> Observe : sample starting map once
 Observe --> API : getObjects() / getTerrainAt()
 Loop --> Debug : log map once, then tick state\nbefore actions
+component "src/debug/opening-route-probe.js\nopeningRouteProbeExperiment=false" as RouteProbe
+Loop --> RouteProbe : AFTER both preflights/map, BEFORE logging/movement;\nboth switches on; controlled first-stop/missing status only if ineligible
+RouteProbe --> API : first eligible conflicting birth slot (any bound role);\nactive compatible/live0/cache4; <=2 queries within4 cap, maxOps1000
+RouteProbe --> Debug : bounded nested eligibility + paired evidence only;\nlater gates unknown after stop; never modifies routes/cache/moves/deadlines
+component "src/strategy/opening-route-adoption.js\nopeningRouteAdoptionExperiment=false" as RouteAdoption
+Loop --> RouteAdoption : separate authority, opening+probe required;\ncapture frozen inputs BEFORE same pair, compare AFTER
+RouteProbe --> RouteAdoption : same live pair only; no extra searches;\nL/B/A route validation + departing preflight
+RouteAdoption --> Contest : at most two extra16-subset checks;\nunchanged intersection/support, frozen centre reservations
+RouteAdoption --> Execute : strict admitted nA>max(nL,nB); atomic selected-report/\ndeparting map commit + identical centre batch; no second movement pass
+RouteAdoption --> Debug : finite status/count tuple within900/2700 limits;\ncommitted plan is not displacement or capture
+note right of RouteAdoption : No centre-neighbour regeneration or progress reset.\nChanged frozen facts discard BOTH groups before priorities.\nProbe-only stays observational; all three switches remain off.
 Escort --> Debug : assignment/release diagnostic\nbefore actions
 Debug --> API : console.log(JSON snapshot)
 Loop --> Execute : choose and issue movement\nwith optional scout fallback / healer escort

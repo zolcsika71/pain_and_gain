@@ -1,5 +1,25 @@
 # Project layout
 
+`src/debug/opening-route-probe.js` owns a separate default-off diagnostic switch,
+`openingRouteProbeExperiment`. After both opening preparation passes and map
+capture, one eligible cache-hit tick may spend one baseline/alternative pair for
+the first otherwise-eligible conflicting member by pinned production birth slot,
+independent of role/ID. Controlled first-stop eligibility telemetry distinguishes
+missing inputs from failed conditions and leaves later gates unknown. In
+probe-only mode, results only augment the existing snapshot; they never enter
+live routes or commands. Separate adoption authority is described below.
+Either switch off bypasses probe evaluation and telemetry work. See the
+[bounded probe contract](opening-route-probe-2026-10-18.md).
+
+`src/strategy/opening-route-adoption.js` owns separate default-off gameplay
+authority, `openingRouteAdoptionExperiment`. Only with opening and probe enabled
+does it capture a comparison before that same pair and compare live/fresh-baseline/
+alternative departing admissions afterward. It reuses route validation and
+preflight without rerunning the coordinator or centre neighbours. A strict
+improvement can atomically replace one cache report and the prepared departing
+map while retaining the centre batch; changed frozen inputs cancel both groups.
+Probe-only remains observational. See the [inactive contract](opening-route-adoption-2026-10-19.md).
+
 `src/strategy/opening-deployment.js` now owns the default-off
 `openingDeploymentExperiment`. It shares capture validation/ranking and the
 secondary coordinator's route/cache implementation, but uses distinct tick1
@@ -8,6 +28,15 @@ Opening and post-centre processing occupy one exclusive objective slot before
 the same group preflight/single movement pass. See the
 [inactive opening integration contract](opening-deployment-integration-2026-10-17.md)
 for supported configuration, snapshot-slot diagnostics, bounds and rollback.
+
+During an active opening only, `src/strategy/opening-centre-support.js` prepares
+ordinary movement for the two retained birth squads after departing preflight.
+The original centre and four-member secondary route cache remain separate.
+Secondary destinations reserve first; null holds and centre steps join the same
+executor map. Centre failure discards all prepared moves before final logging
+and the single movement pass. Capture/termination releases both groups that tick.
+Disabled/inactive paths bypass this evaluation; scouts and post-centre movement
+are unchanged. See the [current inactive contract](opening-centre-support-test-only-2026-10-17.md#current-inactive-runtime-integration).
 
 `src/strategy/support-locked-engagement.js` now owns the default-off
 `supportLockedEngagementExperiment`. It replaces ordinary movement only for

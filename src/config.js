@@ -7,3 +7,7 @@ export const secondaryObjectiveExperiment = false;
 export const healerUsefulClosingExperiment = false;
 export const supportLockedEngagementExperiment = false;
 export const openingDeploymentExperiment = false;
+// One actor-level request comparison only; never supplies gameplay routes.
+export const openingRouteProbeExperiment = false;
+// Separate gameplay authority; requires opening deployment AND the probe.
+export const openingRouteAdoptionExperiment = false;

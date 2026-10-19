@@ -10,7 +10,7 @@ const configuration=fs.readFileSync(new URL('../../src/config.js',import.meta.ur
 const modules=new Map([
     ['game/utils','export const getObjectsByPrototype=p=>globalThis.__secondary.objects.get(p); export const getObjects=()=>[...globalThis.__secondary.objects.values()].flat(); export const getTerrainAt=()=>0; export const getTicks=()=>globalThis.__secondary.tick; export const getCpuTime=()=>1234;'],
     ['game','export const arenaInfo={name:"Pain and Gain",season:"4",level:1,ticksLimit:2000,cpuTimeLimit:20000000,cpuTimeLimitFirstTick:100000000};'],
-    ['game/path-finder','export const searchPath=(...args)=>globalThis.__secondary.search(...args);'],
+    ['game/path-finder','export const searchPath=(...args)=>globalThis.__secondary.search(...args); export class CostMatrix {constructor(){throw Error("Post-centre must not construct a matrix");}}'],
     ['game/constants','export const EFF_ATTACK_MODIFIER="eff_attack_modifier";'],
     ['game/prototypes','export class Creep {}'],
     ['arena/season_4/pain_and_gain/basic','export class ScoreFlag {}'],
@@ -44,7 +44,7 @@ async function fixture(t,{off=false,reverse=false}={}){
         .map(([id,x,y,effect,scorePerTick,my])=>Object.assign(new ScoreFlag(),{id,x,y,effectType:E[effect],scorePerTick,my}));
     if(reverse){w.units.reverse();w.flags=[w.flags[0],...w.flags.slice(1).reverse()];}
     w.search=(from,goal,opts)=>{
-        w.queries.push({tick:w.tick,actor:from.id,target:goal.pos.id,opts});assert.equal(goal.range,0);assert.equal(opts.maxOps,1000);
+        w.queries.push({tick:w.tick,actor:from.id,target:goal.pos.id,opts});assert.equal(goal.range,0);assert.deepEqual(opts,{maxOps:1000});
         if(w.mode==='throw')throw Error('generated failure');
         if(w.mode==='bad-ops')return{path:[],incomplete:false,ops:1001};
         if(w.mode==='unknown')return undefined;

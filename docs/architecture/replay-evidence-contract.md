@@ -54,6 +54,18 @@ records with the replay ID verified from the cache request key or another
 supported source-provenance path. Runtime records must not contain a guessed
 `replayId`.
 
+The separate default-off [opening route probe](opening-route-probe-2026-10-18.md)
+adds bounded optional `secondaryObjective.routeProbe` and `probeEligibility`
+to the existing snapshot. The latter reports only the first stop; missing/failed
+conditions are distinct, and subsequent gates remain explicitly unknown.
+Probe-only requests never drive gameplay. The separately guarded
+[adoption authority](opening-route-adoption-2026-10-19.md) can commit only a
+strictly improving route from the same live pair; its status is not displacement.
+Same-tick slots, fixed-width path
+encoding, controlled failures and unknown operation counts follow that contract;
+the original response/map bytes remain necessary for provenance. Extraction
+retains the nested field without implying human review or live-cache qualification.
+
 ## Compatibility with current records
 
 The following formats are unchanged:

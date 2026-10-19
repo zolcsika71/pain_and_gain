@@ -14,6 +14,7 @@ Screeps Arena code for the Pain and Gain arena. Armed creeps approach nearby ene
 - `src/strategy/objectives.js` selects the first flag in the live loop; its [secondary-objective selector](docs/architecture/general-strategy-secondary-objectives-2026-10-16.md) is implemented but not activated.
 - `src/strategy/secondary-objective-plan.js` connects existing squads and bounded route reports behind `secondaryObjectiveExperiment = false`; capture preserves ordinary movement priorities, while both capture and the [inactive supported-contest candidate](docs/architecture/supported-contest-objective-2026-10-16.md) use validated adjacent travel after whole-group priority/support checks. Centre safety references and shared24/4 query caps are retained.
 - `src/strategy/opening-deployment.js` owns one initial neutral-flag mission behind `openingDeploymentExperiment = false`, using shared capture ranking/routes/cache and travel preflight. Its [integration contract](docs/architecture/opening-deployment-integration-2026-10-17.md) records limited earlier live partial departure and centre-support cancellation, not capture. The later [subset-scoped support correction](docs/architecture/objective-travel-support-scope-integration-2026-10-18.md) has generated validation only; all experiments remain off.
+- `src/strategy/opening-centre-support.js` prepares supported local steps/owned holds for the two retained birth squads only during an active opening mission, after departing preflight and before the same movement pass. Its [inactive integration](docs/architecture/opening-centre-support-test-only-2026-10-17.md#current-inactive-runtime-integration) adds no switch, route budget or waiting allowance. Generated progress is verified; congestion, stationary healers and priority-release support limits remain. No live coordination benefit is established.
 - `src/strategy/supported-contest.js` checks isolated unarmed occupants, range3/range4 approach routes and one-step functioning heal access; capture handoff passes the unchanged selector in the original assignment lifecycle.
 - `src/squads/membership.js` maintains stable match-local squad membership; the optional `src/squads/pair.js` planner uses it for one leader–follower pair.
 - `src/debug/replay-evidence.js` emits versioned membership, action, and CPU evidence with per-tick coverage without feeding diagnostics back into gameplay.
@@ -31,6 +32,20 @@ Screeps Arena code for the Pain and Gain arena. Armed creeps approach nearby ene
 Additional strategy, squad, state, and config modules can be added when they have behavior to own.
 
 ## Development
+
+The separate `openingRouteProbeExperiment` is **off**. It requires a compatible
+active opening deployment and records one actor-level paired route request only,
+without supplying gameplay routes. Its [contract](docs/architecture/opening-route-probe-2026-10-18.md)
+defines eligibility, existing-cap accounting, generated checks, evidence limits
+and rollback. Implementation is not authority to activate it or prepare a trial.
+
+The separate `openingRouteAdoptionExperiment` is also **off**. Only when opening,
+probe and this authority are all enabled can the same one-shot pair supply a
+single sampled cache report. Adoption requires strictly more admitted departing
+steps than both live and fresh-baseline controls, with the already-prepared centre
+batch unchanged. See the [inactive adoption contract](docs/architecture/opening-route-adoption-2026-10-19.md)
+for bounds, diagnostics, generated checks, limitations and exact rollback. No
+additional search allowance or match preparation is implied.
 
 With Node.js available, run `npm run check` to verify the runtime build ID and parse the game modules, and `npm test` to run the local tests. There are no package dependencies or compilation step. The `package.json` ES module setting applies to local Node.js tooling; Arena loads the source files directly.
 

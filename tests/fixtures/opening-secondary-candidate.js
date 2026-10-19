@@ -2,6 +2,7 @@
 // lifecycle decisions now run the production opening controller.
 import {planOpeningDeployment,openingLimits} from '../../src/strategy/opening-deployment.js';
 import {prepareSecondaryMovement} from '../../src/arena/execute.js';
+import {TestCostMatrix} from './arena-cost-matrix.js';
 export {openingLimits};
 
 export function planOpeningSecondary(observation,membership,previous=null,context={}){
@@ -20,6 +21,7 @@ export function planOpeningSecondary(observation,membership,previous=null,contex
         return{path:r.path,ops:r.ops,incomplete:r.incomplete};
     };
     const plan=planOpeningDeployment({...observation,creeps:all},membership,centre,previous,{
+        CostMatrix:TestCostMatrix,
         search:context.searchPath===undefined?supplied:context.searchPath,
         unavailableIds:context.unavailableIds,terrainAt:context.spacing?.terrainAt});
     const prepared=plan.movement?prepareSecondaryMovement(plan,observation.myCreeps,observation.enemies,centre,

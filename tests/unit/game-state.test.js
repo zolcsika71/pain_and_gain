@@ -53,10 +53,10 @@ test('map snapshot is logged once per match before actions and retries a failed 
     const errors = t.mock.method(console, 'error', () => {});
     let reads = 0;
     const readMap = () => ({ terrain: { width: 100, height: 100, rows: [] }, objects: [], read: ++reads });
-    logMapOnce(99, () => { throw new Error('not ready'); });
-    logMapOnce(99, readMap);
-    logMapOnce(100, readMap);
-    logMapOnce(1, readMap);
+    assert.equal(logMapOnce(99, () => { throw new Error('not ready'); }),null);
+    assert.equal(logMapOnce(99, readMap),99);
+    assert.equal(logMapOnce(100, readMap),99);
+    assert.equal(logMapOnce(1, readMap),1);
     assert.equal(reads, 2);
     assert.equal(errors.mock.callCount(), 1);
     assert.equal(logger.mock.callCount(), 2);

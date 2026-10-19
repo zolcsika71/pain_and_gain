@@ -8,6 +8,11 @@ Every config value is unchanged: opening deployment, secondary objectives,
 engagement control and healer closing are off; existing healer escort remains on.
 No activation or trial is prepared.
 
+Later amendment: the [centre policy](opening-centre-support-test-only-2026-10-17.md#current-inactive-runtime-integration)
+is now promoted under the existing disabled opening switch. Statements below
+about it being test-only describe this correction's original scope; the stronger
+centre quorum and shared subset rules remain unchanged by that promotion.
+
 ## One implementation and validation order
 
 Promote the [accepted comparison](opening-travel-support-scope-test-only-2026-10-18.md)
@@ -49,7 +54,7 @@ Current-position attacks/healing and original execution order are preserved.
 
 The selector's empty-subset proof is a caller precondition, not a standalone
 validator for arbitrary raw steps. Existing support-locked engagement and the
-test-only centre candidate still prove their stronger full-proposal support
+then-test-only centre candidate still prove their stronger full-proposal support
 before calling it; those policies are not relaxed. The centre candidate and its
 transport remain byte-identical and are **not** integrated. ID arbitration stays
 rejected. The support-scope comparison selector/resolver is deleted; the small

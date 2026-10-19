@@ -51,29 +51,30 @@ Supplement these defaults with the repository's actual setup commands,
 architecture boundaries, data invariants, and required validation gates.
 Do not invent project facts or overwrite existing project instructions.
 
-## Documentation
+## Task-based reading
 
-- For every Codex task, inspect `docs/architecture/`, `docs/decisions/`, and
-  `docs/diagrams/` and read documents relevant to the task before planning or
-  implementation.
-- When a task requires new or updated architecture documentation, write Markdown
-  files in `docs/architecture/`. Write Architecture Decision Records (ADRs) in
-  Markdown in `docs/decisions/`, and PlantUML diagrams (`.puml`) in
-  `docs/diagrams/`.
-- Keep affected documentation consistent with implementation changes.
-
-## Game rules and code examples
-
-- Before planning or implementing game-related changes, read
-  `docs/pain_and_gain_rules.md`.
-- When developing or modifying game code, consult relevant files in
-  `docs/examples/`.
-- If a code example conflicts with the game rules, treat
-  `docs/pain_and_gain_rules.md` as authoritative.
-- Before planning or implementing changes that use the game API, read the
-  relevant sections of `docs/architecture/screeps-arena-api.md`.
-- Before planning, creating, or modifying squads or pairing behavior, read
-  `docs/architecture/screeps-squads-and-pairing.md`.
+- Before planning, read the task constraints, this file and the
+  [architecture router entry and matching row](docs/architecture/README.md#task-router),
+  not the whole index. Follow required reading and conditional dependencies,
+  not routine scans of all documentation directories. Use the ADR/diagram
+  indexes only when routed.
+- Read relevant contract sections and their prerequisites; do not load entire
+  histories or linked payloads just because they are indexed. If a route is
+  incomplete, use a targeted source/index search and disclose the gap.
+- For game-related changes, read `docs/pain_and_gain_rules.md`; consult relevant
+  `docs/examples/` when developing game code. Rules override conflicting examples.
+  For game API use, read the relevant `screeps-arena-api.md` sections; for squad
+  or pairing planning/changes, read `screeps-squads-and-pairing.md` (both under
+  `docs/architecture/`). Evidence access and validation follow the router's gates
+  and the replay-review requirements below; an index link grants no read authority.
+- Reuse already-read sections within this session only when content is unchanged
+  (retained text/content hash or equivalent byte check, not mtime alone). Changed
+  sources or task scope require reassessing the selection and dependent contracts.
+  Do not assume cross-session knowledge; summaries/indexes are not authoritative
+  replacements or evidence that an experiment is active.
+- Keep affected docs consistent: architecture Markdown in `docs/architecture/`,
+  ADR Markdown in `docs/decisions/`, PlantUML in `docs/diagrams/`. Update existing
+  index links when needed, not a parallel catalogue.
 
 ## Source conventions
 

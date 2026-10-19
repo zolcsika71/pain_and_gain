@@ -16,7 +16,8 @@ test('Arena-shaped requests bind observed origins, neutral goals, range0 and max
     assert.equal(w.searchRequests.length,16);
     for(const r of w.searchRequests){
         assert.deepEqual(r.origin,before.map(({id,...p})=>({id,p})).find(c=>c.id===r.actorId).p);
-        assert.equal(r.goal.range,0);assert.deepEqual(r.options,{maxOps:1000});
+        assert.equal(r.goal.range,0);assert.equal(r.options.maxOps,1000);
+        assert.equal(r.options.costMatrix.get(r.origin.x,r.origin.y),0);
         assert.equal(w.flags.find(f=>f.id===r.goal.id).my,undefined);
     }
     assert.deepEqual(w.myCreeps.map(c=>({id:c.id,x:c.x,y:c.y})),before);

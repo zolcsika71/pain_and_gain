@@ -6,11 +6,23 @@ recorded separately below. No capture or strategic benefit is established. All o
 switch values are preserved, including healer escort on and secondary objectives,
 healer closing and support-locked engagement off.
 
+Current amendment: [retained-centre movement](opening-centre-support-test-only-2026-10-17.md#current-inactive-runtime-integration)
+is now integrated under that same disabled switch. After departing preflight,
+the two retained birth squads receive supported local steps/owned holds in the
+same pass; scouts remain ordinary. Centre cancellation discards departing moves
+too; capture/termination releases both groups immediately. Historical statements
+below about ten ordinary centre fallbacks describe the earlier integration.
+Current centre progress does not replenish any secondary timer or work budget.
+
 Original integration inactive build:
 `55bf14a37328b727ede0f65d51c75f558f79b51251217bb68627364895958553`.
 Current shared travel build is recorded in the subsequent
 [support-scope correction](objective-travel-support-scope-integration-2026-10-18.md);
 that correction is live-unverified.
+The subsequent [opening occupancy/cache integration](opening-occupancy-routes-integration-2026-10-18.md)
+adds occupied-cell matrices and bounded blocked-next refresh only to opening
+requests. It is also inactive and live-unverified; historical counts below
+remain evidence of their original revisions.
 All292 explicitly selected generated checks pass, including19 new real-loop
 checks; build generation/check, `npm run check` (including the new module) and
 affected whitespace/link checks pass. Historical seed entry points were not run.
@@ -64,7 +76,7 @@ actor order. No actor receives a second movement pass or command.
 ## Admission, progress and limits
 
 Only tick1 can allocate exactly one existing three-pure-ranged/healer squad.
-The other ten remain on ordinary centre missions: at least six functioning
+The other ten retain the centre mission (originally ordinary movement): at least six functioning
 weapons/two functioning pure healers, every weapon within3 of a retained healer,
 every retained healer supporting at least two weapons. All ten remain healthy,
 mobile and unowned. This is a commitment, **not centre already defended** or a
@@ -90,7 +102,8 @@ do not replenish time. Duplicate ticks spend the mission; malformed observations
 cannot rearm. Only strict new-match rewind to tick1 resets it. Current occupancy,
 plain first-step terrain, all-outcome support and at most16 subset checks are
 unchanged. No swaps, assumed vacating, retries, alternate routing, extra waiting
-or centre-force coordination is added.
+or extra waiting is added. The later centre coordination is scoped by the current
+amendment above, not by changing these mission bounds.
 
 ## Diagnostics
 
@@ -187,8 +200,8 @@ work, are not isolated policy overhead, and have no baseline comparison.
 This verifies limited admission/partial departure and centre-support cancellation
 on the earlier build, not coordinated centre advance, sustained arrival or
 strategic effectiveness. Centre ordinary movement, traffic and documented support
-loss after a priority handoff remain limitations. The centre-support candidate
-is still test-only; ID-only arbitration stays rejected. The later support-scope
+loss after a priority handoff remain limitations of that observation. The centre-support candidate
+was then test-only; see the current inactive amendment above. ID-only arbitration stays rejected. The later support-scope
 promotion is covered by351 generated checks only and has no live confirmation.
 
 Receipt (local evidence, not a Git payload):
@@ -197,7 +210,7 @@ Receipt (local evidence, not a Git payload):
 ## Exact rollback
 
 These are the original integration rollback instructions. For the later
-support-scope correction, first use its separate drift-checked rollback; do not
+support-scope/occupancy/centre corrections, first use their separate drift-checked rollbacks; do not
 overwrite later changes using this older baseline's copies.
 
 The candidate is already off; this task authorizes no activation or trial.
