@@ -1333,6 +1333,11 @@ export function parseReplayAnalysisArgs(argv) {
 
 async function main() {
     const argv=process.argv.slice(2);
+    if(argv[0]==='--review'){
+        const {reviewCommand}=await import('./replay-review.js');
+        const report=await reviewCommand(argv.slice(1));
+        if(report.status==='blocked')process.exitCode=1;return;
+    }
     if(argv[0]==='--synthetic-sqlite'){
         if(argv.length<4)throw new Error('Usage: --synthetic-sqlite <fixture-root> <replay-id> <log-fingerprint...|--score score-fingerprint...> [--full-detail]');
         const root=argv[1],selection=parseReplayAnalysisArgs(argv.slice(2));

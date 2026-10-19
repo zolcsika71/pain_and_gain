@@ -465,6 +465,30 @@ export function parseCacheEntry(bytes, { maxDecodedBytes = 100_000_000, maxTickS
     } catch (error) {
         return issue('malformed', `Cannot decompress ${key}: ${error.message}`);
     }
+    return parseConsoleBody(body, key, match, maxTickSpan);
+}
+
+// Already-decoded bytes have no embedded request identity or frame integrity.
+// The caller supplies the declared key; never manufacture a cache envelope.
+export function parseDecodedConsoleJson(bytes, { key, maxDecodedBytes = 8_388_608, maxTickSpan = null } = {}) {
+    if (!Buffer.isBuffer(bytes) || !Number.isSafeInteger(maxDecodedBytes) || maxDecodedBytes < 1 ||
+        maxDecodedBytes > 100_000_000 || maxTickSpan !== null && (!Number.isSafeInteger(maxTickSpan) || maxTickSpan < 1))
+        throw new Error('Invalid parser limits');
+    const match = typeof key === 'string' && key.match(logKey);
+    if (!match || key.length > 2048) return issue('malformed', 'Invalid declared console key');
+    if (bytes.length > maxDecodedBytes) return issue('unsupported', 'Decoded console exceeds byte limit');
+    let body;
+    try { body = new TextDecoder('utf-8', {fatal:true}).decode(bytes); }
+    catch { return issue('malformed', 'Invalid decoded-console UTF-8'); }
+    const parsed = parseConsoleBody(body, key, match, maxTickSpan);
+    if (parsed.kind === 'log' && [...parsed.gameState, ...parsed.otherEntries.map(e => e.raw)].some(raw => {
+        try { const e = JSON.parse(raw); return e?.replayId !== undefined && e.replayId !== parsed.replayId; }
+        catch { return false; }
+    })) return issue('malformed', 'Conflicting declared replay identity');
+    return parsed.kind === 'log' ? {...parsed, keyBinding: 'caller-declared'} : parsed;
+}
+
+function parseConsoleBody(body, key, match, maxTickSpan) {
     let response;
     try {
         response = JSON.parse(body);

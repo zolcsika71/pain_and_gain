@@ -434,6 +434,15 @@ intended scope, analyze all current records for a replay with:
 npm run replay:analyze -- <replay-id>
 ```
 
+For durable, resumable extraction of already-authorized retained cache frames or
+explicitly declared decoded console JSON, use `node tools/replay-analysis.js --review <request.json> <output-directory>`.
+The [request/authority contract](docs/architecture/replay-review-entry-point.md)
+requires explicit identity or bounded metadata keys, source hashes and limits;
+there is no discovery or provider access. Successful extraction is not human
+review or a claim of gameplay benefit. Generated qualification and separately
+authorized retained-copy extraction/resume are recorded in the contract; neither
+qualifies automatic live-cache access or unblocks an unidentified trial by itself.
+
 Generated schema-1 SQLite fixtures have a separate
 [explicit synthetic analysis route](docs/architecture/replay-analysis.md#explicit-synthetic-sqlite-route).
 It requires named fingerprints, preserves existing bounded selected arrays and

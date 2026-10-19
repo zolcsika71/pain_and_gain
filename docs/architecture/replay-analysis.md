@@ -7,6 +7,13 @@ version 2 evidence and writes one deterministic JSON report to stdout. It does
 not import captures, acquire review ownership, migrate statuses, reconcile
 cleanup, or write report files.
 
+Opt-in exception: `--review <request.json> <output-directory>` invokes the
+[resumable retained-response entry point](replay-review-entry-point.md), which
+durably extracts explicitly selected copies outside the repository and reuses
+the diagnostic coverage routines. It does not invoke managed analysis, fabricate
+map registrations or mark human review complete. The default analyzer interface
+and its authority/lifecycle guarantees below are unchanged.
+
 The separate [M2c fixture adapter](replay-storage-v3-m2c-2026-10-05.md) exercises
 v3 input through `createReplayAnalysisSession`, the same synchronous validators,
 merge logic and report finalization used below. Its asynchronous fixture-only

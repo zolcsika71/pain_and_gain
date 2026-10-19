@@ -27,7 +27,10 @@ note right
   No lifecycle mutation
   No engine-effect causality
   No final-CPU or differential-overhead claim
-  No report file write
+  Default mode: no report file write
+  Explicit --review is a separate retained-copy extraction route:
+  pinned request -> durable raw/partial artifacts -> bounded coverage report.
+  No discovery, fabricated managed map or automatic human-review completion.
 end note
 stop
 
