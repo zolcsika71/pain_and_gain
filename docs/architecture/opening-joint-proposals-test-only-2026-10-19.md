@@ -2,6 +2,10 @@
 
 ## Current inactive runtime integration
 
+The later [hold-aware extension](#hold-aware-extension-test-only-2026-10-20)
+is **test-only**, not part of this inactive runtime integration. Its expanded
+local budget is authorized for generated qualification only.
+
 The original test-only evidence below is now promoted without a policy change to
 [opening-joint-proposals.js](../../src/strategy/opening-joint-proposals.js).
 The [fixture](../../tests/fixtures/opening-joint-proposals.js) is only a re-export;
@@ -140,6 +144,100 @@ restores the exact starting runtime/build, without regenerating or touching the
 index/unrelated work. Restore test/doc copies only for a separately scoped full
 task rollback. Do not apply old copies over later work. Turning the switch off
 alone is a policy disable, not a byte-exact rollback; it is already off here.
+
+## Hold-aware extension test-only (2026-10-20)
+
+Status: **retain test-only**. Runtime/config/build/package are unchanged at
+`138bda3534e1494e132e0c5987b47d40986ed841dcace1634347de282c86a76d`.
+No activation, runtime promotion or manual trial is prepared. The historical
+stall motivated this slice but supplies no missing terrain, cache reports or
+certified alternative. This task reads no historical evidence or replay payloads.
+
+The [test helper](../../tests/fixtures/opening-hold-joint-proposals.js) retains
+the production gates and moving-candidate predicates, adds `{kind:'hold',step:null}`
+for every member, and evaluates all choices without order pruning. A source-text
+guard and direct candidate comparisons detect drift of the frozen predicates.
+It reuses production `localRetreatStep`, `pairSupportTable`, admission validation
+and the canonical support/subset helpers. The optional proposal-policy hook in
+the [existing flow transport](../../tests/fixtures/opening-joint-proposal-flow-world.js)
+replaces only the existing proposal call. The planner, route/cache provider,
+membership, priorities, centre preparation and single executor pass are production
+code; their default path remains unchanged. No parallel planner is introduced.
+
+Holds own the current cell and use the **unchanged actual cache report** in the
+single private admission validation. They are not searched routes or fabricated
+zero-length certificates. Movers retain every original known-plain, empty,
+unreserved, threat-safe, strictly Chebyshev-forward same-length splice candidate.
+All effective destinations (including held positions) must differ. Existing
+occupancy prohibits swaps and entry into any currently occupied cell, regardless
+of an intended departure. Every move/stay outcome retains functioning support.
+
+Acceptance requires two actors sharing an original proposal to move to distinct
+cells, at least one changed certified first step, and at least one armed mover.
+This excludes simply choosing an old singleton winner or healer-only progress.
+Minimize the original summed Manhattan goal distance, counting holds at their
+current positions. Accept only a unique optimum; ties/no solution retain original
+proposals and unchanged subset/intersection selection. No ID/role weights or
+fairness state are added. Certificates remain local, cache timestamps and already
+updated selection/progress remain unchanged. Departing destinations fence one
+centre preparation; cancellation discards both maps, and termination releases
+both before ordinary priority actions. Post-release movement has no added support
+guarantee. No searches, retries, wait allowance or timer changes are introduced.
+
+| Extra local work | Authorized test-only ceiling | Exercised maximum |
+| --- | ---: | ---: |
+| Neighbour evaluations | 32 | 32 |
+| Choices/member, including hold | 4 | 4 |
+| Complete assignments | 256 | 256 |
+| Healer/weapon pair entries | 48 | 48 |
+| Enumeration nodes, including root | 341 | 341 |
+| Private admission validations | 1 | 1 |
+| Following subset selector | Existing at most16 | Unchanged |
+| Extra searches | 0 | 0 |
+
+The maximum enumeration returns equal optima and correctly falls back. Separate
+exhaustive checks compare all256 assignments ×16 outcomes (4096 outcomes) with
+production support, including unsafe cases. No Arena CPU measurement is implied.
+
+The [new generated-only entry point](../../tests/unit/opening-hold-joint.test.js)
+contains40 checks. With the existing48 policy and13 integration checks,101 pass:
+
+```sh
+node --test tests/unit/opening-hold-joint.test.js tests/unit/opening-joint-proposals.test.js tests/unit/opening-joint-integration.test.js
+```
+
+All [response tables](../../tests/fixtures/opening-hold-joint-world.js), terrain
+and subsequent observations are explicitly generated. The initial extension sends
+the rear weapons to(23,18)/(23,20), while healer(25,20) and front weapon(28,20)
+retain owned holds. Baseline admits no departing moves and stalls at5. With all
+requested steps supplied as observed displacement, the extension has18 successive
+supported weapon-progress observations,69 departing and143 centre step calls,
+then stops at19 with `objective-unavailable`. It uses32 queries/3200 fixed supplied
+reported ops versus baseline16/1600. The first off-cache refresh is at2; suffix
+reuse preserves searchedAt2 until normal age-five refresh at7. These are route
+refresh costs, not local enumeration costs or Arena CPU. The unavailable response
+at the final stop remains incomplete; tables were not extended to force arrival.
+
+Adverse results remain: bow1-only displacement stops at2 on the occupied-step
+refresh's missing compliant bow2 response (20 queries/2000 supplied ops).
+Bow2-only and stationary-healer continuations stop on the original stall rule
+at11 (24/2400); rejected, unknown and accepted-without-displacement stop at5
+(16/1600). Exact ties, unresolved singleton conflicts, one-cell final approaches,
+unknown terrain, reservations, missing/invalid cache proofs and priority handoffs
+retain conservative fallback/cancellation. No accepted command is counted as
+observed progress. Tests also cover changed-destination centre fencing, late
+centre cancellation, non-empty unchanged combat/healing traces, duplicate ticks,
+deadline, reset and release through five later observations. A separately supplied
+owner transition tests release only, not generated arrival or capture causation.
+
+Receipt and bounded generated trajectories are outside the repository at
+`/Users/zoltanka/.local/share/pain-and-gain-evidence/opening-hold-joint-test-only-20261020-Y8xivJ/`.
+The baseline-seam control run fails the new feature assertions; production never
+acquires hold-aware authority. Retain this slice only as generated feasibility:
+partial execution can still exhaust supplied routes or stall, and no historical
+fix, Arena route availability, acceptable live CPU, capture or strategic benefit
+has been established. Any future integration needs separate authority and must
+eliminate the frozen test-side predicate duplication rather than maintain it.
 
 ## Original test-only qualification (historical)
 

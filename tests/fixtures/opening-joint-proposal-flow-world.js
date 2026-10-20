@@ -1,11 +1,13 @@
 // Generated-only observation hooks: no injected planner or subset replacement.
+// A world may opt into a test-only proposalPolicy at the existing proposal seam;
+// absent that property, qualification continues to call the production helper.
 import assert from 'node:assert/strict';
 import {registerHooks} from 'node:module';
 const jointUrl=new URL('../../src/strategy/opening-joint-proposals.js',import.meta.url).href;
 const executeUrl=new URL('../../src/arena/execute.js',import.meta.url).href;
 registerHooks({resolve(s,c,next){
     let code=s==='../strategy/opening-joint-proposals.js'&&c.parentURL?.endsWith('/src/arena/execute.js')
-        ? `export {jointProposalStatus} from ${JSON.stringify(jointUrl)}; import {proposeOpeningJoint as propose} from ${JSON.stringify(jointUrl)}; export function proposeOpeningJoint(a){const w=globalThis.__adoption;w.jointContext=a;const before=JSON.stringify(a.mission.state),steps=JSON.stringify([...a.steps]);const r=propose(a);assertUnchanged();function assertUnchanged(){if(before!==JSON.stringify(a.mission.state)||steps!==JSON.stringify([...a.steps]))throw Error('joint mutated live inputs');}w.jointResults.push(r);return w.joint=r;}` : null;
+        ? `export {jointProposalStatus} from ${JSON.stringify(jointUrl)}; import {proposeOpeningJoint as propose} from ${JSON.stringify(jointUrl)}; export function proposeOpeningJoint(a){const w=globalThis.__adoption;w.jointContext=a;const before=JSON.stringify(a.mission.state),steps=JSON.stringify([...a.steps]);const r=(w.proposalPolicy??propose)(a);assertUnchanged();function assertUnchanged(){if(before!==JSON.stringify(a.mission.state)||steps!==JSON.stringify([...a.steps]))throw Error('joint mutated live inputs');}w.jointResults.push(r);return w.joint=r;}` : null;
     if(s==='./arena/execute.js'&&c.parentURL?.includes('/src/loop.js'))code=
         `export {moveCreeps,executeTactics} from ${JSON.stringify(executeUrl)}; import {prepareSecondaryMovement as prepare} from ${JSON.stringify(executeUrl)}; export function prepareSecondaryMovement(...a){const w=globalThis.__adoption;w.prepareInput=a;return w.prepared=prepare(...a);}`;
     return code?{url:`data:text/javascript,${encodeURIComponent(code)}`,shortCircuit:true}:next(s,c);
