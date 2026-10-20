@@ -81,7 +81,9 @@ export function runTick() {
     const openingCompatible = !openingRequested || [oneScoutFlagExperiment, scoutHoldExperiment,
         squadPairExperiment, configuration.secondaryObjectiveExperiment,
         configuration.healerUsefulClosingExperiment, configuration.supportLockedEngagementExperiment]
-        .every(value => value === false);
+        .every(value => value === false) && (configuration.openingJointProposalsExperiment !== true ||
+            [configuration.openingRouteProbeExperiment,configuration.openingRouteAdoptionExperiment]
+                .every(value => value === false));
     membership = updateMembership(membership, { tick: state.tick, myCreeps });
     logMembershipEvidence(membership);
     const flag = selectFlag(flags);
@@ -110,7 +112,10 @@ export function runTick() {
         : configuration.secondaryObjectiveExperiment === true
         ? planSecondaryObjective(state, membership, flag, secondaryObjective, { search: pathFinder.searchPath, unavailableIds }) : null;
     let prepared = secondary?.movement ? prepareSecondaryMovement(secondary, myCreeps, enemies, flag,
-        engagements, escortPlan?.escort, pairPlan, { creeps: state.creeps, terrainAt: getTerrainAt }) : null;
+        engagements, escortPlan?.escort, pairPlan, { creeps: state.creeps, terrainAt: getTerrainAt },
+        openingRequested && configuration.openingJointProposalsExperiment === true && openingCompatible
+            ? { observation:state, probe:configuration.openingRouteProbeExperiment,
+                adoption:configuration.openingRouteAdoptionExperiment } : null) : null;
     if (prepared) secondary = prepared.secondary;
     let openingCentreIds = null;
     if (openingRequested && secondary?.state?.phase === 'active' && prepared?.moves) {
@@ -135,6 +140,9 @@ export function runTick() {
     if (locked) supportLockedEngagement = locked.state;
     const mapTick = logMapOnce(state.tick, observeMap);
     let objectiveDiagnostic = openingRequested ? openingDeploymentDiagnostic(secondary, state, membership) : secondary?.diagnostic;
+    if (openingRequested && configuration.openingJointProposalsExperiment === true)
+        objectiveDiagnostic = {...objectiveDiagnostic,jointProposal:secondary.diagnostic.jointProposal ??
+            [prepared && !prepared.moves ? 14 : 0,null]};
     if (configuration.openingRouteProbeExperiment === true && openingRequested) {
         const probe = probeOpeningRoute({state:openingRouteProbe,observation:state,membership,
             mission:secondary,moves:prepared?.moves,centreIds:openingCentreIds,

@@ -33,6 +33,14 @@ Additional strategy, squad, state, and config modules can be added when they hav
 
 ## Development
 
+`openingJointProposalsExperiment` is **off**. The
+[inactive joint-proposal contract](docs/architecture/opening-joint-proposals-test-only-2026-10-19.md#current-inactive-runtime-integration)
+adds bounded route-backed proposal coordination only to active opening travel.
+It requires opening deployment and explicit probe/adoption-off configuration;
+existing escort stays supported. It changes no cache timestamps or search budget.
+Generated capture/release and adverse cases are not Arena progress/benefit evidence.
+Use the contract's explicit generated-only checks; no activation is implied.
+
 The separate `openingRouteProbeExperiment` is **off**. It requires a compatible
 active opening deployment and records one actor-level paired route request only,
 without supplying gameplay routes. Its [contract](docs/architecture/opening-route-probe-2026-10-18.md)

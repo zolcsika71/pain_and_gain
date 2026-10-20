@@ -14,6 +14,12 @@ too; capture/termination releases both groups immediately. Historical statements
 below about ten ordinary centre fallbacks describe the earlier integration.
 Current centre progress does not replenish any secondary timer or work budget.
 
+The separate [inactive joint-proposal authority](opening-joint-proposals-test-only-2026-10-19.md#current-inactive-runtime-integration)
+now permits bounded route-backed local certificates before departing subset
+selection. It is default-off, rejects probe/adoption combinations before route
+work, and retains all centre, support, cache, query and lifecycle limits below.
+Its original test-only adverse findings remain evidence, not live qualification.
+
 Original integration inactive build:
 `55bf14a37328b727ede0f65d51c75f558f79b51251217bb68627364895958553`.
 Current shared travel build is recorded in the subsequent

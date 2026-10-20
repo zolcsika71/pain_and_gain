@@ -11,3 +11,5 @@ export const openingDeploymentExperiment = false;
 export const openingRouteProbeExperiment = false;
 // Separate gameplay authority; requires opening deployment AND the probe.
 export const openingRouteAdoptionExperiment = false;
+// Route-backed joint proposals; incompatible with probe/adoption authority.
+export const openingJointProposalsExperiment = false;

@@ -129,5 +129,6 @@ export function openingDeploymentDiagnostic(plan, observation, membership) {
     }
     if(d.travel)result.travel={examined:d.travel.examined,bestSize:d.travel.bestSize,tied:d.travel.tied,
         actors:d.travel.actors.map(({actorId,...actor})=>({slot:members.indexOf(actorId),...actor}))};
+    if(d.jointProposal)result.jointProposal=d.jointProposal;
     return result;
 }

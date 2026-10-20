@@ -3,6 +3,7 @@ import { createSpilloverContext, selectSpilloverDecision } from '../tactics/comb
 import { selectMovementPlan, localRetreatStep } from '../tactics/movement.js';
 import { improveHealerHold } from '../tactics/healer-closing.js';
 import { secondaryStepSupport, selectSecondaryTravelSteps } from '../strategy/supported-contest.js';
+import { proposeOpeningJoint, jointProposalStatus } from '../strategy/opening-joint-proposals.js';
 
 function reportDecision(reporter, decision) {
     return reporter?.decision(decision) ?? null;
@@ -27,9 +28,10 @@ function issueAction(creep, action, decision, index, reporter) {
 // Capture keeps every higher-priority plan; contest may replace ordinary
 // attack approach. A conflict releases the entire group before execution.
 export function prepareSecondaryMovement(secondary, friends, enemies, flag, engagements,
-    escort = null, pairPlan = null, spacing = null) {
+    escort = null, pairPlan = null, spacing = null, openingJoint = null) {
     if (!secondary?.movement) return { secondary, moves: null };
-    const { memberIds, steps, kind = 'contest' } = secondary.movement;
+    const { memberIds, kind = 'contest' } = secondary.movement;
+    let { steps } = secondary.movement;
     const cancel = reason => ({ secondary: secondary.cancel(`${kind}-${reason}`), moves: null });
     if (!(steps instanceof Map) || memberIds.some(id => !steps.has(id))) return cancel('route-unavailable');
     for (const id of memberIds) {
@@ -50,6 +52,25 @@ export function prepareSecondaryMovement(secondary, friends, enemies, flag, enga
         return cancel('step-support-unavailable');
     const all = spacing?.creeps;
     if (!Array.isArray(all) || all.length > 28) return cancel('occupancy-unknown');
+    let jointProposal;
+    if (openingJoint && secondary.state.phase === 'active' && kind === 'capture') {
+        const proposed = [...steps.values()].filter(Boolean);
+        const converging = proposed.some((p,i) => proposed.some((q,j) => j<i && p.x===q.x && p.y===q.y));
+        let status = jointProposalStatus['no-convergence'];
+        if (converging) {
+            const result = proposeOpeningJoint({ observation: openingJoint.observation,
+                mission: secondary, steps, spacing, probe: openingJoint.probe, adoption: openingJoint.adoption });
+            status = jointProposalStatus[result.reason];
+            steps = result.steps;
+        }
+        // Original diagnostic member slots, not enumeration or actor-ID weights.
+        const slots = secondary.state.selection.memberIds;
+        const mask = slots.reduce((bits,id,i) => {
+            const a=steps.get(id),b=secondary.movement.steps.get(id);
+            return bits | (a?.x!==b?.x || a?.y!==b?.y ? 1<<i : 0);
+        },0);
+        jointProposal = [status,mask];
+    }
     const destinations = [...steps.values()].filter(Boolean);
     const selected = selectSecondaryTravelSteps(friends, memberIds, steps, all);
     const point = p => p ? { x: p.x, y: p.y } : null;
@@ -64,7 +85,8 @@ export function prepareSecondaryMovement(secondary, friends, enemies, flag, enga
                 : selected.examined ? 'subset-hold' : 'group-hold' };
     });
     const travel = { examined: selected.examined, bestSize: selected.bestSize, tied: selected.tied, actors };
-    return { secondary: { ...secondary, diagnostic: { ...secondary.diagnostic, travel } }, moves: selected.moves };
+    return { secondary: { ...secondary, diagnostic: { ...secondary.diagnostic, travel,
+        ...(jointProposal ? {jointProposal} : {}) } }, moves: selected.moves };
 }
 
 export function moveCreeps(myCreeps, enemies, flag, engagements = new Map(), fallbackById = new Map(),
