@@ -401,3 +401,311 @@ for (const row of temporaryRootBoundaryCases) {
         assert.deepEqual(parents, row.parents);
     });
 }
+
+// Frozen right-boundary cases from accepted coding-pilot-20261021-e12213c1.s01.
+// Root-level placement keeps synthetic references outside inventory scans.
+const temporaryRootRightBoundaryCases = [
+    {
+        "name": "right boundary end",
+        "text": "/tmp/pain-gain-alpha",
+        "parents": [
+            "/private/tmp",
+            "/private/var/folders/aa/bb/T"
+        ],
+        "expected": [
+            "/private/tmp/pain-gain-alpha"
+        ],
+        "category": "right-positive"
+    },
+    {
+        "name": "right boundary descendant",
+        "text": "/tmp/pain-gain-alpha/child.json",
+        "parents": [
+            "/private/tmp",
+            "/private/var/folders/aa/bb/T"
+        ],
+        "expected": [
+            "/private/tmp/pain-gain-alpha"
+        ],
+        "category": "right-positive"
+    },
+    {
+        "name": "right boundary space",
+        "text": "/tmp/pain-gain-alpha ",
+        "parents": [
+            "/private/tmp",
+            "/private/var/folders/aa/bb/T"
+        ],
+        "expected": [
+            "/private/tmp/pain-gain-alpha"
+        ],
+        "category": "right-positive"
+    },
+    {
+        "name": "right boundary tab",
+        "text": "/tmp/pain-gain-alpha\t",
+        "parents": [
+            "/private/tmp",
+            "/private/var/folders/aa/bb/T"
+        ],
+        "expected": [
+            "/private/tmp/pain-gain-alpha"
+        ],
+        "category": "right-positive"
+    },
+    {
+        "name": "right boundary newline",
+        "text": "/tmp/pain-gain-alpha\n",
+        "parents": [
+            "/private/tmp",
+            "/private/var/folders/aa/bb/T"
+        ],
+        "expected": [
+            "/private/tmp/pain-gain-alpha"
+        ],
+        "category": "right-positive"
+    },
+    {
+        "name": "right boundary nonbreaking space",
+        "text": "/tmp/pain-gain-alpha ",
+        "parents": [
+            "/private/tmp",
+            "/private/var/folders/aa/bb/T"
+        ],
+        "expected": [
+            "/private/tmp/pain-gain-alpha"
+        ],
+        "category": "right-positive"
+    },
+    {
+        "name": "right boundary single quote",
+        "text": "/tmp/pain-gain-alpha'",
+        "parents": [
+            "/private/tmp",
+            "/private/var/folders/aa/bb/T"
+        ],
+        "expected": [
+            "/private/tmp/pain-gain-alpha"
+        ],
+        "category": "right-positive"
+    },
+    {
+        "name": "right boundary double quote",
+        "text": "/tmp/pain-gain-alpha\"",
+        "parents": [
+            "/private/tmp",
+            "/private/var/folders/aa/bb/T"
+        ],
+        "expected": [
+            "/private/tmp/pain-gain-alpha"
+        ],
+        "category": "right-positive"
+    },
+    {
+        "name": "right boundary backtick",
+        "text": "/tmp/pain-gain-alpha`",
+        "parents": [
+            "/private/tmp",
+            "/private/var/folders/aa/bb/T"
+        ],
+        "expected": [
+            "/private/tmp/pain-gain-alpha"
+        ],
+        "category": "right-positive"
+    },
+    {
+        "name": "right boundary closing paren",
+        "text": "/tmp/pain-gain-alpha)",
+        "parents": [
+            "/private/tmp",
+            "/private/var/folders/aa/bb/T"
+        ],
+        "expected": [
+            "/private/tmp/pain-gain-alpha"
+        ],
+        "category": "right-positive"
+    },
+    {
+        "name": "right boundary closing bracket",
+        "text": "/tmp/pain-gain-alpha]",
+        "parents": [
+            "/private/tmp",
+            "/private/var/folders/aa/bb/T"
+        ],
+        "expected": [
+            "/private/tmp/pain-gain-alpha"
+        ],
+        "category": "right-positive"
+    },
+    {
+        "name": "right boundary closing brace",
+        "text": "/tmp/pain-gain-alpha}",
+        "parents": [
+            "/private/tmp",
+            "/private/var/folders/aa/bb/T"
+        ],
+        "expected": [
+            "/private/tmp/pain-gain-alpha"
+        ],
+        "category": "right-positive"
+    },
+    {
+        "name": "right boundary opening angle",
+        "text": "/tmp/pain-gain-alpha<",
+        "parents": [
+            "/private/tmp",
+            "/private/var/folders/aa/bb/T"
+        ],
+        "expected": [
+            "/private/tmp/pain-gain-alpha"
+        ],
+        "category": "right-positive"
+    },
+    {
+        "name": "right boundary closing angle",
+        "text": "/tmp/pain-gain-alpha>",
+        "parents": [
+            "/private/tmp",
+            "/private/var/folders/aa/bb/T"
+        ],
+        "expected": [
+            "/private/tmp/pain-gain-alpha"
+        ],
+        "category": "right-positive"
+    },
+    {
+        "name": "right boundary comma",
+        "text": "/tmp/pain-gain-alpha,",
+        "parents": [
+            "/private/tmp",
+            "/private/var/folders/aa/bb/T"
+        ],
+        "expected": [
+            "/private/tmp/pain-gain-alpha"
+        ],
+        "category": "right-positive"
+    },
+    {
+        "name": "right boundary semicolon",
+        "text": "/tmp/pain-gain-alpha;",
+        "parents": [
+            "/private/tmp",
+            "/private/var/folders/aa/bb/T"
+        ],
+        "expected": [
+            "/private/tmp/pain-gain-alpha"
+        ],
+        "category": "right-positive"
+    },
+    {
+        "name": "reject partial root before plus",
+        "text": "/tmp/pain-gain-alpha+copy",
+        "parents": [
+            "/private/tmp",
+            "/private/var/folders/aa/bb/T"
+        ],
+        "expected": [],
+        "category": "right-regression"
+    },
+    {
+        "name": "reject partial root before at",
+        "text": "/tmp/pain-gain-alpha@copy",
+        "parents": [
+            "/private/tmp",
+            "/private/var/folders/aa/bb/T"
+        ],
+        "expected": [],
+        "category": "right-regression"
+    },
+    {
+        "name": "reject partial root before percent",
+        "text": "/tmp/pain-gain-alpha%20copy",
+        "parents": [
+            "/private/tmp",
+            "/private/var/folders/aa/bb/T"
+        ],
+        "expected": [],
+        "category": "right-regression"
+    },
+    {
+        "name": "reject partial root before hash",
+        "text": "/tmp/pain-gain-alpha#copy",
+        "parents": [
+            "/private/tmp",
+            "/private/var/folders/aa/bb/T"
+        ],
+        "expected": [],
+        "category": "right-regression"
+    },
+    {
+        "name": "reject partial root before query",
+        "text": "/tmp/pain-gain-alpha?copy",
+        "parents": [
+            "/private/tmp",
+            "/private/var/folders/aa/bb/T"
+        ],
+        "expected": [],
+        "category": "right-regression"
+    },
+    {
+        "name": "reject partial root before colon",
+        "text": "/tmp/pain-gain-alpha:copy",
+        "parents": [
+            "/private/tmp",
+            "/private/var/folders/aa/bb/T"
+        ],
+        "expected": [],
+        "category": "right-regression"
+    },
+    {
+        "name": "reject partial root before backslash",
+        "text": "/tmp/pain-gain-alpha\\copy",
+        "parents": [
+            "/private/tmp",
+            "/private/var/folders/aa/bb/T"
+        ],
+        "expected": [],
+        "category": "right-regression"
+    },
+    {
+        "name": "reject partial root before accented letter",
+        "text": "/tmp/pain-gain-alphaé",
+        "parents": [
+            "/private/tmp",
+            "/private/var/folders/aa/bb/T"
+        ],
+        "expected": [],
+        "category": "right-regression"
+    },
+    {
+        "name": "reject partial root before CJK",
+        "text": "/tmp/pain-gain-alpha中",
+        "parents": [
+            "/private/tmp",
+            "/private/var/folders/aa/bb/T"
+        ],
+        "expected": [],
+        "category": "right-regression"
+    },
+    {
+        "name": "reject partial root before emoji",
+        "text": "/tmp/pain-gain-alpha🙂",
+        "parents": [
+            "/private/tmp",
+            "/private/var/folders/aa/bb/T"
+        ],
+        "expected": [],
+        "category": "right-regression"
+    }
+];
+
+for (const row of temporaryRootRightBoundaryCases) {
+    test(`temporary-root right boundary: ${row.name}`, () => {
+        const parents = [...row.parents];
+        const first = referencedTemporaryRoots(row.text, parents);
+        assert.deepEqual(first, row.expected);
+        assert.deepEqual(parents, row.parents);
+        assert.deepEqual(referencedTemporaryRoots(row.text, parents), first);
+        assert.deepEqual(parents, row.parents);
+    });
+}
