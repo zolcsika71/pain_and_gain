@@ -44,6 +44,7 @@ export function referencedTemporaryRoots(text, parents) {
     // Canonicalize only the known /tmp and /var aliases, without traversing
     // a receipt-supplied path or reading anything at its destination.
     for (const match of text.matchAll(/\/(?:private\/)?(?:tmp|var\/folders\/[^/\s]+\/[^/\s]+\/T)\/[A-Za-z0-9._-]+/g)) {
+        if (match.index > 0 && !/[\s'"`(\[{<>=]/.test(text[match.index - 1])) continue;
         const candidate = match[0].replace(/^\/tmp\//, '/private/tmp/').replace(/^\/var\//, '/private/var/');
         if (parents.includes(path.dirname(candidate)) && temporaryName.test(path.basename(candidate)) && !candidate.endsWith('-')) found.add(candidate);
     }

@@ -50,3 +50,354 @@ test('destructive and arbitrary-path CLI options reject before inventory', () =>
         assert.match(result.stderr, /no deletion options/);
     }
 });
+
+// Frozen expected cases from accepted coding-pilot-20261021-3dd8e272.s01.
+// Keep this table in the root-level test file, outside inventory reference scans.
+const temporaryRootBoundaryCases = [
+    {
+        "name": "tmp alias root",
+        "text": "/tmp/pain-gain-alpha",
+        "parents": [
+            "/private/tmp",
+            "/private/var/folders/aa/bb/T"
+        ],
+        "expected": [
+            "/private/tmp/pain-gain-alpha"
+        ],
+        "category": "compatibility"
+    },
+    {
+        "name": "private tmp descendant",
+        "text": "/private/tmp/pain-gain-alpha/log.json",
+        "parents": [
+            "/private/tmp",
+            "/private/var/folders/aa/bb/T"
+        ],
+        "expected": [
+            "/private/tmp/pain-gain-alpha"
+        ],
+        "category": "compatibility"
+    },
+    {
+        "name": "var alias",
+        "text": "/var/folders/aa/bb/T/historical-index-beta",
+        "parents": [
+            "/private/tmp",
+            "/private/var/folders/aa/bb/T"
+        ],
+        "expected": [
+            "/private/var/folders/aa/bb/T/historical-index-beta"
+        ],
+        "category": "compatibility"
+    },
+    {
+        "name": "private var alias",
+        "text": "/private/var/folders/aa/bb/T/scout-hold-cache-gamma",
+        "parents": [
+            "/private/tmp",
+            "/private/var/folders/aa/bb/T"
+        ],
+        "expected": [
+            "/private/var/folders/aa/bb/T/scout-hold-cache-gamma"
+        ],
+        "category": "compatibility"
+    },
+    {
+        "name": "deduplicate aliases and deterministic sort",
+        "text": "/tmp/pain-gain-z /private/tmp/pain-gain-z /tmp/pain-gain-a",
+        "parents": [
+            "/private/tmp",
+            "/private/var/folders/aa/bb/T"
+        ],
+        "expected": [
+            "/private/tmp/pain-gain-a",
+            "/private/tmp/pain-gain-z"
+        ],
+        "category": "compatibility"
+    },
+    {
+        "name": "unrelated name",
+        "text": "/tmp/unrelated",
+        "parents": [
+            "/private/tmp",
+            "/private/var/folders/aa/bb/T"
+        ],
+        "expected": [],
+        "category": "compatibility"
+    },
+    {
+        "name": "incomplete suffix",
+        "text": "/tmp/pain-gain-incomplete-",
+        "parents": [
+            "/private/tmp",
+            "/private/var/folders/aa/bb/T"
+        ],
+        "expected": [],
+        "category": "compatibility"
+    },
+    {
+        "name": "foreign parent",
+        "text": "/var/folders/other/user/T/pain-gain-foreign",
+        "parents": [
+            "/private/tmp",
+            "/private/var/folders/aa/bb/T"
+        ],
+        "expected": [],
+        "category": "compatibility"
+    },
+    {
+        "name": "empty input",
+        "text": "",
+        "parents": [
+            "/private/tmp",
+            "/private/var/folders/aa/bb/T"
+        ],
+        "expected": [],
+        "category": "compatibility"
+    },
+    {
+        "name": "valid left boundary space",
+        "text": " /tmp/pain-gain-alpha",
+        "parents": [
+            "/private/tmp",
+            "/private/var/folders/aa/bb/T"
+        ],
+        "expected": [
+            "/private/tmp/pain-gain-alpha"
+        ],
+        "category": "positive-boundary"
+    },
+    {
+        "name": "valid left boundary newline",
+        "text": "\n/tmp/pain-gain-alpha",
+        "parents": [
+            "/private/tmp",
+            "/private/var/folders/aa/bb/T"
+        ],
+        "expected": [
+            "/private/tmp/pain-gain-alpha"
+        ],
+        "category": "positive-boundary"
+    },
+    {
+        "name": "valid left boundary tab",
+        "text": "\t/tmp/pain-gain-alpha",
+        "parents": [
+            "/private/tmp",
+            "/private/var/folders/aa/bb/T"
+        ],
+        "expected": [
+            "/private/tmp/pain-gain-alpha"
+        ],
+        "category": "positive-boundary"
+    },
+    {
+        "name": "valid left boundary double quote",
+        "text": "\"/tmp/pain-gain-alpha",
+        "parents": [
+            "/private/tmp",
+            "/private/var/folders/aa/bb/T"
+        ],
+        "expected": [
+            "/private/tmp/pain-gain-alpha"
+        ],
+        "category": "positive-boundary"
+    },
+    {
+        "name": "valid left boundary single quote",
+        "text": "'/tmp/pain-gain-alpha",
+        "parents": [
+            "/private/tmp",
+            "/private/var/folders/aa/bb/T"
+        ],
+        "expected": [
+            "/private/tmp/pain-gain-alpha"
+        ],
+        "category": "positive-boundary"
+    },
+    {
+        "name": "valid left boundary backtick",
+        "text": "`/tmp/pain-gain-alpha",
+        "parents": [
+            "/private/tmp",
+            "/private/var/folders/aa/bb/T"
+        ],
+        "expected": [
+            "/private/tmp/pain-gain-alpha"
+        ],
+        "category": "positive-boundary"
+    },
+    {
+        "name": "valid left boundary paren",
+        "text": "(/tmp/pain-gain-alpha",
+        "parents": [
+            "/private/tmp",
+            "/private/var/folders/aa/bb/T"
+        ],
+        "expected": [
+            "/private/tmp/pain-gain-alpha"
+        ],
+        "category": "positive-boundary"
+    },
+    {
+        "name": "valid left boundary bracket",
+        "text": "[/tmp/pain-gain-alpha",
+        "parents": [
+            "/private/tmp",
+            "/private/var/folders/aa/bb/T"
+        ],
+        "expected": [
+            "/private/tmp/pain-gain-alpha"
+        ],
+        "category": "positive-boundary"
+    },
+    {
+        "name": "valid left boundary brace",
+        "text": "{/tmp/pain-gain-alpha",
+        "parents": [
+            "/private/tmp",
+            "/private/var/folders/aa/bb/T"
+        ],
+        "expected": [
+            "/private/tmp/pain-gain-alpha"
+        ],
+        "category": "positive-boundary"
+    },
+    {
+        "name": "valid left boundary angle",
+        "text": "</tmp/pain-gain-alpha",
+        "parents": [
+            "/private/tmp",
+            "/private/var/folders/aa/bb/T"
+        ],
+        "expected": [
+            "/private/tmp/pain-gain-alpha"
+        ],
+        "category": "positive-boundary"
+    },
+    {
+        "name": "valid left boundary equals",
+        "text": "=/tmp/pain-gain-alpha",
+        "parents": [
+            "/private/tmp",
+            "/private/var/folders/aa/bb/T"
+        ],
+        "expected": [
+            "/private/tmp/pain-gain-alpha"
+        ],
+        "category": "positive-boundary"
+    },
+    {
+        "name": "reject nested tmp",
+        "text": "/opt/archive/tmp/pain-gain-false",
+        "parents": [
+            "/private/tmp",
+            "/private/var/folders/aa/bb/T"
+        ],
+        "expected": [],
+        "category": "regression"
+    },
+    {
+        "name": "reject nested private tmp",
+        "text": "/opt/archive/private/tmp/pain-gain-false",
+        "parents": [
+            "/private/tmp",
+            "/private/var/folders/aa/bb/T"
+        ],
+        "expected": [],
+        "category": "regression"
+    },
+    {
+        "name": "reject nested var",
+        "text": "/else/var/folders/aa/bb/T/pain-gain-false",
+        "parents": [
+            "/private/tmp",
+            "/private/var/folders/aa/bb/T"
+        ],
+        "expected": [],
+        "category": "regression"
+    },
+    {
+        "name": "reject nested private var",
+        "text": "/else/private/var/folders/aa/bb/T/pain-gain-false",
+        "parents": [
+            "/private/tmp",
+            "/private/var/folders/aa/bb/T"
+        ],
+        "expected": [],
+        "category": "regression"
+    },
+    {
+        "name": "reject URL",
+        "text": "https://example.invalid/tmp/pain-gain-false",
+        "parents": [
+            "/private/tmp",
+            "/private/var/folders/aa/bb/T"
+        ],
+        "expected": [],
+        "category": "regression"
+    },
+    {
+        "name": "reject file URL",
+        "text": "file:///tmp/pain-gain-false",
+        "parents": [
+            "/private/tmp",
+            "/private/var/folders/aa/bb/T"
+        ],
+        "expected": [],
+        "category": "regression"
+    },
+    {
+        "name": "reject relative prefix",
+        "text": "../tmp/pain-gain-false",
+        "parents": [
+            "/private/tmp",
+            "/private/var/folders/aa/bb/T"
+        ],
+        "expected": [],
+        "category": "regression"
+    },
+    {
+        "name": "reject word prefix",
+        "text": "x/tmp/pain-gain-false",
+        "parents": [
+            "/private/tmp",
+            "/private/var/folders/aa/bb/T"
+        ],
+        "expected": [],
+        "category": "regression"
+    },
+    {
+        "name": "reject double slash",
+        "text": "//tmp/pain-gain-false",
+        "parents": [
+            "/private/tmp",
+            "/private/var/folders/aa/bb/T"
+        ],
+        "expected": [],
+        "category": "regression"
+    },
+    {
+        "name": "reject nested var then retain distinct valid tmp",
+        "text": "/else/var/folders/aa/bb/T/pain-gain-false /tmp/pain-gain-real",
+        "parents": [
+            "/private/tmp",
+            "/private/var/folders/aa/bb/T"
+        ],
+        "expected": [
+            "/private/tmp/pain-gain-real"
+        ],
+        "category": "regression"
+    }
+];
+
+for (const row of temporaryRootBoundaryCases) {
+    test(`temporary-root boundary: ${row.name}`, () => {
+        const parents = [...row.parents];
+        const first = referencedTemporaryRoots(row.text, parents);
+        assert.deepEqual(first, row.expected);
+        assert.deepEqual(parents, row.parents);
+        assert.deepEqual(referencedTemporaryRoots(row.text, parents), first);
+        assert.deepEqual(parents, row.parents);
+    });
+}
