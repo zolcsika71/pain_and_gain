@@ -13,3 +13,5 @@ export const openingRouteProbeExperiment = false;
 export const openingRouteAdoptionExperiment = false;
 // Route-backed joint proposals; incompatible with probe/adoption authority.
 export const openingJointProposalsExperiment = false;
+// Owned current-cell holds; requires opening deployment AND joint proposals.
+export const openingHoldJointProposalsExperiment = false;

@@ -40,7 +40,7 @@ export const serialize=v=>JSON.stringify(v,(_,x)=>x instanceof Map?[...x]:x inst
 export const moveCalls=w=>w.calls.filter(c=>c.method==='move');
 export const tacticalCalls=w=>w.calls.filter(c=>!['move','moveTo'].includes(c.method));
 
-export async function adoptionFlow(t,{adoption=true,probe=true,opening=true,joint=false,mode='improve',rename=false,configure=null}={}){
+export async function adoptionFlow(t,{adoption=true,probe=true,opening=true,joint=false,hold=false,mode='improve',rename=false,configure=null}={}){
     const w=openingWorld();
     for(const [id,y]of [['medic',20],['bow1',19],['bow2',21],['guardR2',22]])Object.assign(w.actor(id),{x:25,y});
     configure?.(w);
@@ -90,9 +90,9 @@ export async function adoptionFlow(t,{adoption=true,probe=true,opening=true,join
         return request.result;
     };
     let config=configuration;
-    for(const [name,value]of Object.entries({openingDeploymentExperiment:opening,openingRouteProbeExperiment:probe,openingRouteAdoptionExperiment:adoption,openingJointProposalsExperiment:joint})){
-        if(!config.includes(`const ${name} =`))config+=`\nexport const ${name} = ${value};\n`;
-        else config=config.replace(`${name} = false`,`${name} = ${value}`);
+    for(const [name,value]of Object.entries({openingDeploymentExperiment:opening,openingRouteProbeExperiment:probe,openingRouteAdoptionExperiment:adoption,openingJointProposalsExperiment:joint,openingHoldJointProposalsExperiment:hold})){
+        if(!config.includes(`const ${name} =`))config+=`\nexport const ${name} = ${JSON.stringify(value)??'undefined'};\n`;
+        else config=config.replace(`${name} = false`,`${name} = ${JSON.stringify(value)??'undefined'}`);
     }
     const url=new URL(`../../src/loop.js?adoption-${instance++}`,import.meta.url).href;
     configs.set(url,config);globalThis.__adoption=w;w.loop=await import(url);

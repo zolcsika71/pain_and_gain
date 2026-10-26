@@ -3,7 +3,7 @@ import { createSpilloverContext, selectSpilloverDecision } from '../tactics/comb
 import { selectMovementPlan, localRetreatStep } from '../tactics/movement.js';
 import { improveHealerHold } from '../tactics/healer-closing.js';
 import { secondaryStepSupport, selectSecondaryTravelSteps } from '../strategy/supported-contest.js';
-import { proposeOpeningJoint, jointProposalStatus } from '../strategy/opening-joint-proposals.js';
+import { proposeOpeningJoint, proposeHoldAwareJoint, jointProposalStatus } from '../strategy/opening-joint-proposals.js';
 
 function reportDecision(reporter, decision) {
     return reporter?.decision(decision) ?? null;
@@ -58,7 +58,8 @@ export function prepareSecondaryMovement(secondary, friends, enemies, flag, enga
         const converging = proposed.some((p,i) => proposed.some((q,j) => j<i && p.x===q.x && p.y===q.y));
         let status = jointProposalStatus['no-convergence'];
         if (converging) {
-            const result = proposeOpeningJoint({ observation: openingJoint.observation,
+            const propose = openingJoint.holdAware === true ? proposeHoldAwareJoint : proposeOpeningJoint;
+            const result = propose({ observation: openingJoint.observation,
                 mission: secondary, steps, spacing, probe: openingJoint.probe, adoption: openingJoint.adoption });
             status = jointProposalStatus[result.reason];
             steps = result.steps;

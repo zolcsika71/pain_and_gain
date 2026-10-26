@@ -3,6 +3,7 @@ import test,{after} from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
+import * as configuration from '../../src/config.js';
 import {holdWorld,moveCalls,tacticalCalls} from '../fixtures/opening-hold-joint-world.js';
 import {proposeHoldAwareJoint} from '../fixtures/opening-hold-joint-proposals.js';
 import {proposeOpeningJoint,pairSupportTable} from '../../src/strategy/opening-joint-proposals.js';
@@ -21,7 +22,7 @@ function bounds(r){
     assert(r.work.admission<=1);assert.equal(r.work.queries,0);
 }
 function check(w){
-    if(w.joint&&w.proposalPolicy)bounds(w.joint);
+    if(w.jointPolicy==='proposeHoldAwareJoint')bounds(w.joint);
     assert((w.d.travel?.examined??0)<=16);assert(w.d.queries<=(w.tick===1?24:4));
     assert.equal(w.d.reportedOps,w.d.queries*100);
     const moves=new Map(moveCalls(w).map(c=>[c.id,c]));
@@ -55,12 +56,62 @@ async function fixture(t){const w=await holdWorld(t);w.step(1);return {w,args:in
 
 test('real-tick regression: distinct rear approaches with owned healer/front holds',async t=>{
     const w=await holdWorld(t);w.step(1);
+    assert.equal(w.jointPolicy,'proposeHoldAwareJoint','configuration must select the runtime hold-aware entry');
     assert.equal(w.joint?.reason,'joint-proposal');
     assert.deepEqual(departing(w).map(c=>[c.id,c.x,c.y]).sort(),[['bow1',23,18],['bow2',23,20]]);
     assert.equal(w.prepared.moves.get('medic'),null);assert.equal(w.prepared.moves.get('guardR2'),null);
+    assert.equal(w.joint.work.admission,1);
+    assert.equal(w.prepareInput[8].holdAware,true);
+    assert.deepEqual(w.d.memberSlots.map(slot=>w.game.creeps[slot].id),['bow1','bow2','guardR2','medic']);
+    assert.deepEqual(w.d.jointProposal,[2,14],'mask includes changed holds in original diagnostic slots');
+    for(const a of w.d.travel.actors){
+        const id=w.game.creeps[w.d.memberSlots[a.slot]].id;
+        assert.deepEqual(a.proposed,w.joint.steps.get(id));
+        assert.deepEqual(a.admitted,w.prepared.moves.get(id));
+        if(['medic','guardR2'].includes(id))assert.equal(a.holdReason,'no-step');
+    }
     assert.equal(w.centreEvaluations,1);check(w);
     for(const id of ['medic','guardR2'])assert(w.logs.some(r=>r.type==='action-decision'&&r.actorId===id&&r.reason==='capture-route-hold'));
     assert.equal(w.joint.certificates.find(r=>r.actorId==='medic').path[0].x,26,'holder uses real cached route, not a hold route');
+});
+
+test('all experimental authorities remain off and the existing escort stays on',()=>{
+    for(const [name,value]of Object.entries(configuration))assert.equal(value,name==='oneHealerEscortExperiment');
+});
+
+test('disabled authority and move-only mode preserve the original maps and work ceilings',async t=>{
+    for(const enabled of [false,true]){
+        const w=await holdWorld(t,{candidate:false,enabled});w.step(1);
+        assert.equal(departing(w).length,0);
+        if(enabled){
+            assert.equal(w.prepareInput[8].holdAware,false);assert.equal(w.jointPolicy,'proposeOpeningJoint');
+            assert.equal(w.joint.reason,'no-full-assignment');assert.equal(w.joint.steps,w.jointContext.steps);
+            assert(w.joint.work.candidateCounts.every(n=>n<=3));assert(w.joint.work.assignments<=81);
+            assert(w.joint.work.pairProofs<=27);assert.equal(w.joint.work.nodes,undefined);
+            assert.deepEqual(w.d.jointProposal,[9,0]);
+        }else{assert.equal(w.prepareInput[8],null);assert.equal(w.jointResults.length,0);assert(!w.d.jointProposal);}
+    }
+});
+
+test('opening-off commands, tactics and diagnostics ignore hold authority, including unknown values',async t=>{
+    let baseline;
+    for(const candidate of [false,true,null,'unknown',0]){
+        const w=await holdWorld(t,{opening:false,candidate});w.step(1);
+        assert.equal(w.requests.length,0);assert.equal(w.centreEvaluations,0);assert.equal(w.jointResults.length,0);
+        const trace={calls:w.calls,logs:w.logs};
+        if(!baseline)baseline=trace;else assert.deepEqual(trace,baseline);
+    }
+});
+
+for(const options of [{enabled:false},{enabled:null},{enabled:'unknown'},{candidate:null},{candidate:'unknown'},
+    {candidate:0},{candidate:1},{probe:true},{probe:null},{adoption:true},{adoption:null}])
+test(`hold authority rejects ${JSON.stringify(options)} before opening route work`,async t=>{
+    const w=await holdWorld(t,options);w.step(1);
+    assert.equal(w.d.reason,'incompatible-configuration');assert.equal(w.d.phase,'finished');
+    assert.equal(w.d.queries,0);assert.equal(w.requests.length,0);assert.equal(w.matrices,0);
+    assert.equal(w.jointResults.length,0);assert.equal(w.centreEvaluations,0);assert.equal(owned(w).length,0);
+    assert(!w.d.travel);
+    assert.deepEqual(w.d.jointProposal,options.enabled===false||options.enabled===null||options.enabled==='unknown'?undefined:[0,null]);
 });
 
 test('baseline versus extension: successive observed support-safe weapon progress and unchanged tactics',async t=>{
@@ -153,12 +204,27 @@ test('one-cell final approaches cannot manufacture distinct splice destinations'
     assert.deepEqual(r.work.candidateCounts,[2,2,2,2]);assert.equal(r.steps,args.steps);
 });
 
-test('frozen production gates and moving-candidate predicates have not drifted',()=>{
-    const source=fs.readFileSync(new URL('../../src/strategy/opening-joint-proposals.js',import.meta.url),'utf8');
-    const extension=fs.readFileSync(new URL('../fixtures/opening-hold-joint-proposals.js',import.meta.url),'utf8');
-    const section=s=>s.slice(s.indexOf('    if(probe||adoption)'),s.indexOf('    if(work.neighbours>32'));
-    const normalize=s=>s.replace("kind:'move',",'').replace("        candidates.push({kind:'hold',step:null});\n",'');
-    assert.equal(normalize(section(extension)),section(source),'unchanged gates/certificates, only explicit hold added');
+test('shared policy keeps fixed moving candidates and certificate suffixes behind both entry points',async t=>{
+    const {args}=await fixture(t);
+    const expected={medic:['26,19','26,20','26,21'],bow1:['23,17','23,18'],
+        bow2:['23,18','23,19','23,20'],guardR2:['29,19','29,20','29,21']};
+    for(const propose of [proposeOpeningJoint,proposeHoldAwareJoint]){
+        const r=propose(args);
+        for(const [id,cells]of Object.entries(expected)){
+            const moving=r.choices.get(id).filter(c=>c.step);
+            assert.deepEqual(moving.map(c=>cell(c.step)).sort(),cells);
+            const report=args.mission.state.routeControl.cache.find(c=>c.actorId===id);
+            for(const c of moving)assert.deepEqual(c.certificate,{...report,path:[c.step,...report.path.slice(1)]});
+        }
+        assert.equal(r.work.neighbours,32);assert.equal(r.work.queries,0);
+    }
+    // Both modes reject unknown proof fields before candidate/terrain work.
+    delete args.mission.state.routeControl.cache[0].ops;
+    args.spacing.terrainAt=()=>{throw Error('proof failure must bypass terrain');};
+    for(const propose of [proposeOpeningJoint,proposeHoldAwareJoint]){
+        const r=propose(args);assert.equal(r.reason,'invalid-proof');assert.equal(r.steps,args.steps);
+        assert.equal(r.work.neighbours,0);assert.equal(r.work.assignments,0);assert.equal(r.work.admission,0);
+    }
 });
 
 test('maximum real enumeration visits 341 nodes, 256 leaves and 48 pair entries without pruning',async t=>{
@@ -175,6 +241,7 @@ test('maximum real enumeration visits 341 nodes, 256 leaves and 48 pair entries 
     const r=proposeHoldAwareJoint(args);bounds(r);
     assert.deepEqual(r.work.candidateCounts,[4,4,4,4]);assert.equal(r.work.nodes,341);
     assert.equal(r.work.assignments,256);assert.equal(r.work.pairProofs,48);assert.equal(r.work.neighbours,32);
+    assert.equal(r.reason,'equal-optima');assert.equal(r.steps,args.steps);assert.equal(r.work.admission,0);
     t.diagnostic(JSON.stringify({maximumWork:r.work,reason:r.reason}));
 });
 
@@ -286,6 +353,7 @@ for(const kind of ['emergency','lost-heal','outsider-injury','centre-support'])t
 test('late centre cancellation discards successful hold-aware map; emergency actions retain ownership',async t=>{
     const w=await holdWorld(t,{configure:w=>Object.assign(w.enemies.find(c=>c.body.some(p=>p.type==='heal')),{x:12,y:12})});
     w.step(1);assert.equal(w.joint.reason,'joint-proposal');assert.equal(w.centrePlan.reason,'priority-handoff');
+    assert.deepEqual(w.d.jointProposal,[14,null]);assert(!w.d.travel);
     assert.equal(w.d.reason,'centre-priority-handoff');assert.equal(owned(w).length,0);assert.equal(w.centreEvaluations,1);
     assert(w.logs.some(r=>r.type==='action-decision'&&/^combat-/.test(r.reason)));
 });
@@ -338,6 +406,6 @@ test('deadline, duplicate tick, match reset and supplied ownership release prese
     const released=await holdWorld(t);released.step(1);released.observe();
     // SUPPLIED owner change tests release, not arrival/capture by these paths.
     released.flags.find(f=>f.id==='east').my=true;
-    for(let tick=2;tick<=7;tick++){released.step(tick);assert.equal(released.d.reason,'captured');assert.equal(owned(released).length,0);assert.equal(released.joint,null);}
+    for(let tick=2;tick<=7;tick++){released.step(tick);assert.equal(released.d.reason,'captured');assert.equal(owned(released).length,0);assert.equal(released.joint,null);assert.deepEqual(released.d.jointProposal,[0,null]);}
     assert.equal(released.centreEvaluations,1);
 });

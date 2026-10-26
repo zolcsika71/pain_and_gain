@@ -1,11 +1,13 @@
 # Project layout
 
-Opening's default-off `openingJointProposalsExperiment` uses
+Opening's default-off `openingJointProposalsExperiment` and separate
+`openingHoldJointProposalsExperiment` use one private shared core in
 [`opening-joint-proposals.js`](../../src/strategy/opening-joint-proposals.js)
 inside existing departing preflight, before unchanged subset selection and one
 centre preparation/movement pass. It adds local route-backed certificates, not
 cache writes or searches. See the [current contract](opening-joint-proposals-test-only-2026-10-19.md#current-inactive-runtime-integration)
-for incompatible diagnostic authority, bounds, release and evidence limits.
+for configuration dependencies, distinct move-only/hold-aware bounds, release
+and generated-only evidence limits. Both switches remain off.
 
 `src/debug/opening-route-probe.js` owns a separate default-off diagnostic switch,
 `openingRouteProbeExperiment`. After both opening preparation passes and map

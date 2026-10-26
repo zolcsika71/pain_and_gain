@@ -2,11 +2,115 @@
 
 ## Current inactive runtime integration
 
-The later [hold-aware extension](#hold-aware-extension-test-only-2026-10-20)
-is **test-only**, not part of this inactive runtime integration. Its expanded
-local budget is authorized for generated qualification only.
+The qualified [hold-aware extension](#hold-aware-extension-test-only-2026-10-20)
+is now **integrated, inactive**, behind the separate default-off
+`openingHoldJointProposalsExperiment`. Its original generated evidence remains
+bounded by the limitations below; no activation or trial is authorized.
 
-The original test-only evidence below is now promoted without a policy change to
+### Hold-aware inactive integration (2026-10-26)
+
+Both `proposeOpeningJoint` and `proposeHoldAwareJoint` in
+[the runtime module](../../src/strategy/opening-joint-proposals.js) call one
+private shared core. The move-only entry preserves its original decisions,
+choice/report shapes and smaller ceilings. The
+[hold fixture](../../tests/fixtures/opening-hold-joint-proposals.js) now only
+re-exports runtime policy. The duplicate-source comparison is replaced by fixed
+candidate/certificate expectations and shared invalid-proof regressions.
+
+`openingHoldJointProposalsExperiment = false` requires explicit opening
+deployment and joint-proposal authority for operation. With opening requested,
+unknown joint/hold values, hold without joint, or joint with any probe/adoption
+value other than explicit `false` finish with `incompatible-configuration`
+before route queries/matrix construction. With opening off, the added value is
+ignored and existing behavior is unchanged. Every experimental switch remains
+off; the existing healer escort remains on.
+
+The existing loop/preflight context selects the fixed entry point. Observation
+hooks call that runtime entry directly; no test proposal-policy substitution
+remains. The real-loop hold regression failed before integration (move-only entry
+selected), then passed with two distinct rear moves and two owned current-cell
+holds. One private admission uses the holders' original cache report objects;
+no zero-length hold route, cache write or extra search is introduced. Existing
+eligibility/certificates, distinct original contenders, armed movement, all-outcome
+support, unique optimum and original-map fallback remain unchanged. Final maps
+still feed one bounded subset selection, centre reservation/preparation and one
+movement pass. Centre cancellation clears both groups; terminal/capture release,
+query/cache bounds, progress timers, tactical priority and diagnostics remain.
+
+Authorized hold-aware ceilings are 32 neighbour evaluations, 4 choices/member,
+256 complete assignments, 48 pair proofs, 341 enumeration nodes and 1 private
+admission validation. Move-only keeps 32/3/81/27/121/1. Both add zero searches
+and retain the 16-subset ceiling. The generated maximum reaches 32/4/256/48/341,
+returns equal optima and falls back with no admission; accepted cases exercise
+exactly one private admission. All 4096 support outcomes and adverse fixtures
+are preserved. Changed-proposal diagnostic masks include holds (the generated
+original slots produce `[2,14]`); cancellation emits `[14,null]`, release
+`[0,null]`. Masks remain proposals, not displacement claims.
+
+### Publication candidate qualification (2026-10-26)
+
+This inactive candidate is assembled from parent
+`83f8287076152001504f9683b46f884e81ea03b5` plus only the reviewed 15-file
+integration delta and candidate-specific build/document bindings. Parent runtime
+build: `138bda3534e1494e132e0c5987b47d40986ed841dcace1634347de282c86a76d`.
+Candidate build:
+`2897411faede1db7f18be6e2a7966ce8c01ab7b88fec840228256d7228dbe749`.
+No publication, activation, trial, staging, commit, push or worker is performed.
+All experimental switches remain off; the existing escort remains on.
+
+The candidate uses the parent's `movement.js` and adjacent-retreat tests.
+Unpublished retreat changes, coordinator additions, storage work, unrelated
+historical-review removals, untracked work and the prompt deletion are excluded.
+Parent historical review text below is preserved. This is a sparse materialization
+of runtime, selected generated-test dependencies, required syntax tooling and
+these documents; omitted assets are not proposed deletions.
+
+Actual candidate validation: 115 focused hold/joint/integration checks, 509 checks
+across the remaining 21 caller suites and 85 checks across adoption-flow,
+slot-sampler and three escort suites; **709 pass across 29 files**, with zero
+failures/skips. Each selected test file ran once against this candidate. The 12-check
+difference from the earlier composite run is the excluded unpublished retreat
+coverage. The commands below are unchanged file selections. Import/read-site
+inspection preceded execution: computed loop/config hooks resolve within the
+candidate; proposal hooks call runtime entries directly; selected inputs are
+runtime source or generated JavaScript, with no historical reader entry point.
+All 4096 support outcomes, maximum work and adverse fixtures remain covered.
+
+Candidate build generation/check, `npm run check`, explicit changed-source/test
+syntax, patch whitespace and affected link/anchor checks pass. Contemporaneous
+parent, assembly, pre-test and final source bindings, exact commands/results,
+reproducible patch and original-state preservation checks are retained together at:
+`/Users/zoltanka/.local/share/pain-and-gain-evidence/opening-hold-publication-candidate-20261026-6mw7vrjs/`.
+The original working tree, HEAD, index, worktrees and local changes are preserved.
+No `npm test`, historical payload read or repository-wide content hash is performed
+in candidate preparation. Generated success establishes no Arena CPU, actual route
+availability, capture causation or gameplay benefit; the original partial/
+non-displacement/refresh and release limitations below still apply.
+
+Earlier composite-local integration checkpoint (retained, not this candidate):
+starting build `2b62deda2635bc3fc58d7b3498ce5319d8a89df078f1c522bd7bdca2c9e9c6d6`,
+integrated build `dc0eead71deb40cf2456a15eed3e0f06df39d6a4c53cb9417632569a019eccee`;
+636+85=721 generated checks across 29 files and a 115-check focused rerun passed.
+That runtime included unpublished retreat work, so its build/validation could not
+identify this task-only candidate. Its preservation audit mistakenly hashed
+repository-wide bytes, including historical fixture JSON; those payloads were
+not parsed or used as evidence. No managed `replay_logs/` files were in that hash
+scope. This disclosed exception belongs to that earlier task and is not erased
+by the candidate's narrower preparation.
+
+Exact generated-only affected selection (no glob/name filters):
+
+```sh
+node --test tests/unit/opening-hold-joint.test.js tests/unit/opening-joint-proposals.test.js tests/unit/opening-joint-integration.test.js tests/unit/opening-deployment-flow.test.js tests/unit/opening-secondary-deployment.test.js tests/unit/opening-secondary-route-provider.test.js tests/unit/opening-occupancy-routes.test.js tests/unit/opening-centre-support.test.js tests/unit/opening-centre-occupancy.test.js tests/unit/opening-support-scope.test.js tests/unit/opening-route-probe.test.js tests/unit/opening-route-adoption.test.js tests/unit/secondary-objective-selection.test.js tests/unit/secondary-objective-flow.test.js tests/unit/secondary-partial-travel.test.js tests/unit/secondary-scoped-readiness.test.js tests/unit/supported-contest-candidate.test.js tests/unit/support-locked-flow.test.js tests/unit/support-locked-engagement.test.js tests/unit/movement.test.js tests/unit/tactics.test.js tests/unit/tick-flow.test.js tests/unit/flag-allocation-flow.test.js tests/unit/adjacent-retreat-support.test.js
+node --test tests/unit/opening-route-adoption-flow.test.js tests/unit/opening-route-slot-sampler.test.js tests/unit/healer-escort.test.js tests/unit/healer-escort-flow.test.js tests/unit/healer-escort-disabled-flow.test.js
+```
+
+The candidate leaves the original local work and index untouched. Its patch
+contains only the 15 listed task files; unchanged dependencies and omitted assets
+are not patch deletions. Older rollback copies below belong to their own
+integrations and must not overwrite later work. No rollback is performed here.
+
+The original move-only test-only evidence was promoted without a policy change to
 [opening-joint-proposals.js](../../src/strategy/opening-joint-proposals.js).
 The [fixture](../../tests/fixtures/opening-joint-proposals.js) is only a re-export;
 the former executor/subset injection transport and its extra baseline-selection
@@ -21,7 +125,7 @@ is repurposed. Post-centre capture/contest remains unchanged.
 
 Inactive starting build:
 `d00712d461341148589047dc25de277284cb03dda23ed22b590a2d32669ae3ae`.
-New inactive build:
+Original move-only integration build:
 `138bda3534e1494e132e0c5987b47d40986ed841dcace1634347de282c86a76d`.
 
 ### Production ownership and bounds
@@ -35,16 +139,18 @@ The one already-updated mission/selection, route-cache reports, original centre
 identity and ordinary steps are unchanged inputs. Certificate views remain local:
 no cache insertion, `searchedAt` change, coordinator rerun or second progress update.
 
-The helper body, candidate/certificate validation, unique-optimum objective,
-pair proofs and tie/no-solution fallback are byte-equivalent to the frozen policy.
-Only imports, descriptive comments and a finite diagnostic-code table were added.
+At the original move-only promotion, the helper body, candidate/certificate
+validation, unique-optimum objective, pair proofs and tie/no-solution fallback
+were byte-equivalent to the frozen policy. The later shared-core refactor above
+preserves those move-only decisions and bounds.
 The existing subset/intersection selector runs once on the final local proposal
 map. Final admitted departing destinations are reserved before **one** centre
 preparation; movement executes once. Centre cancellation discards both maps
 before ordinary priorities, state/logging and commands. Capture/termination
 releases both groups immediately, with no post-release ownership extension.
-The original 32/3/81/27/1 local ceilings and 16-subset limit below remain;
-there are zero added searches. Normal off-cache refresh, 24/4 queries,
+The original move-only32/3/81/27/1 local ceilings and16-subset limit remain;
+the hold-aware entry has only the separately authorized larger local ceilings
+above. There are zero added searches. Normal off-cache refresh, 24/4 queries,
 maxOps1000, route40, cache5, stall4 and lifetime60 are unchanged.
 
 ### Bounded diagnostic and interpretation
@@ -147,13 +253,16 @@ alone is a policy disable, not a byte-exact rollback; it is already off here.
 
 ## Hold-aware extension test-only (2026-10-20)
 
-Status: **retain test-only**. Runtime/config/build/package are unchanged at
+Original status: **retain test-only**, superseded by the
+[hold-aware inactive integration](#hold-aware-inactive-integration-2026-10-26)
+above. At this original qualification, runtime/config/build/package were unchanged at
 `138bda3534e1494e132e0c5987b47d40986ed841dcace1634347de282c86a76d`.
 No activation, runtime promotion or manual trial is prepared. The historical
 stall motivated this slice but supplies no missing terrain, cache reports or
 certified alternative. This task reads no historical evidence or replay payloads.
 
-The [test helper](../../tests/fixtures/opening-hold-joint-proposals.js) retains
+The original test helper (now a
+[runtime re-export](../../tests/fixtures/opening-hold-joint-proposals.js)) retained
 the production gates and moving-candidate predicates, adds `{kind:'hold',step:null}`
 for every member, and evaluates all choices without order pruning. A source-text
 guard and direct candidate comparisons detect drift of the frozen predicates.
@@ -236,8 +345,8 @@ The baseline-seam control run fails the new feature assertions; production never
 acquires hold-aware authority. Retain this slice only as generated feasibility:
 partial execution can still exhaust supplied routes or stall, and no historical
 fix, Arena route availability, acceptable live CPU, capture or strategic benefit
-has been established. Any future integration needs separate authority and must
-eliminate the frozen test-side predicate duplication rather than maintain it.
+has been established. The subsequent inactive integration above was separately authorized and removes
+the frozen test-side predicate duplication; it does not establish live usefulness.
 
 ## Original test-only qualification (historical)
 

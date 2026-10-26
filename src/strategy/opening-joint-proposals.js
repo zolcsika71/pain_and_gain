@@ -36,8 +36,17 @@ export function pairSupportTable(friends,ids,choices,work) {
  * priority/current-support/occupancy gates. No route coordinator or commands.
  * Baseline steps and all observations/cache/state remain immutable.
  */
-export function proposeOpeningJoint({observation,mission,steps,spacing,probe=false,adoption=false}) {
-    const work={neighbours:0,candidateCounts:[],assignments:0,pairProofs:0,admission:0,queries:0};
+export function proposeOpeningJoint(input) {
+    return proposeJoint(input,false);
+}
+
+// Separate fixed entry point: callers cannot enlarge the move-only budget.
+export function proposeHoldAwareJoint(input) {
+    return proposeJoint(input,true);
+}
+
+function proposeJoint({observation,mission,steps,spacing,probe=false,adoption=false},holdAware) {
+    const work={neighbours:0,candidateCounts:[],assignments:0,pairProofs:0,admission:0,queries:0,...(holdAware?{nodes:0}:{})};
     const result=(reason,next=steps,extra={})=>({reason,steps:next,work,...extra});
     if(probe||adoption)return result('incompatible-authority');
     if(mission?.state?.phase!=='active'||mission.movement?.kind!=='capture')return result('inactive');
@@ -78,22 +87,34 @@ export function proposeOpeningJoint({observation,mission,steps,spacing,probe=fal
             const ordinary=cell(q)===cell(r.path[0]);
             if(!ordinary&&(r.path.length<2||range(q,r.path[1])!==1||r.path.slice(1).some(p=>cell(p)===cell(q))))return false;
             if(observation.enemies.some(e=>(part(e,'attack')||part(e,'ranged_attack'))&&range(q,e)<=limits.threatRange))return false;
-            candidates.push({step:point(q),certificate:{...r,path:[point(q),...r.path.slice(1).map(point)]}});
+            candidates.push({...(holdAware?{kind:'move'}:{}),step:point(q),certificate:{...r,path:[point(q),...r.path.slice(1).map(point)]}});
             return false; // Collect all legal neighbours; scan order never wins.
         });
+        if(holdAware)candidates.push({kind:'hold',step:null});
         work.candidateCounts.push(candidates.length);choices.set(actor.id,candidates);
     }
-    if(work.neighbours>32||work.candidateCounts.some(n=>n>3))return result('work-bound');
+    if(work.neighbours>32||work.candidateCounts.some(n=>n>(holdAware?4:3)))return result('work-bound');
     if(work.candidateCounts.some(n=>n===0))return result('no-full-assignment',steps,{choices});
     const proof=pairSupportTable(friends,ids,choices,work);
+    const contenders=holdAware?ids.map((id,i)=>proposed.some((p,j)=>j!==i&&cell(p)===cell(proposed[i]))):null;
     let best=null,bestCost=Infinity,ties=0;
     const visit=(chosen,indices)=>{
+        if(holdAware)work.nodes++;
         if(chosen.length<4){for(let i=0;i<choices.get(ids[chosen.length]).length;i++)visit([...chosen,choices.get(ids[chosen.length])[i]],[...indices,i]);return;}
         work.assignments++;
-        if(new Set(chosen.map(c=>cell(c.step))).size!==4)return;
+        const effective=chosen.map((c,i)=>c.step??group[i]);
+        if(new Set(effective.map(cell)).size!==4)return;
+        if(holdAware){
+            // Two original contenders must actually move to distinct cells.
+            // Holds cannot turn a previous singleton winner into a repair.
+            if(!chosen.some((c,i)=>c.step&&contenders[i]&&chosen.some((d,j)=>
+                j!==i&&d.step&&contenders[j]&&cell(proposed[i])===cell(proposed[j]))))return;
+            if(!chosen.some((c,i)=>c.step&&cell(c.step)!==cell(proposed[i])))return;
+            if(!chosen.some((c,i)=>c.step&&part(group[i],'ranged_attack')))return;
+        }
         const hi=indices[ids.indexOf(proof.healer)];
         if(proof.weapons.some(id=>!proof.table.get(id)[hi][indices[ids.indexOf(id)]]))return;
-        const cost=chosen.reduce((n,c)=>n+manhattan(c.step,target),0);
+        const cost=effective.reduce((n,p)=>n+manhattan(p,target),0);
         if(cost<bestCost){bestCost=cost;best=chosen;ties=1;}else if(cost===bestCost)ties++;
     };
     visit([],[]);
@@ -101,11 +122,13 @@ export function proposeOpeningJoint({observation,mission,steps,spacing,probe=fal
     // ONE private admission validation. Ops reference original paid searches,
     // not a fabricated search/cost for these derived local certificates.
     work.admission++;
+    // Holds retain the actual cache report; they are not zero-length routes.
+    const certificates=best.map((c,i)=>c.kind==='hold'?reports[i]:c.certificate);
     const checked=selectOpeningObjective({...observation,centreId:mission.centreId,
-        squad:mission.state.squad,routes:best.map(c=>c.certificate),unavailableIds:[],observationComplete:true},
+        squad:mission.state.squad,routes:certificates,unavailableIds:[],observationComplete:true},
     mission.state.selection);
     if(checked.state.phase!=='active'||JSON.stringify(checked.state)!==JSON.stringify(mission.state.selection))
         return result('admission-rejected',steps,{choices,proof,ties});
     return result('joint-proposal',new Map(ids.map((id,i)=>[id,best[i].step])),
-        {choices,proof,ties,certificates:best.map(c=>c.certificate)});
+        {choices,proof,ties,certificates});
 }

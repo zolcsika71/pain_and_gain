@@ -48,10 +48,10 @@ Secondary --> Execute : shared validated first steps; capture replaces only flag
 Secondary --> Debug : bounded game-state.secondaryObjective;\nobserved positions, not movement claims
 Loop --> Execute : capture/contest whole-group preflight BEFORE snapshot/commands;\ncapture yields to combat too; priority conflict invalidates ownership
 Execute --> Contest : all current/next weapon/healer combinations\nretain functioning range3 access; <=16 safe travel subsets
-component "src/strategy/opening-joint-proposals.js\nopeningJointProposalsExperiment=false" as Joint
+component "src/strategy/opening-joint-proposals.js\nopeningJointProposalsExperiment=false\nopeningHoldJointProposalsExperiment=false" as Joint
 Execute --> Joint : opening-only actual convergence AFTER priority/current-support/occupancy;\nlocal certificates BEFORE subset selection, no cache/progress writes
 Joint --> Contest : unique full joint proposal or original-map fallback;\nunchanged intersection, then reserve final destinations before centre once
-note right of Joint : Probe/adoption combinations reject before route work.\n32 neighbours, <=3 candidates/member, <=81 assignments,\n<=27 pair proofs, one private admission check, zero searches.\nCancellation discards both groups; same single movement pass.\nFinite status/changed-slot mask only when enabled.
+note right of Joint : Probe/adoption combinations reject before route work.\nOne private core: move-only 32/3/81/27/121;\nhold-aware 32/4/256/48/341 (holds own current cells).\nOne private admission, zero searches, same 16 subsets.\nHold requires opening + joint; unknown config rejects before routing.\nCancellation discards both groups; same single movement pass.\nFinite status/changed-slot mask only when enabled.
 note right of Contest : Capture and contest use direct move(direction)\nto validated adjacent cells; all partial/stay outcomes keep support.\nCapture cancels ownership for ordinary combat approach;\ncontest may replace compatible combat approach, including handoff.\nAttack/healing selectors stay unchanged;\n24 acquisition /4 refresh queries are shared; no extra wait allowance.
 note left of Contest : Four-member occupied/converging routes:\nonly common moves of equal-best safe subsets proceed.\nHeld members keep objective ownership;\nno swaps, vacating-cell assumptions or new searches.\nExisting snapshot records <=4 proposed/admitted cells + hold reasons.
 Loop --> Allocation : optional one-scout fallback\n(default off; one attempt)

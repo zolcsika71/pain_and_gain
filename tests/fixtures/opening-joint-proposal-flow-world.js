@@ -1,13 +1,15 @@
-// Generated-only observation hooks: no injected planner or subset replacement.
-// A world may opt into a test-only proposalPolicy at the existing proposal seam;
-// absent that property, qualification continues to call the production helper.
+// Generated-only observation hooks: both entry points call runtime policy directly.
+// Configuration in the real loop selects the policy; no proposal substitution.
 import assert from 'node:assert/strict';
 import {registerHooks} from 'node:module';
 const jointUrl=new URL('../../src/strategy/opening-joint-proposals.js',import.meta.url).href;
 const executeUrl=new URL('../../src/arena/execute.js',import.meta.url).href;
 registerHooks({resolve(s,c,next){
     let code=s==='../strategy/opening-joint-proposals.js'&&c.parentURL?.endsWith('/src/arena/execute.js')
-        ? `export {jointProposalStatus} from ${JSON.stringify(jointUrl)}; import {proposeOpeningJoint as propose} from ${JSON.stringify(jointUrl)}; export function proposeOpeningJoint(a){const w=globalThis.__adoption;w.jointContext=a;const before=JSON.stringify(a.mission.state),steps=JSON.stringify([...a.steps]);const r=(w.proposalPolicy??propose)(a);assertUnchanged();function assertUnchanged(){if(before!==JSON.stringify(a.mission.state)||steps!==JSON.stringify([...a.steps]))throw Error('joint mutated live inputs');}w.jointResults.push(r);return w.joint=r;}` : null;
+        ? `export {jointProposalStatus} from ${JSON.stringify(jointUrl)}; import * as policy from ${JSON.stringify(jointUrl)};
+        function observe(name,a){const w=globalThis.__adoption;w.jointPolicy=name;w.jointContext=a;const before=JSON.stringify(a.mission.state),steps=JSON.stringify([...a.steps]);const r=policy[name](a);if(before!==JSON.stringify(a.mission.state)||steps!==JSON.stringify([...a.steps]))throw Error('joint mutated live inputs');w.jointResults.push(r);return w.joint=r;}
+        export const proposeOpeningJoint=a=>observe('proposeOpeningJoint',a);
+        export const proposeHoldAwareJoint=a=>observe('proposeHoldAwareJoint',a);` : null;
     if(s==='./arena/execute.js'&&c.parentURL?.includes('/src/loop.js'))code=
         `export {moveCreeps,executeTactics} from ${JSON.stringify(executeUrl)}; import {prepareSecondaryMovement as prepare} from ${JSON.stringify(executeUrl)}; export function prepareSecondaryMovement(...a){const w=globalThis.__adoption;w.prepareInput=a;return w.prepared=prepare(...a);}`;
     return code?{url:`data:text/javascript,${encodeURIComponent(code)}`,shortCircuit:true}:next(s,c);
@@ -19,8 +21,8 @@ const point=p=>({x:p.x,y:p.y});
 const same=(a,b)=>a.x===b.x&&a.y===b.y;
 const row=(a,b,y)=>Array.from({length:b-a+1},(_,i)=>({x:a+i,y}));
 export async function jointFlow(t,{enabled=true,probe=false,adoption=false,configure=null,rename=false,opening=true,mirror=false,reverse=false,
-    compliantPartialRefresh=false}={}){
-    const w=await adoptionFlow(t,{adoption,probe,joint:enabled&&process.env.PAIN_GAIN_JOINT_FORCE_BASELINE!=='1',opening,rename,configure:w=>{
+    compliantPartialRefresh=false,hold=false}={}){
+    const w=await adoptionFlow(t,{adoption,probe,joint:process.env.PAIN_GAIN_JOINT_FORCE_BASELINE==='1'?false:enabled,hold,opening,rename,configure:w=>{
         Object.assign(w.actor('guardR2'),{x:26,y:22});configure?.(w);
         if(mirror)for(const p of [...w.myCreeps,...w.enemies,...w.flags]){
             if(mirror!=='y')p.x=99-p.x;
@@ -77,6 +79,6 @@ export async function jointFlow(t,{enabled=true,probe=false,adoption=false,confi
             ...(suppliedPartial?{suppliedPartial:true}: {})});
         return w.suppliedResult?w.suppliedResult(result,{origin,goal,options}):result;
     };
-    const step=w.step;w.step=tick=>{w.joint=null;w.jointContext=null;w.prepared=null;w.prepareInput=null;return step(tick);};
+    const step=w.step;w.step=tick=>{w.joint=null;w.jointPolicy=null;w.jointContext=null;w.prepared=null;w.prepareInput=null;return step(tick);};
     return w;
 }

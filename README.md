@@ -41,6 +41,17 @@ existing escort stays supported. It changes no cache timestamps or search budget
 Generated capture/release and adverse cases are not Arena progress/benefit evidence.
 Use the contract's explicit generated-only checks; no activation is implied.
 
+`openingHoldJointProposalsExperiment` is separately **off**. It requires opening
+and joint proposals, selects the hold-aware entry of the same private runtime
+core, and retains current-cell ownership and actual cache reports. Its local
+ceilings are 32 neighbours, 4 choices/member, 256 assignments, 48 pair proofs,
+341 nodes and 1 private admission; it adds zero searches and keeps 16 subsets.
+Unknown/incompatible opening configurations reject before route work; opening-off
+behavior is unchanged. Generated hold/joint/integration and caller coverage passes
+709 candidate-specific checks across 29 files on parent `83f8287`; the candidate
+excludes unpublished retreat work. These results establish no Arena CPU or
+gameplay benefit.
+
 The separate `openingRouteProbeExperiment` is **off**. It requires a compatible
 active opening deployment and records one actor-level paired route request only,
 without supplying gameplay routes. Its [contract](docs/architecture/opening-route-probe-2026-10-18.md)

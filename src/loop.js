@@ -78,10 +78,14 @@ export function runTick() {
         ? { previousTick, reason: 'tick-not-increasing' } : null);
     const { flags, myCreeps, enemies, damagedFriends } = state;
     const openingRequested = configuration.openingDeploymentExperiment === true;
+    const holdJoint = configuration.openingHoldJointProposalsExperiment;
+    const joint = configuration.openingJointProposalsExperiment;
     const openingCompatible = !openingRequested || [oneScoutFlagExperiment, scoutHoldExperiment,
         squadPairExperiment, configuration.secondaryObjectiveExperiment,
         configuration.healerUsefulClosingExperiment, configuration.supportLockedEngagementExperiment]
-        .every(value => value === false) && (configuration.openingJointProposalsExperiment !== true ||
+        .every(value => value === false) &&
+        [holdJoint,joint].every(value => value === false || value === true) &&
+        (holdJoint === false || joint === true) && (joint !== true ||
             [configuration.openingRouteProbeExperiment,configuration.openingRouteAdoptionExperiment]
                 .every(value => value === false));
     membership = updateMembership(membership, { tick: state.tick, myCreeps });
@@ -115,7 +119,7 @@ export function runTick() {
         engagements, escortPlan?.escort, pairPlan, { creeps: state.creeps, terrainAt: getTerrainAt },
         openingRequested && configuration.openingJointProposalsExperiment === true && openingCompatible
             ? { observation:state, probe:configuration.openingRouteProbeExperiment,
-                adoption:configuration.openingRouteAdoptionExperiment } : null) : null;
+                adoption:configuration.openingRouteAdoptionExperiment, holdAware:holdJoint === true } : null) : null;
     if (prepared) secondary = prepared.secondary;
     let openingCentreIds = null;
     if (openingRequested && secondary?.state?.phase === 'active' && prepared?.moves) {
