@@ -1,5 +1,8 @@
 # Pain and Gain
 
+Current status and next gameplay task: [project status](docs/project-status.md).
+Local reference material under `docs/examples/` is excluded from Git.
+
 Synthetic storage-authority selection and bounded post-write v2 rollback are
 documented in [the explicit authority contract](docs/architecture/replay-synthetic-authority.md).
 These fixture-only commands do not activate production SQLite storage.

@@ -121,3 +121,31 @@ receipt; their cause is not established and no example content hash audit is
 claimed. This closeout preserves the current local tree and does not read example
 payloads. Retained releases, backups, qualification evidence,
 failed records, authorizations and gates remain protected.
+
+## Metadata-inventory archival — 2026-10-29
+
+The user requested storage cleanup, a project summary and a Git update. A bounded
+allowlist selected 95 top-level `preservation-*.json` metadata inventories from 25
+completed 2026-10-24/25 runs. These describe filesystem metadata; they are not
+historical gameplay payloads. Closures and current retained controls were checked;
+no selected file had an open handle. Eight positive/adversarial member checks pass.
+
+Each root now contains `preservation-inventories-20261029.tar.gz`. Before removing
+its originals, every archive was extracted into an isolated temporary directory
+and verified for exact bytes, names, regular-file types, sizes, modes, owner/group
+and timestamps. Links/traversal/unlisted members reject. Original receipts remain
+unchanged. The mapping and hashes are retained in the external archival record;
+old inventory readers require restoration before reuse. Inode/ctime/birthtime and
+physical allocation cannot be reconstructed. No original gameplay/source file,
+failure record, active control, registered worktree or latest match was deleted.
+
+Original selected allocation 5,721,628,672 bytes; archives 931,512,320 bytes;
+**net allocated reduction 4,790,116,352 bytes (4.46 GiB)**. This is not a claim of
+attributable APFS free-space gain. Parent folders remain because their other
+contents are unique. No payload scan, production-store cleanup, history rewrite,
+qualification rerun or automatic disposal of older backups occurred.
+
+[Allowlist, verification and exact restoration instructions](/Users/zoltanka/.local/share/pain-and-gain-evidence/project-maintenance-20261029/RESTORE.md).
+The earlier broad-hashing exception remains historical, not repeated. The latest
+gameplay follow-up remains the tick 80 detour/stall investigation in
+[project status](../project-status.md#next-gameplay-task--retain-this-priority).
